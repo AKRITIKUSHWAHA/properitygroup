@@ -70,7 +70,7 @@ const SCREENS = [
   },
 ];
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5174';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5175';
 const SCREENSHOT_DIR = path.resolve('test-results/screenshots');
 
 async function runAudit() {
