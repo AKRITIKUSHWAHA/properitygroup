@@ -13,7 +13,7 @@ export const AppLayout = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-16 lg:pl-[240px] min-w-0 transition-all duration-300">
+      <div className="flex-1 flex flex-col md:pl-16 lg:pl-[260px] min-w-0 transition-all duration-300">
         {/* Sticky Top Bar */}
         <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
