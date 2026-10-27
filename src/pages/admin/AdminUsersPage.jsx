@@ -1,56 +1,338 @@
-import React from 'react';
-import { PlaceholderModule } from '../../components/PlaceholderModule';
+import React, { useState, useMemo } from 'react';
+import {
+  Users,
+  Search,
+  Plus,
+  Shield,
+  UserCheck,
+  UserX,
+  Mail,
+  Building,
+  Key,
+  CheckCircle2,
+  Lock,
+} from 'lucide-react';
+import { PageHeader } from '../../components/PageHeader';
+import { Tabs } from '../../components/common/Tabs';
+import { Table } from '../../components/common/Table';
+import { Modal } from '../../components/common/Modal';
+import { useToast } from '../../components/ToastContext';
 
 export const AdminUsersPage = () => {
-  const stats = [
-    { label: 'Total Platform Users', value: '148', change: '+12 this month', isPositive: true },
-    { label: 'Super Admins', value: '3', subtext: 'Full root permissions' },
-    { label: 'Admin / Operations', value: '18', subtext: 'Job management & dispatch' },
-    { label: 'External Surveyors', value: '42', subtext: 'Chartered & AssocRICS' },
-  ];
+  const { addToast } = useToast();
+
+  const [users, setUsers] = useState([
+    {
+      id: 'USR-01',
+      name: 'Alexander Sterling',
+      email: 'admin@demo.com',
+      role: 'super_admin',
+      roleLabel: 'Super Admin',
+      org: 'Property Group HQ',
+      lastLogin: '27/10/2026, 17:40',
+      status: 'Active',
+    },
+    {
+      id: 'USR-02',
+      name: 'Sarah Jenkins',
+      email: 'staff@demo.com',
+      role: 'admin_staff',
+      roleLabel: 'Admin / Staff',
+      org: 'Property Group UK',
+      lastLogin: '27/10/2026, 16:15',
+      status: 'Active',
+    },
+    {
+      id: 'USR-03',
+      name: 'David Thorne MRICS',
+      email: 'surveyor@demo.com',
+      role: 'surveyor',
+      roleLabel: 'Surveyor',
+      org: 'Thorne Chartered Surveyors',
+      lastLogin: '27/10/2026, 14:30',
+      status: 'Active',
+    },
+    {
+      id: 'USR-04',
+      name: 'Oliver Hughes MRICS',
+      email: 'oliver.hughes@propertygroup.co.uk',
+      role: 'surveyor',
+      roleLabel: 'Surveyor',
+      org: 'Hughes Building Surveyors',
+      lastLogin: '26/10/2026, 18:20',
+      status: 'Active',
+    },
+    {
+      id: 'USR-05',
+      name: 'Claire Bennet AssocRICS',
+      email: 'claire.bennet@propertygroup.co.uk',
+      role: 'surveyor',
+      roleLabel: 'Surveyor',
+      org: 'Bennet Defect Specialists',
+      lastLogin: '26/10/2026, 11:05',
+      status: 'Active',
+    },
+    {
+      id: 'USR-06',
+      name: 'Emma Watson',
+      email: 'customer@demo.com',
+      role: 'customer',
+      roleLabel: 'Customer',
+      org: 'Watson Holdings UK',
+      lastLogin: '27/10/2026, 12:45',
+      status: 'Active',
+    },
+    {
+      id: 'USR-07',
+      name: 'Lord Gregory Cavendish',
+      email: 'cavendish.holdings@uknet.co.uk',
+      role: 'customer',
+      roleLabel: 'Customer',
+      org: 'Private Client',
+      lastLogin: '25/10/2026, 09:12',
+      status: 'Active',
+    },
+  ]);
+
+  const [activeTab, setActiveTab] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'surveyor',
+    org: '',
+    tempPassword: '',
+  });
+
+  const handleAddUser = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.email.trim()) return;
+
+    const roleMap = {
+      super_admin: 'Super Admin',
+      admin_staff: 'Admin / Staff',
+      surveyor: 'Surveyor',
+      customer: 'Customer',
+    };
+
+    const newUser = {
+      id: `USR-${String(users.length + 1).padStart(2, '0')}`,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      role: formData.role,
+      roleLabel: roleMap[formData.role],
+      org: formData.org.trim() || 'Property Group Network',
+      lastLogin: 'Never',
+      status: 'Active',
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+    setIsAddModalOpen(false);
+    setFormData({ name: '', email: '', role: 'surveyor', org: '', tempPassword: '' });
+
+    addToast({
+      type: 'success',
+      title: 'User Provisioned',
+      message: `${newUser.name} added as ${newUser.roleLabel}. Welcome credentials dispatched.`,
+    });
+  };
+
+  const tabs = useMemo(() => {
+    return [
+      { id: 'All', label: 'All Users', count: users.length },
+      { id: 'super_admin', label: 'Super Admins', count: users.filter((u) => u.role === 'super_admin').length },
+      { id: 'admin_staff', label: 'Staff', count: users.filter((u) => u.role === 'admin_staff').length },
+      { id: 'surveyor', label: 'Surveyors', count: users.filter((u) => u.role === 'surveyor').length },
+      { id: 'customer', label: 'Customers', count: users.filter((u) => u.role === 'customer').length },
+    ];
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (activeTab !== 'All' && u.role !== activeTab) return false;
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        return (
+          u.name.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          u.org.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [users, activeTab, searchTerm]);
 
   const columns = [
-    { header: 'Full Name', accessor: 'name' },
-    { header: 'Email Address', accessor: 'email' },
     {
+      key: 'name',
+      header: 'Full Legal Name',
+      sortable: true,
+      render: (val, row) => (
+        <div>
+          <div className="font-bold text-slate-900 text-xs">{val}</div>
+          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.email}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'roleLabel',
       header: 'Assigned Role',
-      accessor: 'role',
-      render: (val) => (
-        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#0B1F4D] text-white">
-          {val}
-        </span>
-      ),
-    },
-    { header: 'Organisation', accessor: 'org' },
-    { header: 'Last Login', accessor: 'lastLogin' },
-    {
-      header: 'Status',
-      accessor: 'status',
-      render: (val) => (
-        <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">
-          {val}
-        </span>
-      ),
-    },
-  ];
+      sortable: true,
+      render: (val, row) => {
+        let badgeColor = 'bg-[#0B1F4D] text-white';
+        if (row.role === 'admin_staff') badgeColor = 'bg-blue-100 text-[#2563EB] border border-blue-200';
+        if (row.role === 'surveyor') badgeColor = 'bg-purple-100 text-purple-800 border border-purple-200';
+        if (row.role === 'customer') badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
 
-  const data = [
-    { name: 'Alexander Sterling', email: 'admin@demo.com', role: 'Super Admin', org: 'Property Group HQ', lastLogin: '27/10/2026, 15:45', status: 'Active' },
-    { name: 'Sarah Jenkins', email: 'staff@demo.com', role: 'Admin / Staff', org: 'Property Group UK', lastLogin: '27/10/2026, 14:10', status: 'Active' },
-    { name: 'David Thorne MRICS', email: 'surveyor@demo.com', role: 'Surveyor', org: 'Thorne Chartered Surveyors', lastLogin: '27/10/2026, 09:30', status: 'Active' },
-    { name: 'Emma Watson', email: 'customer@demo.com', role: 'Customer', org: 'Watson Holdings UK', lastLogin: '26/10/2026, 18:20', status: 'Active' },
-    { name: 'Marcus Bell FRICS', email: 'marcus.bell@surveys.co.uk', role: 'Surveyor', org: 'Bell & Co Surveyors', lastLogin: '25/10/2026, 11:05', status: 'Active' },
+        return (
+          <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${badgeColor}`}>
+            {val}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'org',
+      header: 'Organisation / Practice',
+      sortable: true,
+      className: 'text-xs text-slate-700 font-medium',
+    },
+    {
+      key: 'lastLogin',
+      header: 'Last Authentication',
+      sortable: true,
+      className: 'font-mono text-xs text-slate-500',
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      render: (val) => (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+          {val}
+        </span>
+      ),
+    },
   ];
 
   return (
-    <PlaceholderModule
-      roleLabel="Super Admin"
-      menuTitle="Users & Roles"
-      menuDescription="Manage system credentials, role-based access control, security rules, and user provisioning."
-      stats={stats}
-      columns={columns}
-      data={data}
-      actionLabel="Add User"
-    />
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+      <PageHeader
+        title="Users & Access Roles"
+        subtitle="Provision employee logins, define RBAC permissions, and manage chartered surveyor accounts across the UK."
+        breadcrumb={['Super Admin', 'Users & Roles']}
+        actionLabel="+ Add New User"
+        actionIcon={Plus}
+        onAction={() => setIsAddModalOpen(true)}
+      />
+
+      {/* Tabs */}
+      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+
+      {/* Search Toolbar */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or practice..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <Table
+        columns={columns}
+        data={filteredUsers}
+        pageSize={10}
+        emptyTitle="No users found"
+        emptyMessage="No platform users match the chosen role or search term."
+      />
+
+      {/* Add User Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Provision Platform User"
+        subtitle="Grant role-based credentials and send onboarding invitation."
+        maxWidth="max-w-lg"
+        footer={
+          <>
+            <button
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="add-user-form"
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+            >
+              Create Account
+            </button>
+          </>
+        }
+      >
+        <form id="add-user-form" onSubmit={handleAddUser} className="space-y-4 text-xs">
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Full Legal Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Fiona Macintyre MRICS"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
+            <input
+              type="email"
+              required
+              placeholder="fiona@propertygroup.co.uk"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Assigned Role *</label>
+              <select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+              >
+                <option value="super_admin">Super Admin</option>
+                <option value="admin_staff">Admin / Staff</option>
+                <option value="surveyor">Surveyor</option>
+                <option value="customer">Customer</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Organisation</label>
+              <input
+                type="text"
+                placeholder="e.g. Macintyre Surveying"
+                value={formData.org}
+                onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+              />
+            </div>
+          </div>
+        </form>
+      </Modal>
+    </div>
   );
 };

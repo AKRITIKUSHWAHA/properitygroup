@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   AlertCircle,
@@ -10,6 +11,7 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 
 export const SurveyorDashboardPage = () => {
+  const navigate = useNavigate();
   const stats = [
     { label: 'Site Visits Today', value: '2', subtext: 'Guildford & Richmond', change: 'Confirmed', isPositive: true },
     { label: 'Pending Report Uploads', value: '3', subtext: 'Due within 24h', change: 'Urgent', isPositive: false },
@@ -50,7 +52,7 @@ export const SurveyorDashboardPage = () => {
         breadcrumb={['Surveyor', 'Dashboard']}
         actionLabel="Upload Draft Report"
         actionIcon={UploadCloud}
-        onAction={() => alert('Report Upload Modal')}
+        onAction={() => navigate('/surveyor/upload-reports')}
       />
 
       {/* KPI Cards */}
