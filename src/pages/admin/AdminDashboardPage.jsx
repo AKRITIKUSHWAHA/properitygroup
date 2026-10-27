@@ -116,12 +116,12 @@ export const AdminDashboardPage = () => {
       {/* Charts Section: Bookings Trend Line Chart + Jobs by Status Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Bookings Trend Chart (2 columns) */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 min-w-0">
           <BookingsTrendChart />
         </div>
 
         {/* Jobs by Status Donut Chart (1 column) */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 min-w-0">
           <JobsStatusDonutChart />
         </div>
       </div>

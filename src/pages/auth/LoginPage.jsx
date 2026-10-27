@@ -93,9 +93,9 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#D5DAE2] flex items-center justify-center p-3 sm:p-6 lg:p-10 font-['Plus_Jakarta_Sans',sans-serif]">
-      {/* Outer Card Container matching Reference Design */}
-      <div className="relative w-full max-w-6xl bg-white rounded-[32px] sm:rounded-[40px] shadow-2xl shadow-slate-900/15 overflow-hidden border border-white/60 min-h-[640px] lg:min-h-[720px] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#D5DAE2] flex items-center justify-center p-0 sm:p-6 lg:p-10 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Outer Card Container matching Reference Design (Full-screen on phone, centered card on desktop) */}
+      <div className="relative w-full max-w-6xl bg-white rounded-none sm:rounded-[40px] shadow-2xl shadow-slate-900/15 overflow-hidden border-0 sm:border border-white/60 min-h-screen sm:min-h-[720px] flex flex-col justify-between pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
         {/* Background Architectural Image on the right */}
         <div
           className="absolute inset-y-0 right-0 w-full lg:w-[62%] bg-cover bg-right lg:bg-center pointer-events-none"
@@ -108,25 +108,25 @@ export const LoginPage = () => {
         </div>
 
         {/* Top Left Brand Header matching Reference Logo */}
-        <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20">
+        <div className="relative z-20 px-5 sm:px-12 pt-5 sm:pt-10 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 shrink-0">
             <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
           </div>
           <div>
             <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
               PROPERTY GROUP
             </div>
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
-              SURVEY PLATFORM
+            <div className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
+              SURVEY PLATFORM • INDEPENDENT RICS
             </div>
           </div>
         </div>
 
         {/* Center Content: Floating Login Card */}
-        <div className="relative z-20 px-4 sm:px-12 py-6 sm:py-8 flex items-center my-auto">
-          <div className="w-full max-w-md bg-white/95 backdrop-blur-md rounded-[28px] p-6 sm:p-8 shadow-xl shadow-slate-900/10 border border-slate-100/90 mx-auto lg:mx-0">
+        <div className="relative z-20 px-4 sm:px-12 py-4 sm:py-8 flex items-center my-auto">
+          <div className="w-full max-w-md bg-white/95 sm:backdrop-blur-md rounded-2xl sm:rounded-[28px] p-5 sm:p-8 shadow-xl shadow-slate-900/10 border border-slate-100/90 mx-auto lg:mx-0">
             {/* Header */}
-            <div className="text-center mb-5">
+            <div className="text-center mb-4 sm:mb-5">
               <h1 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight">
                 {currentRoleConfig.loginTitle}
               </h1>
@@ -136,7 +136,7 @@ export const LoginPage = () => {
             </div>
 
             {/* All Roles Selector ('or sare roll rhe') */}
-            <div className="mb-5">
+            <div className="mb-4 sm:mb-5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-0.5">
                 <span>Select Role / Quick Demo</span>
                 <span className="text-[#2563EB] font-bold">4 Roles</span>
@@ -150,7 +150,7 @@ export const LoginPage = () => {
                       key={role.id}
                       type="button"
                       onClick={() => handleRoleSelect(role)}
-                      className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[44px] cursor-pointer ${
                         isSelected
                           ? 'bg-[#0B1F4D] text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -169,6 +169,7 @@ export const LoginPage = () => {
                 {currentRoleConfig.desc}
               </div>
             </div>
+
 
             {/* Error Message Alert */}
             {errorMessage && (

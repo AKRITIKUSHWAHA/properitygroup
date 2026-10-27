@@ -345,19 +345,19 @@ export const JobDetailsPage = () => {
       </div>
 
       {/* 10-STEP STATUS TIMELINE: Quote requested -> Closed */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
             Survey Lifecycle Status Timeline
           </span>
           <span className="text-xs font-bold text-[#2563EB]">
-            Current Stage: {STATUS_TIMELINE_STEPS[currentStep - 1] || 'In Progress'} ({currentStep}/10)
+            Stage: {STATUS_TIMELINE_STEPS[currentStep - 1] || 'In Progress'} ({currentStep}/10)
           </span>
         </div>
 
-        {/* Stepper bar */}
-        <div className="overflow-x-auto pb-2 scrollbar-none">
-          <div className="flex items-center min-w-[850px] justify-between relative">
+        {/* Desktop Stepper Bar (Horizontal) */}
+        <div className="hidden md:block overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center min-w-[760px] justify-between relative">
             {/* Background track line */}
             <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
 
@@ -400,7 +400,48 @@ export const JobDetailsPage = () => {
             })}
           </div>
         </div>
+
+        {/* Mobile Vertical Stepper (No horizontal scrolling!) */}
+        <div className="md:hidden space-y-2 pt-1">
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-black text-xs">
+                {currentStep}
+              </span>
+              <div>
+                <span className="font-bold text-slate-800 block">
+                  {STATUS_TIMELINE_STEPS[currentStep - 1]}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  Step {currentStep} of 10 in RICS Survey Pipeline
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#2563EB]">
+              Active Step
+            </span>
+          </div>
+
+          {/* Quick Step Advance Buttons on Mobile */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              disabled={currentStep <= 1}
+              onClick={() => handleStepClick(currentStep - 2)}
+              className="py-2 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold disabled:opacity-40 min-h-[44px]"
+            >
+              ← Previous Step
+            </button>
+            <button
+              disabled={currentStep >= 10}
+              onClick={() => handleStepClick(currentStep)}
+              className="py-2 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold disabled:opacity-40 min-h-[44px]"
+            >
+              Next Step →
+            </button>
+          </div>
+        </div>
       </div>
+
 
       {/* THREE KEY CARDS ROW: Contacts Card, Property Details Card, Quote Table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -975,6 +1016,26 @@ export const JobDetailsPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Mobile Sticky Bottom Action Bar for Send terms & Adjust quote */}
+      <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2.5 px-3.5 shadow-xl flex items-center gap-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
+        <button
+          onClick={() => setIsAdjustQuoteModalOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold shadow-2xs min-h-[44px]"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-[#2563EB]" />
+          <span>Adjust quote</span>
+        </button>
+
+        <button
+          onClick={() => setIsSendTermsModalOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold shadow-md shadow-[#0B1F4D]/20 min-h-[44px]"
+        >
+          <Send className="w-4 h-4" />
+          <span>Send terms</span>
+        </button>
+      </div>
     </div>
   );
 };
+

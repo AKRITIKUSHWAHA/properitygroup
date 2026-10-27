@@ -35,7 +35,7 @@ export const JobsStatusDonutChart = () => {
       </div>
 
       {/* Donut Container */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-5 my-2">
+      <div className="flex flex-col items-center justify-center gap-4 my-2">
         {/* SVG Donut */}
         <div className="relative shrink-0 flex items-center justify-center">
           <svg width={size} height={size} className="transform -rotate-90">

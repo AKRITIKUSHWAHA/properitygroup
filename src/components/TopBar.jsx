@@ -9,6 +9,8 @@ import {
   LogOut,
   Calendar,
   Shield,
+  X,
+  Compass,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { NotificationDropdown } from './NotificationDropdown';
@@ -16,7 +18,10 @@ import { NotificationDropdown } from './NotificationDropdown';
 export const TopBar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
   const navigate = useNavigate();
 
   // Close dropdown on outside click
@@ -30,6 +35,13 @@ export const TopBar = ({ onToggleSidebar }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Focus input when mobile search opens
+  useEffect(() => {
+    if (mobileSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [mobileSearchOpen]);
+
   // Format today's UK date
   const todayUK = new Intl.DateTimeFormat('en-GB', {
     weekday: 'short',
@@ -38,35 +50,65 @@ export const TopBar = ({ onToggleSidebar }) => {
     year: 'numeric',
   }).format(new Date());
 
+  const handleLogout = () => {
+    setUserDropdownOpen(false);
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-8 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      {/* Left: Mobile Toggle & Search */}
-      <div className="flex items-center gap-3 lg:gap-6 flex-1 max-w-xl">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-3 sm:px-6 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
+      {/* Left: Mobile Hamburger & Search / Tagline */}
+      <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-2 text-slate-600 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors"
-          aria-label="Open sidebar menu"
+          className="md:hidden p-2 text-slate-700 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+          aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Global Search */}
-        <div className="relative w-full max-w-md hidden sm:block">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+        {/* Mobile Brand Name (when sidebar is hidden) */}
+        <div className="md:hidden flex items-center gap-1.5 truncate">
+          <span className="font-extrabold text-xs tracking-tight text-[#0B1F4D] truncate">
+            Property Group
+          </span>
+        </div>
+
+        {/* Desktop Tagline: INDEPENDENT RICS-ALIGNED SURVEYORS */}
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-100/90 border border-slate-200/80 text-[11px] font-bold text-[#0B1F4D] tracking-wide shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>INDEPENDENT RICS-ALIGNED SURVEYORS</span>
+        </div>
+
+        {/* Global Search Bar (Tablet & Desktop) */}
+        <div className="relative w-full max-w-sm hidden sm:block">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="w-4 h-4 text-slate-400" />
           </div>
           <input
             type="text"
-            placeholder="Search surveys, jobs, clients, UK postcodes... (Ctrl+K)"
-            className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-[#F3F5F9] border border-slate-200/90 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search surveys, jobs, clients, UK postcodes..."
+            className="w-full pl-9 pr-4 py-2 text-xs bg-[#F3F5F9] border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all"
           />
         </div>
       </div>
 
-      {/* Right: Date, Notifications, User Menu */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* UK Date Chip */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200 text-xs font-semibold text-slate-600">
+      {/* Right: Search Toggle (Mobile), Date, Notifications, User Menu */}
+      <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+        {/* Mobile Search Icon Toggle */}
+        <button
+          onClick={() => setMobileSearchOpen(true)}
+          className="sm:hidden p-2 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+          aria-label="Search surveys"
+        >
+          <Search className="w-5 h-5" />
+        </button>
+
+        {/* UK Date Chip (Tablet & Desktop) */}
+        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-600">
           <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
           <span>{todayUK}</span>
         </div>
@@ -75,13 +117,13 @@ export const TopBar = ({ onToggleSidebar }) => {
         <NotificationDropdown />
 
         {/* Vertical divider */}
-        <div className="h-6 w-px bg-slate-200" />
+        <div className="h-6 w-px bg-slate-200 mx-0.5 sm:mx-1" />
 
         {/* User Avatar Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-            className="flex items-center gap-2.5 p-1 sm:px-2 sm:py-1.5 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 group"
+            className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none min-h-[44px] min-w-[44px] cursor-pointer group"
             aria-label="User profile and menu"
           >
             <div className="relative">
@@ -94,46 +136,42 @@ export const TopBar = ({ onToggleSidebar }) => {
             </div>
 
             <div className="hidden md:flex flex-col text-left">
-              <span className="text-xs font-bold text-slate-800 leading-tight group-hover:text-[#2563EB] transition-colors truncate max-w-[140px]">
+              <span className="text-xs font-bold text-slate-800 leading-tight group-hover:text-[#2563EB] transition-colors truncate max-w-[120px]">
                 {user?.name}
               </span>
-              <span className="text-[10px] font-semibold text-slate-400 truncate max-w-[140px]">
+              <span className="text-[10px] font-semibold text-slate-400 truncate max-w-[120px]">
                 {user?.roleLabel}
               </span>
             </div>
 
-            <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform duration-200" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform hidden sm:block" />
           </button>
 
-          {/* User Menu Dropdown Modal */}
+          {/* User Menu Dropdown */}
           {userDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white shadow-2xl border border-slate-200/90 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-              {/* Header Info */}
-              <div className="px-4 py-3 border-b border-slate-100 bg-[#F3F5F9]/60">
-                <p className="text-sm font-bold text-[#0B1F4D] truncate">{user?.name}</p>
-                <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#0B1F4D] text-white">
-                    <Shield className="w-3 h-3 text-[#C9D3E3]" />
-                    {user?.roleLabel}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-medium truncate">
-                    {user?.company}
-                  </span>
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-4 py-2.5 border-b border-slate-100">
+                <div className="text-xs font-bold text-slate-900 truncate">
+                  {user?.name}
                 </div>
+                <div className="text-[11px] text-slate-500 truncate">
+                  {user?.email}
+                </div>
+                <span className="inline-block mt-1 text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB]">
+                  {user?.roleLabel}
+                </span>
               </div>
 
-              {/* Menu Links */}
               <div className="py-1">
                 <button
                   onClick={() => {
                     setUserDropdownOpen(false);
                     navigate('/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-[#2563EB] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 min-h-[44px] cursor-pointer"
                 >
                   <User className="w-4 h-4 text-slate-400" />
-                  My Profile
+                  <span>My Profile</span>
                 </button>
 
                 <button
@@ -141,33 +179,56 @@ export const TopBar = ({ onToggleSidebar }) => {
                     setUserDropdownOpen(false);
                     navigate('/change-password');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-[#2563EB] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 min-h-[44px] cursor-pointer"
                 >
                   <KeyRound className="w-4 h-4 text-slate-400" />
-                  Change Password
+                  <span>Change Password</span>
                 </button>
               </div>
 
-              {/* Divider */}
-              <div className="my-1 border-t border-slate-100" />
-
-              {/* Logout Option */}
-              <div className="px-1 py-1">
+              <div className="border-t border-slate-100 pt-1">
                 <button
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    logout();
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-xs sm:text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 min-h-[44px] cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 text-rose-500" />
-                  Logout
+                  <span>Sign Out</span>
                 </button>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Full-width Search Overlay on Mobile */}
+      {mobileSearchOpen && (
+        <div className="sm:hidden fixed inset-x-0 top-0 h-16 bg-white px-4 z-50 flex items-center gap-3 border-b border-slate-200 shadow-md">
+          <Search className="w-4 h-4 text-[#2563EB] shrink-0" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search surveys, postcodes..."
+            className="flex-1 text-sm bg-transparent border-0 outline-none text-slate-900 placeholder-slate-400 font-medium"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="p-1 text-slate-400 hover:text-slate-600 text-xs font-bold"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={() => setMobileSearchOpen(false)}
+            className="p-2 text-slate-500 hover:text-slate-900 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+            aria-label="Close search"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </header>
   );
 };

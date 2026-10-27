@@ -29,8 +29,10 @@ export const BookingCalendar = () => {
   // Shared persistent jobs state
   const { jobs, setJobs, addJob } = useJobs();
 
-  // Calendar View State
-  const [viewMode, setViewMode] = useState('week'); // 'day' | 'week' | 'month'
+  // Calendar View State (Mobile defaults to 'day', Desktop to 'month' or 'week')
+  const [viewMode, setViewMode] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'month'
+  );
   const [selectedDayDate, setSelectedDayDate] = useState('27/10/2026');
   const [weekOffset, setWeekOffset] = useState(0); // 0 = Week 44 (26 Oct - 01 Nov 2026)
   const [monthOffset, setMonthOffset] = useState(0); // 0 = Oct 2026

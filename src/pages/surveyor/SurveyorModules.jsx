@@ -17,6 +17,8 @@ import {
   Filter,
   Check,
   Plus,
+  Camera,
+  WifiOff,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
@@ -461,12 +463,38 @@ export const SurveyorUploadReportsPage = () => {
           </div>
         </div>
 
+        {/* Mobile Camera Snapshot & Offline Sync Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <input
+            type="file"
+            id="camera-photo-input"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          <label
+            htmlFor="camera-photo-input"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all min-h-[44px] cursor-pointer shadow-xs shrink-0"
+          >
+            <Camera className="w-4 h-4" />
+            <span>Snap Site Photo (Camera)</span>
+          </label>
+
+          <div className="flex-1 text-slate-600 text-[11px] leading-tight flex items-center gap-2 bg-blue-50/80 p-2.5 rounded-2xl border border-blue-200/60">
+            <WifiOff className="w-4 h-4 text-[#2563EB] shrink-0" />
+            <span>
+              <strong>Offline-Ready:</strong> Photos and reports are cached locally on phone and will automatically sync when network returns.
+            </span>
+          </div>
+        </div>
+
         {/* INTERACTIVE FILE DROP ZONE (Required by prompt) */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
             isDragging
               ? 'border-[#2563EB] bg-blue-50/60 scale-[1.01]'
               : 'border-slate-300 hover:border-[#2563EB] bg-slate-50/50 hover:bg-white'

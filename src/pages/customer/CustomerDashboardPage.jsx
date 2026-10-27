@@ -160,7 +160,7 @@ export const CustomerDashboardPage = () => {
               <span>Customer Survey Portal • RICS Regulated Practice</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+            <h1 className="text-fluid-banner font-black tracking-tight leading-tight">
               Welcome back, {user?.name || 'Emma Watson'} 👋
             </h1>
 
@@ -170,10 +170,10 @@ export const CustomerDashboardPage = () => {
           </div>
 
           {/* Action Buttons: "Book a New Survey" & "Contact Support" (Required by prompt) */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto">
             <button
               onClick={() => setIsBookModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-md transition-all min-h-[44px] cursor-pointer"
             >
               <Plus className="w-4 h-4 text-[#2563EB]" />
               <span>Book a New Survey</span>
@@ -181,7 +181,7 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/support')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 backdrop-blur-sm transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 backdrop-blur-sm transition-all min-h-[44px] cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-blue-200" />
               <span>Contact Support</span>
@@ -190,8 +190,9 @@ export const CustomerDashboardPage = () => {
         </div>
       </div>
 
-      {/* 2. FOUR METRIC CARDS (Required by Prompt) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Required by Prompt) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -351,20 +352,21 @@ export const CustomerDashboardPage = () => {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-[10px] font-bold text-slate-500">
                       {report.surveyor}
                     </span>
 
-                    {/* Download button */}
+                    {/* Download button - Full-width on mobile */}
                     <button
                       onClick={() => handleDownloadReport(report.title)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs min-h-[44px] cursor-pointer"
                     >
-                      <Download className="w-3 h-3" />
-                      <span>Download</span>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download PDF</span>
                     </button>
                   </div>
+
                 </div>
               ))}
             </div>

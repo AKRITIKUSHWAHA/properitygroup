@@ -309,29 +309,26 @@ export const CustomerTermsPage = () => {
                     width={600}
                     height={160}
                     className="w-full h-40 bg-white cursor-crosshair touch-none"
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
+                    onPointerDown={startDrawing}
+                    onPointerMove={draw}
+                    onPointerUp={stopDrawing}
+                    onPointerLeave={stopDrawing}
                   />
                 </div>
               </div>
             )}
           </div>
 
-          {/* "Sign & Continue" Button (Required by Prompt) */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-400">
+          {/* Sticky "Agree & Sign" Bar on Mobile */}
+          <div className="sticky bottom-14 md:static z-20 bg-white/95 backdrop-blur-md p-3.5 -mx-6 -mb-6 sm:mx-0 sm:mb-0 sm:p-0 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+            <span className="text-xs text-slate-400 text-center sm:text-left">
               Step 1 of 2: Digital Execution
             </span>
 
             <button
               onClick={handleSignAndContinue}
               disabled={!canSubmitSignature}
-              className={`px-6 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
+              className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all min-h-[44px] cursor-pointer ${
                 canSubmitSignature
                   ? 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white shadow-md shadow-[#0B1F4D]/25'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
