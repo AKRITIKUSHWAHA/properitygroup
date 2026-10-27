@@ -29,12 +29,20 @@ import { CoverageMap } from '../../components/common/CoverageMap';
 import { StepProcess } from '../../components/common/StepProcess';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { HeroSlider } from '../../components/hero/HeroSlider';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 export function HomePage() {
   useDocumentTitle(
     "Independent RICS-Aligned Property Surveys & Valuations",
     "Specialist property surveys across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Homebuyer Level 2, Building Survey Level 3, Snagging, Valuations, and Damp Reports."
   );
+
+  const [credentialsRef, credentialsVisible] = useScrollReveal({ threshold: 0.1 });
+  const [servicesRef, servicesVisible] = useScrollReveal({ threshold: 0.08 });
+  const [expertRef, expertVisible] = useScrollReveal({ threshold: 0.12 });
+  const [processRef, processVisible] = useScrollReveal({ threshold: 0.1 });
+  const [coverageRef, coverageVisible] = useScrollReveal({ threshold: 0.1 });
+  const [ctaRef, ctaVisible] = useScrollReveal({ threshold: 0.15 });
 
   return (
     <div className="home-page">
@@ -43,11 +51,45 @@ export function HomePage() {
         <QuoteRequestForm />
       </HeroSlider>
 
+      {/* 1.5. PRACTICE LIVE METRICS STRIP */}
+      <div className="practice-metrics-ticker">
+        <Container>
+          <div className="metrics-ticker-inner">
+            <div className="metric-ticker-item">
+              <span className="metric-ticker-num">100%</span>
+              <span className="metric-ticker-label">RICS-Aligned Independent Practice</span>
+            </div>
+            <div className="metric-ticker-sep" aria-hidden="true" />
+            <div className="metric-ticker-item">
+              <span className="metric-ticker-num">1,200+</span>
+              <span className="metric-ticker-label">Residential Reports Delivered</span>
+            </div>
+            <div className="metric-ticker-sep" aria-hidden="true" />
+            <div className="metric-ticker-item">
+              <span className="metric-ticker-num">3 – 5 Days</span>
+              <span className="metric-ticker-label">Fast Report Turnaround</span>
+            </div>
+            <div className="metric-ticker-sep" aria-hidden="true" />
+            <div className="metric-ticker-item">
+              <span className="metric-ticker-num">CPR Part 35</span>
+              <span className="metric-ticker-label">Court-Admissible Legal Witness</span>
+            </div>
+          </div>
+        </Container>
+      </div>
+
       {/* 2. CREDENTIALS & ACCREDITATIONS BANNER (Glassmorphic Polish) */}
-      <CredentialsBanner />
+      <div ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>
+        <CredentialsBanner />
+      </div>
 
       {/* 3. EDITORIAL SURVEY SERVICES SECTION (Master Spec Part 5.3 & Redesign Spec Part 5) */}
-      <section id="services" className="section section-alt services-editorial-section" aria-label="Core Surveying Services">
+      <section
+        id="services"
+        ref={servicesRef}
+        className={`section section-alt services-editorial-section reveal-init ${servicesVisible ? 'is-revealed' : ''}`}
+        aria-label="Core Surveying Services"
+      >
         <Container>
           <SectionHeading
             eyebrow="Approved Survey Disciplines"
@@ -58,7 +100,7 @@ export function HomePage() {
           {/* Balanced, Uniform Grid: All 5 Core Survey Services with Identical Dimensions & Image Aspect Ratios */}
           <div className="services-uniform-grid">
             {approvedServices.map(service => (
-              <article key={service.id} className="editorial-service-card group">
+              <article key={service.id} className="editorial-service-card group stagger-item">
                 {/* Visual Image Header with Subtle Zoom */}
                 <div className="card-image-wrap">
                   <img
@@ -108,7 +150,11 @@ export function HomePage() {
       </section>
 
       {/* 4. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (Redesign Spec Part 6) */}
-      <section className="section expert-witness-banner-section" aria-label="Expert Witness Services Callout">
+      <section
+        ref={expertRef}
+        className={`section expert-witness-banner-section reveal-init ${expertVisible ? 'is-revealed' : ''}`}
+        aria-label="Expert Witness Services Callout"
+      >
         <Container>
           <div className="expert-witness-glass-card">
             <div className="grid-2" style={{ alignItems: 'center', gap: 'var(--space-10)' }}>
@@ -128,7 +174,7 @@ export function HomePage() {
                 </p>
 
                 <div className="expert-cta-group">
-                  <Button to="/expert-witness" variant="gold" size="md" icon={ArrowRight} iconPosition="right">
+                  <Button to="/expert-witness" variant="outline-white" size="md" icon={ArrowRight} iconPosition="right">
                     Explore Expert Witness Practice
                   </Button>
                   <Button to="/expert-witness#instruction" variant="outline-white" size="md">
@@ -165,21 +211,33 @@ export function HomePage() {
       </section>
 
       {/* 5. 4-STEP CLIENT PROCESS SECTION */}
-      <section className="section" aria-label="Surveying Workflow">
+      <section
+        ref={processRef}
+        className={`section reveal-init ${processVisible ? 'is-revealed' : ''}`}
+        aria-label="Surveying Workflow"
+      >
         <Container>
           <StepProcess />
         </Container>
       </section>
 
       {/* 6. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
-      <section className="section section-alt" aria-label="Regional Coverage">
+      <section
+        ref={coverageRef}
+        className={`section section-alt reveal-init ${coverageVisible ? 'is-revealed' : ''}`}
+        aria-label="Regional Coverage"
+      >
         <Container>
           <CoverageMap />
         </Container>
       </section>
 
       {/* 7. FINAL HIGH-IMPACT CTA BANNER */}
-      <section className="final-cta-section" aria-label="Closing Call to Action">
+      <section
+        ref={ctaRef}
+        className={`final-cta-section reveal-init ${ctaVisible ? 'is-revealed' : ''}`}
+        aria-label="Closing Call to Action"
+      >
         <div className="final-cta-overlay" />
         <Container isNarrow>
           <div className="final-cta-content text-center">
@@ -191,7 +249,7 @@ export function HomePage() {
               Our independent surveyors inspect properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Receive an objective, detailed technical report delivered directly to your inbox.
             </p>
             <div className="final-cta-buttons">
-              <Button href="#quote" variant="gold" size="lg" icon={ArrowRight} iconPosition="right">
+              <Button href="#quote" variant="outline-white" size="lg" icon={ArrowRight} iconPosition="right">
                 Request a Survey Quote
               </Button>
               <Button to="/contact" variant="outline-white" size="lg">

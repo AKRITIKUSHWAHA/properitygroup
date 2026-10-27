@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, Phone, Mail, MapPin, Building, ShieldCheck, User } from 'lucide-react';
+import { Menu, ChevronDown, Building, User } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
-import { Container } from '../common/Container';
 import { Button } from '../common/Button';
 import { MobileNavigation } from './MobileNavigation';
 
@@ -44,36 +43,9 @@ export function Header() {
 
   return (
     <header className="site-header" role="banner">
-      {/* Top Utility Bar */}
-      <div className="header-topbar">
-        <Container>
-          <div className="header-topbar-inner">
-            <div className="topbar-items">
-              <span className="topbar-item">
-                <MapPin size={13} style={{ color: 'var(--color-accent-gold)' }} aria-hidden="true" />
-                <span>London &bull; Surrey &bull; Oxfordshire &bull; Buckinghamshire &bull; Berkshire</span>
-              </span>
-            </div>
-
-            <div className="topbar-items">
-              <span className="topbar-item">
-                <Phone size={13} style={{ color: 'var(--color-accent-gold)' }} aria-hidden="true" />
-                <a href={`tel:${siteConfig.contact.telephone}`} aria-label={`Call telephone ${siteConfig.contact.telephoneDisplay}`}>
-                  {siteConfig.contact.telephoneDisplay}
-                </a>
-              </span>
-              <span className="topbar-item" style={{ display: 'none' }}>
-                <Mail size={13} style={{ color: 'var(--color-accent-gold)' }} aria-hidden="true" />
-                <a href={`mailto:${siteConfig.contact.email}`}>{siteConfig.contact.email}</a>
-              </span>
-            </div>
-          </div>
-        </Container>
-      </div>
-
       {/* Main Navigation Bar */}
       <div className="header-main">
-        <Container>
+        <div className="header-container">
           <div className="header-main-inner">
             {/* Site Logo Placeholder */}
             <Link to="/" className="site-logo" aria-label={`${siteConfig.companyName} - Home`}>
@@ -154,7 +126,7 @@ export function Header() {
               </button>
             </div>
           </div>
-        </Container>
+        </div>
       </div>
 
       {/* Mobile Drawer */}

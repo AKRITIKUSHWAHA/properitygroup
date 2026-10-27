@@ -17,6 +17,7 @@ import { ValuationReportPage } from './pages/public/ValuationReportPage';
 import { DampSurveyPage } from './pages/public/DampSurveyPage';
 import { ExpertWitnessPage } from './pages/public/ExpertWitnessPage';
 import { ContactPage } from './pages/public/ContactPage';
+import { RedirectsPage } from './pages/public/RedirectsPage';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
@@ -102,6 +103,9 @@ function AppRoutes() {
         <Route path="/services/damp-survey" element={<DampSurveyPage />} />
         <Route path="/expert-witness" element={<ExpertWitnessPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/redirects" element={<RedirectsPage />} />
+        <Route path="/REDIRECTS.md" element={<RedirectsPage />} />
+        <Route path="/redirects.md" element={<RedirectsPage />} />
       </Route>
 
       {/* 2. Portal Shortcut for Dashboard Navigation */}

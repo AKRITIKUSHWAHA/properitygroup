@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { validateQuoteForm } from '../../utils/validation';
@@ -6,6 +6,15 @@ import { FormField } from './FormField';
 import { Button } from '../common/Button';
 
 export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 80);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [formData, setFormData] = useState({
     propertyType: '',
     propertyAddress: '',
@@ -158,12 +167,16 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
 
   return (
     <form
-      className={`hero-card ${className} compact-quote-form`}
+      className={`hero-card ${className} compact-quote-form hero-form-animate-entrance ${mounted ? 'is-slide-ready' : 'is-slide-pending'}`}
       onSubmit={handleSubmit}
       noValidate
       aria-label="Request a Survey Quote Form"
     >
       <div className="hero-card-header" style={{ marginBottom: '0.65rem' }}>
+        <div className="quote-form-live-status">
+          <span className="live-status-dot" aria-hidden="true" />
+          <span className="live-status-text">Live RICS Surveyor Availability &bull; Instant Online Estimate</span>
+        </div>
         <h3 className="hero-card-title" style={{ fontSize: '1.15rem', marginBottom: '2px' }}>
           Request a Fixed-Fee Survey Quote
         </h3>
@@ -254,7 +267,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
             type="text"
             id="propertyAddress"
             name="propertyAddress"
-            placeholder="e.g. 14 High Street, Guildford"
+            placeholder="e.g. 14 High Street"
             value={formData.propertyAddress}
             onChange={handleChange}
             className={`form-input form-input-compact ${errors.propertyAddress ? 'is-invalid' : ''}`}
@@ -332,7 +345,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
             type="email"
             id="customerEmail"
             name="customerEmail"
-            placeholder="e.g. eleanor@example.co.uk"
+            placeholder="e.g. name@example.com"
             value={formData.customerEmail}
             onChange={handleChange}
             className={`form-input form-input-compact ${errors.customerEmail ? 'is-invalid' : ''}`}

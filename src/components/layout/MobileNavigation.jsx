@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { X, ChevronRight, Phone, Mail, ShieldCheck, User } from 'lucide-react';
 import { approvedServices } from '../../config/services';
@@ -34,7 +35,7 @@ export function MobileNavigation({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="mobile-drawer-overlay"
       onClick={onClose}
@@ -154,7 +155,8 @@ export function MobileNavigation({ isOpen, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

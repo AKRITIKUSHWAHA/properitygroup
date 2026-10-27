@@ -4,14 +4,13 @@ import { Building, MapPin, Phone, Mail, ShieldAlert, ArrowUpRight } from 'lucide
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { footerCoverageLinks } from '../../config/navigation';
-import { Container } from '../common/Container';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="site-footer" role="contentinfo">
-      <Container>
+      <div className="footer-container">
         <div className="footer-grid">
           {/* Brand & Purpose Column */}
           <div>
@@ -98,9 +97,9 @@ export function Footer() {
 
             <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-dark)' }}>
               <span>Legacy Services Removed: Construction &amp; Real Estate pages retired. </span>
-              <a href="/REDIRECTS.md" style={{ color: 'var(--color-silver-light)', textDecoration: 'underline' }}>
+              <Link to="/redirects" style={{ color: 'var(--color-silver-light)', textDecoration: 'underline' }}>
                 View Redirect Matrix
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -113,10 +112,10 @@ export function Footer() {
           <div className="footer-bottom-links">
             <Link to="/contact">Client Enquiry Form</Link>
             <Link to="/contact#privacy">Privacy Notice</Link>
-            <Link to="/REDIRECTS.md">Production Redirects</Link>
+            <Link to="/redirects">Production Redirects</Link>
           </div>
         </div>
-      </Container>
+      </div>
     </footer>
   );
 }

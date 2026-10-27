@@ -121,7 +121,7 @@ export function HeroSlider({ onQuoteClick, children }) {
           {/* Left Column: Animated Text Content with Glassmorphic Panel */}
           <div className="hero-content-column">
             {/* Unified Professional Trust & Coverage Eyebrow Bar */}
-            <div className="hero-unified-pill">
+            <div className="hero-unified-pill hero-animate-badge">
               <div className="pill-section pill-accreditation">
                 <ShieldCheck size={14} className="text-gold flex-shrink-0" aria-hidden="true" />
                 <span>{activeSlideData.eyebrow}</span>
@@ -134,17 +134,17 @@ export function HeroSlider({ onQuoteClick, children }) {
             </div>
 
             {/* Slide Title with Key Entrance */}
-            <h1 key={`title-${currentSlide}`} className="hero-title animate-fade-in-up">
+            <h1 key={`title-${currentSlide}`} className="hero-title hero-animate-title">
               {activeSlideData.title}
             </h1>
 
             {/* Slide Subtitle */}
-            <p key={`subtitle-${currentSlide}`} className="hero-subtitle animate-fade-in-up">
+            <p key={`subtitle-${currentSlide}`} className="hero-subtitle hero-animate-subtitle">
               {activeSlideData.subtitle}
             </p>
 
             {/* High-Impact Action Buttons */}
-            <div className="hero-cta-group">
+            <div className="hero-cta-group hero-animate-cta">
               <Button
                 href="#quote"
                 onClick={onQuoteClick}
@@ -168,7 +168,7 @@ export function HeroSlider({ onQuoteClick, children }) {
             </div>
 
             {/* Trust and Assurance Indicators */}
-            <div className="hero-features-list">
+            <div className="hero-features-list hero-animate-features">
               <div className="hero-feature-item">
                 <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />
                 <span>5 Regulated Survey Disciplines</span>
@@ -187,8 +187,17 @@ export function HeroSlider({ onQuoteClick, children }) {
               </div>
             </div>
 
+            {/* High-Impact Floating Trust Card */}
+            <div className="hero-floating-stat-badge">
+              <span className="stat-pulse-dot" aria-hidden="true" />
+              <div className="stat-text-group">
+                <span className="stat-highlight">1,200+ Verified RICS Surveys</span>
+                <span className="stat-sub">London &amp; Home Counties &bull; 98.6% On-Time Delivery &bull; ★★★★★ 4.9/5</span>
+              </div>
+            </div>
+
             {/* Slider Controls & Pagination Indicators */}
-            <div className="hero-slider-controls">
+            <div className="hero-slider-controls hero-animate-controls">
               {/* Prev / Next Buttons */}
               <div className="slider-nav-buttons">
                 <button

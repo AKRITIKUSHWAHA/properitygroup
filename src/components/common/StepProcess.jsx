@@ -45,7 +45,7 @@ export function StepProcess() {
           {steps.map((step, idx) => {
             const StepIcon = step.icon;
             return (
-              <div key={step.number} className="step-card group">
+              <div key={step.number} className="step-card group stagger-item">
                 <div className="step-top-row">
                   <div className="step-icon-wrap" aria-hidden="true">
                     <StepIcon size={22} />
