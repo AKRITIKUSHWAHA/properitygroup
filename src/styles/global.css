@@ -144,14 +144,14 @@ button, input, select, textarea {
   padding-right: var(--container-padding);
 }
 
-/* Sections */
+/* Sections with Generous, Modern Breathing Room */
 .section {
-  padding-top: var(--space-12);
-  padding-bottom: var(--space-12);
+  padding-top: 4.5rem;
+  padding-bottom: 4.5rem;
 }
 
 .section-alt {
-  background-color: var(--color-light-grey);
+  background-color: #F8FAFC;
 }
 
 .section-navy {
@@ -175,8 +175,8 @@ button, input, select, textarea {
     font-size: var(--font-size-3xl);
   }
   .section {
-    padding-top: var(--space-16);
-    padding-bottom: var(--space-16);
+    padding-top: 5.5rem;
+    padding-bottom: 5.5rem;
   }
 }
 
@@ -185,8 +185,15 @@ button, input, select, textarea {
     font-size: var(--font-size-5xl);
   }
   .section {
-    padding-top: var(--space-20);
-    padding-bottom: var(--space-20);
+    padding-top: 6.25rem;
+    padding-bottom: 6.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
   }
 }
 

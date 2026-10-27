@@ -61,14 +61,14 @@
 }
 
 .header-main {
-  padding: 0.85rem 0;
+  padding: 1.15rem 0;
 }
 
 .header-main-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-8);
 }
 
 /* Brand Logo */
@@ -125,7 +125,7 @@
 .desktop-nav {
   display: none;
   align-items: center;
-  gap: var(--space-6);
+  gap: 2.25rem;
 }
 
 @media (min-width: 1024px) {
@@ -2221,6 +2221,23 @@ select.form-input-compact {
   gap: var(--space-4);
   font-size: var(--font-size-xs);
   color: var(--color-silver-dark);
+}
+
+.footer-bottom a {
+  color: var(--color-silver-light) !important;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-bottom a:hover {
+  color: var(--color-white) !important;
+  text-decoration: underline;
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 @media (min-width: 768px) {

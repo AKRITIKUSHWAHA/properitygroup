@@ -107,10 +107,10 @@ export function Footer() {
 
         {/* Footer Bottom Bar */}
         <div className="footer-bottom">
-          <div>
+          <div className="footer-copyright">
             &copy; {currentYear} {siteConfig.companyName}. All rights reserved. RICS Home Survey Standard Aligned.
           </div>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div className="footer-bottom-links">
             <Link to="/contact">Client Enquiry Form</Link>
             <Link to="/contact#privacy">Privacy Notice</Link>
             <Link to="/REDIRECTS.md">Production Redirects</Link>
