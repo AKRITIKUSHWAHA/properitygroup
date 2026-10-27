@@ -1,100 +1,93 @@
 @import './tokens.css';
 
-/* Box sizing and base reset */
-*, *::before, *::after {
+/* Box sizing and base reset scoped to public website */
+.site-wrapper,
+.site-wrapper *,
+.site-wrapper *::before,
+.site-wrapper *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-  max-width: 100%;
-}
-
-body {
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-normal);
-  color: var(--color-main-text);
-  min-height: 100vh;
-  overflow-x: hidden;
-  max-width: 100%;
-}
-
+/* Site wrapper baseline for public website */
 .site-wrapper {
   background-color: var(--color-white);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-main-text);
 }
 
-#root {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-/* Headings */
-h1, h2, h3, h4, h5, h6 {
+/* Headings in public website */
+.site-wrapper h1,
+.site-wrapper h2,
+.site-wrapper h3,
+.site-wrapper h4,
+.site-wrapper h5,
+.site-wrapper h6 {
   font-family: var(--font-family-heading);
   color: var(--color-primary-navy);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
 }
 
-h1 {
+.site-wrapper h1 {
   font-size: var(--font-size-3xl);
   letter-spacing: -0.025em;
 }
 
-h2 {
+.site-wrapper h2 {
   font-size: var(--font-size-2xl);
   letter-spacing: -0.02em;
 }
 
-h3 {
+.site-wrapper h3 {
   font-size: var(--font-size-xl);
 }
 
-h4 {
+.site-wrapper h4 {
   font-size: var(--font-size-lg);
 }
 
-p {
+.site-wrapper p {
   color: var(--color-main-text);
   margin-bottom: var(--space-4);
 }
 
-p:last-child {
+.site-wrapper p:last-child {
   margin-bottom: 0;
 }
 
-a {
+.site-wrapper a {
   color: var(--color-primary-navy);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
-a:hover {
+.site-wrapper a:hover {
   color: var(--color-primary-light);
 }
 
-img, svg {
+.site-wrapper img,
+.site-wrapper svg {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-ul, ol {
+.site-wrapper ul,
+.site-wrapper ol {
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-button, input, select, textarea {
+.site-wrapper button,
+.site-wrapper input,
+.site-wrapper select,
+.site-wrapper textarea {
   font: inherit;
   color: inherit;
 }
@@ -120,13 +113,13 @@ button, input, select, textarea {
 }
 
 /* Accessible focus visible outlines */
-:focus-visible {
+.site-wrapper :focus-visible {
   outline: 2px solid var(--color-primary-navy);
   outline-offset: 3px;
 }
 
 /* Containers */
-.container {
+.site-wrapper .container {
   width: 100%;
   max-width: var(--container-max-width);
   margin-left: auto;
@@ -135,7 +128,7 @@ button, input, select, textarea {
   padding-right: var(--container-padding);
 }
 
-.container-narrow {
+.site-wrapper .container-narrow {
   width: 100%;
   max-width: var(--container-narrow-width);
   margin-left: auto;
@@ -145,46 +138,46 @@ button, input, select, textarea {
 }
 
 /* Sections */
-.section {
+.site-wrapper .section {
   padding-top: var(--space-12);
   padding-bottom: var(--space-12);
 }
 
-.section-alt {
+.site-wrapper .section-alt {
   background-color: var(--color-light-grey);
 }
 
-.section-navy {
+.site-wrapper .section-navy {
   background-color: var(--color-primary-navy);
   color: var(--color-white);
 }
 
-.section-navy h1,
-.section-navy h2,
-.section-navy h3,
-.section-navy p {
+.site-wrapper .section-navy h1,
+.site-wrapper .section-navy h2,
+.site-wrapper .section-navy h3,
+.site-wrapper .section-navy p {
   color: var(--color-white);
 }
 
 /* Responsive typography adjustments */
 @media (min-width: 768px) {
-  h1 {
+  .site-wrapper h1 {
     font-size: var(--font-size-4xl);
   }
-  h2 {
+  .site-wrapper h2 {
     font-size: var(--font-size-3xl);
   }
-  .section {
+  .site-wrapper .section {
     padding-top: var(--space-16);
     padding-bottom: var(--space-16);
   }
 }
 
 @media (min-width: 1024px) {
-  h1 {
+  .site-wrapper h1 {
     font-size: var(--font-size-5xl);
   }
-  .section {
+  .site-wrapper .section {
     padding-top: var(--space-20);
     padding-bottom: var(--space-20);
   }
@@ -192,7 +185,9 @@ button, input, select, textarea {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  .site-wrapper *,
+  .site-wrapper *::before,
+  .site-wrapper *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

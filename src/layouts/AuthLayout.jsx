@@ -32,7 +32,7 @@ export const AuthLayout = ({ children, title, subtitle }) => {
         <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center justify-between">
           <Link to="/login" className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 group-hover:scale-105 transition-transform">
-              <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
+              <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
             <div>
               <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">

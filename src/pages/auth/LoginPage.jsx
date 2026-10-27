@@ -121,7 +121,7 @@ export const LoginPage = () => {
         <div className="relative z-20 px-5 sm:px-12 pt-5 sm:pt-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 shrink-0">
-              <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
+              <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
             <div>
               <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
@@ -148,34 +148,16 @@ export const LoginPage = () => {
         {/* Center Content: Floating Login Card */}
         <div className="relative z-20 px-4 sm:px-12 py-4 sm:py-8 flex items-center my-auto">
           <div className="w-full max-w-md bg-white/95 sm:backdrop-blur-md rounded-2xl sm:rounded-[28px] p-5 sm:p-8 shadow-xl shadow-slate-900/10 border border-slate-100/90 mx-auto lg:mx-0">
-            {/* Header with Back button */}
-            <div className="mb-4 sm:mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0B1F4D] px-2 py-1 -ml-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                  title="Go Back"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back</span>
-                </button>
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                  RICS Practice
-                </span>
-              </div>
-
-              <div className="text-center">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight">
-                  {currentRoleConfig.loginTitle}
-                </h1>
-                <p className="text-xs text-slate-400 mt-1">
-                  Please enter your details
-                </p>
-              </div>
+            <div className="text-center mb-5 sm:mb-6">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E293B] tracking-tight">
+                {currentRoleConfig.loginTitle}
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                Please enter your details
+              </p>
             </div>
 
-            {/* All Roles Selector ('or sare roll rhe') */}
+            {/* All Roles Selector */}
             <div className="mb-4 sm:mb-5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-0.5">
                 <span>Select Role / Quick Demo</span>
@@ -192,13 +174,13 @@ export const LoginPage = () => {
                       onClick={() => handleRoleSelect(role)}
                       className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[44px] cursor-pointer ${
                         isSelected
-                          ? 'bg-[#0B1F4D] text-white shadow-sm'
+                          ? 'bg-[#0B1F4D] !text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                       }`}
                       title={role.label}
                     >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="truncate w-full text-center">
+                      <Icon className={`w-3.5 h-3.5 ${isSelected ? '!text-white' : 'text-slate-600'}`} />
+                      <span className={`truncate w-full text-center ${isSelected ? '!text-white' : ''}`}>
                         {role.shortLabel}
                       </span>
                     </button>
@@ -282,15 +264,15 @@ export const LoginPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 rounded-xl bg-[#2D3748] hover:bg-[#1E293B] text-white font-bold text-xs sm:text-sm shadow-md shadow-slate-900/10 transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                className="w-full mt-2 py-3 px-4 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] !text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0B1F4D]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>Signing in...</span>
+                    <Loader2 className="w-4 h-4 animate-spin !text-white" />
+                    <span className="!text-white font-bold">Signing in...</span>
                   </>
                 ) : (
-                  <span>Sign In</span>
+                  <span className="!text-white font-bold">Sign In</span>
                 )}
               </button>
             </form>
