@@ -1,0 +1,2 @@
+export { SectionHeading } from './CommonUI';
+

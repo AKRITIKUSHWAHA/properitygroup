@@ -6,6 +6,17 @@ import { ProtectedRoute } from './auth/ProtectedRoute';
 
 // Layouts
 import { AppLayout } from './layouts/AppLayout';
+import { PublicLayout } from './components/layout/PublicLayout';
+
+// Public Marketing Website Pages
+import { HomePage } from './pages/public/HomePage';
+import { HomebuyerSurveyPage } from './pages/public/HomebuyerSurveyPage';
+import { BuildingSurveyPage } from './pages/public/BuildingSurveyPage';
+import { SnaggingReportPage } from './pages/public/SnaggingReportPage';
+import { ValuationReportPage } from './pages/public/ValuationReportPage';
+import { DampSurveyPage } from './pages/public/DampSurveyPage';
+import { ExpertWitnessPage } from './pages/public/ExpertWitnessPage';
+import { ContactPage } from './pages/public/ContactPage';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
@@ -67,8 +78,8 @@ import {
   CustomerSupportPage,
 } from './pages/customer/CustomerModules';
 
-// Helper component for root '/' redirect
-const RootRedirect = () => {
+// Helper component for logged in user redirect to their portal role dashboard
+const PortalRedirect = () => {
   const { user, isAuthenticated, isLoading, getRoleDashboard } = useAuth();
   if (isLoading) return null;
   if (isAuthenticated && user) {
@@ -80,20 +91,33 @@ const RootRedirect = () => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Root redirect */}
-      <Route path="/" element={<RootRedirect />} />
+      {/* 1. Public Marketing Website Routes */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/services" element={<HomePage />} />
+        <Route path="/services/homebuyer-survey-level-2" element={<HomebuyerSurveyPage />} />
+        <Route path="/services/building-survey-level-3" element={<BuildingSurveyPage />} />
+        <Route path="/services/snagging-report" element={<SnaggingReportPage />} />
+        <Route path="/services/valuation-report" element={<ValuationReportPage />} />
+        <Route path="/services/damp-survey" element={<DampSurveyPage />} />
+        <Route path="/expert-witness" element={<ExpertWitnessPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Route>
 
-      {/* Public Auth Routes */}
+      {/* 2. Portal Shortcut for Dashboard Navigation */}
+      <Route path="/portal" element={<PortalRedirect />} />
+
+      {/* 3. Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Error Routes */}
+      {/* 4. Error Routes */}
       <Route path="/403" element={<Forbidden403Page />} />
       <Route path="/404" element={<NotFound404Page />} />
 
-      {/* Authenticated Application Shell */}
+      {/* 5. Authenticated Application Shell */}
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         {/* Common Authenticated Routes */}
         <Route path="/profile" element={<ProfilePage />} />

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Production Sitemap (Domain pending client deployment configuration)
+Sitemap: https://example.co.uk/sitemap.xml

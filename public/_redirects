@@ -1,0 +1,8 @@
+# Removed services redirects (provisional mapping subject to client confirmation)
+/construction/*    /services/building-survey-level-3  301!
+/construction      /services/building-survey-level-3  301!
+/real-estate/*     /services/valuation-report         301!
+/real-estate       /services/valuation-report         301!
+
+# SPA rewrite rule
+/*    /index.html   200
