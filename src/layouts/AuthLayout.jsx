@@ -1,51 +1,82 @@
 import React from 'react';
-import { Building2, ShieldCheck, MapPin } from 'lucide-react';
+import { Building2, ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const AuthLayout = ({ children, title, subtitle }) => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F3F5F9] flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative ambient background glows */}
-      <div className="absolute top-0 -left-40 w-96 h-96 bg-[#2563EB]/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 -right-40 w-96 h-96 bg-[#0B1F4D]/15 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Main card wrapper */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-xl shadow-[#0B1F4D]/30 border border-white/20 mb-3 group hover:scale-105 transition-transform">
-            <Building2 className="w-8 h-8 text-[#2563EB] stroke-[2.2]" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-[#0B1F4D] tracking-tight text-center">
-            Property Group
-          </h1>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mt-1 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Survey Management Platform (UK)
-          </p>
+    <div className="min-h-screen bg-[#D5DAE2] flex items-center justify-center p-3 sm:p-6 lg:p-10 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Outer Card Container matching Reference Design */}
+      <div className="relative w-full max-w-6xl bg-white rounded-[32px] sm:rounded-[40px] shadow-2xl shadow-slate-900/15 overflow-hidden border border-white/60 min-h-[640px] lg:min-h-[720px] flex flex-col justify-between">
+        {/* Background Architectural Image on the right */}
+        <div
+          className="absolute inset-y-0 right-0 w-full lg:w-[60%] bg-cover bg-right lg:bg-center pointer-events-none"
+          style={{
+            backgroundImage: "url('/modern_building_facade.jpg')",
+          }}
+        >
+          {/* Subtle gradient wash to blend building with left white canvas */}
+          <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-white via-white/85 lg:via-white/40 to-transparent" />
         </div>
 
-        {/* Content Box */}
-        <div className="bg-white py-8 px-6 sm:px-10 shadow-2xl shadow-slate-300/60 rounded-3xl border border-slate-200/80 backdrop-blur-sm">
-          {title && (
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
-              {subtitle && <p className="text-xs text-slate-500 mt-1">{subtitle}</p>}
+        {/* Top Left Brand Header matching Reference Logo + Back Button */}
+        <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center justify-between">
+          <Link to="/login" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 group-hover:scale-105 transition-transform">
+              <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
             </div>
-          )}
-          {children}
+            <div>
+              <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
+                PROPERTY GROUP
+              </div>
+              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
+                SURVEY PLATFORM
+              </div>
+            </div>
+          </Link>
+
+          {/* Top Bar Back Button */}
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-[#0B1F4D] text-xs font-bold shadow-xs hover:shadow-md border border-slate-200/90 transition-all cursor-pointer backdrop-blur-md active:scale-95"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#0B1F4D]" />
+            <span>Back</span>
+          </button>
         </div>
 
-        {/* Footer RICS compliance note */}
-        <div className="mt-8 text-center text-xs text-slate-400 flex items-center justify-center gap-4">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-            RICS Aligned Workflows
-          </span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-400" />
-            UK Property Surveying CRM
-          </span>
+        {/* Center Content: Floating White Card */}
+        <div className="relative z-20 px-4 sm:px-12 py-6 sm:py-8 flex items-center my-auto">
+          <div className="w-full max-w-md bg-white/95 backdrop-blur-md rounded-[28px] p-6 sm:p-8 shadow-xl shadow-slate-900/10 border border-slate-100/90 mx-auto lg:mx-0">
+            {title && (
+              <div className="text-center mb-5">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="text-xs text-slate-400 mt-1">{subtitle}</p>
+                )}
+              </div>
+            )}
+            {children}
+          </div>
+        </div>
+
+        {/* Bottom subtle copyright / disclaimer */}
+        <div className="relative z-20 px-6 sm:px-12 pb-5 sm:pb-6 flex items-center justify-between text-[11px] text-slate-400">
+          <span>© 2026 Property Group UK. All rights reserved.</span>
+          <span className="hidden sm:inline">RICS Certified Platform</span>
         </div>
       </div>
     </div>

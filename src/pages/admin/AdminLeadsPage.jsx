@@ -38,6 +38,7 @@ export const AdminLeadsPage = () => {
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [viewingLead, setViewingLead] = useState(null);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Tab count calculations
   const tabs = useMemo(() => {
@@ -300,28 +301,43 @@ export const AdminLeadsPage = () => {
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Controls & Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Left: Search input */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by customer, property, postcode, or lead ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all"
-          />
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Search input + Mobile Filter Button */}
+        <div className="flex items-center gap-2 flex-1 max-w-xl">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search by customer, property, postcode..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all min-h-[44px]"
+            />
+          </div>
+
+          {/* Mobile Filter Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen(true)}
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold min-h-[44px] shrink-0 cursor-pointer"
+          >
+            <Filter className="w-4 h-4 text-[#2563EB]" />
+            <span>Filters</span>
+            {(sourceFilter !== 'All' || ownerFilter !== 'All') && (
+              <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+            )}
+          </button>
         </div>
 
-        {/* Right: Filters & Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Desktop Inline Filters */}
+        <div className="hidden md:flex flex-wrap items-center gap-2">
           {/* Source Filter */}
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <span className="text-slate-400 text-[11px] font-semibold">Source:</span>
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px]"
             >
               <option value="All">All Sources</option>
               {LEAD_SOURCES.map((s) => (
@@ -338,7 +354,7 @@ export const AdminLeadsPage = () => {
             <select
               value={ownerFilter}
               onChange={(e) => setOwnerFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px]"
             >
               {owners.map((o) => (
                 <option key={o} value={o}>
@@ -357,7 +373,7 @@ export const AdminLeadsPage = () => {
                 setOwnerFilter('All');
                 setActiveTab('All');
               }}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors min-h-[40px] cursor-pointer"
             >
               Reset
             </button>
@@ -367,12 +383,75 @@ export const AdminLeadsPage = () => {
           <button
             onClick={handleSimulateLoading}
             title="Test loading skeleton"
-            className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 border border-slate-200 transition-colors"
+            className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 border border-slate-200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
+
+      {/* Mobile Filter Bottom Sheet Modal */}
+      <Modal
+        isOpen={isMobileFiltersOpen}
+        onClose={() => setIsMobileFiltersOpen(false)}
+        title="Filter Leads"
+        subtitle="Narrow down survey inquiries by lead source or assigned coordinator"
+        footer={
+          <div className="w-full flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSourceFilter('All');
+                setOwnerFilter('All');
+                setIsMobileFiltersOpen(false);
+              }}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 min-h-[44px]"
+            >
+              Reset All
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMobileFiltersOpen(false)}
+              className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold min-h-[44px]"
+            >
+              Apply Filters
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-xs">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Inquiry Lead Source</label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold min-h-[44px]"
+            >
+              <option value="All">All Sources</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1.5">Survey Coordinator (Owner)</label>
+            <select
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold min-h-[44px]"
+            >
+              {owners.map((o) => (
+                <option key={o} value={o}>
+                  {o === 'All' ? 'All Owners' : o}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Modal>
 
       {/* Main Table Component */}
       <Table

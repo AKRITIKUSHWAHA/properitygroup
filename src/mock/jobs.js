@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 // Mock data for Survey Jobs, Booking Calendar and Job Details
 export const SURVEYORS = [
   {
@@ -407,3 +409,59 @@ export const INITIAL_JOBS = [
     activityLog: [{ id: 1, time: '27/10/2026', text: 'Job placed On Hold at client request.' }],
   },
 ];
+
+export const getStoredJobs = () => {
+  try {
+    const raw = localStorage.getItem('propertygroup_jobs');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error(e);
+  }
+  return INITIAL_JOBS;
+};
+
+export const saveStoredJobs = (jobs) => {
+  try {
+    localStorage.setItem('propertygroup_jobs', JSON.stringify(jobs));
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export const useJobs = () => {
+  const [jobs, setJobsState] = useState(getStoredJobs);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      setJobsState(getStoredJobs());
+    };
+    window.addEventListener('propertygroup_jobs_updated', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    return () => {
+      window.removeEventListener('propertygroup_jobs_updated', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+    };
+  }, []);
+
+  const setJobs = (updater) => {
+    setJobsState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveStoredJobs(next);
+      return next;
+    });
+  };
+
+  const updateJob = (id, updates) => {
+    setJobs((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, ...updates } : j))
+    );
+  };
+
+  const addJob = (newJob) => {
+    setJobs((prev) => [newJob, ...prev]);
+  };
+
+  return { jobs, setJobs, updateJob, addJob };
+};
+

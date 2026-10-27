@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -17,8 +17,13 @@ import {
   Check,
   Plus,
   Download,
+  CheckCircle2,
+  AlertCircle,
+  Building2,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
-import { INITIAL_JOBS } from '../../mock/jobs';
+import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
@@ -42,14 +47,14 @@ export const JobDetailsPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { jobs, updateJob } = useJobs();
 
-  // Find job from mock
-  const [job, setJob] = useState(() => {
-    return INITIAL_JOBS.find((j) => j.id === jobId) || INITIAL_JOBS[0];
-  });
+  // Find job from persistent jobs collection, fallback to first job
+  const job = useMemo(() => {
+    return jobs.find((j) => j.id === jobId) || jobs[0];
+  }, [jobs, jobId]);
 
   const [activeTab, setActiveTab] = useState('job-details'); // 'job-details', 'notes-calls', 'tasks', 'documents', 'emails', 'activity-log'
-  const [currentStep, setCurrentStep] = useState(job.timelineStep || 7);
 
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
@@ -57,10 +62,11 @@ export const JobDetailsPage = () => {
 
   // Form states for adjusting quote
   const [quoteForm, setQuoteForm] = useState({
-    baseFee: job.quote.baseFee,
-    discount: job.quote.discount,
-    droneExtra: true,
-    debriefExtra: true,
+    baseFee: job?.quote?.baseFee || 650.0,
+    discount: job?.quote?.discount || 0.0,
+    droneExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('drone')) ?? true,
+    debriefExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('debrief')) ?? true,
+    thermalExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('thermal')) ?? false,
   });
 
   // State for notes & tasks
@@ -69,40 +75,119 @@ export const JobDetailsPage = () => {
 
   // Calculate quote figures
   const extrasTotal =
-    (quoteForm.droneExtra ? 120.0 : 0) + (quoteForm.debriefExtra ? 50.0 : 0);
+    (quoteForm.droneExtra ? 120.0 : 0) +
+    (quoteForm.debriefExtra ? 50.0 : 0) +
+    (quoteForm.thermalExtra ? 150.0 : 0);
   const subtotal = Math.max(0, quoteForm.baseFee + extrasTotal - quoteForm.discount);
   const vat = subtotal * 0.2; // 20% UK VAT
   const totalAmount = subtotal + vat;
 
+  const currentStep = job?.timelineStep || 7;
+
+  // Handle Timeline Step Click to advance / change stage
+  const handleStepClick = (stepIndex) => {
+    const stepNumber = stepIndex + 1;
+    const stepName = STATUS_TIMELINE_STEPS[stepIndex];
+    const newProgress = Math.min(100, stepNumber * 10);
+
+    let newStatus = job.status;
+    let newTermsStatus = job.termsStatus;
+    let newPaymentStatus = job.paymentStatus;
+    let newCanBook = job.canBook;
+
+    if (stepNumber >= 5) newTermsStatus = 'Signed';
+    if (stepNumber >= 6) newPaymentStatus = 'Paid';
+    if (stepNumber >= 7) {
+      newCanBook = true;
+      newStatus = stepNumber === 10 ? 'Completed' : 'Scheduled';
+    }
+    if (stepNumber === 8) newStatus = 'In Progress';
+    if (stepNumber === 10) newStatus = 'Completed';
+
+    const newActivity = {
+      id: Date.now(),
+      time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      text: `Workflow advanced to milestone "${stepName}" (Stage ${stepNumber}/10).`,
+    };
+
+    updateJob(job.id, {
+      timelineStep: stepNumber,
+      progress: newProgress,
+      status: newStatus,
+      termsStatus: newTermsStatus,
+      paymentStatus: newPaymentStatus,
+      canBook: newCanBook,
+      activityLog: [newActivity, ...(job.activityLog || [])],
+    });
+
+    addToast({
+      type: 'info',
+      title: 'Milestone Updated',
+      message: `Job status progressed to: ${stepName}.`,
+    });
+  };
+
   // Handle Send Terms action
-  const handleConfirmSendTerms = () => {
+  const handleConfirmSendTerms = (markSignedImmediately = false) => {
     setIsSendTermsModalOpen(false);
-    setJob((prev) => ({
-      ...prev,
-      termsStatus: 'Terms Sent (Awaiting E-Sign)',
-    }));
+
+    const newTermsStatus = markSignedImmediately ? 'Signed' : 'Terms Sent (Awaiting E-Sign)';
+    const newStep = markSignedImmediately ? Math.max(job.timelineStep, 5) : Math.max(job.timelineStep, 4);
+    const canBookNow = (markSignedImmediately || job.termsStatus === 'Signed') && job.paymentStatus === 'Paid';
+
+    const newActivity = {
+      id: Date.now(),
+      time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      text: markSignedImmediately
+        ? `RICS Terms of Engagement executed and verified digitally.`
+        : `RICS Terms of Engagement dispatched to ${job.customerEmail}.`,
+    };
+
+    updateJob(job.id, {
+      termsStatus: newTermsStatus,
+      timelineStep: newStep,
+      canBook: canBookNow,
+      activityLog: [newActivity, ...(job.activityLog || [])],
+    });
+
     addToast({
       type: 'success',
-      title: 'Terms of Engagement Dispatched',
-      message: `Digital signature link sent to ${job.customerEmail} (RICS Mandate v2026).`,
+      title: markSignedImmediately ? 'Terms Executed' : 'Terms of Engagement Dispatched',
+      message: markSignedImmediately
+        ? 'Terms marked as signed. Inspection requirement cleared.'
+        : `Digital signature link sent to ${job.customerEmail} (RICS Mandate v2026).`,
     });
   };
 
   // Handle Confirm / Adjust Quote action
   const handleSaveQuoteAdjustments = () => {
     setIsAdjustQuoteModalOpen(false);
-    setJob((prev) => ({
-      ...prev,
+
+    const extras = [];
+    if (quoteForm.droneExtra) extras.push({ name: 'Drone Roof & Flashing Inspection', amount: 120.0 });
+    if (quoteForm.debriefExtra) extras.push({ name: 'Same-day Verbal Debrief by Surveyor', amount: 50.0 });
+    if (quoteForm.thermalExtra) extras.push({ name: 'Thermal Imaging Defect Assessment', amount: 150.0 });
+
+    const newActivity = {
+      id: Date.now(),
+      time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      text: `Quotation revised. Base: £${quoteForm.baseFee.toFixed(2)}, Extras: £${extrasTotal.toFixed(2)}, Discount: £${quoteForm.discount.toFixed(2)}. Total: £${totalAmount.toFixed(2)}.`,
+    };
+
+    updateJob(job.id, {
       quote: {
-        ...prev.quote,
         baseFee: parseFloat(quoteForm.baseFee),
         discount: parseFloat(quoteForm.discount),
+        extras,
+        vatRate: 0.2,
       },
-    }));
+      activityLog: [newActivity, ...(job.activityLog || [])],
+    });
+
     addToast({
       type: 'success',
       title: 'Quotation Updated',
-      message: `Revised total £${totalAmount.toFixed(2)} confirmed. Client proposal generated.`,
+      message: `Revised total £${totalAmount.toFixed(2)} confirmed. Client proposal recalculated.`,
     });
   };
 
@@ -118,21 +203,24 @@ export const JobDetailsPage = () => {
       text: newNoteText.trim(),
     };
 
-    setJob((prev) => ({ ...prev, notes: [newNote, ...prev.notes] }));
+    updateJob(job.id, {
+      notes: [newNote, ...(job.notes || [])],
+    });
+
     setNewNoteText('');
     addToast({
       type: 'info',
-      title: 'Note Added',
-      message: 'Call note recorded in job file.',
+      title: 'Note Recorded',
+      message: 'Call note logged in job file.',
     });
   };
 
   // Toggle task
   const handleToggleTask = (taskId) => {
-    setJob((prev) => ({
-      ...prev,
-      tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)),
-    }));
+    const updatedTasks = (job.tasks || []).map((t) =>
+      t.id === taskId ? { ...t, done: !t.done } : t
+    );
+    updateJob(job.id, { tasks: updatedTasks });
   };
 
   // Add task
@@ -146,18 +234,34 @@ export const JobDetailsPage = () => {
       done: false,
     };
 
-    setJob((prev) => ({ ...prev, tasks: [...prev.tasks, newTask] }));
+    updateJob(job.id, {
+      tasks: [...(job.tasks || []), newTask],
+    });
     setNewTaskText('');
   };
 
   const tabs = [
     { id: 'job-details', label: 'Job details' },
-    { id: 'notes-calls', label: `Notes and calls (${job.notes.length})` },
-    { id: 'tasks', label: `Tasks (${job.tasks.filter((t) => t.done).length}/${job.tasks.length})` },
-    { id: 'documents', label: `Documents (${job.documents.length})` },
-    { id: 'emails', label: `Emails (${job.emails.length})` },
+    { id: 'notes-calls', label: `Notes and calls (${job?.notes?.length || 0})` },
+    { id: 'tasks', label: `Tasks (${(job?.tasks || []).filter((t) => t.done).length}/${job?.tasks?.length || 0})` },
+    { id: 'documents', label: `Documents (${job?.documents?.length || 0})` },
+    { id: 'emails', label: `Emails (${job?.emails?.length || 0})` },
     { id: 'activity-log', label: 'Activity log' },
   ];
+
+  if (!job) {
+    return (
+      <div className="p-8 text-center text-slate-500">
+        <p className="text-sm">Job record could not be loaded.</p>
+        <button
+          onClick={() => navigate('/admin/survey-jobs')}
+          className="mt-4 px-4 py-2 bg-[#0B1F4D] text-white text-xs font-bold rounded-xl"
+        >
+          Return to Survey Jobs
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -165,7 +269,7 @@ export const JobDetailsPage = () => {
       <div>
         <button
           onClick={() => navigate('/admin/survey-jobs')}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0B1F4D] transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0B1F4D] transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Survey Jobs Master Register</span>
@@ -224,7 +328,7 @@ export const JobDetailsPage = () => {
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             onClick={() => setIsAdjustQuoteModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 hover:border-[#2563EB] bg-white text-slate-700 hover:text-[#2563EB] text-xs font-bold transition-all shadow-2xs"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 hover:border-[#2563EB] bg-white text-slate-700 hover:text-[#2563EB] text-xs font-bold transition-all shadow-2xs cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Confirm/Adjust quote</span>
@@ -232,7 +336,7 @@ export const JobDetailsPage = () => {
 
           <button
             onClick={() => setIsSendTermsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 cursor-pointer"
           >
             <Send className="w-4 h-4" />
             <span>Send terms</span>
@@ -241,19 +345,19 @@ export const JobDetailsPage = () => {
       </div>
 
       {/* 10-STEP STATUS TIMELINE: Quote requested -> Closed */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
             Survey Lifecycle Status Timeline
           </span>
           <span className="text-xs font-bold text-[#2563EB]">
-            Current Stage: {STATUS_TIMELINE_STEPS[currentStep - 1] || 'In Progress'} ({currentStep}/10)
+            Stage: {STATUS_TIMELINE_STEPS[currentStep - 1] || 'In Progress'} ({currentStep}/10)
           </span>
         </div>
 
-        {/* Stepper bar */}
-        <div className="overflow-x-auto pb-2 scrollbar-none">
-          <div className="flex items-center min-w-[850px] justify-between relative">
+        {/* Desktop Stepper Bar (Horizontal) */}
+        <div className="hidden md:block overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center min-w-[760px] justify-between relative">
             {/* Background track line */}
             <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
 
@@ -265,7 +369,7 @@ export const JobDetailsPage = () => {
               return (
                 <div
                   key={stepName}
-                  onClick={() => setCurrentStep(stepNumber)}
+                  onClick={() => handleStepClick(idx)}
                   className="flex flex-col items-center cursor-pointer group relative z-10"
                 >
                   <div
@@ -296,7 +400,48 @@ export const JobDetailsPage = () => {
             })}
           </div>
         </div>
+
+        {/* Mobile Vertical Stepper (No horizontal scrolling!) */}
+        <div className="md:hidden space-y-2 pt-1">
+          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-black text-xs">
+                {currentStep}
+              </span>
+              <div>
+                <span className="font-bold text-slate-800 block">
+                  {STATUS_TIMELINE_STEPS[currentStep - 1]}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  Step {currentStep} of 10 in RICS Survey Pipeline
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#2563EB]">
+              Active Step
+            </span>
+          </div>
+
+          {/* Quick Step Advance Buttons on Mobile */}
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              disabled={currentStep <= 1}
+              onClick={() => handleStepClick(currentStep - 2)}
+              className="py-2 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold disabled:opacity-40 min-h-[44px]"
+            >
+              ← Previous Step
+            </button>
+            <button
+              disabled={currentStep >= 10}
+              onClick={() => handleStepClick(currentStep)}
+              className="py-2 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold disabled:opacity-40 min-h-[44px]"
+            >
+              Next Step →
+            </button>
+          </div>
+        </div>
       </div>
+
 
       {/* THREE KEY CARDS ROW: Contacts Card, Property Details Card, Quote Table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -317,14 +462,14 @@ export const JobDetailsPage = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                   Client / Purchaser
                 </span>
-                <div className="font-bold text-slate-900">{job.contacts.client.name}</div>
+                <div className="font-bold text-slate-900">{job.contacts?.client?.name || job.customer}</div>
                 <div className="text-slate-600 mt-1 flex items-center gap-1.5 truncate">
                   <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                  {job.contacts.client.phone}
+                  {job.contacts?.client?.phone || job.customerPhone}
                 </div>
                 <div className="text-slate-600 flex items-center gap-1.5 truncate">
                   <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                  {job.contacts.client.email}
+                  {job.contacts?.client?.email || job.customerEmail}
                 </div>
               </div>
 
@@ -333,9 +478,9 @@ export const JobDetailsPage = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                   Conveyancing Solicitor
                 </span>
-                <div className="font-bold text-slate-900">{job.contacts.solicitor.firm}</div>
-                <div className="text-slate-600 mt-1">Lead: {job.contacts.solicitor.name}</div>
-                <div className="text-slate-500 font-mono text-[11px]">Ref: {job.contacts.solicitor.ref}</div>
+                <div className="font-bold text-slate-900">{job.contacts?.solicitor?.firm || 'Pending Solicitor'}</div>
+                <div className="text-slate-600 mt-1">Lead: {job.contacts?.solicitor?.name || 'Solicitor Direct'}</div>
+                <div className="text-slate-500 font-mono text-[11px]">Ref: {job.contacts?.solicitor?.ref || 'N/A'}</div>
               </div>
 
               {/* Estate Agent */}
@@ -343,9 +488,9 @@ export const JobDetailsPage = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                   Keyholder / Estate Agent
                 </span>
-                <div className="font-bold text-slate-900">{job.contacts.agent.agency}</div>
-                <div className="text-slate-600 mt-1">Contact: {job.contacts.agent.name}</div>
-                <div className="text-slate-600">{job.contacts.agent.phone}</div>
+                <div className="font-bold text-slate-900">{job.contacts?.agent?.agency || 'Local Agent'}</div>
+                <div className="text-slate-600 mt-1">Contact: {job.contacts?.agent?.name || 'Office Manager'}</div>
+                <div className="text-slate-600">{job.contacts?.agent?.phone || '+44 20 7000 0000'}</div>
               </div>
             </div>
           </div>
@@ -366,28 +511,28 @@ export const JobDetailsPage = () => {
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 font-medium">Estimated Value:</span>
                 <span className="font-extrabold text-[#0B1F4D] font-mono text-sm">
-                  {job.propertyDetails.value}
+                  {job.propertyDetails?.value || '£750,000'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 font-medium">Bedrooms / Accommodation:</span>
                 <span className="font-bold text-slate-800">
-                  {job.propertyDetails.bedrooms}
+                  {job.propertyDetails?.bedrooms || '3 Bedrooms, 2 Bathrooms'}
                 </span>
               </div>
 
               <div className="p-2.5 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 font-medium block text-[11px]">Tenure Status:</span>
                 <span className="font-bold text-slate-800 leading-snug">
-                  {job.propertyDetails.tenure}
+                  {job.propertyDetails?.tenure || 'Freehold'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 font-medium">Listed Building Grade:</span>
                 <span className="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                  {job.propertyDetails.listedBuilding}
+                  {job.propertyDetails?.listedBuilding || 'None'}
                 </span>
               </div>
 
@@ -397,7 +542,7 @@ export const JobDetailsPage = () => {
                   Key Collection & Access Details
                 </span>
                 <span className="text-xs font-semibold text-slate-800">
-                  {job.propertyDetails.accessDetails}
+                  {job.propertyDetails?.accessDetails || 'Keys held by estate agent.'}
                 </span>
               </div>
             </div>
@@ -421,11 +566,11 @@ export const JobDetailsPage = () => {
               <div className="flex items-center justify-between text-slate-600">
                 <span>Base Survey Fee ({job.surveyType}):</span>
                 <span className="font-bold text-slate-900 font-mono">
-                  £{job.quote.baseFee.toFixed(2)}
+                  £{(job.quote?.baseFee || 650).toFixed(2)}
                 </span>
               </div>
 
-              {job.quote.extras.map((extra, i) => (
+              {(job.quote?.extras || []).map((extra, i) => (
                 <div key={i} className="flex items-center justify-between text-slate-600 pl-2 border-l-2 border-blue-200">
                   <span className="text-[11px] truncate">{extra.name}:</span>
                   <span className="font-mono text-slate-800 font-semibold">
@@ -436,41 +581,60 @@ export const JobDetailsPage = () => {
 
               <div className="flex items-center justify-between text-emerald-700 font-medium pt-1 border-t border-slate-100">
                 <span>Promotional Discount:</span>
-                <span className="font-mono font-bold">-£{job.quote.discount.toFixed(2)}</span>
+                <span className="font-mono font-bold">-£{(job.quote?.discount || 0).toFixed(2)}</span>
               </div>
 
-              <div className="flex items-center justify-between text-slate-500 pt-1">
-                <span>Subtotal (Net):</span>
-                <span className="font-mono font-bold text-slate-800">
-                  £{(job.quote.baseFee + job.quote.extras.reduce((s, e) => s + e.amount, 0) - job.quote.discount).toFixed(2)}
-                </span>
-              </div>
+              {(() => {
+                const base = job.quote?.baseFee || 650;
+                const extrasSum = (job.quote?.extras || []).reduce((s, e) => s + e.amount, 0);
+                const disc = job.quote?.discount || 0;
+                const net = Math.max(0, base + extrasSum - disc);
+                const tax = net * 0.2;
+                const gross = net + tax;
 
-              <div className="flex items-center justify-between text-slate-500">
-                <span>UK Standard VAT (20%):</span>
-                <span className="font-mono font-bold text-slate-800">
-                  £{((job.quote.baseFee + job.quote.extras.reduce((s, e) => s + e.amount, 0) - job.quote.discount) * 0.2).toFixed(2)}
-                </span>
-              </div>
+                return (
+                  <>
+                    <div className="flex items-center justify-between text-slate-500 pt-1">
+                      <span>Subtotal (Net):</span>
+                      <span className="font-mono font-bold text-slate-800">
+                        £{net.toFixed(2)}
+                      </span>
+                    </div>
 
-              {/* Total Row */}
-              <div className="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/90 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-black text-[#0B1F4D] block">
-                    Total Quoted Fee
-                  </span>
-                  <span className="text-[10px] text-slate-400">Inclusive of VAT</span>
-                </div>
-                <div className="text-lg font-black text-emerald-700 font-mono">
-                  £{((job.quote.baseFee + job.quote.extras.reduce((s, e) => s + e.amount, 0) - job.quote.discount) * 1.2).toFixed(2)}
-                </div>
-              </div>
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span>UK Standard VAT (20%):</span>
+                      <span className="font-mono font-bold text-slate-800">
+                        £{tax.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {/* Total Row */}
+                    <div className="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/90 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-black text-[#0B1F4D] block">
+                          Total Quoted Fee
+                        </span>
+                        <span className="text-[10px] text-slate-400">Inclusive of VAT</span>
+                      </div>
+                      <div className="text-lg font-black text-emerald-700 font-mono">
+                        £{gross.toFixed(2)}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span>Payment terms: 100% advance</span>
-            <span className="font-semibold text-emerald-700">Payment captured</span>
+            <span
+              className={`font-semibold ${
+                job.paymentStatus === 'Paid' ? 'text-emerald-700' : 'text-amber-700'
+              }`}
+            >
+              {job.paymentStatus === 'Paid' ? 'Payment captured' : 'Awaiting payment'}
+            </span>
           </div>
         </div>
       </div>
@@ -483,7 +647,7 @@ export const JobDetailsPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap -mb-px ${
+              className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap -mb-px cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-[#2563EB] text-[#0B1F4D]'
                   : 'border-transparent text-slate-400 hover:text-slate-700 hover:border-slate-300'
@@ -530,7 +694,7 @@ export const JobDetailsPage = () => {
                   Scope of Inspection & Specific Instructions
                 </h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Full RICS Home Survey Level 2 covering building fabric, dampness testing with Protimeter moisture meter, roof void inspection, services condition ratings (1-3), and formal open-market valuation for purchaser Emma Watson.
+                  Full RICS Home Survey Level 2 covering building fabric, dampness testing with Protimeter moisture meter, roof void inspection, services condition ratings (1-3), and formal open-market valuation for purchaser {job.customer}.
                 </p>
               </div>
             </div>
@@ -551,7 +715,7 @@ export const JobDetailsPage = () => {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5 cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Note</span>
@@ -561,7 +725,7 @@ export const JobDetailsPage = () => {
 
               {/* Notes list */}
               <div className="space-y-3 divide-y divide-slate-100">
-                {job.notes.map((note) => (
+                {(job.notes || []).map((note) => (
                   <div key={note.id} className="pt-3 first:pt-0">
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="font-bold text-[#0B1F4D]">{note.author}</span>
@@ -590,7 +754,7 @@ export const JobDetailsPage = () => {
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shrink-0"
+                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shrink-0 cursor-pointer"
                 >
                   Add Task
                 </button>
@@ -598,7 +762,7 @@ export const JobDetailsPage = () => {
 
               {/* Tasks list */}
               <div className="space-y-2">
-                {job.tasks.map((task) => (
+                {(job.tasks || []).map((task) => (
                   <label
                     key={task.id}
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
@@ -621,7 +785,7 @@ export const JobDetailsPage = () => {
           {/* 4. Documents */}
           {activeTab === 'documents' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {job.documents.map((doc) => (
+              {(job.documents || []).map((doc) => (
                 <div
                   key={doc.id}
                   className="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all flex flex-col justify-between group cursor-pointer"
@@ -649,7 +813,7 @@ export const JobDetailsPage = () => {
           {/* 5. Emails */}
           {activeTab === 'emails' && (
             <div className="space-y-3 max-w-3xl">
-              {job.emails.map((email) => (
+              {(job.emails || []).map((email) => (
                 <div
                   key={email.id}
                   className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-4"
@@ -678,7 +842,7 @@ export const JobDetailsPage = () => {
           {/* 6. Activity log */}
           {activeTab === 'activity-log' && (
             <div className="space-y-3 max-w-3xl">
-              {job.activityLog.map((log) => (
+              {(job.activityLog || []).map((log) => (
                 <div key={log.id} className="flex items-start gap-3 text-xs">
                   <div className="w-2 h-2 rounded-full bg-[#2563EB] mt-1.5 shrink-0" />
                   <div className="flex-1">
@@ -700,21 +864,29 @@ export const JobDetailsPage = () => {
         subtitle={`Send legal mandate to client ${job.customer} (${job.customerEmail})`}
         maxWidth="max-w-xl"
         footer={
-          <>
+          <div className="flex flex-wrap items-center justify-between w-full gap-2">
             <button
-              onClick={() => setIsSendTermsModalOpen(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              onClick={() => handleConfirmSendTerms(true)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
             >
-              Cancel
+              ✓ Mark Terms Signed Directly
             </button>
-            <button
-              onClick={handleConfirmSendTerms}
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Send Digital Signature Link
-            </button>
-          </>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsSendTermsModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleConfirmSendTerms(false)}
+                className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Send Signature Link
+              </button>
+            </div>
+          </div>
         }
       >
         <div className="space-y-4 text-xs">
@@ -728,7 +900,7 @@ export const JobDetailsPage = () => {
               type="email"
               disabled
               value={job.customerEmail}
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium"
             />
           </div>
 
@@ -738,7 +910,7 @@ export const JobDetailsPage = () => {
               type="text"
               disabled
               value="RICS Home Survey Standard (1st Edition, 2026 Mandate)"
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600"
+              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium"
             />
           </div>
         </div>
@@ -755,13 +927,13 @@ export const JobDetailsPage = () => {
           <>
             <button
               onClick={() => setIsAdjustQuoteModalOpen(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveQuoteAdjustments}
-              className="px-5 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 shadow-sm flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 shadow-sm flex items-center gap-1.5 cursor-pointer"
             >
               <Check className="w-3.5 h-3.5" />
               Save & Recalculate
@@ -803,6 +975,15 @@ export const JobDetailsPage = () => {
                 className="w-4 h-4 rounded text-[#2563EB]"
               />
             </label>
+            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+              <span className="font-medium text-slate-700">Thermal Imaging Defect Assessment (+£150.00)</span>
+              <input
+                type="checkbox"
+                checked={quoteForm.thermalExtra}
+                onChange={(e) => setQuoteForm({ ...quoteForm, thermalExtra: e.target.checked })}
+                className="w-4 h-4 rounded text-[#2563EB]"
+              />
+            </label>
           </div>
 
           <div>
@@ -830,11 +1011,31 @@ export const JobDetailsPage = () => {
             </div>
             <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200 text-xs">
               <span>Revised Total (inc. VAT):</span>
-              <span className="text-emerald-700">£{totalAmount.toFixed(2)}</span>
+              <span className="text-emerald-700 font-black">£{totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </div>
       </Modal>
+
+      {/* Mobile Sticky Bottom Action Bar for Send terms & Adjust quote */}
+      <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2.5 px-3.5 shadow-xl flex items-center gap-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
+        <button
+          onClick={() => setIsAdjustQuoteModalOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold shadow-2xs min-h-[44px]"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-[#2563EB]" />
+          <span>Adjust quote</span>
+        </button>
+
+        <button
+          onClick={() => setIsSendTermsModalOpen(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold shadow-md shadow-[#0B1F4D]/20 min-h-[44px]"
+        >
+          <Send className="w-4 h-4" />
+          <span>Send terms</span>
+        </button>
+      </div>
     </div>
   );
 };
+

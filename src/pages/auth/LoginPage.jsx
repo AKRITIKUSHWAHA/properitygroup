@@ -1,56 +1,87 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Loader2, AlertCircle, ArrowRight, ShieldCheck, UserCheck, Briefcase, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Eye,
+  EyeOff,
+  Building2,
+  ShieldCheck,
+  Briefcase,
+  UserCheck,
+  User,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+} from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
-import { AuthLayout } from '../../layouts/AuthLayout';
-import { DEMO_USERS, DEFAULT_DEMO_PASSWORD } from '../../mock/users';
+import { DEFAULT_DEMO_PASSWORD } from '../../mock/users';
 
-const DEMO_ACCOUNTS = [
+const ROLE_OPTIONS = [
   {
+    id: 'super_admin',
     email: 'admin@demo.com',
-    roleLabel: 'Super Admin',
-    desc: 'Full platform access (10 menus)',
+    label: 'Super Admin',
+    shortLabel: 'Admin',
+    loginTitle: 'Super Admin Login',
+    desc: 'Full platform & financial control (10 menus)',
     icon: ShieldCheck,
-    color: 'hover:border-purple-500 hover:bg-purple-50 text-purple-700 bg-purple-50/50 border-purple-200',
-    activeColor: 'border-purple-600 bg-purple-100/70 text-purple-900 ring-2 ring-purple-500/20',
   },
   {
+    id: 'admin_staff',
     email: 'staff@demo.com',
-    roleLabel: 'Admin / Staff',
-    desc: 'Operations & Calendar (8 menus)',
+    label: 'Agent / Staff',
+    shortLabel: 'Agent',
+    loginTitle: 'Agent Login',
+    desc: 'Operations, calendar & lead dispatch (8 menus)',
     icon: Briefcase,
-    color: 'hover:border-blue-500 hover:bg-blue-50 text-blue-700 bg-blue-50/50 border-blue-200',
-    activeColor: 'border-blue-600 bg-blue-100/70 text-blue-900 ring-2 ring-blue-500/20',
   },
   {
+    id: 'surveyor',
     email: 'surveyor@demo.com',
-    roleLabel: 'Surveyor',
-    desc: 'Site visits & Reports (6 menus)',
+    label: 'Surveyor',
+    shortLabel: 'Surveyor',
+    loginTitle: 'Surveyor Login',
+    desc: 'Field inspections & report upload (6 menus)',
     icon: UserCheck,
-    color: 'hover:border-emerald-500 hover:bg-emerald-50 text-emerald-700 bg-emerald-50/50 border-emerald-200',
-    activeColor: 'border-emerald-600 bg-emerald-100/70 text-emerald-900 ring-2 ring-emerald-500/20',
   },
   {
+    id: 'customer',
     email: 'customer@demo.com',
-    roleLabel: 'Customer',
-    desc: 'Quotes, Bookings & Pay (8 menus)',
+    label: 'Customer',
+    shortLabel: 'Customer',
+    loginTitle: 'Customer Login',
+    desc: 'Quotations, bookings & reports (8 menus)',
     icon: User,
-    color: 'hover:border-amber-500 hover:bg-amber-50 text-amber-700 bg-amber-50/50 border-amber-200',
-    activeColor: 'border-amber-600 bg-amber-100/70 text-amber-900 ring-2 ring-amber-500/20',
   },
 ];
 
 export const LoginPage = () => {
+  const navigate = useNavigate();
   const { login, getRememberedEmail } = useAuth();
-  const [email, setEmail] = useState(() => getRememberedEmail() || 'admin@demo.com');
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const [selectedRole, setSelectedRole] = useState('admin_staff'); // Defaults to Agent Login matching reference
+  const [email, setEmail] = useState(() => getRememberedEmail() || 'staff@demo.com');
   const [password, setPassword] = useState(DEFAULT_DEMO_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSelectDemo = (demoEmail) => {
-    setEmail(demoEmail);
+  const currentRoleConfig =
+    ROLE_OPTIONS.find((r) => r.id === selectedRole) || ROLE_OPTIONS[1];
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role.id);
+    setEmail(role.email);
     setPassword(DEFAULT_DEMO_PASSWORD);
     setErrorMessage('');
   };
@@ -63,170 +94,228 @@ export const LoginPage = () => {
     try {
       await login(email, password, rememberMe);
     } catch (err) {
-      setErrorMessage(err.message || 'Authentication failed. Please verify your credentials.');
+      setErrorMessage(
+        err.message || 'Authentication failed. Please check your credentials.'
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <AuthLayout
-      title="Sign in to your account"
-      subtitle="Enter your credentials or choose a quick demo account below"
-    >
-      {/* Quick Demo Account Chips */}
-      <div className="mb-6">
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-          Demo Quick Sign-In
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {DEMO_ACCOUNTS.map((demo) => {
-            const Icon = demo.icon;
-            const isSelected = email.toLowerCase() === demo.email.toLowerCase();
-            return (
-              <button
-                key={demo.email}
-                type="button"
-                onClick={() => handleSelectDemo(demo.email)}
-                className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
-                  isSelected ? demo.activeColor : `${demo.color} border-slate-200`
-                }`}
-              >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-xs font-bold flex items-center gap-1.5 truncate">
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    {demo.roleLabel}
-                  </span>
-                  {isSelected && (
-                    <span className="w-2 h-2 rounded-full bg-current shrink-0" />
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-500 truncate block">
-                  {demo.email}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Error state alert */}
-      {errorMessage && (
-        <div className="mb-5 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-rose-700 animate-in fade-in slide-in-from-top-1">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <div className="text-xs font-medium leading-relaxed">{errorMessage}</div>
-        </div>
-      )}
-
-      {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Email address
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Mail className="w-4 h-4 text-slate-400" />
-            </div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              placeholder="e.g. admin@demo.com"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all disabled:opacity-50"
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-slate-700">
-              Password
-            </label>
-            <Link
-              to="/forgot-password"
-              className="text-xs font-semibold text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-            >
-              Forgot password?
-            </Link>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-              <Lock className="w-4 h-4 text-slate-400" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              placeholder="••••••••••••"
-              className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all disabled:opacity-50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Remember me */}
-        <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              disabled={isLoading}
-              className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]/40 border-slate-300"
-            />
-            <span className="text-xs font-medium text-slate-600">Remember me</span>
-          </label>
-        </div>
-
-        {/* Submit button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-semibold text-sm shadow-lg shadow-[#0B1F4D]/25 transition-all flex items-center justify-center gap-2 disabled:opacity-70 group"
+    <div className="min-h-screen bg-[#D5DAE2] flex items-center justify-center p-0 sm:p-6 lg:p-10 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Outer Card Container matching Reference Design (Full-screen on phone, centered card on desktop) */}
+      <div className="relative w-full max-w-6xl bg-white rounded-none sm:rounded-[40px] shadow-2xl shadow-slate-900/15 overflow-hidden border-0 sm:border border-white/60 min-h-screen sm:min-h-[720px] flex flex-col justify-between pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+        {/* Background Architectural Image on the right */}
+        <div
+          className="absolute inset-y-0 right-0 w-full lg:w-[62%] bg-cover bg-right lg:bg-center pointer-events-none"
+          style={{
+            backgroundImage: "url('/modern_building_facade.jpg')",
+          }}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Authenticating...</span>
-            </>
-          ) : (
-            <>
-              <span>Sign In to CRM</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </>
-          )}
-        </button>
-      </form>
+          {/* Subtle gradient wash to blend building with left white canvas */}
+          <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-white via-white/85 lg:via-white/40 to-transparent" />
+        </div>
 
-      {/* Customer Registration Callout */}
-      <div className="mt-6 pt-5 border-t border-slate-100 text-center">
-        <p className="text-xs text-slate-500">
-          Are you a property client looking to book a survey?{' '}
-          <Link
-            to="/register"
-            className="font-bold text-[#2563EB] hover:text-[#1D4ED8] transition-colors ml-1"
+        {/* Top Brand Header + Back Button */}
+        <div className="relative z-20 px-5 sm:px-12 pt-5 sm:pt-10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 shrink-0">
+              <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
+            </div>
+            <div>
+              <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
+                PROPERTY GROUP
+              </div>
+              <div className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
+                SURVEY PLATFORM • INDEPENDENT RICS
+              </div>
+            </div>
+          </div>
+
+          {/* Top Bar Back Button */}
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-xs hover:shadow-md border border-slate-200/90 transition-all cursor-pointer backdrop-blur-md active:scale-95"
+            title="Go Back"
           >
-            Create Customer Account
-          </Link>
-        </p>
+            <ArrowLeft className="w-4 h-4 text-[#0B1F4D]" />
+            <span>Back</span>
+          </button>
+        </div>
+
+        {/* Center Content: Floating Login Card */}
+        <div className="relative z-20 px-4 sm:px-12 py-4 sm:py-8 flex items-center my-auto">
+          <div className="w-full max-w-md bg-white/95 sm:backdrop-blur-md rounded-2xl sm:rounded-[28px] p-5 sm:p-8 shadow-xl shadow-slate-900/10 border border-slate-100/90 mx-auto lg:mx-0">
+            {/* Header with Back button */}
+            <div className="mb-4 sm:mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#0B1F4D] px-2 py-1 -ml-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Go Back"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  RICS Practice
+                </span>
+              </div>
+
+              <div className="text-center">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-[#1E293B] tracking-tight">
+                  {currentRoleConfig.loginTitle}
+                </h1>
+                <p className="text-xs text-slate-400 mt-1">
+                  Please enter your details
+                </p>
+              </div>
+            </div>
+
+            {/* All Roles Selector ('or sare roll rhe') */}
+            <div className="mb-4 sm:mb-5">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-0.5">
+                <span>Select Role / Quick Demo</span>
+                <span className="text-[#2563EB] font-bold">4 Roles</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl">
+                {ROLE_OPTIONS.map((role) => {
+                  const isSelected = selectedRole === role.id;
+                  const Icon = role.icon;
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => handleRoleSelect(role)}
+                      className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all flex flex-col items-center justify-center gap-1 min-h-[44px] cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#0B1F4D] text-white shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      }`}
+                      title={role.label}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="truncate w-full text-center">
+                        {role.shortLabel}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-1.5 text-[10px] text-slate-400 text-center truncate">
+                {currentRoleConfig.desc}
+              </div>
+            </div>
+
+
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2 text-rose-700 text-xs animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              {/* Username / Email field matching Reference design */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  placeholder="jonathan_fletcher07"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/25 focus:border-[#2563EB] transition-all disabled:opacity-50"
+                />
+              </div>
+
+              {/* Password field */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    placeholder="••••••••••••"
+                    className="w-full px-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/25 focus:border-[#2563EB] transition-all disabled:opacity-50 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+
+                {/* 'forgot password?' right-aligned as in reference */}
+                <div className="flex justify-end mt-1.5">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-slate-400 hover:text-slate-700 transition-colors"
+                  >
+                    forgot password?
+                  </Link>
+                </div>
+              </div>
+
+              {/* Submit Button styled as dark slate/navy in reference */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-2 py-3 px-4 rounded-xl bg-[#2D3748] hover:bg-[#1E293B] text-white font-bold text-xs sm:text-sm shadow-md shadow-slate-900/10 transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <span>Sign In</span>
+                )}
+              </button>
+            </form>
+
+            {/* Bottom Account Creation Link matching Reference text */}
+            <div className="mt-5 text-center">
+              <p className="text-xs text-slate-400">
+                Are you new?{' '}
+                <Link
+                  to="/register"
+                  className="font-bold text-slate-800 hover:text-[#2563EB] transition-colors"
+                >
+                  Create an Account
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom subtle copyright / disclaimer */}
+        <div className="relative z-20 px-6 sm:px-12 pb-5 sm:pb-6 flex items-center justify-between text-[11px] text-slate-400">
+          <span>© 2026 Property Group UK. All rights reserved.</span>
+          <span className="hidden sm:inline">RICS Certified Platform</span>
+        </div>
       </div>
-    </AuthLayout>
+    </div>
   );
 };

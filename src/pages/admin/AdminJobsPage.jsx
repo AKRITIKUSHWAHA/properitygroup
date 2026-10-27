@@ -11,24 +11,32 @@ import {
   ExternalLink,
   ChevronRight,
   ClipboardCheck,
+  Lock,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
 import { Table } from '../../components/common/Table';
 import { StatusPill } from '../../components/common/StatusPill';
-import { INITIAL_JOBS, SURVEYORS } from '../../mock/jobs';
+import { SURVEYORS, useJobs } from '../../mock/jobs';
+import { NewBookingModal } from '../../components/calendar/NewBookingModal';
+import { useToast } from '../../components/ToastContext';
 
 export const AdminJobsPage = () => {
   const navigate = useNavigate();
-  const [jobs] = useState(INITIAL_JOBS);
+  const { addToast } = useToast();
+  const { jobs, addJob } = useJobs();
+
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [surveyorFilter, setSurveyorFilter] = useState('All');
   const [pageSize, setPageSize] = useState(10);
+  const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
 
-  // Tabs by status: All, Scheduled, In Progress, Completed, On Hold
+  // Tabs by status: All, Scheduled, In Progress, Completed, On Hold, Waiting Terms
   const tabs = useMemo(() => {
     const statuses = ['Scheduled', 'In Progress', 'Completed', 'On Hold'];
+    const waitingCount = jobs.filter((j) => !j.canBook || j.termsStatus !== 'Signed' || j.paymentStatus !== 'Paid').length;
+
     return [
       { id: 'All', label: 'All Jobs', count: jobs.length },
       ...statuses.map((st) => ({
@@ -36,20 +44,38 @@ export const AdminJobsPage = () => {
         label: st,
         count: jobs.filter((j) => j.status.toLowerCase() === st.toLowerCase()).length,
       })),
+      { id: 'Waiting Terms', label: 'Waiting Terms & Payment', count: waitingCount },
     ];
   }, [jobs]);
+
+  // Handle new job creation
+  const handleCreateJob = (newJob) => {
+    addJob(newJob);
+    addToast({
+      type: newJob.canBook ? 'success' : 'info',
+      title: 'Survey Job Registered',
+      message: newJob.canBook
+        ? `Job ${newJob.jobNo} created and scheduled with ${newJob.surveyor}.`
+        : `Job ${newJob.jobNo} placed on hold. Waiting for terms and advance payment.`,
+    });
+  };
 
   // Filtered dataset
   const filteredJobs = useMemo(() => {
     return jobs.filter((j) => {
       // Tab filter
-      if (activeTab !== 'All' && j.status.toLowerCase() !== activeTab.toLowerCase()) {
+      if (activeTab === 'Waiting Terms') {
+        const isWaiting = !j.canBook || j.termsStatus !== 'Signed' || j.paymentStatus !== 'Paid';
+        if (!isWaiting) return false;
+      } else if (activeTab !== 'All' && j.status.toLowerCase() !== activeTab.toLowerCase()) {
         return false;
       }
+
       // Surveyor filter
       if (surveyorFilter !== 'All' && j.surveyor !== surveyorFilter) {
         return false;
       }
+
       // Search term
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
@@ -76,7 +102,7 @@ export const AdminJobsPage = () => {
       render: (val, row) => (
         <button
           onClick={() => navigate(`/admin/survey-jobs/${row.id}`)}
-          className="text-[#2563EB] hover:text-[#0B1F4D] font-bold hover:underline flex items-center gap-1 group"
+          className="text-[#2563EB] hover:text-[#0B1F4D] font-bold hover:underline flex items-center gap-1 group cursor-pointer"
         >
           <span>{val}</span>
           <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -136,7 +162,7 @@ export const AdminJobsPage = () => {
             <img
               src={sObj?.avatar}
               alt={val}
-              className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200"
+              className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
             />
             <div>
               <div className="text-xs font-bold text-slate-800 truncate">{val}</div>
@@ -166,14 +192,27 @@ export const AdminJobsPage = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (val) => <StatusPill status={val} />,
+      render: (val, row) => {
+        const isWaiting = !row.canBook || row.termsStatus !== 'Signed' || row.paymentStatus !== 'Paid';
+        return (
+          <div className="space-y-1">
+            <StatusPill status={val} />
+            {isWaiting && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                <Lock className="w-2.5 h-2.5" />
+                Wait terms/pay
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'progress',
       header: 'Progress bar',
       sortable: true,
       className: 'min-w-[130px]',
-      render: (val) => {
+      render: (val, row) => {
         const isComplete = val === 100;
         return (
           <div className="space-y-1">
@@ -182,7 +221,7 @@ export const AdminJobsPage = () => {
                 {val}%
               </span>
               <span className="text-[10px] text-slate-400 font-normal">
-                {isComplete ? 'Complete' : 'Stage 7/10'}
+                {isComplete ? 'Complete' : `Step ${row.timelineStep || 6}/10`}
               </span>
             </div>
             <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
@@ -209,7 +248,7 @@ export const AdminJobsPage = () => {
       render: (_, row) => (
         <button
           onClick={() => navigate(`/admin/survey-jobs/${row.id}`)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#0B1F4D] text-slate-700 hover:text-white text-xs font-bold transition-all shadow-2xs group"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#0B1F4D] text-slate-700 hover:text-white text-xs font-bold transition-all shadow-2xs group cursor-pointer"
         >
           <span>View Job</span>
           <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
@@ -227,14 +266,14 @@ export const AdminJobsPage = () => {
         breadcrumb={['Super Admin', 'Survey Jobs']}
         actionLabel="Create Survey Job"
         actionIcon={Plus}
-        onAction={() => alert('New Job Dialog')}
+        onAction={() => setIsNewBookingModalOpen(true)}
       />
 
       {/* Tabs by Status */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Toolbar: Search & Surveyor Filter */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -251,7 +290,7 @@ export const AdminJobsPage = () => {
           <select
             value={surveyorFilter}
             onChange={(e) => setSurveyorFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer"
           >
             <option value="All">All Surveyors</option>
             {SURVEYORS.map((s) => (
@@ -264,7 +303,7 @@ export const AdminJobsPage = () => {
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
             >
               Clear
             </button>
@@ -279,6 +318,13 @@ export const AdminJobsPage = () => {
         pageSize={pageSize}
         emptyTitle="No survey jobs found"
         emptyMessage="No property survey jobs match the selected status tab or search query."
+      />
+
+      {/* Create Survey Job Modal */}
+      <NewBookingModal
+        isOpen={isNewBookingModalOpen}
+        onClose={() => setIsNewBookingModalOpen(false)}
+        onSubmit={handleCreateJob}
       />
     </div>
   );

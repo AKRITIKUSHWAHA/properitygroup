@@ -1,0 +1,326 @@
+[
+  {
+    "screen": "Login",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "login_360.png"
+  },
+  {
+    "screen": "Login",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "login_390.png"
+  },
+  {
+    "screen": "Login",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "login_768.png"
+  },
+  {
+    "screen": "Login",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "login_1024.png"
+  },
+  {
+    "screen": "Login",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "login_1280.png"
+  },
+  {
+    "screen": "Login",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "login_1440.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "dashboard_360.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "dashboard_390.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "dashboard_768.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "dashboard_1024.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "dashboard_1280.png"
+  },
+  {
+    "screen": "Dashboard",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "dashboard_1440.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "leads_360.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "leads_390.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "leads_768.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "leads_1024.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "leads_1280.png"
+  },
+  {
+    "screen": "Leads",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "leads_1440.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "jobdetails_360.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "jobdetails_390.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "jobdetails_768.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "jobdetails_1024.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "jobdetails_1280.png"
+  },
+  {
+    "screen": "JobDetails",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "jobdetails_1440.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "calendar_360.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "calendar_390.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "calendar_768.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "calendar_1024.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "calendar_1280.png"
+  },
+  {
+    "screen": "Calendar",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "calendar_1440.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "customerportal_360.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "customerportal_390.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "customerportal_768.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "customerportal_1024.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "customerportal_1280.png"
+  },
+  {
+    "screen": "CustomerPortal",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "customerportal_1440.png"
+  }
+]
