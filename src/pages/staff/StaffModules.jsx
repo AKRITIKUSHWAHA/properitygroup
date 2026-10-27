@@ -1,5 +1,7 @@
 import React from 'react';
 import { PlaceholderModule } from '../../components/PlaceholderModule';
+import { AdminQuotesPage } from '../admin/AdminQuotesPage';
+import { AdminTermsPage } from '../admin/AdminTermsPage';
 
 export const StaffCompaniesPage = () => {
   const stats = [
@@ -139,97 +141,13 @@ export const StaffJobsPage = () => {
 };
 
 export const StaffQuotesPage = () => {
-  const stats = [
-    { label: 'Weekly Revenue Handled', value: '£26,800', change: '+12.4%', isPositive: true },
-    { label: 'Unpaid Invoices', value: '4', subtext: 'Awaiting client settlement' },
-    { label: 'Accepted Quotes (Oct)', value: '64', subtext: 'Ready for calendar dispatch' },
-    { label: 'Average Client Fee', value: '£735', subtext: 'GBP standard' },
-  ];
-
-  const columns = [
-    { header: 'Quote Ref', accessor: 'ref' },
-    { header: 'Client', accessor: 'client' },
-    { header: 'Property', accessor: 'property' },
-    { header: 'Quote Total', accessor: 'total' },
-    { header: 'Date Issued', accessor: 'date' },
-    {
-      header: 'Status',
-      accessor: 'status',
-      render: (val) => (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-          val === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-        }`}>
-          {val}
-        </span>
-      ),
-    },
-  ];
-
-  const data = [
-    { ref: 'KQ-9042', client: 'Emma Watson', property: '14 Mayfair Gate, W1K', total: '£650.00', date: '26/10/2026', status: 'Paid' },
-    { ref: 'KQ-9041', client: 'Kensington Estates', property: '24 Kensington Palace Gdns', total: '£1,850.00', date: '25/10/2026', status: 'Paid' },
-    { ref: 'KQ-9040', client: 'Harrison Croft', property: '12 Pembroke Sq, W8', total: '£1,450.00', date: '24/10/2026', status: 'Awaiting Payment' },
-    { ref: 'KQ-9039', client: 'Priya Sharma', property: '45 Park Mansions, SW11', total: '£595.00', date: '23/10/2026', status: 'Paid' },
-  ];
-
-  return (
-    <PlaceholderModule
-      roleLabel="Admin / Staff"
-      menuTitle="Quotations & Client Billing"
-      menuDescription="Generate formal fee quotations, track upfront deposits, verify debit/credit card settlements, and release receipts."
-      stats={stats}
-      columns={columns}
-      data={data}
-      actionLabel="Create Client Quote"
-    />
-  );
+  return <AdminQuotesPage />;
 };
 
 export const StaffTermsPage = () => {
-  const stats = [
-    { label: 'Sent Awaiting Signature', value: '6', subtext: 'Client SMS reminders sent' },
-    { label: 'Signed Today', value: '8', subtext: 'Digitally verified' },
-    { label: 'Turnaround Time', value: '4.5 Hours', subtext: 'Avg from email dispatch' },
-    { label: 'RICS Contract Compliance', value: '100%', subtext: 'Audit clean' },
-  ];
-
-  const columns = [
-    { header: 'Agreement Ref', accessor: 'id' },
-    { header: 'Client Name', accessor: 'client' },
-    { header: 'Service Mandate', accessor: 'mandate' },
-    { header: 'Date Sent', accessor: 'sent' },
-    {
-      header: 'Signature Status',
-      accessor: 'status',
-      render: (val) => (
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-          val === 'Signed & Validated' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-        }`}>
-          {val}
-        </span>
-      ),
-    },
-  ];
-
-  const data = [
-    { id: 'TOS-2026-88', client: 'Emma Watson', mandate: 'RICS Level 2 Terms of Engagement', sent: '26/10/2026', status: 'Signed & Validated' },
-    { id: 'TOS-2026-87', client: 'Kensington Estates', mandate: 'RICS Level 3 Terms & Conditions', sent: '25/10/2026', status: 'Signed & Validated' },
-    { id: 'TOS-2026-86', client: 'Harrison Croft', mandate: 'Level 3 Survey Agreement', sent: '24/10/2026', status: 'Pending Client Signature' },
-    { id: 'TOS-2026-85', client: 'Priya Sharma', mandate: 'RICS Level 2 Terms of Engagement', sent: '23/10/2026', status: 'Signed & Validated' },
-  ];
-
-  return (
-    <PlaceholderModule
-      roleLabel="Admin / Staff"
-      menuTitle="Terms & Engagement Mandates"
-      menuDescription="Monitor digital signature completion to guarantee legal compliance before surveyors visit the property."
-      stats={stats}
-      columns={columns}
-      data={data}
-      actionLabel="Dispatch Terms to Client"
-    />
-  );
+  return <AdminTermsPage />;
 };
+
 
 export const StaffReportsPage = () => {
   const stats = [
