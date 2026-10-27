@@ -1,8 +1,18 @@
 import React from 'react';
-import { Building2, ShieldCheck, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Building2, ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export const AuthLayout = ({ children, title, subtitle }) => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#D5DAE2] flex items-center justify-center p-3 sm:p-6 lg:p-10 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Outer Card Container matching Reference Design */}
@@ -18,8 +28,8 @@ export const AuthLayout = ({ children, title, subtitle }) => {
           <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-white via-white/85 lg:via-white/40 to-transparent" />
         </div>
 
-        {/* Top Left Brand Header matching Reference Logo */}
-        <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center gap-3">
+        {/* Top Left Brand Header matching Reference Logo + Back Button */}
+        <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center justify-between">
           <Link to="/login" className="flex items-center gap-3 group">
             <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 group-hover:scale-105 transition-transform">
               <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
@@ -33,6 +43,17 @@ export const AuthLayout = ({ children, title, subtitle }) => {
               </div>
             </div>
           </Link>
+
+          {/* Top Bar Back Button */}
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-[#0B1F4D] text-xs font-bold shadow-xs hover:shadow-md border border-slate-200/90 transition-all cursor-pointer backdrop-blur-md active:scale-95"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#0B1F4D]" />
+            <span>Back</span>
+          </button>
         </div>
 
         {/* Center Content: Floating White Card */}
