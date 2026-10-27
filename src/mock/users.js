@@ -1,4 +1,4 @@
-// Mock users and roles for Property Group – Survey Management Platform
+// Mock users and roles for UK Property Surveying Practice
 export const DEMO_USERS = {
   'admin@demo.com': {
     id: 'usr_super_admin',
@@ -7,7 +7,7 @@ export const DEMO_USERS = {
     role: 'super_admin',
     roleLabel: 'Super Admin',
     department: 'Executive Operations',
-    company: 'Property Group HQ',
+    company: 'UK Property Surveying Practice HQ',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
     phone: '+44 20 7946 0912',
     currency: 'GBP',
@@ -21,7 +21,7 @@ export const DEMO_USERS = {
     role: 'admin_staff',
     roleLabel: 'Admin / Staff',
     department: 'Surveys & Bookings',
-    company: 'Property Group UK Ltd',
+    company: 'UK Property Surveying Practice',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
     phone: '+44 20 7946 0841',
     currency: 'GBP',

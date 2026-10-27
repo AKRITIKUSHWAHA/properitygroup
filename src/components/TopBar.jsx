@@ -71,7 +71,7 @@ export const TopBar = ({ onToggleSidebar }) => {
         {/* Mobile Brand Name (when sidebar is hidden) */}
         <div className="md:hidden flex items-center gap-1.5 truncate">
           <span className="font-extrabold text-xs tracking-tight text-[#0B1F4D] truncate">
-            Property Group
+            UK Property Surveying Practice
           </span>
         </div>
 

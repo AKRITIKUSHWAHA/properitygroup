@@ -150,11 +150,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
             </div>
             {/* Brand text visible on desktop, mobile, and tablet when hovered */}
             <div className={`overflow-hidden transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
-              <div className="text-sm font-extrabold text-white tracking-tight leading-none uppercase truncate">
-                Property Group
+              <div className="text-xs font-extrabold text-white tracking-tight leading-tight uppercase truncate">
+                UK Property Surveying Practice
               </div>
-              <div className="text-[9px] font-semibold text-[#C9D3E3]/80 uppercase tracking-widest mt-0.5 truncate">
-                INDEPENDENT RICS
+              <div className="text-[8px] font-semibold text-[#C9D3E3]/80 uppercase tracking-wider mt-0.5 truncate">
+                INDEPENDENT RICS-ALIGNED SURVEYORS
               </div>
             </div>
           </div>

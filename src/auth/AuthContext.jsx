@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }) => {
     addToast({
       type: 'success',
       title: 'Customer Account Created',
-      message: `Welcome to Property Group Survey Platform, ${fullName}!`,
+      message: `Welcome to UK Property Surveying Practice, ${fullName}!`,
     });
 
     navigate('/customer/my-dashboard', { replace: true });

@@ -28,7 +28,7 @@ export const AdminUsersPage = () => {
       email: 'admin@demo.com',
       role: 'super_admin',
       roleLabel: 'Super Admin',
-      org: 'Property Group HQ',
+      org: 'UK Property Surveying Practice HQ',
       lastLogin: '27/10/2026, 17:40',
       status: 'Active',
     },
@@ -38,7 +38,7 @@ export const AdminUsersPage = () => {
       email: 'staff@demo.com',
       role: 'admin_staff',
       roleLabel: 'Admin / Staff',
-      org: 'Property Group UK',
+      org: 'UK Property Surveying Practice',
       lastLogin: '27/10/2026, 16:15',
       status: 'Active',
     },
@@ -123,7 +123,7 @@ export const AdminUsersPage = () => {
       email: formData.email.trim(),
       role: formData.role,
       roleLabel: roleMap[formData.role],
-      org: formData.org.trim() || 'Property Group Network',
+      org: formData.org.trim() || 'UK Property Surveying Practice',
       lastLogin: 'Never',
       status: 'Active',
     };
@@ -224,7 +224,7 @@ export const AdminUsersPage = () => {
         title="Users & Access Roles"
         subtitle="Provision employee logins, define RBAC permissions, and manage chartered surveyor accounts across the UK."
         breadcrumb={['Super Admin', 'Users & Roles']}
-        actionLabel="+ Add New User"
+        actionLabel="Add New User"
         actionIcon={Plus}
         onAction={() => setIsAddModalOpen(true)}
       />

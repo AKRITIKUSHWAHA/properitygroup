@@ -18,7 +18,7 @@ const ADMIN_USER = {
   role: 'super_admin',
   roleLabel: 'Super Admin',
   department: 'Executive Operations',
-  company: 'Property Group HQ',
+  company: 'UK Property Surveying Practice HQ',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
   phone: '+44 20 7946 0912',
   currency: 'GBP',

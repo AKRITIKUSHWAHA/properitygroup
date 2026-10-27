@@ -270,6 +270,60 @@
     "screenshot": "calendar_1440.png"
   },
   {
+    "screen": "Website",
+    "width": 360,
+    "label": "360px (Compact Mobile)",
+    "scrollWidth": 360,
+    "clientWidth": 360,
+    "pass": true,
+    "screenshot": "website_360.png"
+  },
+  {
+    "screen": "Website",
+    "width": 390,
+    "label": "390px (Standard Phone)",
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "pass": true,
+    "screenshot": "website_390.png"
+  },
+  {
+    "screen": "Website",
+    "width": 768,
+    "label": "768px (Tablet Portrait)",
+    "scrollWidth": 768,
+    "clientWidth": 768,
+    "pass": true,
+    "screenshot": "website_768.png"
+  },
+  {
+    "screen": "Website",
+    "width": 1024,
+    "label": "1024px (Laptop)",
+    "scrollWidth": 1024,
+    "clientWidth": 1024,
+    "pass": true,
+    "screenshot": "website_1024.png"
+  },
+  {
+    "screen": "Website",
+    "width": 1280,
+    "label": "1280px (Desktop)",
+    "scrollWidth": 1280,
+    "clientWidth": 1280,
+    "pass": true,
+    "screenshot": "website_1280.png"
+  },
+  {
+    "screen": "Website",
+    "width": 1440,
+    "label": "1440px (Wide Desktop)",
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "pass": true,
+    "screenshot": "website_1440.png"
+  },
+  {
     "screen": "CustomerPortal",
     "width": 360,
     "label": "360px (Compact Mobile)",

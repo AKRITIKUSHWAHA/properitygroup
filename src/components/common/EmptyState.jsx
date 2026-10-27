@@ -25,7 +25,7 @@ export const EmptyState = ({
           className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-[#0B1F4D]/20"
         >
           <Plus className="w-4 h-4" />
-          <span>{actionLabel}</span>
+          <span>{actionLabel.replace(/^\+\s*/, '')}</span>
         </button>
       )}
     </div>
