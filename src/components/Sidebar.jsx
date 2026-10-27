@@ -28,6 +28,7 @@ import {
   X,
   Compass,
   ShieldCheck,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
@@ -60,17 +61,48 @@ const ICON_MAP = {
 };
 
 export const Sidebar = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const drawerRef = useRef(null);
+  const roleDropdownRef = useRef(null);
 
   // Tablet hover expansion state
   const [isHovered, setIsHovered] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
-  const role = user?.role || 'customer';
-  const roleConfig = ROLE_NAVIGATION[role] || ROLE_NAVIGATION.customer;
+  // Derive active role from URL path prefix so opening any role's menu shows that role and its menus
+  const getActiveRole = () => {
+    if (location.pathname.startsWith('/admin')) return 'super_admin';
+    if (location.pathname.startsWith('/staff')) return 'admin_staff';
+    if (location.pathname.startsWith('/surveyor')) return 'surveyor';
+    if (location.pathname.startsWith('/customer')) return 'customer';
+    return user?.role || 'super_admin';
+  };
+
+  const activeRole = getActiveRole();
+  const roleConfig = ROLE_NAVIGATION[activeRole] || ROLE_NAVIGATION.super_admin;
   const menuItems = roleConfig.items || [];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target)) {
+        setRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectRole = (roleKey) => {
+    setRoleDropdownOpen(false);
+    if (switchRole) {
+      switchRole(roleKey);
+    }
+    const targetPath = ROLE_NAVIGATION[roleKey]?.defaultPath || '/admin/dashboard';
+    navigate(targetPath);
+  };
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -169,19 +201,63 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Role Badge Indicator */}
-        <div className={`px-3 pt-3 pb-1 transition-opacity ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/90">
+        {/* Role Badge & Quick Switcher */}
+        <div ref={roleDropdownRef} className={`relative px-3 pt-3 pb-1 transition-opacity ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
+          <button
+            type="button"
+            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/90 transition-all cursor-pointer group"
+            title="Click to switch role and menus"
+          >
             <div className="flex items-center gap-1.5 overflow-hidden">
               <ShieldCheck className="w-3.5 h-3.5 text-[#0B1F4D] shrink-0" />
-              <div className="text-[11px] font-bold text-slate-700 truncate">
+              <div className="text-[11px] font-bold text-slate-800 truncate">
                 {roleConfig.label}
               </div>
             </div>
-            <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#0B1F4D] text-white">
-              {menuItems.length}
-            </span>
-          </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#0B1F4D] text-white">
+                {menuItems.length}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+
+          {/* Role Switcher Dropdown */}
+          {roleDropdownOpen && (
+            <div className="absolute left-3 right-3 top-full mt-1.5 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                Switch Role / Menus
+              </div>
+              {[
+                { id: 'super_admin', label: 'Super Admin', count: 10 },
+                { id: 'admin_staff', label: 'Admin / Staff', count: 8 },
+                { id: 'surveyor', label: 'Surveyor', count: 6 },
+                { id: 'customer', label: 'Customer', count: 8 },
+              ].map((r) => {
+                const isCurrent = activeRole === r.id;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleSelectRole(r.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                      isCurrent
+                        ? 'bg-[#0B1F4D] text-white font-bold'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-[#0B1F4D]'
+                    }`}
+                  >
+                    <span className="truncate">{r.label}</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isCurrent ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {r.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Navigation Menu (Scrollable) */}

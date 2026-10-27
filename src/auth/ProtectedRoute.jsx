@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { Loader2, Building2 } from 'lucide-react';
 
 export const ProtectedRoute = ({ allowedRoles = null, children }) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, switchRole } = useAuth();
   const location = useLocation();
+
+  // Auto-align demo session role with the route being visited
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin') && user?.role !== 'super_admin') {
+      switchRole('super_admin');
+    } else if (location.pathname.startsWith('/staff') && user?.role !== 'admin_staff' && user?.role !== 'super_admin') {
+      switchRole('admin_staff');
+    } else if (location.pathname.startsWith('/surveyor') && user?.role !== 'surveyor' && user?.role !== 'super_admin') {
+      switchRole('surveyor');
+    } else if (location.pathname.startsWith('/customer') && user?.role !== 'customer' && user?.role !== 'super_admin') {
+      switchRole('customer');
+    }
+  }, [location.pathname, user?.role, switchRole]);
 
   if (isLoading) {
     return (
@@ -28,6 +41,10 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
   }
 
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    // If Super Admin accesses staff/surveyor/customer routes, allow it
+    if (user.role === 'super_admin') {
+      return children ? children : <Outlet />;
+    }
     return <Navigate to="/403" replace />;
   }
 

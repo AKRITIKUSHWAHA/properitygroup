@@ -106,6 +106,10 @@ function AppRoutes() {
 
       {/* 2. Portal Shortcut for Dashboard Navigation */}
       <Route path="/portal" element={<PortalRedirect />} />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
+      <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
+      <Route path="/customer" element={<Navigate to="/customer/my-dashboard" replace />} />
 
       {/* 3. Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />

@@ -24,12 +24,30 @@ export const AuthProvider = ({ children }) => {
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
-    return null;
+    // Default to Super Admin for seamless demo route access
+    return DEMO_USERS['admin@demo.com'];
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { addToast } = useToast();
+
+  // Fast role switcher for demo and route synchronization
+  const switchRole = useCallback((newRole) => {
+    const roleEmailMap = {
+      super_admin: 'admin@demo.com',
+      admin_staff: 'staff@demo.com',
+      surveyor: 'surveyor@demo.com',
+      customer: 'customer@demo.com',
+    };
+    const targetEmail = roleEmailMap[newRole] || 'admin@demo.com';
+    const targetUser = DEMO_USERS[targetEmail];
+    if (targetUser) {
+      setUser(targetUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(targetUser));
+      return targetUser;
+    }
+  }, []);
 
   // Helper to determine the role default redirect path
   const getRoleDashboard = useCallback((role) => {
@@ -193,6 +211,7 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         login,
         logout,
+        switchRole,
         registerCustomer,
         forgotPassword,
         resetPassword,
