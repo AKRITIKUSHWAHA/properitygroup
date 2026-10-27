@@ -191,7 +191,7 @@ export const Table = ({
           {/* ========================================================= */}
           <div className="hidden md:block overflow-x-auto min-w-full">
             <table className="w-full text-left text-xs sm:text-sm text-slate-600">
-              <thead className="bg-[#F3F5F9]/90 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider select-none backdrop-blur-xs">
+              <thead className="bg-slate-100/90 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider select-none backdrop-blur-xs">
                 <tr>
                   {columns.map((col, idx) => {
                     const isSortable = col.sortable !== false && col.key;
@@ -258,7 +258,7 @@ export const Table = ({
       {/* PAGINATION: Compact on mobile, full on desktop */}
       {/* ========================================================= */}
       {totalPages > 1 && (
-        <div className="px-4 py-3 border-t border-slate-100 bg-[#F3F5F9]/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div className="text-center sm:text-left">
             Showing <strong className="text-slate-800">{(effectivePage - 1) * pageSize + 1}</strong> to{' '}
             <strong className="text-slate-800">

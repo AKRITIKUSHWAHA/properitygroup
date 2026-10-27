@@ -23,7 +23,7 @@ export const Tabs = ({
   return (
     <div className="relative w-full">
       {/* Left Fade Edge */}
-      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-[#F3F5F9] to-transparent z-10 md:hidden" />
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-[#D5DAE2] to-transparent z-10 md:hidden" />
 
       {/* Horizontally scrollable container with snap */}
       <div
@@ -92,7 +92,7 @@ export const Tabs = ({
       </div>
 
       {/* Right Fade Edge */}
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-[#F3F5F9] to-transparent z-10 md:hidden" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-[#D5DAE2] to-transparent z-10 md:hidden" />
     </div>
   );
 };

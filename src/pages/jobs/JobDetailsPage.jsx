@@ -642,7 +642,7 @@ export const JobDetailsPage = () => {
       {/* SIX TABS SECTION: Job details, Notes and calls, Tasks, Documents, Emails, Activity log */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
         {/* Tab Headers */}
-        <div className="px-6 pt-4 border-b border-slate-200/80 bg-[#F3F5F9]/40 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        <div className="px-6 pt-4 border-b border-slate-200/80 bg-slate-50/80 flex items-center gap-2 overflow-x-auto scrollbar-none">
           {tabs.map((tab) => (
             <button
               key={tab.id}

@@ -46,12 +46,12 @@ export const Modal = ({
         className={`relative w-full ${maxWidth} bg-white rounded-t-[28px] sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 animate-in slide-in-from-bottom-5 sm:zoom-in-95 duration-200 flex flex-col max-h-[92vh] sm:max-h-[90vh] my-0 sm:my-8`}
       >
         {/* Mobile touch drag handle */}
-        <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-[#F3F5F9]/60 shrink-0">
+        <div className="sm:hidden pt-2.5 pb-1 flex justify-center bg-slate-50 shrink-0">
           <div className="w-10 h-1 bg-slate-300 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-[#F3F5F9]/60 shrink-0">
+        <div className="flex items-start justify-between px-5 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/90 shrink-0">
           <div className="pr-2 min-w-0">
             <h3 className="text-base sm:text-lg font-extrabold text-[#0B1F4D] tracking-tight truncate">
               {title}
