@@ -224,7 +224,7 @@ export const AdminUsersPage = () => {
         title="Users & Access Roles"
         subtitle="Provision employee logins, define RBAC permissions, and manage chartered surveyor accounts across the UK."
         breadcrumb={['Super Admin', 'Users & Roles']}
-        actionLabel="+ Add New User"
+        actionLabel="Add New User"
         actionIcon={Plus}
         onAction={() => setIsAddModalOpen(true)}
       />

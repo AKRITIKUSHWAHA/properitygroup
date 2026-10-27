@@ -64,7 +64,7 @@ export const PageHeader = ({
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0B1F4D]/20 transition-all min-h-[44px] cursor-pointer"
           >
             {ActionIcon && <ActionIcon className="w-4 h-4 shrink-0" />}
-            <span>{actionLabel}</span>
+            <span>{ActionIcon ? actionLabel.replace(/^\+\s*/, '') : actionLabel}</span>
           </button>
         )}
       </div>

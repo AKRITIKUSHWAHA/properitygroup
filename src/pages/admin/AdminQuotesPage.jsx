@@ -399,7 +399,7 @@ export const AdminQuotesPage = () => {
         title="Quotations & Payment Gateway"
         subtitle="Manage client fee proposals, 20% UK VAT calculations, online Stripe card settlements, and official invoices."
         breadcrumb={['Super Admin', 'Quotations & Payments']}
-        actionLabel="+ New Quotation"
+        actionLabel="New Quotation"
         actionIcon={Plus}
         onAction={() => setIsNewQuoteModalOpen(true)}
       />

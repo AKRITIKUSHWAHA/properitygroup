@@ -277,7 +277,7 @@ export const BookingCalendar = () => {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0B1F4D]/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>+ New Booking</span>
+            <span>New Booking</span>
           </button>
         </div>
       </div>
