@@ -64,13 +64,18 @@ const SCREENS = [
     user: ADMIN_USER,
   },
   {
+    id: 'Website',
+    path: '/',
+    user: null,
+  },
+  {
     id: 'CustomerPortal',
     path: '/customer/my-dashboard',
     user: CUSTOMER_USER,
   },
 ];
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5174';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 const SCREENSHOT_DIR = path.resolve('test-results/screenshots');
 
 async function runAudit() {

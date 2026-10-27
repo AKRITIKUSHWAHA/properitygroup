@@ -35,11 +35,11 @@ export const AuthLayout = ({ children, title, subtitle }) => {
               <Building2 className="w-5 h-5 text-[#2563EB] stroke-[2.2]" />
             </div>
             <div>
-              <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
-                PROPERTY GROUP
+              <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] leading-none">
+                UK Property Surveying Practice
               </div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
-                SURVEY PLATFORM
+              <div className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-wider mt-1">
+                INDEPENDENT RICS-ALIGNED SURVEYORS
               </div>
             </div>
           </Link>
@@ -75,7 +75,7 @@ export const AuthLayout = ({ children, title, subtitle }) => {
 
         {/* Bottom subtle copyright / disclaimer */}
         <div className="relative z-20 px-6 sm:px-12 pb-5 sm:pb-6 flex items-center justify-between text-[11px] text-slate-400">
-          <span>© 2026 Property Group UK. All rights reserved.</span>
+          <span>© 2026 UK Property Surveying Practice. All rights reserved.</span>
           <span className="hidden sm:inline">RICS Certified Platform</span>
         </div>
       </div>
