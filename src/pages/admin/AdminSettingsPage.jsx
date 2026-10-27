@@ -52,7 +52,7 @@ export const AdminSettingsPage = () => {
       name: 'Quotation Proposal & Scope of Service',
       subject: 'Your Survey Quotation for {{property_address}}',
       trigger: 'On Quotation Generated',
-      body: 'Dear {{customer_name}},\n\nThank you for instructing Property Group. Please find attached your formal fixed-fee quotation for {{survey_type}} at {{property_address}}.\n\nTotal Quoted Fee: £{{quote_total}} (inc. 20% VAT).',
+      body: 'Dear {{customer_name}},\n\nThank you for instructing UK Property Surveying Practice. Please find attached your formal fixed-fee quotation for {{survey_type}} at {{property_address}}.\n\nTotal Quoted Fee: £{{quote_total}} (inc. 20% VAT).',
     },
     {
       id: 'tpl-2',

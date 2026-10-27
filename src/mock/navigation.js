@@ -1,4 +1,4 @@
-// Role-to-menu navigation configuration for Property Group Survey Management Platform
+// Role-to-menu navigation configuration for UK Property Surveying Practice
 // 4 roles: Super Admin (10), Admin/Staff (8), Surveyor (6), Customer (8)
 
 export const ROLE_NAVIGATION = {

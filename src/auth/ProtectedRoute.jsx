@@ -16,7 +16,7 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
             <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
-            <span>Loading Property Group Platform...</span>
+            <span>Loading UK Property Surveying Practice...</span>
           </div>
         </div>
       </div>

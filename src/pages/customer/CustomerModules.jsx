@@ -199,7 +199,7 @@ export const CustomerTermsPage = () => {
                 2. Professional Indemnity & Limitation of Liability
               </p>
               <p>
-                2.1 Property Group maintains full professional indemnity insurance cover underwritten by Royal & Sun Alliance plc, with a single-claim liability cap of £250,000 or the open-market property purchase price, whichever is lower.
+                2.1 UK Property Surveying Practice maintains full professional indemnity insurance cover underwritten by Royal & Sun Alliance plc, with a single-claim liability cap of £250,000 or the open-market property purchase price, whichever is lower.
               </p>
               <p className="font-bold text-slate-900">
                 3. Gating Requirement & Payment Terms
@@ -225,7 +225,7 @@ export const CustomerTermsPage = () => {
               className="w-5 h-5 mt-0.5 rounded text-[#2563EB] focus:ring-[#2563EB]"
             />
             <span className="text-xs text-blue-950 font-medium leading-relaxed">
-              <strong>I have read, understood, and accept</strong> the Property Group Terms of Engagement (RICS Level 2 Standard v2026.2). I authorize Property Group to proceed with key collection and on-site inspection.
+              <strong>I have read, understood, and accept</strong> the UK Property Surveying Practice Terms of Engagement (RICS Level 2 Standard v2026.2). I authorize UK Property Surveying Practice to proceed with key collection and on-site inspection.
             </span>
           </label>
 
@@ -519,7 +519,7 @@ export const CustomerTermsPage = () => {
               </div>
 
               <div className="pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 space-y-1">
-                <div>• Merchant: Property Group Surveys Ltd</div>
+                <div>• Merchant: UK Property Surveying Practice Ltd</div>
                 <div>• 256-bit SSL Encrypted Payment</div>
                 <div>• Instant VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
               </div>
@@ -1128,7 +1128,7 @@ export const CustomerSupportPage = () => {
 
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Office</span>
-                <span className="font-bold text-slate-900 block">Property Group UK</span>
+                <span className="font-bold text-slate-900 block">UK Property Surveying Practice</span>
                 <span className="text-slate-500">45 Berkeley Square, Mayfair, London W1J 5AS</span>
               </div>
             </div>
