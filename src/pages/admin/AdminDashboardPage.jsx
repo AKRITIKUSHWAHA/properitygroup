@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   CalendarCheck,
@@ -12,8 +12,15 @@ import { PageHeader } from '../../components/PageHeader';
 import { BookingsTrendChart } from '../../components/charts/BookingsTrendChart';
 import { JobsStatusDonutChart } from '../../components/charts/JobsStatusDonutChart';
 import { RecentActivityRow } from '../../components/dashboard/RecentActivityRow';
+import { NewBookingModal } from '../../components/calendar/NewBookingModal';
+import { useJobs } from '../../mock/jobs';
+import { useToast } from '../../components/ToastContext';
 
 export const AdminDashboardPage = () => {
+  const { addJob } = useJobs();
+  const { addToast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Exactly the 4 KPI cards specified by user:
   // Total Leads 248, Survey Bookings 176, Quotations £421,860, Payments Received £298,430 with % change
   const kpiCards = [
@@ -51,6 +58,17 @@ export const AdminDashboardPage = () => {
     },
   ];
 
+  const handleCreateJob = (newJob) => {
+    addJob(newJob);
+    addToast({
+      type: newJob.canBook ? 'success' : 'info',
+      title: 'Survey Job Scheduled',
+      message: newJob.canBook
+        ? `Job ${newJob.jobNo} booked with ${newJob.surveyor}.`
+        : `Job ${newJob.jobNo} saved. Waiting for terms and advance payment.`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -60,7 +78,7 @@ export const AdminDashboardPage = () => {
         breadcrumb={['Super Admin', 'Dashboard']}
         actionLabel="Create Survey Job"
         actionIcon={Plus}
-        onAction={() => alert('New Survey Job modal triggered')}
+        onAction={() => setIsModalOpen(true)}
       />
 
       {/* 4 KPI Cards */}
@@ -110,6 +128,14 @@ export const AdminDashboardPage = () => {
 
       {/* Recent Activity Row */}
       <RecentActivityRow />
+
+      {/* New Booking Modal */}
+      <NewBookingModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateJob}
+      />
     </div>
   );
 };
+
