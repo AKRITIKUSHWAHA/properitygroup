@@ -1,0 +1,215 @@
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DEMO_USERS } from '../mock/users';
+import { ROLE_NAVIGATION } from '../mock/navigation';
+import { useToast } from '../components/ToastContext';
+
+const AuthContext = createContext(null);
+
+const STORAGE_KEY = 'property_group_user_session';
+const REMEMBERED_EMAIL_KEY = 'property_group_remembered_email';
+const REGISTERED_CUSTOMERS_KEY = 'property_group_registered_customers';
+
+export const AuthProvider = ({ children }) => {
+  // Initialize user lazily from localStorage
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          return parsed;
+        }
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    return null;
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  // Helper to determine the role default redirect path
+  const getRoleDashboard = useCallback((role) => {
+    if (ROLE_NAVIGATION[role]?.defaultPath) {
+      return ROLE_NAVIGATION[role].defaultPath;
+    }
+    return '/login';
+  }, []);
+
+  // Login handler
+  const login = async (email, password, rememberMe = false) => {
+    setIsLoading(true);
+    await new Promise((res) => setTimeout(res, 600));
+
+    const trimmedEmail = (email || '').trim().toLowerCase();
+
+    // Check demo users first
+    let matchedUser = DEMO_USERS[trimmedEmail];
+
+    // If not found in demo users, check registered customers
+    if (!matchedUser) {
+      try {
+        const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
+        if (registered[trimmedEmail]) {
+          matchedUser = registered[trimmedEmail];
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!matchedUser) {
+      setIsLoading(false);
+      throw new Error('Account not found. Please use one of the demo chips or register as a customer.');
+    }
+
+    if (!password || password.trim().length < 4) {
+      setIsLoading(false);
+      throw new Error('Password must be at least 4 characters.');
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(matchedUser));
+
+    if (rememberMe) {
+      localStorage.setItem(REMEMBERED_EMAIL_KEY, trimmedEmail);
+    } else {
+      localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    }
+
+    setUser(matchedUser);
+    setIsLoading(false);
+
+    addToast({
+      type: 'success',
+      title: `Welcome, ${matchedUser.name}`,
+      message: `Signed in as ${matchedUser.roleLabel} (${matchedUser.company})`,
+    });
+
+    const redirectPath = getRoleDashboard(matchedUser.role);
+    navigate(redirectPath, { replace: true });
+    return matchedUser;
+  };
+
+  // Customer registration
+  const registerCustomer = async ({ fullName, email, phone, postcode }) => {
+    setIsLoading(true);
+    await new Promise((res) => setTimeout(res, 800));
+
+    const trimmedEmail = (email || '').trim().toLowerCase();
+
+    if (DEMO_USERS[trimmedEmail]) {
+      setIsLoading(false);
+      throw new Error('An account with this email address already exists.');
+    }
+
+    const newCustomer = {
+      id: 'usr_cust_' + Date.now(),
+      email: trimmedEmail,
+      name: fullName,
+      role: 'customer',
+      roleLabel: 'Property Client',
+      department: 'Private Client',
+      company: 'Private Residential',
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
+      phone: phone || '+44 7700 900000',
+      postcode: postcode || 'SW1A 1AA',
+      currency: 'GBP',
+      dateJoined: new Date().toLocaleDateString('en-GB'),
+      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+    };
+
+    try {
+      const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
+      registered[trimmedEmail] = newCustomer;
+      localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(registered));
+    } catch (e) {
+      console.error(e);
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
+    setUser(newCustomer);
+    setIsLoading(false);
+
+    addToast({
+      type: 'success',
+      title: 'Customer Account Created',
+      message: `Welcome to Property Group Survey Platform, ${fullName}!`,
+    });
+
+    navigate('/customer/my-dashboard', { replace: true });
+    return newCustomer;
+  };
+
+  // Forgot Password
+  const forgotPassword = async () => {
+    setIsLoading(true);
+    await new Promise((res) => setTimeout(res, 700));
+    setIsLoading(false);
+    return { success: true };
+  };
+
+  // Reset Password
+  const resetPassword = async () => {
+    setIsLoading(true);
+    await new Promise((res) => setTimeout(res, 700));
+    setIsLoading(false);
+    return { success: true };
+  };
+
+  // Logout handler
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+    addToast({
+      type: 'info',
+      title: 'Signed Out',
+      message: 'You have been signed out',
+    });
+    navigate('/login', { replace: true });
+  };
+
+  // Profile update
+  const updateProfile = (data) => {
+    if (!user) return;
+    const updated = { ...user, ...data };
+    setUser(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    addToast({
+      type: 'success',
+      title: 'Profile Updated',
+      message: 'Your personal details have been saved successfully.',
+    });
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        role: user?.role,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+        registerCustomer,
+        forgotPassword,
+        resetPassword,
+        updateProfile,
+        getRoleDashboard,
+        getRememberedEmail: () => localStorage.getItem(REMEMBERED_EMAIL_KEY) || '',
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
