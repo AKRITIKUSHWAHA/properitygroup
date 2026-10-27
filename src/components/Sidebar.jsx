@@ -127,7 +127,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
         aria-label="Navigation Sidebar"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-[#0B1F4D] text-slate-200 shadow-2xl transition-all duration-300 ease-in-out
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-white text-slate-700 shadow-xl border-r border-slate-300/80 transition-all duration-300 ease-in-out
           ${
             /* Mobile drawer toggle */
             isOpen
@@ -142,18 +142,18 @@ export const Sidebar = ({ isOpen, onClose }) => {
           }
         `}
       >
-        {/* Brand Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-white/10 bg-[#071534]/70 shrink-0">
+        {/* Brand Header matching Login Page */}
+        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-200/90 bg-white shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/20 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 shrink-0">
               <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
             {/* Brand text visible on desktop, mobile, and tablet when hovered */}
             <div className={`overflow-hidden transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
-              <div className="text-xs font-extrabold text-white tracking-tight leading-tight uppercase truncate">
+              <div className="text-xs font-extrabold text-[#0B1F4D] tracking-tight leading-tight uppercase truncate">
                 UK Property Surveying Practice
               </div>
-              <div className="text-[8px] font-semibold text-[#C9D3E3]/80 uppercase tracking-wider mt-0.5 truncate">
+              <div className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 truncate">
                 INDEPENDENT RICS-ALIGNED SURVEYORS
               </div>
             </div>
@@ -162,7 +162,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
           {/* Close button for mobile drawer */}
           <button
             onClick={onClose}
-            className="md:hidden p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="md:hidden p-2 text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
             aria-label="Close navigation menu"
           >
             <X className="w-5 h-5" />
@@ -171,21 +171,21 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Role Badge Indicator */}
         <div className={`px-3 pt-3 pb-1 transition-opacity ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
-          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/90">
             <div className="flex items-center gap-1.5 overflow-hidden">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
-              <div className="text-[11px] font-semibold text-slate-300 truncate">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#0B1F4D] shrink-0" />
+              <div className="text-[11px] font-bold text-slate-700 truncate">
                 {roleConfig.label}
               </div>
             </div>
-            <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+            <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#0B1F4D] text-white">
               {menuItems.length}
             </span>
           </div>
         </div>
 
         {/* Navigation Menu (Scrollable) */}
-        <div className="flex-1 px-2 py-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none">
+        <div className="flex-1 px-2.5 py-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none">
           {menuItems.map((item) => {
             const IconComponent = ICON_MAP[item.icon] || Compass;
             return (
@@ -194,10 +194,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 to={item.path}
                 title={item.name}
                 className={({ isActive }) =>
-                  `group relative flex items-center min-h-[44px] rounded-xl text-xs font-semibold transition-all duration-200 px-3 py-2 ${
+                  `group relative flex items-center min-h-[44px] rounded-xl text-xs font-semibold transition-all duration-200 px-3 py-2.5 ${
                     isActive
-                      ? 'bg-[#2563EB] text-white shadow-md shadow-blue-600/30 font-bold'
-                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                      ? 'bg-[#0B1F4D] text-white shadow-md shadow-[#0B1F4D]/25 font-bold'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1F4D]'
                   }`
                 }
               >
@@ -205,8 +205,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   <>
                     <div className="flex items-center gap-3 truncate w-full">
                       <IconComponent
-                        className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${
-                          isActive ? 'text-white' : 'text-[#C9D3E3]/80 group-hover:text-white'
+                        className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-105 ${
+                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#0B1F4D]'
                         }`}
                       />
                       {/* Name label shown on mobile, desktop, and tablet when hovered */}
@@ -224,8 +224,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                       <span
                         className={`ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0 transition-opacity ${
                           isActive
-                            ? 'bg-white text-[#2563EB]'
-                            : 'bg-white/15 text-white'
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-100 text-slate-600'
                         } ${isHovered ? 'md:inline' : 'md:hidden lg:inline'}`}
                       >
                         {item.badge}
@@ -233,7 +233,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                     )}
 
                     {/* Tablet Icon Rail Tooltip (when collapsed on md) */}
-                    <div className="hidden md:group-hover:hidden md:block lg:hidden absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-[11px] font-bold rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-white/10">
+                    <div className="hidden md:group-hover:hidden md:block lg:hidden absolute left-full ml-2 px-2.5 py-1 bg-[#0B1F4D] text-white text-[11px] font-bold rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-slate-700">
                       {item.name}
                     </div>
                   </>
@@ -244,19 +244,19 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* User Session Footer */}
-        <div className="p-3 border-t border-white/10 bg-[#071534]/50 shrink-0">
+        <div className="p-3 border-t border-slate-200/90 bg-slate-50/90 shrink-0">
           <div className="flex items-center justify-between">
             <div className={`flex items-center gap-2.5 overflow-hidden ${isHovered ? 'md:flex' : 'md:hidden lg:flex'}`}>
               <img
                 src={user?.avatar}
                 alt={user?.name || 'User'}
-                className="w-8 h-8 rounded-full object-cover ring-1 ring-white/20 shrink-0"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 shrink-0"
               />
               <div className="overflow-hidden">
-                <div className="text-xs font-bold text-white truncate max-w-[130px]">
+                <div className="text-xs font-bold text-[#0B1F4D] truncate max-w-[130px]">
                   {user?.name}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate">
+                <div className="text-[10px] font-medium text-slate-500 truncate">
                   {user?.roleLabel}
                 </div>
               </div>
@@ -265,7 +265,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
             {/* Logout button */}
             <button
               onClick={handleLogout}
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
               title="Sign Out"
               aria-label="Sign Out"
             >
