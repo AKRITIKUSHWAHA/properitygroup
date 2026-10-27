@@ -9,7 +9,7 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
 
   // Auto-align demo session role with the route being visited
   useEffect(() => {
-    if (location.pathname.startsWith('/admin') && user?.role !== 'super_admin') {
+    if ((location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) && user?.role !== 'super_admin') {
       switchRole('super_admin');
     } else if (location.pathname.startsWith('/staff') && user?.role !== 'admin_staff' && user?.role !== 'super_admin') {
       switchRole('admin_staff');

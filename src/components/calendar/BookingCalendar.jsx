@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -25,6 +25,8 @@ import { useToast } from '../ToastContext';
 export const BookingCalendar = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const targetJobBase = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
 
   // Shared persistent jobs state
   const { jobs, setJobs, addJob } = useJobs();
@@ -663,7 +665,7 @@ export const BookingCalendar = () => {
               <button
                 onClick={() => {
                   setSelectedEvent(null);
-                  navigate(`/admin/survey-jobs/${selectedEvent.id}`);
+                  navigate(`${targetJobBase}/${selectedEvent.id}`);
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
               >

@@ -73,7 +73,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   // Derive active role from URL path prefix so opening any role's menu shows that role and its menus
   const getActiveRole = () => {
-    if (location.pathname.startsWith('/admin')) return 'super_admin';
+    if (location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) return 'super_admin';
     if (location.pathname.startsWith('/staff')) return 'admin_staff';
     if (location.pathname.startsWith('/surveyor')) return 'surveyor';
     if (location.pathname.startsWith('/customer')) return 'customer';
@@ -100,7 +100,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     if (switchRole) {
       switchRole(roleKey);
     }
-    const targetPath = ROLE_NAVIGATION[roleKey]?.defaultPath || '/admin/dashboard';
+    const targetPath = ROLE_NAVIGATION[roleKey]?.defaultPath || '/superadmin/dashboard';
     navigate(targetPath);
   };
 

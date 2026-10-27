@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   MapPin,
@@ -46,6 +46,8 @@ const STATUS_TIMELINE_STEPS = [
 export const JobDetailsPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
 
@@ -254,7 +256,7 @@ export const JobDetailsPage = () => {
       <div className="p-8 text-center text-slate-500">
         <p className="text-sm">Job record could not be loaded.</p>
         <button
-          onClick={() => navigate('/admin/survey-jobs')}
+          onClick={() => navigate(backPath)}
           className="mt-4 px-4 py-2 bg-[#0B1F4D] text-white text-xs font-bold rounded-xl"
         >
           Return to Survey Jobs
@@ -268,7 +270,7 @@ export const JobDetailsPage = () => {
       {/* Back button */}
       <div>
         <button
-          onClick={() => navigate('/admin/survey-jobs')}
+          onClick={() => navigate(backPath)}
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0B1F4D] transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />

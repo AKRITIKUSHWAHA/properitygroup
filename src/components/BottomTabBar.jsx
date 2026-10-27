@@ -37,10 +37,10 @@ const BOTTOM_NAV_CONFIG = {
     { id: 'calendar', name: 'Calendar', path: '/staff/booking-calendar', icon: CalendarDays },
   ],
   super_admin: [
-    { id: 'dash', name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { id: 'leads', name: 'Leads', path: '/admin/crm-and-leads', icon: Target },
-    { id: 'jobs', name: 'Jobs', path: '/admin/survey-jobs', icon: ClipboardCheck },
-    { id: 'quotes', name: 'Quotes', path: '/admin/quotations-and-payments', icon: CreditCard },
+    { id: 'dash', name: 'Dashboard', path: '/superadmin/dashboard', icon: LayoutDashboard },
+    { id: 'leads', name: 'Leads', path: '/superadmin/crm-and-leads', icon: Target },
+    { id: 'jobs', name: 'Jobs', path: '/superadmin/survey-jobs', icon: ClipboardCheck },
+    { id: 'quotes', name: 'Quotes', path: '/superadmin/quotations-and-payments', icon: CreditCard },
   ],
 };
 
