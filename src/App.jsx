@@ -67,16 +67,21 @@ import {
   CustomerSupportPage,
 } from './pages/customer/CustomerModules';
 
-// Public Website / Landing Page
-import { PracticeWebsitePage } from './pages/website/PracticeWebsitePage';
+// Helper component for root '/' redirect
+const RootRedirect = () => {
+  const { user, isAuthenticated, isLoading, getRoleDashboard } = useAuth();
+  if (isLoading) return null;
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboard(user.role)} replace />;
+  }
+  return <Navigate to="/login" replace />;
+};
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Practice Website */}
-      <Route path="/" element={<PracticeWebsitePage />} />
-      <Route path="/website" element={<PracticeWebsitePage />} />
-      <Route path="/landing" element={<PracticeWebsitePage />} />
+      {/* Root redirect */}
+      <Route path="/" element={<RootRedirect />} />
 
       {/* Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
