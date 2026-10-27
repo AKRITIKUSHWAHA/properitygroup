@@ -8,12 +8,12 @@ export const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F3F5F9] flex flex-col antialiased">
+    <div className="min-h-screen bg-[#D5DAE2] flex flex-col antialiased">
       {/* Sidebar: Mobile off-canvas drawer / Tablet icon rail (64px) / Desktop 240px */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-16 lg:pl-[240px] min-w-0 transition-all duration-300">
+      <div className="flex-1 flex flex-col md:pl-16 lg:pl-[260px] min-w-0 transition-all duration-300">
         {/* Sticky Top Bar */}
         <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 

@@ -115,7 +115,7 @@ export const PlaceholderModule = ({
         {/* Data Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm text-slate-600">
-            <thead className="bg-[#F3F5F9]/80 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
+            <thead className="bg-slate-100/90 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
               <tr>
                 {columns.map((col, idx) => (
                   <th key={idx} className="py-3.5 px-4 sm:px-6">

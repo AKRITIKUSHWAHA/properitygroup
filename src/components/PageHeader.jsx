@@ -18,15 +18,15 @@ export const PageHeader = ({
   }).format(new Date());
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-200/80 mb-4 sm:mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-300/80 mb-4 sm:mb-6">
       <div className="min-w-0 flex-1">
         {/* Breadcrumb (horizontally scrollable on small mobile) */}
         {breadcrumb.length > 0 && (
-          <nav className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1 font-medium overflow-x-auto scrollbar-none whitespace-nowrap">
+          <nav className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1 font-medium overflow-x-auto scrollbar-none whitespace-nowrap">
             <span>UK Property Surveying Practice</span>
             {breadcrumb.map((crumb, idx) => (
               <React.Fragment key={idx}>
-                <ChevronRight className="w-3 h-3 text-slate-300 shrink-0" />
+                <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
                 <span className={idx === breadcrumb.length - 1 ? 'text-[#2563EB] font-bold' : ''}>
                   {crumb}
                 </span>
@@ -46,14 +46,14 @@ export const PageHeader = ({
           )}
         </div>
         {subtitle && (
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1 max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5 sm:mt-1 max-w-3xl leading-relaxed font-medium">
             {subtitle}
           </p>
         )}
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto">
-        <div className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200/90 text-xs font-semibold text-slate-600 shadow-2xs">
+        <div className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-300/80 text-xs font-semibold text-slate-700 shadow-2xs">
           <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
           <span>{todayUK}</span>
         </div>

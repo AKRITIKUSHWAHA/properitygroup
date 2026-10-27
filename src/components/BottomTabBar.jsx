@@ -37,10 +37,10 @@ const BOTTOM_NAV_CONFIG = {
     { id: 'calendar', name: 'Calendar', path: '/staff/booking-calendar', icon: CalendarDays },
   ],
   super_admin: [
-    { id: 'dash', name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
-    { id: 'leads', name: 'Leads', path: '/admin/crm-and-leads', icon: Target },
-    { id: 'jobs', name: 'Jobs', path: '/admin/survey-jobs', icon: ClipboardCheck },
-    { id: 'quotes', name: 'Quotes', path: '/admin/quotations-and-payments', icon: CreditCard },
+    { id: 'dash', name: 'Dashboard', path: '/superadmin/dashboard', icon: LayoutDashboard },
+    { id: 'leads', name: 'Leads', path: '/superadmin/crm-and-leads', icon: Target },
+    { id: 'jobs', name: 'Jobs', path: '/superadmin/survey-jobs', icon: ClipboardCheck },
+    { id: 'quotes', name: 'Quotes', path: '/superadmin/quotations-and-payments', icon: CreditCard },
   ],
 };
 
@@ -52,7 +52,7 @@ export const BottomTabBar = ({ onOpenMore }) => {
   return (
     <nav
       aria-label="Mobile bottom navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B1F4D]/95 backdrop-blur-lg border-t border-white/10 px-2 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-2xl"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-300/80 px-2 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-lg"
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;
@@ -63,20 +63,20 @@ export const BottomTabBar = ({ onOpenMore }) => {
             className={({ isActive }) =>
               `flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 py-1 rounded-xl transition-all cursor-pointer ${
                 isActive
-                  ? 'text-[#2563EB] font-bold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'text-[#0B1F4D] font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
               }`
             }
           >
             {({ isActive }) => (
               <>
                 <div className="relative">
-                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-white' : ''}`} />
+                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-[#0B1F4D]' : ''}`} />
                   {isActive && (
-                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#2563EB] rounded-full" />
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#0B1F4D] rounded-full" />
                   )}
                 </div>
-                <span className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] ${isActive ? 'text-white font-bold' : ''}`}>
+                <span className={`text-[10px] mt-1 tracking-tight truncate max-w-[62px] ${isActive ? 'text-[#0B1F4D] font-bold' : ''}`}>
                   {tab.name}
                 </span>
               </>
@@ -89,7 +89,7 @@ export const BottomTabBar = ({ onOpenMore }) => {
       <button
         type="button"
         onClick={onOpenMore}
-        className="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 py-1 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer"
+        className="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-2 py-1 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
         aria-label="Open full menu"
       >
         <Menu className="w-5 h-5" />

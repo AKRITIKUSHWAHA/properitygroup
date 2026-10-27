@@ -3,19 +3,19 @@
 
 export const ROLE_NAVIGATION = {
   super_admin: {
-    defaultPath: '/admin/dashboard',
+    defaultPath: '/superadmin/dashboard',
     label: 'Super Admin',
     items: [
-      { id: 'dashboard', name: 'Dashboard', path: '/admin/dashboard', icon: 'LayoutDashboard', badge: null },
-      { id: 'users-roles', name: 'Users & Roles', path: '/admin/users-and-roles', icon: 'Users', badge: null },
-      { id: 'companies', name: 'Companies', path: '/admin/companies', icon: 'Building2', badge: null },
-      { id: 'surveyors', name: 'Surveyors', path: '/admin/surveyors', icon: 'UserCheck', badge: null },
-      { id: 'crm-leads', name: 'CRM & Leads', path: '/admin/crm-and-leads', icon: 'Target', badge: '14' },
-      { id: 'survey-jobs', name: 'Survey Jobs', path: '/admin/survey-jobs', icon: 'ClipboardCheck', badge: '84' },
-      { id: 'quotations-payments', name: 'Quotations & Payments', path: '/admin/quotations-and-payments', icon: 'CreditCard', badge: null },
-      { id: 'terms-documents', name: 'Terms & Documents', path: '/admin/terms-and-documents', icon: 'FileSignature', badge: null },
-      { id: 'reports-analytics', name: 'Reports & Analytics', path: '/admin/reports-and-analytics', icon: 'BarChart3', badge: null },
-      { id: 'settings', name: 'Settings', path: '/admin/settings', icon: 'Settings', badge: null },
+      { id: 'dashboard', name: 'Dashboard', path: '/superadmin/dashboard', icon: 'LayoutDashboard', badge: null },
+      { id: 'users-roles', name: 'Users & Roles', path: '/superadmin/users-and-roles', icon: 'Users', badge: null },
+      { id: 'companies', name: 'Companies', path: '/superadmin/companies', icon: 'Building2', badge: null },
+      { id: 'surveyors', name: 'Surveyors', path: '/superadmin/surveyors', icon: 'UserCheck', badge: null },
+      { id: 'crm-leads', name: 'CRM & Leads', path: '/superadmin/crm-and-leads', icon: 'Target', badge: '14' },
+      { id: 'survey-jobs', name: 'Survey Jobs', path: '/superadmin/survey-jobs', icon: 'ClipboardCheck', badge: '84' },
+      { id: 'quotations-payments', name: 'Quotations & Payments', path: '/superadmin/quotations-and-payments', icon: 'CreditCard', badge: null },
+      { id: 'terms-documents', name: 'Terms & Documents', path: '/superadmin/terms-and-documents', icon: 'FileSignature', badge: null },
+      { id: 'reports-analytics', name: 'Reports & Analytics', path: '/superadmin/reports-and-analytics', icon: 'BarChart3', badge: null },
+      { id: 'settings', name: 'Settings', path: '/superadmin/settings', icon: 'Settings', badge: null },
     ],
   },
   admin_staff: {

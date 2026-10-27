@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -23,6 +23,8 @@ import { useToast } from '../../components/ToastContext';
 
 export const AdminJobsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const baseJobsPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
   const { addToast } = useToast();
   const { jobs, addJob } = useJobs();
 
@@ -101,7 +103,7 @@ export const AdminJobsPage = () => {
       className: 'font-mono font-bold text-[#0B1F4D] whitespace-nowrap',
       render: (val, row) => (
         <button
-          onClick={() => navigate(`/admin/survey-jobs/${row.id}`)}
+          onClick={() => navigate(`${baseJobsPath}/${row.id}`)}
           className="text-[#2563EB] hover:text-[#0B1F4D] font-bold hover:underline flex items-center gap-1 group cursor-pointer"
         >
           <span>{val}</span>
@@ -247,7 +249,7 @@ export const AdminJobsPage = () => {
       className: 'text-right whitespace-nowrap',
       render: (_, row) => (
         <button
-          onClick={() => navigate(`/admin/survey-jobs/${row.id}`)}
+          onClick={() => navigate(`${baseJobsPath}/${row.id}`)}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-[#0B1F4D] text-slate-700 hover:text-white text-xs font-bold transition-all shadow-2xs group cursor-pointer"
         >
           <span>View Job</span>

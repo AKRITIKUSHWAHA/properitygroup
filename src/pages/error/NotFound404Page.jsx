@@ -8,7 +8,7 @@ export const NotFound404Page = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#F3F5F9] flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#D5DAE2] flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
         <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto mb-4 border border-blue-200">
           <FileQuestion className="w-8 h-8" />

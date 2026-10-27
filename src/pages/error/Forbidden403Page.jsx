@@ -16,7 +16,7 @@ export const Forbidden403Page = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F5F9] flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen bg-[#D5DAE2] flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
         <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-200">
           <ShieldAlert className="w-8 h-8" />
