@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building, MapPin, Phone, Mail, ShieldAlert, ArrowUpRight } from 'lucide-react';
+import { Building, MapPin, Phone, Mail, ShieldAlert, ArrowUpRight, Lock } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { footerCoverageLinks } from '../../config/navigation';
@@ -113,10 +113,18 @@ export function Footer() {
             <Link to="/contact">Client Enquiry Form</Link>
             <Link to="/contact#privacy">Privacy Notice</Link>
             <Link to="/redirects">Production Redirects</Link>
+            {/* Discreet Back-Office link for Practice Personnel only */}
+            <Link
+              to="/backoffice"
+              className="text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              title="Restricted entrance for chartered surveyors and practice administrators"
+            >
+              <Lock size={11} className="inline opacity-70" />
+              <span>Staff &amp; Surveyor Back-Office</span>
+            </Link>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-

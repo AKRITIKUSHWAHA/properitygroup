@@ -118,6 +118,10 @@ function AppRoutes() {
 
       {/* 3. Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/backoffice" element={<LoginPage initialMode="backoffice" />} />
+      <Route path="/admin-login" element={<Navigate to="/backoffice" replace />} />
+      <Route path="/surveyor-login" element={<Navigate to="/backoffice" replace />} />
+      <Route path="/staff-login" element={<Navigate to="/backoffice" replace />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
