@@ -42,6 +42,17 @@ export function Header() {
   const isServicesActive = location.pathname.startsWith('/services');
   const isHomePage = location.pathname === '/';
 
+  // Smooth scroll to quote section if already on homepage
+  const handleQuoteClick = (e) => {
+    if (isHomePage) {
+      e.preventDefault();
+      const target = document.getElementById('quote-section') || document.getElementById('quote');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <header className={`site-header ${isHomePage ? 'site-header-floating' : ''}`} role="banner">
       {/* Top Utility Bar with Direct Hotline & Practice Standards (Subpages) */}
@@ -96,7 +107,7 @@ export function Header() {
               </NavLink>
 
               {/* Services Dropdown */}
-              <div className="nav-dropdown-wrapper" ref={dropdownRef}>
+              <div className="nav-dropdown-wrapper" ref={dropdownRef} onMouseEnter={() => setServicesDropdownOpen(true)} onMouseLeave={() => setServicesDropdownOpen(false)}>
                 <button
                   type="button"
                   className={`nav-dropdown-trigger ${isServicesActive ? 'active' : ''}`}
@@ -152,7 +163,7 @@ export function Header() {
                 Sign In
               </Link>
 
-              <a href="/#quote-section" className="header-quote-glass-btn">
+              <a href="/#quote-section" onClick={handleQuoteClick} className="header-quote-glass-btn">
                 <span>Request a Quote</span>
               </a>
 

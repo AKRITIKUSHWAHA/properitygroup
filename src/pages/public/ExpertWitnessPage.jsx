@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scale, ShieldCheck, CheckCircle2, FileText, Users, ArrowRight, Gavel, HelpCircle, Phone, Mail } from 'lucide-react';
+import { Scale, ShieldCheck, CheckCircle2, FileText, Users, ArrowRight, Gavel, HelpCircle, Phone, Mail, Building } from 'lucide-react';
 import { expertWitnessService } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';

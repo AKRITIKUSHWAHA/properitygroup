@@ -58,6 +58,19 @@ export function HomePage() {
   const [quoteSuiteRef, quoteSuiteVisible] = useScrollReveal({ threshold: 0.08 });
   const [ctaRef, ctaVisible] = useScrollReveal({ threshold: 0.15 });
 
+  // Smooth scroll to hash on load or page navigation
+  React.useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 120);
+      }
+    }
+  }, []);
+
   const handleQuickQuoteSelect = ({ serviceId, postcode }) => {
     if (serviceId) setPrefilledService(serviceId);
   };

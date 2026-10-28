@@ -4450,7 +4450,7 @@ select.form-input-compact {
   top: 1rem !important;
   z-index: 100 !important;
   max-width: 1360px !important;
-  margin: 0.75rem auto 0 !important;
+  margin: 1.25rem auto 1.75rem !important;
   border-radius: 9999px !important;
   background-color: rgba(10, 18, 30, 0.78) !important;
   backdrop-filter: blur(24px) !important;
@@ -7446,4 +7446,54 @@ select.form-input-compact {
   align-items: center;
   font-size: 0.8rem;
   color: #64748B;
+}
+/* Glassmorphic Dropdown Menu in Site Header */
+.site-header .nav-dropdown-menu {
+  background: rgba(10, 18, 30, 0.95) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+  padding: 0.5rem !important;
+  min-width: 320px !important;
+}
+
+.site-header .dropdown-item {
+  padding: 0.75rem 1rem !important;
+  border-radius: 10px !important;
+  color: #E2E8F0 !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.site-header .dropdown-item:hover,
+.site-header .dropdown-item:focus {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  transform: translateX(3px) !important;
+}
+
+.site-header .dropdown-item-title {
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  font-size: 0.92rem !important;
+}
+
+.site-header .dropdown-item-desc {
+  color: #94A3B8 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  margin-top: 3px !important;
+}
+
+.site-header .dropdown-item-badge {
+  background: rgba(212, 160, 23, 0.18) !important;
+  color: #F8D37D !important;
+  border: 1px solid rgba(212, 160, 23, 0.35) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  padding: 0.15rem 0.5rem !important;
+  border-radius: 9999px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
 }
