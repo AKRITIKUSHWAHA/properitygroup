@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -34,7 +35,11 @@ import { INITIAL_LEADS, LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock
 export const AdminLeadsPage = () => {
   const { addToast } = useToast();
   const { leads, updateLeadStatus, addLead, deleteLead } = useLeads();
-  const [activeTab, setActiveTab] = useState('All');
+  const location = useLocation();
+  const queryFilter = useMemo(() => {
+    return new URLSearchParams(location.search).get('filter') || 'All';
+  }, [location.search]);
+  const [activeTab, setActiveTab] = useState(queryFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [ownerFilter, setOwnerFilter] = useState('All');

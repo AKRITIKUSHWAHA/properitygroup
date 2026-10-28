@@ -28,7 +28,11 @@ export const AdminJobsPage = () => {
   const { addToast } = useToast();
   const { jobs, addJob } = useJobs();
 
-  const [activeTab, setActiveTab] = useState('All');
+  const queryFilter = useMemo(() => {
+    return new URLSearchParams(location.search).get('filter') || 'All';
+  }, [location.search]);
+
+  const [activeTab, setActiveTab] = useState(queryFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveyorFilter, setSurveyorFilter] = useState('All');
   const [pageSize, setPageSize] = useState(10);
