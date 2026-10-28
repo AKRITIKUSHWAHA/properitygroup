@@ -11,15 +11,24 @@ import {
   Key,
   CheckCircle2,
   Lock,
+  PhoneCall,
+  AlertTriangle,
+  Eye,
+  ShieldAlert,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
 import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+import { useClientProfiles } from '../../mock/clientProfiles';
 
 export const AdminUsersPage = () => {
   const { addToast } = useToast();
+  const { profiles } = useClientProfiles();
+  const [selectedClientEmail, setSelectedClientEmail] = useState(null);
+  const [clientModalTab, setClientModalTab] = useState('calls');
 
   const [users, setUsers] = useState([
     {
@@ -169,12 +178,31 @@ export const AdminUsersPage = () => {
       key: 'name',
       header: 'Full Legal Name',
       sortable: true,
-      render: (val, row) => (
-        <div>
-          <div className="font-bold text-slate-900 text-xs">{val}</div>
-          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.email}</div>
-        </div>
-      ),
+      render: (val, row) => {
+        if (row.role === 'customer') {
+          return (
+            <button
+              onClick={() => {
+                setSelectedClientEmail(row.email);
+                setClientModalTab('calls');
+              }}
+              className="text-left group cursor-pointer"
+            >
+              <div className="font-bold text-[#0B1F4D] group-hover:text-[#2563EB] group-hover:underline text-xs flex items-center gap-1.5">
+                <span>{val}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] font-bold">Client Profile</span>
+              </div>
+              <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.email}</div>
+            </button>
+          );
+        }
+        return (
+          <div>
+            <div className="font-bold text-slate-900 text-xs">{val}</div>
+            <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.email}</div>
+          </div>
+        );
+      },
     },
     {
       key: 'roleLabel',
@@ -215,6 +243,60 @@ export const AdminUsersPage = () => {
           {val}
         </span>
       ),
+    },
+    {
+      key: 'actions',
+      header: 'Client History & Logs',
+      sortable: false,
+      className: 'text-right whitespace-nowrap',
+      render: (_, row) => {
+        if (row.role === 'customer') {
+          const profile = profiles[row.email];
+          const callsCount = profile?.calls?.length || 0;
+          const complaints = profile?.complaints || [];
+          const openComplaintsCount = complaints.filter(
+            (c) => c.status === 'Open' || c.status === 'Under Investigation'
+          ).length;
+
+          return (
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                onClick={() => {
+                  setSelectedClientEmail(row.email);
+                  setClientModalTab('calls');
+                }}
+                title="View & Log Call Notes with exact timestamps"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-[#0B1F4D] text-[#2563EB] hover:text-white text-[11px] font-bold transition-all border border-blue-200/80 cursor-pointer"
+              >
+                <PhoneCall className="w-3 h-3" />
+                <span>Call Notes ({callsCount})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedClientEmail(row.email);
+                  setClientModalTab('complaints');
+                }}
+                title="Dedicated Client Complaints Register"
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                  openComplaintsCount > 0
+                    ? 'bg-rose-100 hover:bg-rose-600 text-rose-800 hover:text-white border-rose-300 animate-pulse'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                }`}
+              >
+                <AlertTriangle className="w-3 h-3" />
+                <span>Complaints ({complaints.length})</span>
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <span className="text-[11px] font-medium text-slate-400">
+            Internal Staff
+          </span>
+        );
+      },
     },
   ];
 
@@ -333,6 +415,14 @@ export const AdminUsersPage = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Client Profile, Call Notes & Complaints Modal */}
+      <ClientProfileModal
+        isOpen={!!selectedClientEmail}
+        onClose={() => setSelectedClientEmail(null)}
+        clientEmail={selectedClientEmail}
+        initialTab={clientModalTab}
+      />
     </div>
   );
 };

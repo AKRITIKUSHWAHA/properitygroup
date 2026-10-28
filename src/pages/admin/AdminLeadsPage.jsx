@@ -15,6 +15,8 @@ import {
   PoundSterling,
   User,
   Tag,
+  PhoneCall,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -23,6 +25,7 @@ import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { NewLeadModal } from '../../components/crm/NewLeadModal';
 import { useToast } from '../../components/ToastContext';
+import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { INITIAL_LEADS, LEAD_SOURCES, LEAD_STATUSES } from '../../mock/leads';
 
 export const AdminLeadsPage = () => {
@@ -39,6 +42,8 @@ export const AdminLeadsPage = () => {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [viewingLead, setViewingLead] = useState(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [selectedClientEmail, setSelectedClientEmail] = useState(null);
+  const [clientModalTab, setClientModalTab] = useState('calls');
 
   // Tab count calculations
   const tabs = useMemo(() => {
@@ -155,9 +160,17 @@ export const AdminLeadsPage = () => {
       sortable: true,
       render: (_, row) => (
         <div className="min-w-[150px]">
-          <div className="font-bold text-slate-800 leading-tight">
-            {row.customerName}
-          </div>
+          <button
+            onClick={() => {
+              setSelectedClientEmail(row.customerEmail);
+              setClientModalTab('calls');
+            }}
+            className="text-left font-bold text-[#0B1F4D] hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer"
+            title="Click to view client profile, call history & complaints"
+          >
+            <span>{row.customerName}</span>
+            <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+          </button>
           <div className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[170px]">
             {row.customerEmail}
           </div>
@@ -535,6 +548,17 @@ export const AdminLeadsPage = () => {
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
                   {viewingLead.customerPhone}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClientEmail(viewingLead.customerEmail);
+                    setClientModalTab('calls');
+                  }}
+                  className="mt-2 w-full py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-[#0B1F4D] text-[#0B1F4D] hover:text-white border border-blue-200/80 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <PhoneCall className="w-3 h-3 text-[#2563EB]" />
+                  <span>View Call Notes &amp; Complaints</span>
+                </button>
               </div>
 
               <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
@@ -564,6 +588,14 @@ export const AdminLeadsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Client Profile, Call Notes & Complaints Modal */}
+      <ClientProfileModal
+        isOpen={!!selectedClientEmail}
+        onClose={() => setSelectedClientEmail(null)}
+        clientEmail={selectedClientEmail}
+        initialTab={clientModalTab}
+      />
     </div>
   );
 };

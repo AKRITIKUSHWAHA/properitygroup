@@ -22,11 +22,14 @@ import {
   Building2,
   Clock,
   Sparkles,
+  PhoneCall,
+  ShieldAlert,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 
 // The exact 10 steps requested by user:
 // Quote requested, Quote sent, Accepted, Terms sent, Terms signed, Payment received, Booked, Survey done, Report sent, Closed
@@ -61,6 +64,8 @@ export const JobDetailsPage = () => {
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
   const [isAdjustQuoteModalOpen, setIsAdjustQuoteModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientModalTab, setClientModalTab] = useState('calls');
 
   // Form states for adjusting quote
   const [quoteForm, setQuoteForm] = useState({
@@ -473,6 +478,16 @@ export const JobDetailsPage = () => {
                   <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                   {job.contacts?.client?.email || job.customerEmail}
                 </div>
+                <button
+                  onClick={() => {
+                    setClientModalTab('calls');
+                    setIsClientModalOpen(true);
+                  }}
+                  className="mt-2.5 w-full py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#0B1F4D] text-[#0B1F4D] hover:text-white border border-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <PhoneCall className="w-3 h-3 text-[#2563EB]" />
+                  <span>Call Notes &amp; Complaints Log</span>
+                </button>
               </div>
 
               {/* Solicitor */}
@@ -705,6 +720,38 @@ export const JobDetailsPage = () => {
           {/* 2. Notes and calls */}
           {activeTab === 'notes-calls' && (
             <div className="space-y-5 max-w-3xl">
+              {/* Quick Link to Dedicated Client Profile & Complaints */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-[#2563EB]" />
+                  <span className="text-xs font-bold text-slate-800">
+                    Client Call History &amp; Complaints Log for {job.customer}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClientModalTab('calls');
+                      setIsClientModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#0B1F4D] text-[#0B1F4D] hover:text-white border border-slate-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                  >
+                    View All Calls
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClientModalTab('complaints');
+                      setIsClientModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Complaints Log
+                  </button>
+                </div>
+              </div>
+
               {/* Form to add note */}
               <form onSubmit={handleAddNote} className="space-y-2">
                 <textarea
@@ -1037,6 +1084,14 @@ export const JobDetailsPage = () => {
           <span>Send terms</span>
         </button>
       </div>
+
+      {/* Client Profile, Call Notes & Complaints Modal */}
+      <ClientProfileModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        clientEmail={job?.contacts?.client?.email || job?.customerEmail || 'customer@demo.com'}
+        initialTab={clientModalTab}
+      />
     </div>
   );
 };
