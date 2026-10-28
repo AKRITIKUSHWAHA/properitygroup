@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, Building, User, Phone, Clock, ShieldCheck, MapPin, ArrowRight, Star } from 'lucide-react';
+import { Menu, ChevronDown, Building, User, Phone, Clock, ShieldCheck, MapPin, ArrowRight } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { Button } from '../common/Button';
@@ -44,16 +44,15 @@ export function Header() {
 
   return (
     <header className={`site-header ${isHomePage ? 'site-header-floating' : ''}`} role="banner">
-      {/* Top Utility Bar with Direct Hotline, Trustpilot Rating & Practice Standards (Subpages) */}
+      {/* Top Utility Bar with Direct Hotline & Practice Standards (Subpages) */}
       {!isHomePage && (
         <div className="header-topbar">
           <div className="header-container">
             <div className="header-topbar-inner">
               <div className="topbar-items">
-                <span className="topbar-item flex items-center gap-1.5">
-                  <span className="flex text-emerald-400 font-bold tracking-widest text-[11px]">★★★★★</span>
-                  <span className="font-semibold text-white">4.8 / 5 on Trustpilot</span>
-                  <span className="text-slate-400 hidden sm:inline">&bull; RICS-Aligned Practice</span>
+                <span className="topbar-item">
+                  <ShieldCheck size={13} aria-hidden="true" />
+                  <span>RICS Home Survey Standard Aligned Practice</span>
                 </span>
                 <span className="topbar-item hide-mobile">
                   <MapPin size={13} aria-hidden="true" />
@@ -147,11 +146,10 @@ export function Header() {
               </NavLink>
             </nav>
 
-            {/* Header Actions - Customer & Client Portal */}
+            {/* Header Actions */}
             <div className="header-actions">
-              <Link to="/login" className="header-login-glass-btn hide-mobile flex items-center gap-1.5" title="Customer & Back-Office Portal">
-                <User size={14} />
-                <span>Client Portal</span>
+              <Link to="/login" className="header-login-glass-btn hide-mobile">
+                Sign In
               </Link>
 
               <a href="/#quote-section" className="header-quote-glass-btn">
