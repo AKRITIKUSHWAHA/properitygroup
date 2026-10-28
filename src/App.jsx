@@ -142,12 +142,15 @@ function AppRoutes() {
 
           {/* CRM & Leads + Friendly Aliases */}
           <Route path="/admin/leads" element={<AdminLeadsPage />} />
+          <Route path="/admin/lead" element={<AdminLeadsPage />} />
           <Route path="/admin/crm-and-leads" element={<AdminLeadsPage />} />
 
           {/* Survey Jobs + Friendly Aliases */}
           <Route path="/admin/jobs" element={<AdminJobsPage />} />
+          <Route path="/admin/job" element={<AdminJobsPage />} />
           <Route path="/admin/survey-jobs" element={<AdminJobsPage />} />
           <Route path="/admin/jobs/:jobId" element={<JobDetailsPage />} />
+          <Route path="/admin/job/:jobId" element={<JobDetailsPage />} />
           <Route path="/admin/survey-jobs/:jobId" element={<JobDetailsPage />} />
 
           {/* Booking Calendar + Friendly Aliases */}
@@ -156,42 +159,56 @@ function AppRoutes() {
 
           {/* Quotations & Payments + Friendly Aliases */}
           <Route path="/admin/quotes" element={<AdminQuotesPage />} />
+          <Route path="/admin/quote" element={<AdminQuotesPage />} />
           <Route path="/admin/quotations-and-payments" element={<AdminQuotesPage />} />
 
           {/* Terms & Documents + Friendly Aliases */}
           <Route path="/admin/terms" element={<AdminTermsPage />} />
+          <Route path="/admin/term" element={<AdminTermsPage />} />
           <Route path="/admin/terms-and-documents" element={<AdminTermsPage />} />
 
           {/* Reports & Analytics + Friendly Aliases */}
           <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route path="/admin/report" element={<AdminReportsPage />} />
           <Route path="/admin/reports-and-analytics" element={<AdminReportsPage />} />
 
           {/* Users & Roles + Friendly Aliases */}
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/user" element={<AdminUsersPage />} />
           <Route path="/admin/users-and-roles" element={<AdminUsersPage />} />
 
           {/* Companies & Surveyors & Settings */}
           <Route path="/admin/companies" element={<AdminCompaniesPage />} />
+          <Route path="/admin/company" element={<AdminCompaniesPage />} />
           <Route path="/admin/surveyors" element={<AdminSurveyorsPage />} />
+          <Route path="/admin/surveyor" element={<AdminSurveyorsPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          <Route path="/admin/setting" element={<AdminSettingsPage />} />
 
           {/* Seamless /superadmin/* backwards-compatibility redirects */}
           <Route path="/superadmin/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/superadmin/leads" element={<Navigate to="/admin/leads" replace />} />
+          <Route path="/superadmin/lead" element={<Navigate to="/admin/leads" replace />} />
           <Route path="/superadmin/crm-and-leads" element={<Navigate to="/admin/leads" replace />} />
           <Route path="/superadmin/jobs" element={<Navigate to="/admin/jobs" replace />} />
+          <Route path="/superadmin/job" element={<Navigate to="/admin/jobs" replace />} />
           <Route path="/superadmin/survey-jobs" element={<Navigate to="/admin/jobs" replace />} />
           <Route path="/superadmin/jobs/:jobId" element={<JobDetailsPage />} />
+          <Route path="/superadmin/job/:jobId" element={<JobDetailsPage />} />
           <Route path="/superadmin/survey-jobs/:jobId" element={<JobDetailsPage />} />
           <Route path="/superadmin/calendar" element={<Navigate to="/admin/calendar" replace />} />
           <Route path="/superadmin/booking-calendar" element={<Navigate to="/admin/calendar" replace />} />
           <Route path="/superadmin/quotes" element={<Navigate to="/admin/quotes" replace />} />
+          <Route path="/superadmin/quote" element={<Navigate to="/admin/quotes" replace />} />
           <Route path="/superadmin/quotations-and-payments" element={<Navigate to="/admin/quotes" replace />} />
           <Route path="/superadmin/terms" element={<Navigate to="/admin/terms" replace />} />
+          <Route path="/superadmin/term" element={<Navigate to="/admin/terms" replace />} />
           <Route path="/superadmin/terms-and-documents" element={<Navigate to="/admin/terms" replace />} />
           <Route path="/superadmin/reports" element={<Navigate to="/admin/reports" replace />} />
+          <Route path="/superadmin/report" element={<Navigate to="/admin/reports" replace />} />
           <Route path="/superadmin/reports-and-analytics" element={<Navigate to="/admin/reports" replace />} />
           <Route path="/superadmin/users" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/superadmin/user" element={<Navigate to="/admin/users" replace />} />
           <Route path="/superadmin/users-and-roles" element={<Navigate to="/admin/users" replace />} />
           <Route path="/superadmin/companies" element={<Navigate to="/admin/companies" replace />} />
           <Route path="/superadmin/surveyors" element={<Navigate to="/admin/surveyors" replace />} />
