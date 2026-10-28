@@ -4554,6 +4554,16 @@ select.form-input-compact {
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 12px !important;
+  color: #FFFFFF !important;
+}
+
+.credential-icon svg,
+.credential-item .credential-icon svg,
+.credentials-banner .credential-icon svg,
+.credentials-banner .text-gold,
+.credentials-banner svg,
+.credentials-notice-btn svg {
+  color: #FFFFFF !important;
 }
 
 .credential-title {
