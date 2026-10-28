@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, Building, User } from 'lucide-react';
+import { Menu, ChevronDown, Building, User, Phone, Star, ShieldCheck } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { Button } from '../common/Button';
@@ -43,6 +43,25 @@ export function Header() {
 
   return (
     <header className="site-header" role="banner">
+      {/* Top Utility Bar (Trustpilot & Hotline Benchmark from esurv.co.uk) */}
+      <div className="header-top-bar">
+        <div className="header-container flex justify-between items-center text-xs">
+          <div className="top-bar-trust flex items-center gap-2">
+            <span className="flex text-emerald-400 font-bold tracking-widest text-[11px]">★★★★★</span>
+            <span className="font-semibold text-white">4.8 / 5 on Trustpilot</span>
+            <span className="text-slate-400 hidden sm:inline">&bull; 100% RICS-Aligned Practice</span>
+          </div>
+          <div className="top-bar-contact flex items-center gap-4">
+            <a href="tel:08001699661" className="top-hotline flex items-center gap-1.5 text-slate-200 hover:text-white transition-colors">
+              <Phone size={12} className="text-emerald-400" />
+              <span>Survey Advisory: <strong className="text-white">0800 169 9661</strong></span>
+            </a>
+            <span className="text-slate-500 hidden md:inline">|</span>
+            <span className="hidden md:inline text-slate-300">Fast 48h Digital Reports</span>
+          </div>
+        </div>
+      </div>
+
       {/* Main Navigation Bar */}
       <div className="header-main">
         <div className="header-container">
@@ -105,7 +124,7 @@ export function Header() {
               </NavLink>
             </nav>
 
-            {/* Header Actions */}
+            {/* Header Actions - Strictly Customer First */}
             <div className="header-actions">
               <Button to="/login" variant="secondary" size="md" icon={User} className="header-login-btn">
                 Client Portal
@@ -134,5 +153,3 @@ export function Header() {
     </header>
   );
 }
-
-

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -15,7 +15,9 @@ import {
   Phone,
   Mail,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Sparkles,
+  SlidersHorizontal
 } from 'lucide-react';
 import { approvedServices, expertWitnessService } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
@@ -31,14 +33,27 @@ import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { HeroSlider } from '../../components/hero/HeroSlider';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 
+// Benchmark Modernization Components (benchmarked to esurv.co.uk)
+import { InstantQuoteCalculator } from '../../components/home/InstantQuoteCalculator';
+import { TrafficLightRatings } from '../../components/home/TrafficLightRatings';
+import { SurveySelector } from '../../components/home/SurveySelector';
+import { ReviewsSection } from '../../components/home/ReviewsSection';
+import { SampleReportSection } from '../../components/home/SampleReportSection';
+
 export function HomePage() {
   useDocumentTitle(
-    "Independent RICS-Aligned Property Surveys & Valuations",
-    "Specialist property surveys across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Homebuyer Level 2, Building Survey Level 3, Snagging, Valuations, and Damp Reports."
+    "The UK's Trusted Home Survey & Valuation Specialists | RICS Aligned",
+    "Independent property surveys across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. RICS Level 2 Homebuyer, Level 3 Building Surveys, Valuations, and Snagging Reports with 48h digital delivery."
   );
 
+  const [useInstantCalc, setUseInstantCalc] = useState(true);
+
   const [credentialsRef, credentialsVisible] = useScrollReveal({ threshold: 0.1 });
+  const [selectorRef, selectorVisible] = useScrollReveal({ threshold: 0.1 });
   const [servicesRef, servicesVisible] = useScrollReveal({ threshold: 0.08 });
+  const [trafficLightRef, trafficLightVisible] = useScrollReveal({ threshold: 0.1 });
+  const [sampleReportRef, sampleReportVisible] = useScrollReveal({ threshold: 0.1 });
+  const [reviewsRef, reviewsVisible] = useScrollReveal({ threshold: 0.1 });
   const [expertRef, expertVisible] = useScrollReveal({ threshold: 0.12 });
   const [processRef, processVisible] = useScrollReveal({ threshold: 0.1 });
   const [coverageRef, coverageVisible] = useScrollReveal({ threshold: 0.1 });
@@ -46,9 +61,35 @@ export function HomePage() {
 
   return (
     <div className="home-page">
-      {/* 1. HERO SLIDER SECTION (Master Spec Part 5.2 & Redesign Spec Part 3) */}
+      {/* 1. HERO SLIDER SECTION WITH INSTANT POSTCODE CALCULATOR (esurv style) */}
       <HeroSlider>
-        <QuoteRequestForm />
+        <div className="hero-calculator-container">
+          {/* Toggle between Instant 60s Calculator & Full Form */}
+          <div className="calc-mode-switch">
+            <button
+              type="button"
+              onClick={() => setUseInstantCalc(true)}
+              className={`calc-mode-btn ${useInstantCalc ? 'is-active' : ''}`}
+            >
+              <Sparkles size={13} className="mr-1 text-amber-400" />
+              <span>Instant Postcode Quote (60s)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseInstantCalc(false)}
+              className={`calc-mode-btn ${!useInstantCalc ? 'is-active' : ''}`}
+            >
+              <SlidersHorizontal size={13} className="mr-1" />
+              <span>Detailed Form</span>
+            </button>
+          </div>
+
+          {useInstantCalc ? (
+            <InstantQuoteCalculator />
+          ) : (
+            <QuoteRequestForm />
+          )}
+        </div>
       </HeroSlider>
 
       {/* 1.5. PRACTICE LIVE METRICS STRIP */}
@@ -66,24 +107,29 @@ export function HomePage() {
             </div>
             <div className="metric-ticker-sep" aria-hidden="true" />
             <div className="metric-ticker-item">
-              <span className="metric-ticker-num">3 – 5 Days</span>
-              <span className="metric-ticker-label">Fast Report Turnaround</span>
+              <span className="metric-ticker-num">48 Hours</span>
+              <span className="metric-ticker-label">Fast Report Digital Turnaround</span>
             </div>
             <div className="metric-ticker-sep" aria-hidden="true" />
             <div className="metric-ticker-item">
-              <span className="metric-ticker-num">CPR Part 35</span>
-              <span className="metric-ticker-label">Court-Admissible Legal Witness</span>
+              <span className="metric-ticker-num">4.8 / 5 ★</span>
+              <span className="metric-ticker-label">Rated Excellent on Trustpilot</span>
             </div>
           </div>
         </Container>
       </div>
 
-      {/* 2. CREDENTIALS & ACCREDITATIONS BANNER (Glassmorphic Polish) */}
+      {/* 2. CREDENTIALS & ACCREDITATIONS BANNER */}
       <div ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>
         <CredentialsBanner />
       </div>
 
-      {/* 3. EDITORIAL SURVEY SERVICES SECTION (Master Spec Part 5.3 & Redesign Spec Part 5) */}
+      {/* 3. INTERACTIVE "WHICH SURVEY DO I NEED?" TOOL (esurv benchmark) */}
+      <div ref={selectorRef} className={`reveal-init ${selectorVisible ? 'is-revealed' : ''}`}>
+        <SurveySelector />
+      </div>
+
+      {/* 4. EDITORIAL SURVEY SERVICES SECTION WITH STARTING PRICES */}
       <section
         id="services"
         ref={servicesRef}
@@ -97,7 +143,7 @@ export function HomePage() {
             subtitle="Every residential property is architecturally distinct. Select the appropriate level of technical inspection based on property age, structural form, and condition."
           />
 
-          {/* Balanced, Uniform Grid: All 5 Core Survey Services with Identical Dimensions & Image Aspect Ratios */}
+          {/* Balanced, Uniform Grid: All 5 Core Survey Services with Real UK Imagery & Starting Prices */}
           <div className="services-uniform-grid">
             {approvedServices.map(service => (
               <article key={service.id} className="editorial-service-card group stagger-item">
@@ -116,6 +162,17 @@ export function HomePage() {
 
                 {/* Card Content Body */}
                 <div className="card-body">
+                  <div className="card-price-strip">
+                    <span className="price-tag">
+                      {service.id === 'homebuyer-survey-level-2' && 'From £425 inc VAT'}
+                      {service.id === 'building-survey-level-3' && 'From £650 inc VAT'}
+                      {service.id === 'snagging-report' && 'From £350 inc VAT'}
+                      {service.id === 'valuation-report' && 'From £320 inc VAT'}
+                      {service.id === 'damp-survey' && 'From £380 inc VAT'}
+                    </span>
+                    <span className="turnaround-tag">48h Delivery</span>
+                  </div>
+
                   <h3 className="card-title">
                     <Link to={service.path}>{service.name}</Link>
                   </h3>
@@ -126,7 +183,7 @@ export function HomePage() {
                     <span className="inclusions-heading">Inspection Highlights:</span>
                     {service.inclusions.slice(0, 3).map((item, idx) => (
                       <div key={idx} className="inclusion-item">
-                        <Check size={14} className="text-gold flex-shrink-0" aria-hidden="true" />
+                        <Check size={14} className="text-emerald-500 flex-shrink-0" aria-hidden="true" />
                         <span>{item}</span>
                       </div>
                     ))}
@@ -135,10 +192,10 @@ export function HomePage() {
                   {/* Refined Action Footer */}
                   <div className="card-action-footer">
                     <Link to={service.path} className="card-details-link">
-                      <span>View Service Details</span>
+                      <span>View Full Service Scope</span>
                       <ArrowRight size={14} className="arrow-icon" aria-hidden="true" />
                     </Link>
-                    <Button to={`/contact?service=${service.id}#quote`} size="sm" variant="secondary">
+                    <Button to={`/contact?service=${service.id}#quote`} size="sm" variant="gold">
                       Get Quote
                     </Button>
                   </div>
@@ -149,7 +206,22 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 4. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (Redesign Spec Part 6) */}
+      {/* 5. TRAFFIC-LIGHT DEFECT RATINGS EXPLAINED (esurv Signature Feature) */}
+      <div ref={trafficLightRef} className={`reveal-init ${trafficLightVisible ? 'is-revealed' : ''}`}>
+        <TrafficLightRatings />
+      </div>
+
+      {/* 6. SAMPLE RICS REPORT PREVIEW & DOWNLOAD (esurv Benchmark) */}
+      <div ref={sampleReportRef} className={`reveal-init ${sampleReportVisible ? 'is-revealed' : ''}`}>
+        <SampleReportSection />
+      </div>
+
+      {/* 7. VERIFIED CLIENT REVIEWS & TRUSTPILOT 4.8★ SOCIAL PROOF */}
+      <div ref={reviewsRef} className={`reveal-init ${reviewsVisible ? 'is-revealed' : ''}`}>
+        <ReviewsSection />
+      </div>
+
+      {/* 8. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE */}
       <section
         ref={expertRef}
         className={`section expert-witness-banner-section reveal-init ${expertVisible ? 'is-revealed' : ''}`}
@@ -161,7 +233,7 @@ export function HomePage() {
               {/* Left Column: Legal Scope */}
               <div>
                 <div className="expert-eyebrow-pill">
-                  <Scale size={16} className="text-gold" aria-hidden="true" />
+                  <Scale size={16} className="text-sky-400" aria-hidden="true" />
                   <span>Civil Procedure Rules (CPR) Part 35 Compliant</span>
                 </div>
 
@@ -210,7 +282,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 5. 4-STEP CLIENT PROCESS SECTION */}
+      {/* 9. 4-STEP CLIENT PROCESS SECTION */}
       <section
         ref={processRef}
         className={`section reveal-init ${processVisible ? 'is-revealed' : ''}`}
@@ -221,7 +293,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 6. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
+      {/* 10. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
       <section
         ref={coverageRef}
         className={`section section-alt reveal-init ${coverageVisible ? 'is-revealed' : ''}`}
@@ -232,7 +304,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 7. FINAL HIGH-IMPACT CTA BANNER */}
+      {/* 11. FINAL HIGH-IMPACT CTA BANNER */}
       <section
         ref={ctaRef}
         className={`final-cta-section reveal-init ${ctaVisible ? 'is-revealed' : ''}`}
@@ -243,21 +315,21 @@ export function HomePage() {
           <div className="final-cta-content text-center">
             <span className="final-cta-eyebrow">Ready to Protect Your Investment?</span>
             <h2 className="final-cta-title">
-              Request Your Fixed-Fee Survey Quote Today
+              Request Your Fixed-Fee Survey Quote in 60 Seconds
             </h2>
             <p className="final-cta-desc">
-              Our independent surveyors inspect properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Receive an objective, detailed technical report delivered directly to your inbox.
+              Our independent surveyors inspect properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Receive an objective, detailed technical report with clear traffic-light condition ratings delivered within 48 to 72 hours.
             </p>
             <div className="final-cta-buttons">
               <Button href="#quote" variant="outline-white" size="lg" icon={ArrowRight} iconPosition="right">
-                Request a Survey Quote
+                Instant Online Quote
               </Button>
               <Button to="/contact" variant="outline-white" size="lg">
                 Speak With A Surveyor
               </Button>
             </div>
             <div className="final-cta-footer-note">
-              <span>Fast Turnaround &bull; RICS Standard Transparency &bull; No Obligation Quotation</span>
+              <span>Fast Turnaround &bull; RICS Standard Transparency &bull; 48-Hour Report Delivery</span>
             </div>
           </div>
         </Container>

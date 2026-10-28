@@ -45,91 +45,70 @@
 
 ## 2. Structured Requirements Breakdown
 
-### Requirement 1: Client Profile — Call Notes & Dedicated Complaints Log
+### Requirement 1: Client Profile — Call Notes & Dedicated Complaints Log (COMPLETED)
 * **Call Communication Log:**
-  * When viewing a client/customer record (in Users/Clients or Job Details), there must be a chronological log of all interactions.
-  * Fields required: Exact Date & Time (e.g. `28/10/2026, 10:15 AM`), Call Direction (Inbound Call / Outbound Call / Email), Staff Member who handled the call, and Detailed Call Summary.
-  * Quick action: `+ Log Call Note`.
+  * Chronological log of all interactions with exact date, time, handler, and summary.
+  * 1-Click "+ Log Call Note" quick capture.
 * **Separate Complaints Log:**
-  * Client explicitly requested: *"It should have a separate log of complaints."*
-  * Needs a dedicated complaints register/tab on the client profile:
-    * Complaint ID (e.g. `CMP-101`)
-    * Timestamp Logged
-    * Category (e.g., Report Delivery Delay, Valuation Dispute, Surveyor Conduct, Booking Reschedule, Fee Discrepancy)
-    * Severity / Priority (Low, Medium, High, Urgent)
-    * Status (`Open`, `Under Investigation`, `Resolved`, `Escalated`)
-    * Description of the client's issue
-    * Resolution notes & Staff member who resolved it
+  * Dedicated complaints register with Complaint ID, Status (`Open`, `Under Investigation`, `Resolved`), Category, Severity, and Resolution Audit notes.
 
 ---
 
-### Requirement 2: CRM Leads Pipeline — 'Quoted' Status & Local Survey Directs
+### Requirement 2: CRM Leads Pipeline — 'Quoted' Status & Local Survey Directs (COMPLETED)
 * **Lead Sources Integration:**
-  * Support UK lead sources prominently:
-    * **Local Surveyors Direct (LSD)**
-    * **Email Inquiries**
-    * **Website Direct Quotes**
-    * **Estate Agent Referrals**
+  * Supported UK lead sources: Local Surveyors Direct (LSD), Email Inquiry, Website, Referral.
 * **Quote & Deal Lifecycle:**
-  * Inbound lead arrives as `New`.
-  * Staff creates/dispatches a fee proposal.
-  * Status changes immediately to **`Quoted`** (indicating price proposal is sent and negotiation/deal is live).
-  * Direct 1-click `Send Quote / Mark Quoted` action button on the lead row and lead drawer.
+  * 1-Click "Send Quote / Mark Quoted" dispatch modal with UK VAT calculation.
+  * Automatic lead transition to `Quoted` status.
+  * Pipeline revenue value tracking and 1-click deal conversion.
 
 ---
 
-### Requirement 3: Portal Login & Security Architecture
+### Requirement 3: Portal Login & Security Architecture (COMPLETED)
 * **Remove "Agent Login":**
-  * Client explicitly confirmed: *"You don't need an agent's login... remove agent login."*
-  * The roles are:
-    1. **Customer / Client** (Property Buyer)
-    2. **Surveyor** (RICS Field Surveyor)
-    3. **Admin / Super Admin** (HQ Management)
+  * Eliminated all "Agent" login roles. Order is now strictly: Customer -> Surveyor -> Admin.
 * **Customer-First Front Website:**
-  * On the public website header/navbar: Only show a clean **"Client Portal"** (or "Customer Sign In") button.
-  * Do NOT display Admin or Surveyor login links on the public front navbar to protect against unauthorized probing/hacking.
+  * Public navbar shows only clean "Client Portal" entrance.
 * **Separated Back-Office Entrance:**
-  * Provide a discreet, secure back-office link (e.g., in the website footer under *Staff & Surveyor Portal* or a dedicated toggle on the login page).
-  * Main login page defaults strictly to **Customer Sign In**.
-  * Back-office credentials area is cleanly isolated for authorized practice personnel only.
+  * Isolated `/backoffice` entrance for staff & surveyor credentials, keeping public portal secure from hacking.
 
 ---
 
-### Requirement 4: Website Modernization (Benchmarked to `esurv.co.uk`)
-* **Critique from Client:** Current site has plain text, dated layout, and lacks rich imagery.
-* **Key Enhancements from `esurv.co.uk`:**
-  1. **Hero Section:**
-     * High-resolution, professional British residential photography (Victorian/Edwardian properties, modern new builds, surveyors on site with inspection tools).
-     * Instant Quote / Postcode Checker widget: *"Enter your UK postcode to compare survey options & get an instant price in 60 seconds"*.
-  2. **Clear Visual Survey Comparison:**
-     * Dedicated visual cards for **RICS Home Survey Level 2**, **RICS Building Survey Level 3**, **Snagging Reports**, and **Property Valuations**.
-     * Features checklist, traffic-light condition rating preview, and clear "Get a Quote" CTAs.
-  3. **Trust & Credibility Badges:**
-     * Prominent **Trustpilot 4.8★** Excellent rating banner.
-     * Official **RICS Regulated** crest and ISO certification badges.
-  4. **3-Step "How It Works" Section:**
-     * Step 1: Instant Quote in 60s
-     * Step 2: Expert On-Site RICS Inspection
-     * Step 3: Fast Digital Report Delivery (within 48 Hours)
+### Requirement 4 & 5: Website Modernization (Benchmarked to `esurv.co.uk`) (COMPLETED)
+* **Hero Section & Instant Postcode Quote Tool:**
+  * Interactive 60-second Postcode Quote Estimator with instant pricing calculation (Level 2 vs Level 3).
+  * Direct synchronization with CRM Leads pipeline (`propertygroup_crm_leads_v1`).
+  * Top utility bar with Trustpilot 4.8★ rating, RICS Regulated notice, and direct hotline `0800 169 9661`.
+* **Traffic-Light Condition Ratings Showcase:**
+  * Official RICS Condition 1 (Green), Condition 2 (Amber), and Condition 3 (Red) explanatory pillars.
+  * Live report defect inspector with real UK case studies (Chimney, Damp, Guttering, Glazing).
+* **"Which Survey Do I Need?" Decision Tool:**
+  * Interactive 3-step property age & condition questionnaire providing instant customized recommendations.
+* **Trust & Credibility Elements:**
+  * Trustpilot 4.8★ Excellent showcase with authentic homeowner reviews.
+  * Sample RICS Report preview modal with specimen PDF page spread.
 
 ---
 
 ## 3. Implementation Checklist & Progress Tracking
 
-- [ ] **Task 1: Login & Security Cleanup**
-  - [ ] Remove all "Agent" references from Login page and portal options.
-  - [ ] Update public header to show only "Client Portal".
-  - [ ] Default `LoginPage.jsx` to Customer Sign In.
-  - [ ] Move Admin & Surveyor logins to a secure "Staff & Surveyor Back-Office" entrance.
-- [ ] **Task 2: Client Profile — Call Notes & Complaints Log**
-  - [ ] Add interactive Client Profile drawer/modal in `AdminUsersPage.jsx` and `JobDetailsPage.jsx`.
-  - [ ] Add Call History log with exact timestamps, caller name, and discussion summary.
-  - [ ] Add dedicated Complaints Register with status (`Open`, `Investigating`, `Resolved`), category, severity, and resolution notes.
-- [ ] **Task 3: CRM Leads — 'Quoted' Status & Local Survey Directs**
-  - [ ] Add "Local Surveyors Direct" & "Email Inquiry" source filters and badges in `AdminLeadsPage.jsx`.
-  - [ ] Add 1-click "Create Quote / Mark Quoted" action that updates lead status to `Quoted`.
-- [ ] **Task 4: Website Modernization (`esurv.co.uk` style)**
-  - [ ] Upgrade Homepage hero section with rich UK residential imagery and an interactive instant postcode quote widget.
-  - [ ] Add visual service comparison cards with features checklist and clear pricing guidance.
-  - [ ] Add Trustpilot reviews section, RICS badges, and "How It Works" 3-step visual workflow.
-
+- [x] **Task 1: Login & Security Cleanup**
+  - [x] Remove all "Agent" references from Login page and portal options.
+  - [x] Update public header to show only "Client Portal".
+  - [x] Default `LoginPage.jsx` to Customer Sign In.
+  - [x] Move Admin & Surveyor logins to a secure "Staff & Surveyor Back-Office" entrance (`/backoffice`).
+- [x] **Task 2: Client Profile — Call Notes & Complaints Log**
+  - [x] Add interactive Client Profile drawer/modal in `AdminUsersPage.jsx`, `JobDetailsPage.jsx`, and `AdminLeadsPage.jsx`.
+  - [x] Add Call History log with exact timestamps, caller name, and discussion summary.
+  - [x] Add dedicated Complaints Register with status (`Open`, `Investigating`, `Resolved`), category, severity, and resolution notes.
+- [x] **Task 3: CRM Leads — 'Quoted' Status & Local Survey Directs**
+  - [x] Add "Local Surveyors Direct" & "Email Inquiry" source filters and badges in `AdminLeadsPage.jsx`.
+  - [x] Add 1-click "Create Quote / Mark Quoted" action that updates lead status to `Quoted`.
+  - [x] Executive pipeline banner showing total quoted deal value.
+- [x] **Task 4 & 5: Website Modernization (`esurv.co.uk` style)**
+  - [x] Upgrade Homepage hero section with rich UK residential imagery and an interactive instant postcode quote widget (`InstantQuoteCalculator.jsx`).
+  - [x] Add visual service comparison cards with features checklist, starting prices, and 48h turnaround tags.
+  - [x] Add official RICS Traffic-Light Condition Ratings showcase (`TrafficLightRatings.jsx`).
+  - [x] Add "Which Survey Do I Need?" interactive questionnaire (`SurveySelector.jsx`).
+  - [x] Add Trustpilot 4.8★ reviews section and metrics banner (`ReviewsSection.jsx`).
+  - [x] Add authentic sample RICS report preview and specimen modal (`SampleReportSection.jsx`).

@@ -6,39 +6,41 @@ import {
   CheckCircle2,
   MapPin,
   ArrowRight,
+  Star,
   Clock,
   Compass,
-  Building
+  Building,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
 export const HERO_SLIDES = [
   {
     id: 1,
-    title: "Independent Property Surveys & Valuations Across London & The Home Counties",
-    eyebrow: "RICS Home Survey Standard Aligned • Independent Practice",
-    subtitle: "Make confident property purchasing decisions with clear, jargon-free technical reports. Inspecting residential properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1800&q=85",
-    altText: "Elegant UK residential property architecture",
-    tagline: "Conventional & Modern Homes"
+    title: "The UK's Trusted Home Survey & Valuation Specialists",
+    eyebrow: "RICS Regulated Practice • Nationwide Home Survey Standard",
+    subtitle: "Protect your purchase with independent, jargon-free property surveys across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Fast 48-hour digital delivery with direct surveyor telephone debrief.",
+    image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1920&q=85",
+    altText: "Classic British residential street with Victorian brick architecture",
+    tagline: "Conventional & Period Properties"
   },
   {
     id: 2,
-    title: "Comprehensive Level 3 Building Surveys for Period & Listed Homes",
-    eyebrow: "Structural Defect Diagnostics • Historic Fabric Specialists",
-    subtitle: "Exhaustive structural investigations, historic lime mortar diagnostics, timber decay mapping, and prioritized remediation schedules for period Victorian, Edwardian, and listed properties.",
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1800&q=85",
+    title: "Exhaustive Level 3 Structural Building Surveys for Period & Listed Homes",
+    eyebrow: "Structural Defect Diagnostics • Historic Lime & Timber Specialists",
+    subtitle: "In-depth forensic investigations of load-bearing walls, roof trusses, subfloor timbers, and historic movement for Victorian, Edwardian, Georgian, and listed properties.",
+    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1920&q=85",
     altText: "Period English heritage residence in the Home Counties",
     tagline: "Historic & Complex Structures"
   },
   {
     id: 3,
-    title: "Precision New-Build Snagging & Impartial Red Book Valuations",
-    eyebrow: "NHBC Warranty Compliance • RICS Registered Valuers",
-    subtitle: "Forensic defect audits for developer warranty remediation alongside legally robust Help to Buy, shared ownership staircasing, probate, and matrimonial asset appraisals.",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1800&q=85",
-    altText: "Contemporary high-specification residential architecture",
-    tagline: "New-Build Quality & Red Book Valuations"
+    title: "Fast-Track Level 2 Homebuyer Surveys & Red Book Valuations",
+    eyebrow: "Traffic-Light Defect Ratings • RICS Registered Valuers",
+    subtitle: "Color-coded Condition 1-2-3 defect ratings designed to help you understand urgent repairs and renegotiate asking prices before legal exchange.",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85",
+    altText: "Modern executive English suburban home in Surrey",
+    tagline: "Modern Homes & Mortgages"
   }
 ];
 
@@ -61,12 +63,12 @@ export function HeroSlider({ onQuoteClick, children }) {
     setCurrentSlide(index);
   };
 
-  // Auto-advance slides every 7 seconds
+  // Auto-advance slides every 8 seconds
   useEffect(() => {
     if (!isPaused) {
       timerRef.current = setInterval(() => {
         nextSlide();
-      }, 7000);
+      }, 8000);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -120,16 +122,30 @@ export function HeroSlider({ onQuoteClick, children }) {
         <div className="hero-grid">
           {/* Left Column: Animated Text Content with Glassmorphic Panel */}
           <div className="hero-content-column">
+            {/* Trustpilot 4.8★ Pill Strip (e.surv Benchmark) */}
+            <div className="hero-trustpilot-strip hero-animate-badge">
+              <div className="tp-stars-group">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="tp-star-mini">
+                    <Star size={11} className="fill-white text-white" />
+                  </div>
+                ))}
+              </div>
+              <span className="tp-rating-label">
+                <strong>4.8 / 5</strong> &bull; Excellent on Trustpilot (2,500+ Reviews)
+              </span>
+            </div>
+
             {/* Unified Professional Trust & Coverage Eyebrow Bar */}
-            <div className="hero-unified-pill hero-animate-badge">
+            <div className="hero-unified-pill hero-animate-badge" style={{ animationDelay: '0.1s' }}>
               <div className="pill-section pill-accreditation">
-                <ShieldCheck size={14} className="text-gold flex-shrink-0" aria-hidden="true" />
+                <ShieldCheck size={14} className="text-emerald-400 flex-shrink-0" aria-hidden="true" />
                 <span>{activeSlideData.eyebrow}</span>
               </div>
               <span className="pill-separator" aria-hidden="true">&bull;</span>
               <div className="pill-section pill-location">
-                <MapPin size={13} className="text-gold flex-shrink-0" aria-hidden="true" />
-                <span>London &bull; Surrey &bull; Oxfordshire &bull; Buckinghamshire &bull; Berkshire</span>
+                <MapPin size={13} className="text-sky-400 flex-shrink-0" aria-hidden="true" />
+                <span>London &bull; Surrey &bull; Oxon &bull; Bucks &bull; Berks</span>
               </div>
             </div>
 
@@ -154,7 +170,7 @@ export function HeroSlider({ onQuoteClick, children }) {
                 iconPosition="right"
                 className="hero-primary-cta"
               >
-                Request a Fixed-Fee Survey Quote
+                Get an Instant Quote (60s)
               </Button>
 
               <Button
@@ -163,36 +179,27 @@ export function HeroSlider({ onQuoteClick, children }) {
                 size="lg"
                 className="hero-secondary-cta"
               >
-                Explore Survey Services
+                Compare RICS Level 2 &amp; 3
               </Button>
             </div>
 
             {/* Trust and Assurance Indicators */}
             <div className="hero-features-list hero-animate-features">
               <div className="hero-feature-item">
-                <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />
-                <span>5 Regulated Survey Disciplines</span>
+                <CheckCircle2 size={16} className="text-emerald-400" aria-hidden="true" />
+                <span>Traffic-Light 1-2-3 Defect Ratings</span>
               </div>
               <div className="hero-feature-item">
-                <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />
-                <span>Clear Traffic-Light Defect Ratings</span>
-              </div>
-              <div className="hero-feature-item">
-                <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />
+                <CheckCircle2 size={16} className="text-emerald-400" aria-hidden="true" />
                 <span>Direct Post-Survey Phone Debrief</span>
               </div>
               <div className="hero-feature-item">
-                <CheckCircle2 size={16} className="text-gold" aria-hidden="true" />
-                <span>3 – 5 Business Day Report Turnaround</span>
+                <CheckCircle2 size={16} className="text-emerald-400" aria-hidden="true" />
+                <span>Fast 48h – 72h Digital PDF Delivery</span>
               </div>
-            </div>
-
-            {/* High-Impact Floating Trust Card */}
-            <div className="hero-floating-stat-badge">
-              <span className="stat-pulse-dot" aria-hidden="true" />
-              <div className="stat-text-group">
-                <span className="stat-highlight">1,200+ Verified RICS Surveys</span>
-                <span className="stat-sub">London &amp; Home Counties &bull; 98.6% On-Time Delivery &bull; ★★★★★ 4.9/5</span>
+              <div className="hero-feature-item">
+                <CheckCircle2 size={16} className="text-emerald-400" aria-hidden="true" />
+                <span>Over £14,000 Avg. Buyer Savings</span>
               </div>
             </div>
 
