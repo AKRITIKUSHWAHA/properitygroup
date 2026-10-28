@@ -100,7 +100,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     if (switchRole) {
       switchRole(roleKey);
     }
-    const targetPath = ROLE_NAVIGATION[roleKey]?.defaultPath || '/superadmin/dashboard';
+    const targetPath = ROLE_NAVIGATION[roleKey]?.defaultPath || '/admin/dashboard';
     navigate(targetPath);
   };
 

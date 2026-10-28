@@ -394,7 +394,7 @@ export const AdminLeadsPage = () => {
       <PageHeader
         title="CRM & Leads Pipeline"
         subtitle="Track incoming survey enquiries, conversion funnels, quote acceptance, and customer engagement."
-        breadcrumb={['Super Admin', 'CRM & Leads']}
+        breadcrumb={['Admin', 'CRM & Leads']}
         actionLabel="New Lead"
         actionIcon={Plus}
         onAction={() => setIsNewModalOpen(true)}

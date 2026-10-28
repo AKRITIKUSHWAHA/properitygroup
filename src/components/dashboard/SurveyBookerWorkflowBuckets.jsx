@@ -53,7 +53,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: Layers,
       color: 'bg-slate-50 text-slate-700 border-slate-200',
       activeColor: 'bg-[#0B1F4D] text-white border-[#0B1F4D]',
-      targetRoute: '/superadmin/survey-jobs',
+      targetRoute: '/admin/jobs',
       desc: 'All active instructions, leads & archive',
     },
     {
@@ -64,7 +64,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: FileText,
       color: 'bg-blue-50/70 text-blue-700 border-blue-200/80',
       activeColor: 'bg-blue-600 text-white border-blue-600',
-      targetRoute: '/superadmin/leads?filter=New',
+      targetRoute: '/admin/leads?filter=New',
       desc: 'Inbound LSD & direct quote requests',
     },
     {
@@ -75,7 +75,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: Send,
       color: 'bg-indigo-50/70 text-indigo-700 border-indigo-200/80',
       activeColor: 'bg-indigo-600 text-white border-indigo-600',
-      targetRoute: '/superadmin/survey-jobs?filter=Accepted',
+      targetRoute: '/admin/jobs?filter=Accepted',
       desc: 'Accepted proposals awaiting agreement dispatch',
     },
     {
@@ -86,7 +86,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: Calendar,
       color: 'bg-amber-50/70 text-amber-700 border-amber-200/80',
       activeColor: 'bg-amber-600 text-white border-amber-600',
-      targetRoute: '/superadmin/survey-jobs?filter=Payment received',
+      targetRoute: '/admin/jobs?filter=Payment received',
       desc: 'Settled payments ready for vendor access liaising',
     },
     {
@@ -97,7 +97,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: CalendarDays,
       color: 'bg-emerald-50/70 text-emerald-700 border-emerald-200/80',
       activeColor: 'bg-emerald-600 text-white border-emerald-600',
-      targetRoute: '/superadmin/survey-jobs?filter=Booked',
+      targetRoute: '/admin/jobs?filter=Booked',
       desc: 'Scheduled on-site surveyor attendances',
     },
     {
@@ -108,7 +108,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       icon: Upload,
       color: 'bg-rose-50/70 text-rose-700 border-rose-200/80',
       activeColor: 'bg-rose-600 text-white border-rose-600',
-      targetRoute: '/superadmin/survey-jobs?filter=Survey done',
+      targetRoute: '/admin/jobs?filter=Survey done',
       desc: 'Surveys inspected awaiting final PDF release',
     },
   ];

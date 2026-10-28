@@ -5,7 +5,7 @@ export const DEMO_USERS = {
     email: 'admin@demo.com',
     name: 'Alexander Sterling',
     role: 'super_admin',
-    roleLabel: 'Super Admin',
+    roleLabel: 'Admin',
     department: 'Executive Operations',
     company: 'UK Property Surveying Practice HQ',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',

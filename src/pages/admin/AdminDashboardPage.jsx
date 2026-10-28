@@ -74,9 +74,9 @@ export const AdminDashboardPage = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Super Admin Dashboard"
+        title="Admin Dashboard"
         subtitle="Executive survey operations, bookings growth, revenue performance, and surveyor management across the UK."
-        breadcrumb={['Super Admin', 'Dashboard']}
+        breadcrumb={['Admin', 'Dashboard']}
         actionLabel="Create Survey Job"
         actionIcon={Plus}
         onAction={() => setIsModalOpen(true)}

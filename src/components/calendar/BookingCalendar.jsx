@@ -28,7 +28,7 @@ export const BookingCalendar = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const targetJobBase = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
+  const targetJobBase = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
 
   // Shared persistent jobs state
   const { jobs, setJobs, addJob } = useJobs();

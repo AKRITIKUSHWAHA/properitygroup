@@ -36,7 +36,7 @@ export const AdminUsersPage = () => {
       name: 'Alexander Sterling',
       email: 'admin@demo.com',
       role: 'super_admin',
-      roleLabel: 'Super Admin',
+      roleLabel: 'Admin',
       org: 'UK Property Surveying Practice HQ',
       lastLogin: '27/10/2026, 17:40',
       status: 'Active',
@@ -120,7 +120,7 @@ export const AdminUsersPage = () => {
     if (!formData.name.trim() || !formData.email.trim()) return;
 
     const roleMap = {
-      super_admin: 'Super Admin',
+      super_admin: 'Admin',
       admin_staff: 'Admin / Staff',
       surveyor: 'Surveyor',
       customer: 'Customer',
@@ -151,7 +151,7 @@ export const AdminUsersPage = () => {
   const tabs = useMemo(() => {
     return [
       { id: 'All', label: 'All Users', count: users.length },
-      { id: 'super_admin', label: 'Super Admins', count: users.filter((u) => u.role === 'super_admin').length },
+      { id: 'super_admin', label: 'Admins', count: users.filter((u) => u.role === 'super_admin').length },
       { id: 'admin_staff', label: 'Staff', count: users.filter((u) => u.role === 'admin_staff').length },
       { id: 'surveyor', label: 'Surveyors', count: users.filter((u) => u.role === 'surveyor').length },
       { id: 'customer', label: 'Customers', count: users.filter((u) => u.role === 'customer').length },
@@ -305,7 +305,7 @@ export const AdminUsersPage = () => {
       <PageHeader
         title="Users & Access Roles"
         subtitle="Provision employee logins, define RBAC permissions, and manage chartered surveyor accounts across the UK."
-        breadcrumb={['Super Admin', 'Users & Roles']}
+        breadcrumb={['Admin', 'Users & Roles']}
         actionLabel="Add New User"
         actionIcon={Plus}
         onAction={() => setIsAddModalOpen(true)}
@@ -395,7 +395,7 @@ export const AdminUsersPage = () => {
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
               >
-                <option value="super_admin">Super Admin</option>
+                <option value="super_admin">Admin</option>
                 <option value="admin_staff">Admin / Staff</option>
                 <option value="surveyor">Surveyor</option>
                 <option value="customer">Customer</option>

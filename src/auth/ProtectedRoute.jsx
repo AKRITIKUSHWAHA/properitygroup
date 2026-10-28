@@ -9,13 +9,14 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
 
   // Auto-align demo session role with the route being visited
   useEffect(() => {
-    if ((location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) && user?.role !== 'super_admin') {
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+    if ((location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) && !isAdmin) {
       switchRole('super_admin');
-    } else if (location.pathname.startsWith('/staff') && user?.role !== 'admin_staff' && user?.role !== 'super_admin') {
+    } else if (location.pathname.startsWith('/staff') && user?.role !== 'admin_staff' && !isAdmin) {
       switchRole('admin_staff');
-    } else if (location.pathname.startsWith('/surveyor') && user?.role !== 'surveyor' && user?.role !== 'super_admin') {
+    } else if (location.pathname.startsWith('/surveyor') && user?.role !== 'surveyor' && !isAdmin) {
       switchRole('surveyor');
-    } else if (location.pathname.startsWith('/customer') && user?.role !== 'customer' && user?.role !== 'super_admin') {
+    } else if (location.pathname.startsWith('/customer') && user?.role !== 'customer' && !isAdmin) {
       switchRole('customer');
     }
   }, [location.pathname, user?.role, switchRole]);
@@ -40,9 +41,17 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  const isAdmin = user.role === 'super_admin' || user.role === 'admin';
+
+  // Admin has universal super-user access to all modules across the application
+  if (isAdmin) {
+    return children ? children : <Outlet />;
+  }
+
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    // If Super Admin accesses staff/surveyor/customer routes, allow it
-    if (user.role === 'super_admin') {
+    // If accessing an admin route in demo mode, auto-switch to admin instead of throwing 403
+    if (location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) {
+      switchRole('super_admin');
       return children ? children : <Outlet />;
     }
     return <Navigate to="/403" replace />;

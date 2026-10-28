@@ -286,7 +286,7 @@ export const AdminTermsPage = () => {
       <PageHeader
         title="Terms of Engagement & Legal Documents"
         subtitle="Manage legally binding RICS contractual templates across 6 surveying disciplines and monitor digital signature execution."
-        breadcrumb={['Super Admin', 'Terms & Documents']}
+        breadcrumb={['Admin', 'Terms & Documents']}
         actionLabel="Send Terms to Client"
         actionIcon={FileSignature}
         onAction={() => setIsSendTermsModalOpen(true)}

@@ -181,7 +181,7 @@ export const AdminCompaniesPage = () => {
       <PageHeader
         title="Companies & Estate Agency Panels"
         subtitle="Manage referral partnerships with London and Home Counties estate agency branches and law firms."
-        breadcrumb={['Super Admin', 'Companies']}
+        breadcrumb={['Admin', 'Companies']}
         actionLabel="Add Agency Branch"
         actionIcon={Plus}
         onAction={() => setIsAddModalOpen(true)}

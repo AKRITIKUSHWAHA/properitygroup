@@ -53,7 +53,7 @@ export const JobDetailsPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
+  const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
   const { addCallLog } = useClientProfiles();
