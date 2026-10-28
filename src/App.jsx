@@ -18,6 +18,7 @@ import { DampSurveyPage } from './pages/public/DampSurveyPage';
 import { ExpertWitnessPage } from './pages/public/ExpertWitnessPage';
 import { ContactPage } from './pages/public/ContactPage';
 import { RedirectsPage } from './pages/public/RedirectsPage';
+import { NotFoundPage } from './pages/public/NotFoundPage';
 
 // Auth Pages
 import { LoginPage } from './pages/auth/LoginPage';
@@ -106,6 +107,13 @@ function AppRoutes() {
         <Route path="/redirects" element={<RedirectsPage />} />
         <Route path="/REDIRECTS.md" element={<RedirectsPage />} />
         <Route path="/redirects.md" element={<RedirectsPage />} />
+        {/* Legacy Retired Services Redirects (Master Spec Part 4 & 9) */}
+        <Route path="/construction" element={<Navigate to="/services/building-survey-level-3" replace />} />
+        <Route path="/construction/*" element={<Navigate to="/services/building-survey-level-3" replace />} />
+        <Route path="/real-estate" element={<Navigate to="/services/valuation-report" replace />} />
+        <Route path="/real-estate/*" element={<Navigate to="/services/valuation-report" replace />} />
+        {/* Public 404 with Header & Footer */}
+        <Route path="/404" element={<NotFoundPage />} />
       </Route>
 
       {/* 2. Portal Shortcut for Dashboard Navigation */}
@@ -202,7 +210,7 @@ function AppRoutes() {
       </Route>
 
       {/* Fallback Catch-All */}
-      <Route path="*" element={<NotFound404Page />} />
+      <Route element={<PublicLayout />}><Route path="*" element={<NotFoundPage />} /></Route>
     </Routes>
   );
 }

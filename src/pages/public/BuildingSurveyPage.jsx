@@ -1,5 +1,17 @@
 import React from 'react';
-import { CheckCircle2, ShieldCheck, MapPin, Check, AlertTriangle, Layers, Home } from 'lucide-react';
+import {
+  CheckCircle2,
+  ShieldCheck,
+  MapPin,
+  Check,
+  AlertTriangle,
+  Layers,
+  Home,
+  Clock,
+  Phone,
+  Building,
+  FileCheck2
+} from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -19,79 +31,109 @@ export function BuildingSurveyPage() {
   );
 
   const breadcrumbs = [
+    { label: "Home", path: "/" },
     { label: "Services", path: "/#services" },
     { label: service.name, path: service.path }
   ];
 
   return (
-    <div className="service-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${service.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">{service.badge}</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {service.ricsBenchmark}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">{service.badge}</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {service.ricsBenchmark}
+              </span>
+            </div>
+            <h1 className="page-header-title">{service.name}</h1>
+            <p className="page-header-desc">{service.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>RICS Benchmark Level 3</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>3 – 5 Business Day Turnaround</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Period, Altered &amp; Listed Properties</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Surveyor Phone Consultation Included</span>
+              </span>
+            </div>
           </div>
-          <h1>{service.name}</h1>
-          <p className="page-header-desc">{service.tagline}</p>
         </Container>
       </header>
 
       {/* Main Content & Quote Request Grid */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start' }}>
+          <div className="service-detail-grid">
             {/* Left Column: Deep Structural Guidance */}
             <div>
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>Comprehensive Structural Investigation (Level 3)</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)' }}>
+              {/* Overview Card */}
+              <div className="service-overview-card">
+                <h2 className="service-section-title">Comprehensive Structural Investigation (Level 3)</h2>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
                   The RICS Level 3 Building Survey represents the most rigorous, detailed property inspection available in the UK residential sector. Formerly known as a Full Structural Survey, it is specifically commissioned for older properties, architecturally complex structures, listed buildings, and homes that have undergone extensive alterations or show evidence of structural movement.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)' }}>
+                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
                   Our surveyors conduct an exhaustive physical investigation into structural fabric integrity, roof trusses, subfloor cavities, foundation stability, moisture transmission, and historic building materials. The resultant report provides a prioritized defect remediation schedule, technical repair advice, and analysis of the consequences of inaction.
                 </p>
               </div>
 
-              {/* What the Level 3 Investigation Includes */}
-              <div style={{ marginBottom: 'var(--space-8)', backgroundColor: 'var(--color-light-grey)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
+              {/* Inclusions Card */}
+              <div className="service-inclusions-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   What the Level 3 Structural Inspection Includes:
                 </h3>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="inclusions-grid-2">
                   {service.inclusions.map((item, idx) => (
-                    <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
+                    <div key={idx} className="inclusion-point-item">
+                      <CheckCircle2 size={18} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
                       <span>{item}</span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
 
               {/* Suitability Criteria */}
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
+              <div className="service-overview-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   When is a Level 3 Building Survey Essential?
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
                   {service.recommendedFor.map((item, idx) => (
                     <div
                       key={idx}
                       style={{
-                        padding: 'var(--space-3)',
-                        borderRadius: 'var(--radius-md)',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
                         border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: 'var(--color-white)',
-                        fontSize: 'var(--font-size-xs)',
+                        backgroundColor: '#F8FAFC',
+                        fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        color: '#1E293B'
                       }}
                     >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)' }} />
+                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -99,20 +141,20 @@ export function BuildingSurveyPage() {
               </div>
 
               {/* Level 2 vs Level 3 Comparison Box */}
-              <div style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-5)', border: '1px solid var(--color-border-medium)', borderRadius: 'var(--radius-lg)' }}>
-                <h4 style={{ color: 'var(--color-primary-navy)', marginBottom: 'var(--space-3)' }}>
+              <div className="service-overview-card" style={{ border: '2px solid #142A43' }}>
+                <h4 style={{ color: '#0F172A', marginBottom: '1rem', fontSize: '1.15rem', fontWeight: 700 }}>
                   Key Difference: Level 2 vs Level 3 Building Survey
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', fontSize: 'var(--font-size-xs)' }}>
-                  <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-light-grey)', borderRadius: 'var(--radius-md)' }}>
-                    <strong>Level 2 Homebuyer Survey:</strong>
-                    <p style={{ marginTop: '0.25rem', color: 'var(--color-muted-text)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
+                  <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <strong style={{ color: '#0F172A', display: 'block', marginBottom: '0.35rem' }}>Level 2 Homebuyer Survey:</strong>
+                    <p style={{ color: '#64748B', margin: 0, lineHeight: 1.5 }}>
                       Concise visual overview focusing on urgent defects in standard, modern properties post-1900. No detailed repair specifications.
                     </p>
                   </div>
-                  <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-accent-gold-soft)', borderRadius: 'var(--radius-md)' }}>
-                    <strong>Level 3 Building Survey:</strong>
-                    <p style={{ marginTop: '0.25rem', color: 'var(--color-primary-dark)' }}>
+                  <div style={{ padding: '1rem', backgroundColor: '#F1F5F9', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                    <strong style={{ color: '#0A1624', display: 'block', marginBottom: '0.35rem' }}>Level 3 Building Survey:</strong>
+                    <p style={{ color: '#1E293B', margin: 0, lineHeight: 1.5 }}>
                       Exhaustive structural appraisal, materials specification, diagnosis of underlying defect causes, and comprehensive long-term maintenance advice.
                     </p>
                   </div>
@@ -120,19 +162,19 @@ export function BuildingSurveyPage() {
               </div>
 
               {/* Regional Structural Context */}
-              <div style={{ padding: 'var(--space-5)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
+              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
                   <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
                   <span>Period &amp; Heritage Properties Across The Region</span>
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-muted-text)' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
                   Our building surveyors have deep familiarity with period London Victorian and Edwardian conversions, clay subsoil subsidence in Surrey and Berkshire, timber-framed Buckinghamshire barns, and historic Cotswold stone architecture across Oxfordshire.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Sticky Quote Form */}
-            <div style={{ position: 'sticky', top: '90px' }}>
+            <div className="service-quote-sidebar">
               <QuoteRequestForm defaultServiceId={service.id} />
             </div>
           </div>
@@ -148,4 +190,3 @@ export function BuildingSurveyPage() {
     </div>
   );
 }
-

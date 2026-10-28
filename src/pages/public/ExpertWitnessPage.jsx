@@ -21,26 +21,52 @@ export function ExpertWitnessPage() {
   ];
 
   return (
-    <div className="expert-witness-page">
-      {/* Header Banner */}
-      <header className="page-header" style={{ borderBottomColor: 'var(--color-accent-gold)' }}>
+    <div className="expert-witness-page service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${expertWitnessService.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">Civil Litigation Practice</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {expertWitnessService.cprCompliance}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">Civil Litigation Practice</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {expertWitnessService.cprCompliance}
+              </span>
+            </div>
+            <h1 className="page-header-title">{expertWitnessService.name}</h1>
+            <p className="page-header-desc">{expertWitnessService.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <Scale size={14} className="text-white" />
+                <span>Civil Procedure Rules (CPR) Part 35</span>
+              </span>
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>Overriding Duty to the Court</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Scott Schedules &amp; Quantum Diagnostics</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Solicitor &amp; Direct Litigation Instructions</span>
+              </span>
+            </div>
           </div>
-          <h1>{expertWitnessService.name}</h1>
-          <p className="page-header-desc">{expertWitnessService.tagline}</p>
         </Container>
       </header>
 
       {/* Main Section */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.15fr 0.85fr', alignItems: 'start' }}>
+          <div className="expert-detail-grid">
             {/* Left Column: Legal Context & Scope */}
             <div>
               {/* Introduction */}
@@ -147,7 +173,7 @@ export function ExpertWitnessPage() {
             </div>
 
             {/* Right Column: Separate Expert Witness Enquiry Form (Master Spec Part 7 Item 5) */}
-            <div id="instruction" style={{ position: 'sticky', top: '90px' }}>
+            <div id="instruction" className="service-quote-sidebar">
               <ExpertWitnessForm />
             </div>
           </div>

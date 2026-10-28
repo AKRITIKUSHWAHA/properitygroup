@@ -89,7 +89,6 @@ export function CredentialsBanner() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              paddingTop: '6rem',
               overflowY: 'auto'
             }}
             role="dialog"
@@ -108,7 +107,8 @@ export function CredentialsBanner() {
                 boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)',
                 border: '1px solid #E2E8F0',
                 position: 'relative',
-                maxHeight: 'calc(100vh - 8rem)',
+                margin: 'auto',
+                maxHeight: 'min(580px, calc(100vh - 4rem))',
                 overflowY: 'auto'
               }}
               onClick={(e) => e.stopPropagation()}

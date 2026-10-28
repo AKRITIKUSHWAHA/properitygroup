@@ -1,5 +1,17 @@
 import React from 'react';
-import { CheckCircle2, Award, MapPin, Check, FileCheck, Scale, Banknote } from 'lucide-react';
+import {
+  CheckCircle2,
+  Award,
+  MapPin,
+  Check,
+  FileCheck,
+  Scale,
+  Banknote,
+  ShieldCheck,
+  Clock,
+  Building,
+  Phone
+} from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -19,79 +31,80 @@ export function ValuationReportPage() {
   );
 
   const breadcrumbs = [
+    { label: "Home", path: "/" },
     { label: "Services", path: "/#services" },
     { label: service.name, path: service.path }
   ];
 
   return (
-    <div className="service-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${service.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">{service.badge}</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {service.ricsBenchmark}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">{service.badge}</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {service.ricsBenchmark}
+              </span>
+            </div>
+            <h1 className="page-header-title">{service.name}</h1>
+            <p className="page-header-desc">{service.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>RICS Red Book Global Standards</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>Delivered Within 3 – 5 Business Days</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Accepted by Homes England, HMRC &amp; Courts</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Signed by RICS Registered Valuer</span>
+              </span>
+            </div>
           </div>
-          <h1>{service.name}</h1>
-          <p className="page-header-desc">{service.tagline}</p>
         </Container>
       </header>
 
       {/* Main Content & Quote Request Grid */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start' }}>
+          <div className="service-detail-grid">
             {/* Left Column: RICS Red Book Valuation Guidance */}
             <div>
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>Authoritative RICS Red Book Property Valuations</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)' }}>
+              {/* Overview Card */}
+              <div className="service-overview-card">
+                <h2 className="service-section-title">Authoritative RICS Red Book Property Valuations</h2>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
                   A formal property valuation is a legally binding appraisal of open market value conducted strictly in accordance with the mandatory RICS Valuation — Global Standards (widely referred to as the 'Red Book'). Unlike automated estate agency estimates, an independent RICS Red Book valuation is supported by physical site inspection, verified Land Registry transactional evidence, and strict professional indemnity compliance.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)' }}>
+                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
                   Our reports are recognized and formally accepted by Homes England, major housing associations, HM Revenue &amp; Customs (HMRC), matrimonial solicitors, the Family Division of the High Court, and probate executors across London and the South East.
                 </p>
               </div>
 
-              {/* What the Valuation Process Includes */}
-              <div style={{ marginBottom: 'var(--space-8)', backgroundColor: 'var(--color-light-grey)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
+              {/* Inclusions Card */}
+              <div className="service-inclusions-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   What the Formal Valuation Process Delivers:
                 </h3>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="inclusions-grid-2">
                   {service.inclusions.map((item, idx) => (
-                    <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Specific Valuation Applications */}
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
-                  Key Valuation Purposes &amp; Requirements
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
-                  {service.recommendedFor.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: 'var(--space-3)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: 'var(--color-white)',
-                        fontSize: 'var(--font-size-xs)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)' }} />
+                    <div key={idx} className="inclusion-point-item">
+                      <CheckCircle2 size={18} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -99,29 +112,58 @@ export function ValuationReportPage() {
               </div>
 
               {/* Help to Buy Compliance Note */}
-              <div style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-5)', backgroundColor: 'var(--color-light-grey-alt)', border: '1px solid var(--color-border-medium)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ color: 'var(--color-primary-navy)', marginBottom: 'var(--space-2)' }}>
+              <div className="service-overview-card" style={{ border: '2px solid #142A43' }}>
+                <h4 style={{ color: '#0F172A', marginBottom: '0.75rem', fontSize: '1.15rem', fontWeight: 700 }}>
                   Help to Buy &amp; Shared Ownership Strict Guidelines
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-muted-text)', lineHeight: '1.6' }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: '1.65', margin: 0 }}>
                   Homes England requires that Help to Buy equity loan redemption valuations must be undertaken by an RICS Registered Valuer who is independent of estate agency operations. The valuation is valid for 3 months from the inspection date. Our team formats and issues compliant reports ready for immediate portal submission.
                 </p>
               </div>
 
+              {/* Specific Valuation Applications */}
+              <div className="service-overview-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
+                  Key Valuation Purposes &amp; Requirements
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                  {service.recommendedFor.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--color-border-subtle)',
+                        backgroundColor: '#F8FAFC',
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        color: '#1E293B'
+                      }}
+                    >
+                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Regional Market Knowledge */}
-              <div style={{ padding: 'var(--space-5)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
+              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
                   <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
                   <span>Nuanced Regional Property Market Valuations</span>
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-muted-text)' }}>
+                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
                   Property capital values, leasehold ground rent risks, and micro-location variations demand true regional expertise. We provide accurate market valuations across London prime/suburban markets, Surrey commuter hubs, Oxfordshire heritage markets, Buckinghamshire growth centers, and Berkshire towns.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Sticky Quote Form */}
-            <div style={{ position: 'sticky', top: '90px' }}>
+            <div className="service-quote-sidebar">
               <QuoteRequestForm defaultServiceId={service.id} />
             </div>
           </div>
@@ -137,4 +179,3 @@ export function ValuationReportPage() {
     </div>
   );
 }
-

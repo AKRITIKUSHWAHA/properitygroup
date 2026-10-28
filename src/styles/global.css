@@ -18,6 +18,8 @@
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   color: var(--color-main-text);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Default Headings in public website */
@@ -225,20 +227,26 @@
   color: #94A3B8 !important;
 }
 
-/* 4. Final CTA Banner */
+/* 4. Final CTA Banner (Clean White Section) */
 .site-wrapper .final-cta-title,
 .site-wrapper .final-cta-section h2 {
-  color: #FFFFFF !important;
+  color: #0A1628 !important;
+  text-shadow: none !important;
 }
 
 .site-wrapper .final-cta-desc,
 .site-wrapper .final-cta-section p {
-  color: #CBD5E1 !important;
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .final-cta-eyebrow {
+  color: #64748B !important;
 }
 
 .site-wrapper .final-cta-footer-note,
 .site-wrapper .final-cta-footer-note span {
-  color: #94A3B8 !important;
+  color: #64748B !important;
 }
 
 /* 5. Site Footer */
@@ -309,6 +317,88 @@
   color: #FFFFFF !important;
 }
 
+/* Global Universal High-Contrast Badge Rules */
+.badge,
+.badge-gold,
+.badge-default,
+.badge-navy,
+.site-wrapper .badge,
+.site-wrapper .page-header .badge,
+.site-wrapper .page-header .badge-gold,
+.site-wrapper .page-header .badge-default,
+.service-header-hero .badge,
+.page-header .badge,
+.card-floating-badge,
+.site-wrapper .card-floating-badge,
+.luxury-card-badge {
+  color: #FFFFFF !important;
+  background-color: rgba(14, 26, 45, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.38) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Universal Luxury Canvas Typography Overrides (Fixes Dark-on-Dark Headings) */
+.site-wrapper .luxury-site-canvas h1,
+.site-wrapper .luxury-site-canvas h2,
+.site-wrapper .luxury-site-canvas h3,
+.site-wrapper .luxury-site-canvas h4,
+.luxury-site-canvas h1,
+.luxury-site-canvas h2,
+.luxury-site-canvas h3,
+.luxury-site-canvas h4,
+.luxury-pillar-title {
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+.site-wrapper #expertise h2,
+.site-wrapper #expertise .luxury-section-title,
+#expertise .luxury-section-title {
+  color: #0A1628 !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper #expertise .luxury-section-eyebrow,
+#expertise .luxury-section-eyebrow {
+  color: #64748B !important;
+}
+
+.site-wrapper #expertise p.luxury-section-sub,
+.site-wrapper #expertise .luxury-section-sub,
+#expertise .luxury-section-sub {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .final-cta-section h2,
+.site-wrapper .final-cta-section .final-cta-title,
+.final-cta-section h2,
+.final-cta-section .final-cta-title {
+  color: #0A1628 !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .final-cta-section p,
+.site-wrapper .final-cta-section .final-cta-desc,
+.final-cta-section p,
+.final-cta-section .final-cta-desc {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .final-cta-section .final-cta-eyebrow,
+.final-cta-section .final-cta-eyebrow {
+  color: #64748B !important;
+}
+
+.site-wrapper .luxury-site-canvas p,
+.luxury-site-canvas p,
+.luxury-pillar-text {
+  color: #CBD5E1 !important;
+}
+
 /* Responsive typography & section adjustments */
 @media (min-width: 768px) {
   .site-wrapper h1 {
@@ -375,6 +465,31 @@
 }
 
 /* Service Card Badges High-Contrast Fix */
-.site-wrapper .card-floating-badge {
+.site-wrapper .card-floating-badge,
+.card-floating-badge {
   color: #FFFFFF !important;
+  background: rgba(10, 22, 36, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.38) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  font-weight: 700 !important;
 }
+
+/* Luxury Editorial Typography */
+.font-serif,
+.editorial-title,
+.hero-editorial-title {
+  font-family: var(--font-family-serif), Georgia, serif !important;
+}
+
+.text-silver {
+  color: #CBD5E1 !important;
+}
+
+.text-silver-muted {
+  color: #94A3B8 !important;
+}
+
+.bg-midnight {
+  background-color: var(--color-midnight-canvas) !important;
+}
+

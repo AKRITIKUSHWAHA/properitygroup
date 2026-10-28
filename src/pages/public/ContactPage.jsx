@@ -52,22 +52,43 @@ export function ContactPage() {
   };
 
   return (
-    <div className="contact-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="contact-page service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85)` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <h1>Contact &amp; Coverage Hub</h1>
-          <p className="page-header-desc">
-            Speak with our surveying practice or request an obligation-free, fixed quotation for residential properties across London and the South East.
-          </p>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <h1 className="page-header-title">Contact &amp; Coverage Hub</h1>
+            <p className="page-header-desc">
+              Speak directly with our independent surveying practice or request an obligation-free, fixed quotation for residential properties across London and the Home Counties.
+            </p>
+
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Hotline: {siteConfig.contact.telephoneDisplay}</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>Written Quotes in 24 Hours</span>
+              </span>
+              <span className="service-meta-pill">
+                <MapPin size={14} className="text-white" />
+                <span>London, Surrey, Oxon, Bucks &amp; Berks</span>
+              </span>
+            </div>
+          </div>
         </Container>
       </header>
 
       {/* Main Grid: Contact Details & Quote Form */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1fr 1.25fr', alignItems: 'start' }}>
+          <div className="contact-detail-grid">
             {/* Left Column: Direct Contact & Office Information */}
             <div>
               <div style={{ marginBottom: 'var(--space-8)' }}>

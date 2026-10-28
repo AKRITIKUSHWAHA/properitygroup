@@ -33,38 +33,43 @@ export function Badge({ children, variant = 'default', className = '' }) {
   const styles = {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '0.25rem',
-    fontSize: 'var(--font-size-xs)',
-    fontWeight: 'var(--font-weight-semibold)',
-    padding: '0.25rem 0.625rem',
-    borderRadius: 'var(--radius-pill)',
-    lineHeight: 1
+    gap: '0.35rem',
+    fontSize: 'var(--font-size-xs, 0.75rem)',
+    fontWeight: 'var(--font-weight-bold, 700)',
+    padding: '0.3rem 0.75rem',
+    borderRadius: 'var(--radius-pill, 9999px)',
+    lineHeight: 1.2,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase'
   };
 
   const variantStyles = {
     default: {
-      backgroundColor: 'var(--color-light-grey-alt)',
-      color: 'var(--color-primary-navy)',
-      border: '1px solid var(--color-border-subtle)'
+      backgroundColor: '#0A1624',
+      color: '#FFFFFF',
+      border: '1px solid rgba(255, 255, 255, 0.28)'
     },
     navy: {
-      backgroundColor: 'var(--color-primary-navy)',
-      color: 'var(--color-white)'
+      backgroundColor: 'var(--color-primary-navy, #142A43)',
+      color: '#FFFFFF',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
     },
     gold: {
-      backgroundColor: 'var(--color-accent-gold-soft)',
-      color: 'var(--color-primary-dark)',
-      border: '1px solid rgba(197, 155, 39, 0.3)'
+      backgroundColor: 'rgba(255, 255, 255, 0.16)',
+      color: '#FFFFFF',
+      border: '1px solid rgba(255, 255, 255, 0.35)',
+      backdropFilter: 'blur(8px)',
+      WebkitBackdropFilter: 'blur(8px)'
     },
     success: {
-      backgroundColor: 'var(--color-success-bg)',
-      color: 'var(--color-success)',
-      border: '1px solid var(--color-success-border)'
+      backgroundColor: 'var(--color-success-bg, #F0FDF4)',
+      color: 'var(--color-success, #15803D)',
+      border: '1px solid var(--color-success-border, #BBF7D0)'
     }
   };
 
   return (
-    <span style={{ ...styles, ...(variantStyles[variant] || variantStyles.default) }} className={className}>
+    <span style={{ ...styles, ...(variantStyles[variant] || variantStyles.default) }} className={`badge badge-${variant} ${className}`.trim()}>
       {children}
     </span>
   );

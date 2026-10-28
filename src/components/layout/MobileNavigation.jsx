@@ -150,7 +150,9 @@ export function MobileNavigation({ isOpen, onClose }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
               <Mail size={13} style={{ color: 'var(--color-primary-navy)' }} />
-              <span>{siteConfig.contact.email}</span>
+              <a href={`mailto:${siteConfig.contact.email}`} style={{ color: 'var(--color-muted-text)', textDecoration: 'none' }}>
+                {siteConfig.contact.email}
+              </a>
             </div>
           </div>
         </div>

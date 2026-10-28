@@ -67,8 +67,22 @@
   --gradient-card-overlay: linear-gradient(180deg, rgba(10, 22, 36, 0) 30%, rgba(10, 22, 36, 0.85) 100%);
 
   /* Typography */
+  --font-family-serif: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
   --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-family-heading: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Architectural Luxury Palette */
+  --color-midnight-canvas: #060B13;
+  --color-midnight-surface: #0A1322;
+  --color-midnight-card: #0E1A2D;
+  --color-glass-card: rgba(14, 26, 45, 0.72);
+  --color-glass-card-hover: rgba(20, 36, 62, 0.85);
+  --color-glass-border: rgba(255, 255, 255, 0.14);
+  --color-glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-glass-badge: rgba(255, 255, 255, 0.12);
+  --color-glass-pill-bg: rgba(255, 255, 255, 0.10);
+  --color-glass-pill-border: rgba(255, 255, 255, 0.22);
+  --color-luxury-gold: #C5A880;
 
   --font-size-xs: 0.75rem;     /* 12px */
   --font-size-sm: 0.875rem;    /* 14px */

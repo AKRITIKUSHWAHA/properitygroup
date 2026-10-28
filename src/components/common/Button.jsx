@@ -50,7 +50,7 @@ export function Button({
 
   if (to) {
     return (
-      <Link to={to} className={fullClassName} aria-label={ariaLabel} {...rest}>
+      <Link to={to} className={fullClassName} onClick={onClick} aria-label={ariaLabel} {...rest}>
         {content}
       </Link>
     );
@@ -58,7 +58,7 @@ export function Button({
 
   if (href) {
     return (
-      <a href={href} className={fullClassName} aria-label={ariaLabel} {...rest}>
+      <a href={href} className={fullClassName} onClick={onClick} aria-label={ariaLabel} {...rest}>
         {content}
       </a>
     );

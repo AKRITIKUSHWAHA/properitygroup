@@ -1,5 +1,17 @@
 import React from 'react';
-import { CheckCircle2, ShieldCheck, MapPin, Check, Droplets, Wind, AlertCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  ShieldCheck,
+  MapPin,
+  Check,
+  Droplets,
+  Wind,
+  AlertCircle,
+  Clock,
+  Phone,
+  Building,
+  Scale
+} from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -19,123 +31,139 @@ export function DampSurveyPage() {
   );
 
   const breadcrumbs = [
+    { label: "Home", path: "/" },
     { label: "Services", path: "/#services" },
     { label: service.name, path: service.path }
   ];
 
   return (
-    <div className="service-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${service.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">{service.badge}</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {service.ricsBenchmark}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">{service.badge}</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {service.ricsBenchmark}
+              </span>
+            </div>
+            <h1 className="page-header-title">{service.name}</h1>
+            <p className="page-header-desc">{service.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>100% Impartial — Zero Contractor Sales</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>Calibrated Radio &amp; Resistance Mapping</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Targeted Root-Cause Defect Diagnosis</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Direct Surveyor Phone Consultation</span>
+              </span>
+            </div>
           </div>
-          <h1>{service.name}</h1>
-          <p className="page-header-desc">{service.tagline}</p>
         </Container>
       </header>
 
       {/* Main Content & Quote Request Grid */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start' }}>
+          <div className="service-detail-grid">
             {/* Left Column: Scientific Damp & Timber Guidance */}
             <div>
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>Independent Moisture Diagnostics Free From Sales Bias</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)' }}>
+              {/* Overview Card */}
+              <div className="service-overview-card">
+                <h2 className="service-section-title">Independent Moisture Diagnostics Free From Sales Bias</h2>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
                   Damp is among the most frequently cited defects in UK residential survey reports, yet it remains one of the most widely misdiagnosed. Many commercial damp-proofing contractors offer 'free surveys' primarily to sell disruptive, expensive chemical injection treatments, waterproof tanking, or unnecessary plaster destruction.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)' }}>
+                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
                   As independent building surveyors, we do not sell damp-proofing products, chemical treatments, or contracting services. Our specialist damp surveys employ calibrated moisture metering, hygrometric readings, and thermal imaging to scientifically differentiate between true rising damp, external penetrating moisture, internal condensation, and historic hygroscopic salt contamination, delivering unbiased remediation strategies.
                 </p>
               </div>
 
-              {/* What the Diagnostic Inspection Includes */}
-              <div style={{ marginBottom: 'var(--space-8)', backgroundColor: 'var(--color-light-grey)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
-                  What Our Specialist Damp &amp; Timber Investigation Delivers:
+              {/* Inclusions Card */}
+              <div className="service-inclusions-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
+                  What the Diagnostic Moisture Inspection Evaluates:
                 </h3>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="inclusions-grid-2">
                   {service.inclusions.map((item, idx) => (
-                    <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
+                    <div key={idx} className="inclusion-point-item">
+                      <CheckCircle2 size={18} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
                       <span>{item}</span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-              </div>
-
-              {/* Classification of Damp Problems */}
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
-                  Diagnostic Differentiation: Understanding The Real Cause
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
-                  <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
-                    <strong style={{ color: 'var(--color-primary-navy)', display: 'block', marginBottom: '0.25rem' }}>
-                      Penetrating Damp:
-                    </strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
-                      Caused by external defects like leaking gutters, cracked render, high ground levels, or defective pointing allowing rainwater entry.
-                    </span>
-                  </div>
-                  <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
-                    <strong style={{ color: 'var(--color-primary-navy)', display: 'block', marginBottom: '0.25rem' }}>
-                      Condensation &amp; Mould:
-                    </strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
-                      Caused by insufficient ventilation, thermal bridging, and elevated indoor humidity—often mistaken for rising damp.
-                    </span>
-                  </div>
-                  <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
-                    <strong style={{ color: 'var(--color-primary-navy)', display: 'block', marginBottom: '0.25rem' }}>
-                      Rising Damp:
-                    </strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
-                      Capillary action drawing subsoil moisture through porous masonry where a DPC is absent, bridged, or failed.
-                    </span>
-                  </div>
-                  <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)' }}>
-                    <strong style={{ color: 'var(--color-primary-navy)', display: 'block', marginBottom: '0.25rem' }}>
-                      Timber Decay (Rot/Woodworm):
-                    </strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
-                      Investigation of floor joists, wall plates, and rafters for wet rot (Coniophora) or true dry rot (Serpula lacrymans).
-                    </span>
-                  </div>
                 </div>
               </div>
 
-              {/* Independent Guarantee Box */}
-              <div style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-5)', backgroundColor: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ color: 'var(--color-success)', marginBottom: 'var(--space-2)' }}>
-                  Why Impartiality Saves Thousands of Pounds
+              {/* Contractor vs Independent Comparison Box */}
+              <div className="service-overview-card" style={{ border: '2px solid #142A43' }}>
+                <h4 style={{ color: '#0F172A', marginBottom: '0.75rem', fontSize: '1.15rem', fontWeight: 700 }}>
+                  Why Independent Damp Diagnostics Save You Thousands
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-main-text)', lineHeight: '1.6' }}>
-                  Commercial damp firms earn profit from selling plaster removal and chemical injections. In over 80% of properties we inspect, the moisture issue is caused by simple maintenance defects—such as high external path levels bridging the damp-proof course, or blocked subfloor air bricks—which can be remedied without expensive chemical work.
+                <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: '1.65', margin: 0 }}>
+                  Contractor damp companies have a direct commercial interest in finding "rising damp" so they can quote £3,000 to £10,000 for chemical damp proof courses. In over 80% of our inspections, the actual culprit is high external ground levels, leaking rainwater goods, or poor internal ventilation. Our report gives you the true cause and the most economical, non-invasive fix.
                 </p>
               </div>
 
-              {/* Regional Damp Context */}
-              <div style={{ padding: 'var(--space-5)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
+              {/* Property Suitability Criteria */}
+              <div className="service-overview-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
+                  When is a Damp &amp; Timber Survey Recommended?
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                  {service.recommendedFor.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--color-border-subtle)',
+                        backgroundColor: '#F8FAFC',
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 500,
+                        color: '#1E293B'
+                      }}
+                    >
+                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regional Focus */}
+              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
                   <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Damp &amp; Timber Investigation Across The Region</span>
+                  <span>Historic Building Fabric &amp; Breathability</span>
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-muted-text)' }}>
-                  From Victorian solid-brick basements in London and Surrey, to solid limestone cottages in Oxfordshire and riverside properties along Berkshire's Thames corridor, our diagnostic methods respect the building's historic construction and breathability.
+                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
+                  Older properties across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire were designed to breathe using lime plasters and subfloor air vents. Applying modern cementitious waterproof renders often traps moisture and triggers dry rot. We prescribe period-appropriate remedies that preserve historic integrity.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Sticky Quote Form */}
-            <div style={{ position: 'sticky', top: '90px' }}>
+            <div className="service-quote-sidebar">
               <QuoteRequestForm defaultServiceId={service.id} />
             </div>
           </div>
@@ -151,4 +179,3 @@ export function DampSurveyPage() {
     </div>
   );
 }
-

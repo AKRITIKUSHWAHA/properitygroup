@@ -91,7 +91,7 @@ export const approvedServices = [
     summary: "An independent, forensic quality audit carried out on newly completed residential properties prior to or immediately following legal completion. Protects your investment by identifying cosmetic blemishes, technical omissions, and building regulation breaches for developer remediation.",
     suitability: "Targeted at buyers of new-build houses and apartments from major and bespoke developers across London and the Home Counties, as well as clients taking handover of major contractor refurbishments.",
     badge: "New-Build Focus",
-    imageUrl: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&w=800&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80",
     inclusions: [
       "Room-by-room forensic audit of cosmetic finishes (plaster smoothness, paint coverage, mastic application)",
       "Window and door alignment, double-glazing seal integrity, draft performance, and ironmongery check",
