@@ -130,33 +130,34 @@ export function DampSurveyPage() {
                   {service.recommendedFor.map((item, idx) => (
                     <div
                       key={idx}
+                      className="service-suitability-pill"
                       style={{
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
                         fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        fontWeight: 500,
-                        color: '#1E293B'
+                        fontWeight: 600,
+                        color: '#0F172A'
                       }}
                     >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
-                      <span>{item}</span>
+                      <Check size={14} style={{ color: '#142A43', flexShrink: 0 }} />
+                      <span style={{ color: '#0F172A', fontWeight: 600 }}>{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Regional Focus */}
-              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
-                  <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Historic Building Fabric &amp; Breathability</span>
+              <div className="service-regional-card" style={{ padding: '1.5rem', border: '1px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                  <MapPin size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Historic Building Fabric &amp; Breathability</span>
                 </h4>
-                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
                   Older properties across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire were designed to breathe using lime plasters and subfloor air vents. Applying modern cementitious waterproof renders often traps moisture and triggers dry rot. We prescribe period-appropriate remedies that preserve historic integrity.
                 </p>
               </div>

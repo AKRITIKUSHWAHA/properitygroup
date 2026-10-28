@@ -123,21 +123,22 @@ export function HomebuyerSurveyPage() {
                   {service.recommendedFor.map((item, idx) => (
                     <div
                       key={idx}
+                      className="service-suitability-pill"
                       style={{
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
                         fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        fontWeight: 500,
-                        color: '#1E293B'
+                        fontWeight: 600,
+                        color: '#0F172A'
                       }}
                     >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
-                      <span>{item}</span>
+                      <Check size={14} style={{ color: '#142A43', flexShrink: 0 }} />
+                      <span style={{ color: '#0F172A', fontWeight: 600 }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -165,12 +166,12 @@ export function HomebuyerSurveyPage() {
               </div>
 
               {/* Local Regional Context */}
-              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
-                  <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Regional Focus: London &amp; Home Counties</span>
+              <div className="service-regional-card" style={{ padding: '1.5rem', border: '1px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                  <MapPin size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Regional Focus: London &amp; Home Counties</span>
                 </h4>
-                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
                   Our surveyors possess specific insight into 20th-century housing stock across London boroughs, Surrey commuter expansions, Oxford residential belts, Buckinghamshire suburbs, and Berkshire towns.
                 </p>
               </div>

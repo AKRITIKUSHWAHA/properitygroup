@@ -12,12 +12,12 @@ export function FormField({
   return (
     <div className="form-group">
       {label && (
-        <label htmlFor={id} className="form-label">
+        <label htmlFor={id} className="form-label" style={{ color: '#0F172A', fontWeight: 700 }}>
           <span>{label}</span>
           {required ? (
-            <span className="form-required-badge" aria-label="Required field">* Required</span>
+            <span className="form-required-badge" aria-label="Required field" style={{ color: '#DC2626', fontWeight: 700 }}>* Required</span>
           ) : (
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-light-text)', fontWeight: 'normal' }}>Optional</span>
+            <span className="form-optional-badge" style={{ fontSize: 'var(--font-size-xs)', color: '#475569', fontWeight: 600 }}>Optional</span>
           )}
         </label>
       )}
@@ -25,7 +25,7 @@ export function FormField({
       {children}
 
       {helpText && !error && (
-        <span className="form-help-text" id={`${id}-help`}>
+        <span className="form-help-text" id={`${id}-help`} style={{ color: '#475569', fontWeight: 500 }}>
           {helpText}
         </span>
       )}

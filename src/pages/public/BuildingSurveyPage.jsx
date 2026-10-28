@@ -120,21 +120,22 @@ export function BuildingSurveyPage() {
                   {service.recommendedFor.map((item, idx) => (
                     <div
                       key={idx}
+                      className="service-suitability-pill"
                       style={{
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
                         fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        fontWeight: 500,
-                        color: '#1E293B'
+                        fontWeight: 600,
+                        color: '#0F172A'
                       }}
                     >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
-                      <span>{item}</span>
+                      <Check size={14} style={{ color: '#142A43', flexShrink: 0 }} />
+                      <span style={{ color: '#0F172A', fontWeight: 600 }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -142,19 +143,19 @@ export function BuildingSurveyPage() {
 
               {/* Level 2 vs Level 3 Comparison Box */}
               <div className="service-overview-card" style={{ border: '2px solid #142A43' }}>
-                <h4 style={{ color: '#0F172A', marginBottom: '1rem', fontSize: '1.15rem', fontWeight: 700 }}>
+                <h4 style={{ color: '#FFFFFF', marginBottom: '1rem', fontSize: '1.15rem', fontWeight: 700 }}>
                   Key Difference: Level 2 vs Level 3 Building Survey
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
-                  <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                    <strong style={{ color: '#0F172A', display: 'block', marginBottom: '0.35rem' }}>Level 2 Homebuyer Survey:</strong>
-                    <p style={{ color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                  <div className="service-comparison-card" style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                    <strong style={{ color: '#0F172A', display: 'block', marginBottom: '0.35rem', fontWeight: 700 }}>Level 2 Homebuyer Survey:</strong>
+                    <p style={{ color: '#334155', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                       Concise visual overview focusing on urgent defects in standard, modern properties post-1900. No detailed repair specifications.
                     </p>
                   </div>
-                  <div style={{ padding: '1rem', backgroundColor: '#F1F5F9', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
-                    <strong style={{ color: '#0A1624', display: 'block', marginBottom: '0.35rem' }}>Level 3 Building Survey:</strong>
-                    <p style={{ color: '#1E293B', margin: 0, lineHeight: 1.5 }}>
+                  <div className="service-comparison-card" style={{ padding: '1rem', backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                    <strong style={{ color: '#0F172A', display: 'block', marginBottom: '0.35rem', fontWeight: 700 }}>Level 3 Building Survey:</strong>
+                    <p style={{ color: '#334155', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                       Exhaustive structural appraisal, materials specification, diagnosis of underlying defect causes, and comprehensive long-term maintenance advice.
                     </p>
                   </div>
@@ -162,12 +163,12 @@ export function BuildingSurveyPage() {
               </div>
 
               {/* Regional Structural Context */}
-              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
-                  <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Period &amp; Heritage Properties Across The Region</span>
+              <div className="service-regional-card" style={{ padding: '1.5rem', border: '1px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                  <MapPin size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Period &amp; Heritage Properties Across The Region</span>
                 </h4>
-                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
                   Our building surveyors have deep familiarity with period London Victorian and Edwardian conversions, clay subsoil subsidence in Surrey and Berkshire, timber-framed Buckinghamshire barns, and historic Cotswold stone architecture across Oxfordshire.
                 </p>
               </div>

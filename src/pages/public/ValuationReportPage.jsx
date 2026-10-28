@@ -130,33 +130,34 @@ export function ValuationReportPage() {
                   {service.recommendedFor.map((item, idx) => (
                     <div
                       key={idx}
+                      className="service-suitability-pill"
                       style={{
                         padding: '0.75rem 1rem',
                         borderRadius: '10px',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
                         fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.5rem',
-                        fontWeight: 500,
-                        color: '#1E293B'
+                        fontWeight: 600,
+                        color: '#0F172A'
                       }}
                     >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)', flexShrink: 0 }} />
-                      <span>{item}</span>
+                      <Check size={14} style={{ color: '#142A43', flexShrink: 0 }} />
+                      <span style={{ color: '#0F172A', fontWeight: 600 }}>{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Regional Market Knowledge */}
-              <div style={{ padding: '1.5rem', border: '1px solid var(--color-border-subtle)', borderRadius: '16px', backgroundColor: '#FFFFFF' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A' }}>
-                  <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Nuanced Regional Property Market Valuations</span>
+              <div className="service-regional-card" style={{ padding: '1.5rem', border: '1px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                  <MapPin size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Nuanced Regional Property Market Valuations</span>
                 </h4>
-                <p style={{ fontSize: '0.88rem', color: 'var(--color-muted-text)', margin: 0, lineHeight: 1.6 }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
                   Property capital values, leasehold ground rent risks, and micro-location variations demand true regional expertise. We provide accurate market valuations across London prime/suburban markets, Surrey commuter hubs, Oxfordshire heritage markets, Buckinghamshire growth centers, and Berkshire towns.
                 </p>
               </div>

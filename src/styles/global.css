@@ -407,31 +407,92 @@
 .site-wrapper .luxury-site-canvas .hero-card h2,
 .site-wrapper .luxury-site-canvas .hero-card h3,
 .site-wrapper .luxury-site-canvas .hero-card h4,
+.site-wrapper .luxury-site-canvas .expert-witness-form h1,
+.site-wrapper .luxury-site-canvas .expert-witness-form h2,
+.site-wrapper .luxury-site-canvas .expert-witness-form h3,
+.site-wrapper .luxury-site-canvas .expert-witness-form h4,
+.site-wrapper .luxury-site-canvas .expert-process-card h1,
+.site-wrapper .luxury-site-canvas .expert-process-card h2,
+.site-wrapper .luxury-site-canvas .expert-process-card h3,
+.site-wrapper .luxury-site-canvas .expert-process-card h4,
+.site-wrapper .luxury-site-canvas .expert-audience-card h3,
+.site-wrapper .luxury-site-canvas .expert-audience-card h4,
+.site-wrapper .luxury-site-canvas .expert-credentials-notice h3,
+.site-wrapper .luxury-site-canvas .expert-credentials-notice h4,
 .site-wrapper .luxury-site-canvas .compact-quote-form h1,
 .site-wrapper .luxury-site-canvas .compact-quote-form h2,
 .site-wrapper .luxury-site-canvas .compact-quote-form h3,
 .site-wrapper .luxury-site-canvas .compact-quote-form h4,
+.site-wrapper .luxury-site-canvas .service-regional-card h4,
+.site-wrapper .luxury-site-canvas .service-regional-card h4 span,
+.site-wrapper .luxury-site-canvas .service-comparison-card strong,
 .site-wrapper .luxury-site-canvas .hero-card-title,
 .site-wrapper .luxury-site-canvas .contact-detail-grid h3,
 .site-wrapper .luxury-site-canvas .contact-detail-grid h4,
+.site-wrapper .luxury-site-canvas .contact-faq-item button,
+.site-wrapper .luxury-site-canvas .contact-faq-item button span,
 .site-wrapper .contact-detail-grid h3,
 .site-wrapper .contact-detail-grid h4,
 .hero-card .hero-card-title,
-.compact-quote-form .hero-card-title {
+.compact-quote-form .hero-card-title,
+.expert-witness-form .hero-card-title,
+.expert-process-card h3,
+.expert-process-card h4,
+.expert-audience-card h4,
+.expert-credentials-notice h4,
+.service-regional-card h4,
+.service-regional-card h4 span,
+.service-comparison-card strong,
+.contact-faq-item button span {
   color: #0F172A !important;
   text-shadow: none !important;
   font-family: var(--font-family-serif), 'Playfair Display', Georgia, serif !important;
   font-weight: 700 !important;
 }
 
+.site-wrapper .luxury-site-canvas .expert-process-card h4,
+.site-wrapper .luxury-site-canvas .expert-audience-card h4,
+.site-wrapper .luxury-site-canvas .expert-credentials-notice h4,
+.site-wrapper .luxury-site-canvas .service-regional-card h4,
+.site-wrapper .luxury-site-canvas .service-regional-card h4 span,
+.site-wrapper .luxury-site-canvas .service-comparison-card strong,
+.site-wrapper .luxury-site-canvas .service-suitability-pill span,
+.site-wrapper .luxury-site-canvas .contact-faq-item button span,
+.expert-process-card h4,
+.expert-audience-card h4,
+.expert-credentials-notice h4,
+.service-regional-card h4,
+.service-regional-card h4 span,
+.service-comparison-card strong,
+.service-suitability-pill span,
+.contact-faq-item button span {
+  font-family: var(--font-family-base), 'Plus Jakarta Sans', system-ui, sans-serif !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
 .site-wrapper .luxury-site-canvas .hero-card p,
 .site-wrapper .luxury-site-canvas .compact-quote-form p,
+.site-wrapper .luxury-site-canvas .expert-witness-form p,
+.site-wrapper .luxury-site-canvas .expert-process-card p,
+.site-wrapper .luxury-site-canvas .expert-audience-card p,
+.site-wrapper .luxury-site-canvas .expert-credentials-notice p,
+.site-wrapper .luxury-site-canvas .service-regional-card p,
+.site-wrapper .luxury-site-canvas .service-comparison-card p,
 .site-wrapper .luxury-site-canvas .hero-card-desc,
 .site-wrapper .luxury-site-canvas .contact-detail-grid p,
+.site-wrapper .luxury-site-canvas .contact-faq-item .contact-faq-answer,
 .site-wrapper .contact-detail-grid p,
 .hero-card p,
 .compact-quote-form p,
-.hero-card-desc {
+.hero-card-desc,
+.expert-witness-form p,
+.expert-process-card p,
+.expert-audience-card p,
+.expert-credentials-notice p,
+.service-regional-card p,
+.service-comparison-card p,
+.contact-faq-answer {
   color: #334155 !important;
   text-shadow: none !important;
   font-weight: 500 !important;
@@ -439,15 +500,31 @@
 
 .site-wrapper .luxury-site-canvas .hero-card label,
 .site-wrapper .luxury-site-canvas .compact-quote-form label,
+.site-wrapper .luxury-site-canvas .expert-witness-form label,
 .site-wrapper .luxury-site-canvas .form-label-compact,
 .site-wrapper .luxury-site-canvas .form-label,
+.site-wrapper .luxury-site-canvas .form-label span,
 .site-wrapper .contact-detail-grid label,
 .hero-card label,
 .compact-quote-form label,
+.expert-witness-form label,
+.form-label,
+.form-label span,
 .form-label-compact {
   color: #0F172A !important;
   text-shadow: none !important;
   font-weight: 700 !important;
+}
+
+.site-wrapper .luxury-site-canvas .form-help-text,
+.site-wrapper .luxury-site-canvas .form-optional-badge,
+.site-wrapper .luxury-site-canvas .expert-form-reassurance,
+.form-help-text,
+.form-optional-badge,
+.expert-form-reassurance {
+  color: #475569 !important;
+  text-shadow: none !important;
+  font-weight: 500 !important;
 }
 
 /* Service Quote Sidebar (Keeps white text on dark navy glass) */

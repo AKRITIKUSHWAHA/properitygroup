@@ -205,11 +205,13 @@ export function ContactPage() {
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
+                className="contact-faq-item"
                 style={{
-                  border: '1px solid var(--color-border-subtle)',
+                  border: '1px solid #CBD5E1',
                   borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--color-white)',
-                  overflow: 'hidden'
+                  backgroundColor: '#FFFFFF',
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                 }}
               >
                 <button
@@ -227,22 +229,23 @@ export function ContactPage() {
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     fontSize: 'var(--font-size-sm)',
-                    color: 'var(--color-primary-navy)'
+                    color: '#0F172A'
                   }}
                   aria-expanded={openFaq === idx}
                 >
-                  <span>{faq.q}</span>
+                  <span style={{ color: '#0F172A', fontWeight: 700 }}>{faq.q}</span>
                   <ChevronDown
                     size={16}
                     style={{
                       transform: openFaq === idx ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      color: '#142A43'
                     }}
                   />
                 </button>
                 {openFaq === idx && (
-                  <div style={{ padding: '0 var(--space-4) var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)', lineHeight: '1.6' }}>
+                  <div className="contact-faq-answer" style={{ padding: '0 var(--space-4) var(--space-4)', fontSize: 'var(--font-size-xs)', color: '#334155', lineHeight: '1.6', fontWeight: 500 }}>
                     {faq.a}
                   </div>
                 )}
