@@ -1,11 +1,14 @@
+import { useState, useEffect } from 'react';
+
 // Mock data for CRM & Leads
-// Lead sources: Website, Referral, Local Surveyors Direct, Google Ads, Partner, Expert Witness form
+// Lead sources: Website, Referral, Local Surveyors Direct, Email Inquiry, Google Ads, Partner, Expert Witness form
 // Tabs / Statuses: All, New, Contacted, Qualified, Quoted, Converted, Lost
 
 export const LEAD_SOURCES = [
   'Website',
-  'Referral',
   'Local Surveyors Direct',
+  'Email Inquiry',
+  'Referral',
   'Google Ads',
   'Partner',
   'Expert Witness form',
@@ -247,3 +250,74 @@ export const INITIAL_LEADS = [
     notes: 'Instructed alternative local surveyor who could attend next day.',
   },
 ];
+
+const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
+
+export const getStoredLeads = () => {
+  try {
+    const raw = localStorage.getItem(LEADS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed reading leads from storage', e);
+  }
+  return INITIAL_LEADS;
+};
+
+export const saveStoredLeads = (leads) => {
+  try {
+    localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
+    window.dispatchEvent(new Event('propertygroup_leads_updated'));
+  } catch (e) {
+    console.error('Failed saving leads to storage', e);
+  }
+};
+
+export const useLeads = () => {
+  const [leads, setLeadsState] = useState(getStoredLeads);
+
+  useEffect(() => {
+    const onUpdate = () => {
+      setLeadsState(getStoredLeads());
+    };
+    window.addEventListener('propertygroup_leads_updated', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    return () => {
+      window.removeEventListener('propertygroup_leads_updated', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+    };
+  }, []);
+
+  const setLeads = (updater) => {
+    setLeadsState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveStoredLeads(next);
+      return next;
+    });
+  };
+
+  const updateLeadStatus = (leadId, newStatus, extraData = {}) => {
+    setLeads((prev) =>
+      prev.map((l) => {
+        if (l.id !== leadId) return l;
+        return {
+          ...l,
+          status: newStatus,
+          ...extraData,
+        };
+      })
+    );
+  };
+
+  const addLead = (newLead) => {
+    setLeads((prev) => [newLead, ...prev]);
+  };
+
+  const deleteLead = (leadId) => {
+    setLeads((prev) => prev.filter((l) => l.id !== leadId));
+  };
+
+  return { leads, setLeads, updateLeadStatus, addLead, deleteLead };
+};

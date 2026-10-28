@@ -789,3 +789,4 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 
     </div>
   );
 };
+

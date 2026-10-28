@@ -17,6 +17,8 @@ import {
   Tag,
   PhoneCall,
   AlertTriangle,
+  Send,
+  Target,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -24,13 +26,14 @@ import { Table } from '../../components/common/Table';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { NewLeadModal } from '../../components/crm/NewLeadModal';
+import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
-import { INITIAL_LEADS, LEAD_SOURCES, LEAD_STATUSES } from '../../mock/leads';
+import { INITIAL_LEADS, LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock/leads';
 
 export const AdminLeadsPage = () => {
   const { addToast } = useToast();
-  const [leads, setLeads] = useState(INITIAL_LEADS);
+  const { leads, updateLeadStatus, addLead, deleteLead } = useLeads();
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
@@ -41,6 +44,7 @@ export const AdminLeadsPage = () => {
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [viewingLead, setViewingLead] = useState(null);
+  const [quotingLead, setQuotingLead] = useState(null);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
@@ -63,6 +67,18 @@ export const AdminLeadsPage = () => {
     const set = new Set(leads.map((l) => l.owner));
     return ['All', ...Array.from(set)];
   }, [leads]);
+
+  // Quoted pipeline calculations
+  const quotedLeads = useMemo(() => {
+    return leads.filter((l) => l.status.toLowerCase() === 'quoted');
+  }, [leads]);
+
+  const totalQuotedValue = useMemo(() => {
+    return quotedLeads.reduce((acc, l) => {
+      const num = parseFloat((l.estimatedValue || '0').replace(/[^0-9.]/g, '')) || 0;
+      return acc + num;
+    }, 0);
+  }, [quotedLeads]);
 
   // Filtered dataset
   const filteredLeads = useMemo(() => {
@@ -97,7 +113,7 @@ export const AdminLeadsPage = () => {
 
   // Handle new lead creation
   const handleCreateLead = (newLead) => {
-    setLeads((prev) => [newLead, ...prev]);
+    addLead(newLead);
     addToast({
       type: 'success',
       title: 'New Lead Registered',
@@ -107,9 +123,7 @@ export const AdminLeadsPage = () => {
 
   // Quick status update
   const handleStatusChange = (leadId, newStatus) => {
-    setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
-    );
+    updateLeadStatus(leadId, newStatus);
     addToast({
       type: 'info',
       title: 'Status Updated',
@@ -117,10 +131,36 @@ export const AdminLeadsPage = () => {
     });
   };
 
+  // Convert deal
+  const handleConvertDeal = (leadId) => {
+    updateLeadStatus(leadId, 'Converted');
+    addToast({
+      type: 'success',
+      title: 'Deal Won & Converted',
+      message: `Lead ${leadId} proposal accepted! Converted to confirmed survey job.`,
+    });
+  };
+
+  // Quote sent callback
+  const handleQuoteSent = (leadId, quotedAmount, quoteRef) => {
+    updateLeadStatus(leadId, 'Quoted', {
+      estimatedValue: quotedAmount,
+      quoteRef: quoteRef,
+    });
+    if (viewingLead && viewingLead.id === leadId) {
+      setViewingLead((prev) => ({
+        ...prev,
+        status: 'Quoted',
+        estimatedValue: quotedAmount,
+        quoteRef: quoteRef,
+      }));
+    }
+  };
+
   // Delete lead
   const handleDeleteLead = (leadId) => {
     if (window.confirm(`Are you sure you want to delete lead ${leadId}?`)) {
-      setLeads((prev) => prev.filter((l) => l.id !== leadId));
+      deleteLead(leadId);
       addToast({
         type: 'error',
         title: 'Lead Deleted',
@@ -217,11 +257,27 @@ export const AdminLeadsPage = () => {
       header: 'Source',
       sortable: true,
       render: (val) => {
+        if (val === 'Local Surveyors Direct') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              LSD Direct
+            </span>
+          );
+        }
+        if (val === 'Email Inquiry') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-300 whitespace-nowrap">
+              <Mail className="w-2.5 h-2.5 text-sky-600" />
+              Email Inquiry
+            </span>
+          );
+        }
+
         let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
         if (val === 'Website') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
         if (val === 'Referral') badgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
-        if (val === 'Google Ads') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-        if (val === 'Local Surveyors Direct') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        if (val === 'Google Ads') badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
         if (val === 'Partner') badgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
         if (val === 'Expert Witness form') badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
 
@@ -264,37 +320,66 @@ export const AdminLeadsPage = () => {
       header: 'Actions',
       sortable: false,
       className: 'text-right whitespace-nowrap',
-      render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <button
-            onClick={() => setViewingLead(row)}
-            title="View Details"
-            className="p-1.5 text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
+      render: (_, row) => {
+        const isQuoted = row.status.toLowerCase() === 'quoted';
+        const isConverted = row.status.toLowerCase() === 'converted';
 
-          <select
-            value={row.status}
-            onChange={(e) => handleStatusChange(row.id, e.target.value)}
-            className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
-          >
-            {LEAD_STATUSES.map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
+        return (
+          <div className="flex items-center justify-end gap-1.5">
+            {/* 1-Click Send Quote button if not yet quoted */}
+            {!isQuoted && !isConverted && (
+              <button
+                onClick={() => setQuotingLead(row)}
+                title="Dispatch Quotation Proposal (Marks lead as Quoted)"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-[11px] font-black transition-all shadow-2xs cursor-pointer"
+              >
+                <PoundSterling className="w-3 h-3" />
+                <span>Send Quote</span>
+              </button>
+            )}
 
-          <button
-            onClick={() => handleDeleteLead(row.id)}
-            title="Delete Lead"
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ),
+            {/* If Quoted, show quick deal conversion */}
+            {isQuoted && (
+              <button
+                onClick={() => handleConvertDeal(row.id)}
+                title="Client accepted quote proposal! Convert to live Survey Job"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Convert Deal</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setViewingLead(row)}
+              title="View Details"
+              className="p-1.5 text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+
+            <select
+              value={row.status}
+              onChange={(e) => handleStatusChange(row.id, e.target.value)}
+              className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+            >
+              {LEAD_STATUSES.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => handleDeleteLead(row.id)}
+              title="Delete Lead"
+              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -312,6 +397,37 @@ export const AdminLeadsPage = () => {
 
       {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+
+      {/* Quoted Deals Executive Pipeline Banner */}
+      {activeTab === 'Quoted' && (
+        <div className="p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-transparent border border-amber-300/80 rounded-2xl flex items-center justify-between flex-wrap gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center justify-center shrink-0 shadow-xs">
+              <PoundSterling className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Active Quoted Deals Pipeline
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Fee proposals dispatched via email or Local Surveyors Direct. Click &apos;Convert Deal&apos; when client accepts.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Deals Quoted</span>
+              <span className="text-base font-extrabold text-[#0B1F4D]">{quotedLeads.length} Proposals</span>
+            </div>
+            <div className="text-right pl-4 border-l border-amber-200">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pipeline Value</span>
+              <span className="text-base font-black text-amber-700 font-mono">
+                £{totalQuotedValue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Controls & Filter Toolbar */}
       <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -534,6 +650,52 @@ export const AdminLeadsPage = () => {
               </div>
             </div>
 
+            {/* Quick Quotation Action Card */}
+            {viewingLead.status.toLowerCase() !== 'quoted' && viewingLead.status.toLowerCase() !== 'converted' ? (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                    <PoundSterling className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-950 text-xs block">Ready to issue quote to client?</span>
+                    <span className="text-[11px] text-amber-800">Dispatch fee proposal to mark this lead as &quot;Quoted&quot;.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQuotingLead(viewingLead)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-all shadow-xs cursor-pointer shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Quote &amp; Mark Quoted</span>
+                </button>
+              </div>
+            ) : viewingLead.status.toLowerCase() === 'quoted' ? (
+              <div className="p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-indigo-950 text-xs block">Fee Proposal Sent (Status: Quoted)</span>
+                    <span className="text-[11px] text-indigo-700">Deal is live. Convert to confirmed survey booking once accepted.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleConvertDeal(viewingLead.id);
+                    setViewingLead((prev) => ({ ...prev, status: 'Converted' }));
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Convert to Won Job</span>
+                </button>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -588,6 +750,14 @@ export const AdminLeadsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Send Quote Modal */}
+      <SendQuoteModal
+        isOpen={!!quotingLead}
+        onClose={() => setQuotingLead(null)}
+        lead={quotingLead}
+        onQuoteSent={handleQuoteSent}
+      />
 
       {/* Client Profile, Call Notes & Complaints Modal */}
       <ClientProfileModal
