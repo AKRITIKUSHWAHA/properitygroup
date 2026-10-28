@@ -19,40 +19,31 @@ import { DEFAULT_DEMO_PASSWORD } from '../../mock/users';
 
 const ROLE_OPTIONS = [
   {
-    id: 'super_admin',
-    email: 'admin@demo.com',
-    label: 'Super Admin',
-    shortLabel: 'Admin',
-    loginTitle: 'Super Admin Login',
-    desc: 'Full platform & financial control (10 menus)',
-    icon: ShieldCheck,
-  },
-  {
-    id: 'admin_staff',
-    email: 'staff@demo.com',
-    label: 'Agent / Staff',
-    shortLabel: 'Agent',
-    loginTitle: 'Agent Login',
-    desc: 'Operations, calendar & lead dispatch (8 menus)',
-    icon: Briefcase,
+    id: 'customer',
+    email: 'customer@demo.com',
+    label: 'Customer',
+    shortLabel: 'Customer',
+    loginTitle: 'Customer & Client Portal',
+    desc: 'Quotations, bookings, terms signature & reports',
+    icon: User,
   },
   {
     id: 'surveyor',
     email: 'surveyor@demo.com',
     label: 'Surveyor',
     shortLabel: 'Surveyor',
-    loginTitle: 'Surveyor Login',
-    desc: 'Field inspections & report upload (6 menus)',
+    loginTitle: 'Chartered Surveyor Portal',
+    desc: 'Field inspections, calendar & report upload',
     icon: UserCheck,
   },
   {
-    id: 'customer',
-    email: 'customer@demo.com',
-    label: 'Customer',
-    shortLabel: 'Customer',
-    loginTitle: 'Customer Login',
-    desc: 'Quotations, bookings & reports (8 menus)',
-    icon: User,
+    id: 'super_admin',
+    email: 'admin@demo.com',
+    label: 'Admin',
+    shortLabel: 'Admin',
+    loginTitle: 'Admin & Practice Management',
+    desc: 'Full platform, financial control & CRM pipeline',
+    icon: ShieldCheck,
   },
 ];
 
@@ -68,8 +59,8 @@ export const LoginPage = () => {
     }
   };
 
-  const [selectedRole, setSelectedRole] = useState('admin_staff'); // Defaults to Agent Login matching reference
-  const [email, setEmail] = useState(() => getRememberedEmail() || 'staff@demo.com');
+  const [selectedRole, setSelectedRole] = useState('customer'); // Default: Customer first as requested
+  const [email, setEmail] = useState(() => getRememberedEmail() || 'customer@demo.com');
   const [password, setPassword] = useState(DEFAULT_DEMO_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -77,7 +68,7 @@ export const LoginPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const currentRoleConfig =
-    ROLE_OPTIONS.find((r) => r.id === selectedRole) || ROLE_OPTIONS[1];
+    ROLE_OPTIONS.find((r) => r.id === selectedRole) || ROLE_OPTIONS[0];
 
   const handleRoleSelect = (role) => {
     setSelectedRole(role.id);
@@ -157,13 +148,13 @@ export const LoginPage = () => {
               </p>
             </div>
 
-            {/* All Roles Selector */}
+            {/* 3 Roles Selector (Customer first, Surveyor second, Admin third) */}
             <div className="mb-4 sm:mb-5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1.5 px-0.5">
-                <span>Select Role / Quick Demo</span>
-                <span className="text-[#2563EB] font-bold">4 Roles</span>
+                <span>Select Portal / Demo Access</span>
+                <span className="text-[#2563EB] font-bold">3 Roles</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-2xl">
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl">
                 {ROLE_OPTIONS.map((role) => {
                   const isSelected = selectedRole === role.id;
                   const Icon = role.icon;

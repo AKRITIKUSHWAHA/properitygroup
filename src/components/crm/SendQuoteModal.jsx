@@ -328,3 +328,4 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
     </div>
   );
 };
+

@@ -230,10 +230,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 Switch Role / Menus
               </div>
               {[
-                { id: 'super_admin', label: 'Super Admin', count: 10 },
-                { id: 'admin_staff', label: 'Admin / Staff', count: 8 },
-                { id: 'surveyor', label: 'Surveyor', count: 6 },
                 { id: 'customer', label: 'Customer', count: 8 },
+                { id: 'surveyor', label: 'Surveyor', count: 6 },
+                { id: 'super_admin', label: 'Admin', count: 10 },
               ].map((r) => {
                 const isCurrent = activeRole === r.id;
                 return (

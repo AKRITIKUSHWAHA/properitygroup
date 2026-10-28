@@ -112,7 +112,7 @@ export function MobileNavigation({ isOpen, onClose }) {
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
               <User size={16} />
-              <span>Sign Up / Login</span>
+              <span>Client Portal</span>
             </span>
             <ChevronRight size={16} />
           </NavLink>
@@ -128,7 +128,7 @@ export function MobileNavigation({ isOpen, onClose }) {
             icon={User}
             style={{ marginBottom: 'var(--space-3)' }}
           >
-            Sign Up
+            Client Portal
           </Button>
 
           <Button
@@ -159,4 +159,6 @@ export function MobileNavigation({ isOpen, onClose }) {
     document.body
   );
 }
+
+
 

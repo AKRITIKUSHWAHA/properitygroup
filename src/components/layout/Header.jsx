@@ -108,7 +108,7 @@ export function Header() {
             {/* Header Actions */}
             <div className="header-actions">
               <Button to="/login" variant="secondary" size="md" icon={User} className="header-login-btn">
-                Sign Up
+                Client Portal
               </Button>
 
               <Button to="/contact#quote" variant="gold" size="md" className="header-quote-btn">
@@ -134,4 +134,5 @@ export function Header() {
     </header>
   );
 }
+
 
