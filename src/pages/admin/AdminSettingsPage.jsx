@@ -138,7 +138,7 @@ export const AdminSettingsPage = () => {
       <PageHeader
         title="System Governance & Settings"
         subtitle="Configure survey pricing matrices, marketing lead sources, automated email templates, and regional UK coverage areas."
-        breadcrumb={['Super Admin', 'Settings']}
+        breadcrumb={['Admin', 'Settings']}
       />
 
       {/* Tabs */}

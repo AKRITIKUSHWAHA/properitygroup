@@ -22,34 +22,41 @@ import {
   Building2,
   Clock,
   Sparkles,
+  PhoneCall,
+  ShieldAlert,
+  Lock,
+  Upload,
+  CalendarDays,
+  FileUp,
+  XCircle,
+  Archive,
+  RefreshCw
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+import { useClientProfiles } from '../../mock/clientProfiles';
 
-// The exact 10 steps requested by user:
-// Quote requested, Quote sent, Accepted, Terms sent, Terms signed, Payment received, Booked, Survey done, Report sent, Closed
+// Canonical 6-Step SurveyBooker Pipeline (From Video 1)
 const STATUS_TIMELINE_STEPS = [
-  'Quote requested',
-  'Quote sent',
+  'Quote',
+  'Paid',
   'Accepted',
-  'Terms sent',
-  'Terms signed',
-  'Payment received',
   'Booked',
-  'Survey done',
-  'Report sent',
-  'Closed',
+  'Preparing report',
+  'Complete',
 ];
 
 export const JobDetailsPage = () => {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
+  const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
+  const { addCallLog } = useClientProfiles();
 
   // Find job from persistent jobs collection, fallback to first job
   const job = useMemo(() => {
@@ -61,6 +68,8 @@ export const JobDetailsPage = () => {
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
   const [isAdjustQuoteModalOpen, setIsAdjustQuoteModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientModalTab, setClientModalTab] = useState('calls');
 
   // Form states for adjusting quote
   const [quoteForm, setQuoteForm] = useState({
@@ -71,9 +80,14 @@ export const JobDetailsPage = () => {
     thermalExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('thermal')) ?? false,
   });
 
-  // State for notes & tasks
+  // State for notes & calls
   const [newNoteText, setNewNoteText] = useState('');
+  const [callDirection, setCallDirection] = useState('Inbound');
   const [newTaskText, setNewTaskText] = useState('');
+
+  // What's Next file upload state (from Video 1)
+  const [reportFileName, setReportFileName] = useState('');
+  const [reportUrl, setReportUrl] = useState('');
 
   // Calculate quote figures
   const extrasTotal =
@@ -84,122 +98,150 @@ export const JobDetailsPage = () => {
   const vat = subtotal * 0.2; // 20% UK VAT
   const totalAmount = subtotal + vat;
 
-  const currentStep = job?.timelineStep || 7;
+  // Calculate current canonical 6-step index
+  const getCurrentStepIndex = () => {
+    const rawStep = job?.timelineStep || 4;
+    if (rawStep <= 2) return 0; // Quote
+    if (rawStep === 3) return 1; // Paid
+    if (rawStep === 4 || rawStep === 5) return 2; // Accepted
+    if (rawStep === 6 || rawStep === 7) return 3; // Booked
+    if (rawStep === 8) return 4; // Preparing report
+    return 5; // Complete
+  };
+
+  const currentStepIndex = getCurrentStepIndex();
 
   // Handle Timeline Step Click to advance / change stage
   const handleStepClick = (stepIndex) => {
-    const stepNumber = stepIndex + 1;
     const stepName = STATUS_TIMELINE_STEPS[stepIndex];
-    const newProgress = Math.min(100, stepNumber * 10);
-
-    let newStatus = job.status;
-    let newTermsStatus = job.termsStatus;
+    let newTimelineStep = 1;
+    let newStatus = 'Quote requested';
     let newPaymentStatus = job.paymentStatus;
+    let newTermsStatus = job.termsStatus;
     let newCanBook = job.canBook;
 
-    if (stepNumber >= 5) newTermsStatus = 'Signed';
-    if (stepNumber >= 6) newPaymentStatus = 'Paid';
-    if (stepNumber >= 7) {
+    if (stepIndex === 0) {
+      newTimelineStep = 1;
+      newStatus = 'Quote requested';
+    } else if (stepIndex === 1) {
+      newTimelineStep = 3;
+      newStatus = 'Payment received';
+      newPaymentStatus = 'Paid';
+    } else if (stepIndex === 2) {
+      newTimelineStep = 5;
+      newStatus = 'Accepted';
+      newTermsStatus = 'Signed';
+    } else if (stepIndex === 3) {
+      newTimelineStep = 7;
+      newStatus = 'Booked';
       newCanBook = true;
-      newStatus = stepNumber === 10 ? 'Completed' : 'Scheduled';
+    } else if (stepIndex === 4) {
+      newTimelineStep = 8;
+      newStatus = 'Preparing report';
+    } else if (stepIndex === 5) {
+      newTimelineStep = 10;
+      newStatus = 'Completed';
     }
-    if (stepNumber === 8) newStatus = 'In Progress';
-    if (stepNumber === 10) newStatus = 'Completed';
 
     const newActivity = {
       id: Date.now(),
       time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      text: `Workflow advanced to milestone "${stepName}" (Stage ${stepNumber}/10).`,
+      text: `Workflow milestone moved to "${stepName}" (Stage ${stepIndex + 1}/6).`,
     };
 
     updateJob(job.id, {
-      timelineStep: stepNumber,
-      progress: newProgress,
+      timelineStep: newTimelineStep,
       status: newStatus,
-      termsStatus: newTermsStatus,
       paymentStatus: newPaymentStatus,
+      termsStatus: newTermsStatus,
       canBook: newCanBook,
       activityLog: [newActivity, ...(job.activityLog || [])],
     });
 
     addToast({
       type: 'info',
-      title: 'Milestone Updated',
-      message: `Job status progressed to: ${stepName}.`,
+      title: 'Survey Stage Updated',
+      message: `Job milestone moved to: ${stepName}.`,
     });
   };
 
-  // Handle Send Terms action
-  const handleConfirmSendTerms = (markSignedImmediately = false) => {
-    setIsSendTermsModalOpen(false);
+  // What's Next Action Handlers (Matching Video 1)
+  const handleWhatsNextConfirm = () => {
+    if (currentStepIndex === 0) {
+      // Quote -> advance to Accepted
+      handleStepClick(2);
+    } else if (currentStepIndex === 1) {
+      // Paid -> advance to Accepted / Booked
+      handleStepClick(3);
+    } else if (currentStepIndex === 2) {
+      // Accepted -> advance to Booked
+      handleStepClick(3);
+    } else if (currentStepIndex === 3) {
+      // Booked -> Confirm inspection went ahead -> Advance to Preparing report
+      handleStepClick(4);
+      addToast({
+        type: 'success',
+        title: 'Inspection Confirmed',
+        message: 'Site inspection attended. Job moved to "Preparing report" stage.',
+      });
+    } else if (currentStepIndex === 4) {
+      // Preparing report -> Upload report PDF -> Advance to Complete
+      if (!reportFileName && !reportUrl) {
+        addToast({
+          type: 'warning',
+          title: 'Select Report Document',
+          message: 'Please choose a PDF report or input a report URL to upload.',
+        });
+        return;
+      }
+      handleStepClick(5);
+      addToast({
+        type: 'success',
+        title: 'Report Uploaded Successfully',
+        message: 'Final survey report saved. Client email notification dispatched.',
+      });
+    }
+  };
 
-    const newTermsStatus = markSignedImmediately ? 'Signed' : 'Terms Sent (Awaiting E-Sign)';
-    const newStep = markSignedImmediately ? Math.max(job.timelineStep, 5) : Math.max(job.timelineStep, 4);
-    const canBookNow = (markSignedImmediately || job.termsStatus === 'Signed') && job.paymentStatus === 'Paid';
-
-    const newActivity = {
-      id: Date.now(),
-      time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      text: markSignedImmediately
-        ? `RICS Terms of Engagement executed and verified digitally.`
-        : `RICS Terms of Engagement dispatched to ${job.customerEmail}.`,
-    };
-
-    updateJob(job.id, {
-      termsStatus: newTermsStatus,
-      timelineStep: newStep,
-      canBook: canBookNow,
-      activityLog: [newActivity, ...(job.activityLog || [])],
-    });
-
+  const handleWhatsNextReschedule = () => {
     addToast({
-      type: 'success',
-      title: markSignedImmediately ? 'Terms Executed' : 'Terms of Engagement Dispatched',
-      message: markSignedImmediately
-        ? 'Terms marked as signed. Inspection requirement cleared.'
-        : `Digital signature link sent to ${job.customerEmail} (RICS Mandate v2026).`,
+      type: 'info',
+      title: 'Reschedule Requested',
+      message: 'Opening scheduler to select alternative surveyor inspection slot.',
     });
+    navigate('/staff/calendar');
   };
 
-  // Handle Confirm / Adjust Quote action
-  const handleSaveQuoteAdjustments = () => {
-    setIsAdjustQuoteModalOpen(false);
-
-    const extras = [];
-    if (quoteForm.droneExtra) extras.push({ name: 'Drone Roof & Flashing Inspection', amount: 120.0 });
-    if (quoteForm.debriefExtra) extras.push({ name: 'Same-day Verbal Debrief by Surveyor', amount: 50.0 });
-    if (quoteForm.thermalExtra) extras.push({ name: 'Thermal Imaging Defect Assessment', amount: 150.0 });
-
-    const newActivity = {
-      id: Date.now(),
-      time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      text: `Quotation revised. Base: £${quoteForm.baseFee.toFixed(2)}, Extras: £${extrasTotal.toFixed(2)}, Discount: £${quoteForm.discount.toFixed(2)}. Total: £${totalAmount.toFixed(2)}.`,
-    };
-
-    updateJob(job.id, {
-      quote: {
-        baseFee: parseFloat(quoteForm.baseFee),
-        discount: parseFloat(quoteForm.discount),
-        extras,
-        vatRate: 0.2,
-      },
-      activityLog: [newActivity, ...(job.activityLog || [])],
-    });
-
-    addToast({
-      type: 'success',
-      title: 'Quotation Updated',
-      message: `Revised total £${totalAmount.toFixed(2)} confirmed. Client proposal recalculated.`,
-    });
+  const handleWhatsNextArchive = () => {
+    if (window.confirm('Are you sure you want to archive this survey record?')) {
+      updateJob(job.id, { status: 'Archived' });
+      addToast({
+        type: 'info',
+        title: 'Record Archived',
+        message: `Job ${job.jobNo} moved to archive.`,
+      });
+    }
   };
 
-  // Add note
-  const handleAddNote = (e) => {
+  const handleWhatsNextCancel = () => {
+    if (window.confirm('Cancel this survey job instruction?')) {
+      updateJob(job.id, { status: 'Cancelled' });
+      addToast({
+        type: 'warning',
+        title: 'Job Cancelled',
+        message: `Job ${job.jobNo} marked as cancelled.`,
+      });
+    }
+  };
+
+  // Handle Save Note (Internal Note)
+  const handleSaveAsNote = (e) => {
     e.preventDefault();
     if (!newNoteText.trim()) return;
 
     const newNote = {
       id: Date.now(),
+      type: 'note',
       author: 'Operations Staff',
       date: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
       text: newNoteText.trim(),
@@ -212,8 +254,49 @@ export const JobDetailsPage = () => {
     setNewNoteText('');
     addToast({
       type: 'info',
-      title: 'Note Recorded',
-      message: 'Call note logged in job file.',
+      title: 'Internal Note Saved',
+      message: 'Operational note recorded on job file.',
+    });
+  };
+
+  // Handle Save Call (Phone Call Record with Exact Timestamp)
+  const handleSaveAsCall = (e) => {
+    e.preventDefault();
+    if (!newNoteText.trim()) return;
+
+    const timestamp = new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    const newCallNote = {
+      id: Date.now(),
+      type: 'call',
+      direction: callDirection,
+      author: 'Operations Staff',
+      date: timestamp,
+      text: `[${callDirection.toUpperCase()} CALL] ${newNoteText.trim()}`,
+    };
+
+    // Update job notes
+    updateJob(job.id, {
+      notes: [newCallNote, ...(job.notes || [])],
+    });
+
+    // Also persist into clientProfile store
+    const clientEmail = job.customerEmail || 'customer@demo.com';
+    addCallLog(clientEmail, {
+      timestamp,
+      direction: callDirection,
+      staff: 'Sarah Jenkins',
+      duration: '4 mins',
+      subject: `Call regarding Job #${job.jobNo} (${job.property})`,
+      notes: newNoteText.trim(),
+      tags: [job.surveyType, callDirection],
+    });
+
+    setNewNoteText('');
+    addToast({
+      type: 'success',
+      title: 'Call Interaction Logged',
+      message: `Call recorded at ${timestamp} and linked to ${job.customer}'s profile.`,
     });
   };
 
@@ -278,7 +361,67 @@ export const JobDetailsPage = () => {
         </button>
       </div>
 
-      {/* HEADER: Job No., Customer, Address, Badges, and "Send terms" & "Confirm/Adjust quote" buttons */}
+      {/* 6-STEP SURVEYBOOKER PIPELINE (Quote -> Paid -> Accepted -> Booked -> Preparing report -> Complete) */}
+      <div className="bg-[#0B1F4D] p-5 sm:p-6 rounded-3xl text-white shadow-md">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-sky-300">
+              SurveyBooker Pipeline
+            </span>
+            <span className="text-xs text-slate-300">•</span>
+            <span className="text-xs font-mono text-slate-300">ID: {job.jobNo}</span>
+          </div>
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-200 border border-sky-400/30">
+            Current Stage: {STATUS_TIMELINE_STEPS[currentStepIndex]}
+          </span>
+        </div>
+
+        {/* Stepper Bar */}
+        <div className="flex items-center justify-between relative px-2 sm:px-6">
+          {/* Background Connecting Bar */}
+          <div className="absolute top-4 left-6 right-6 h-1 bg-slate-700/80 -z-0" />
+
+          {STATUS_TIMELINE_STEPS.map((stepName, idx) => {
+            const stepNumber = idx + 1;
+            const isPast = idx < currentStepIndex;
+            const isCurrent = idx === currentStepIndex;
+
+            return (
+              <div
+                key={stepName}
+                onClick={() => handleStepClick(idx)}
+                className="flex flex-col items-center cursor-pointer group relative z-10"
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                    isPast
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : isCurrent
+                      ? 'bg-[#0284C7] text-white ring-4 ring-sky-400/30 shadow-md scale-110'
+                      : 'bg-[#1E293B] border-2 border-slate-600 text-slate-400 group-hover:border-slate-400'
+                  }`}
+                >
+                  {isPast ? <Check className="w-4 h-4 stroke-[3]" /> : stepNumber}
+                </div>
+
+                <span
+                  className={`text-[11px] text-center font-bold mt-2 max-w-[85px] leading-tight transition-colors ${
+                    isCurrent
+                      ? 'text-sky-300'
+                      : isPast
+                      ? 'text-slate-200'
+                      : 'text-slate-400 group-hover:text-slate-300'
+                  }`}
+                >
+                  {stepName}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* HEADER: Job Title, Customer, Survey Booker ID, Badges */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <div className="flex flex-wrap items-center gap-3 mb-2">
@@ -323,6 +466,8 @@ export const JobDetailsPage = () => {
             </span>
             <span className="text-slate-300">•</span>
             <span className="text-[#2563EB] font-bold">{job.surveyType}</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-xs font-mono text-slate-500">Booker ID: 1826303</span>
           </div>
         </div>
 
@@ -346,104 +491,269 @@ export const JobDetailsPage = () => {
         </div>
       </div>
 
-      {/* 10-STEP STATUS TIMELINE: Quote requested -> Closed */}
-      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">
-            Survey Lifecycle Status Timeline
-          </span>
-          <span className="text-xs font-bold text-[#2563EB]">
-            Stage: {STATUS_TIMELINE_STEPS[currentStep - 1] || 'In Progress'} ({currentStep}/10)
-          </span>
-        </div>
-
-        {/* Desktop Stepper Bar (Horizontal) */}
-        <div className="hidden md:block overflow-x-auto pb-2 scrollbar-none">
-          <div className="flex items-center min-w-[760px] justify-between relative">
-            {/* Background track line */}
-            <div className="absolute top-4 left-6 right-6 h-0.5 bg-slate-200 -z-0" />
-
-            {STATUS_TIMELINE_STEPS.map((stepName, idx) => {
-              const stepNumber = idx + 1;
-              const isPast = stepNumber < currentStep;
-              const isCurrent = stepNumber === currentStep;
-
-              return (
-                <div
-                  key={stepName}
-                  onClick={() => handleStepClick(idx)}
-                  className="flex flex-col items-center cursor-pointer group relative z-10"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
-                      isPast
-                        ? 'bg-emerald-500 text-white shadow-sm'
-                        : isCurrent
-                        ? 'bg-[#2563EB] text-white ring-4 ring-blue-500/25 shadow-md scale-110'
-                        : 'bg-white border-2 border-slate-300 text-slate-400 group-hover:border-slate-400'
-                    }`}
-                  >
-                    {isPast ? <Check className="w-4 h-4 stroke-[2.5]" /> : stepNumber}
-                  </div>
-
-                  <span
-                    className={`text-[10px] text-center font-bold mt-2 max-w-[80px] leading-tight transition-colors ${
-                      isCurrent
-                        ? 'text-[#0B1F4D]'
-                        : isPast
-                        ? 'text-slate-700'
-                        : 'text-slate-400 group-hover:text-slate-600'
-                    }`}
-                  >
-                    {stepName}
-                  </span>
-                </div>
-              );
-            })}
+      {/* WHAT'S NEXT ACTION BOX (SurveyBooker Exact Benchmark from Video 1) */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+        {/* Top Teal Header */}
+        <div className="bg-[#07779D] text-white px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-sky-200" />
+            <h3 className="font-extrabold text-sm tracking-wide m-0 text-white">What's Next?</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleWhatsNextArchive}
+              className="px-3 py-1 rounded-lg bg-sky-600/60 hover:bg-sky-600 text-xs font-bold text-white transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span>Archive</span>
+            </button>
+            <button
+              onClick={handleWhatsNextCancel}
+              className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              <span>Cancel</span>
+            </button>
           </div>
         </div>
 
-        {/* Mobile Vertical Stepper (No horizontal scrolling!) */}
-        <div className="md:hidden space-y-2 pt-1">
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2.5">
-              <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-black text-xs">
-                {currentStep}
-              </span>
-              <div>
-                <span className="font-bold text-slate-800 block">
-                  {STATUS_TIMELINE_STEPS[currentStep - 1]}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  Step {currentStep} of 10 in RICS Survey Pipeline
+        {/* Dynamic Contextual Prompt based on Active Stage */}
+        <div className="p-6 space-y-4">
+          {/* Stage 0: Quote */}
+          {currentStepIndex === 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
+                <span className="text-xs font-black text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                  Quote requested
                 </span>
               </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                A bespoke quote is required for this property search. Please verify property details and submit your quotation proposal using the button below.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleWhatsNextCancel}
+                  className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={() => setIsAdjustQuoteModalOpen(true)}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Confirm / Adjust Quote</span>
+                </button>
+              </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#2563EB]">
-              Active Step
-            </span>
-          </div>
+          )}
 
-          {/* Quick Step Advance Buttons on Mobile */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              disabled={currentStep <= 1}
-              onClick={() => handleStepClick(currentStep - 2)}
-              className="py-2 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold disabled:opacity-40 min-h-[44px]"
-            >
-              ← Previous Step
-            </button>
-            <button
-              disabled={currentStep >= 10}
-              onClick={() => handleStepClick(currentStep)}
-              className="py-2 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold disabled:opacity-40 min-h-[44px]"
-            >
-              Next Step →
-            </button>
-          </div>
+          {/* Stage 1: Paid */}
+          {currentStepIndex === 1 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
+                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Payment Received
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                Client has settled the advance survey fee (£{job?.quote?.baseFee || 650}.00). Please liaise with the vendor or selling agent to confirm on-site inspection timing.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleWhatsNextConfirm}
+                  className="px-5 py-2.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CalendarDays className="w-4 h-4 text-sky-400" />
+                  <span>Schedule Inspection Appointment</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 2: Accepted */}
+          {currentStepIndex === 2 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
+                <span className="text-xs font-black text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                  Quote Accepted &bull; Terms Sent
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                Customer has agreed to the survey fee proposal. Standard RICS Terms of Engagement have been dispatched to <strong>{job.customerEmail}</strong>.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleWhatsNextConfirm}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Verify Terms &amp; Mark Bookable</span>
+                </button>
+                <button
+                  onClick={() => setIsSendTermsModalOpen(true)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Resend Terms Email
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 3: Booked */}
+          {currentStepIndex === 3 && (
+            <div className="space-y-3">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>The inspection is booked for {job.date || '28/10/2026'} at {job.timeSlot || '09:00 AM'}.</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
+                <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Booked
+                </span>
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                The job is confirmed with surveyor <strong>{job.surveyor}</strong>. You can confirm the appointment went ahead or reschedule the appointment using the buttons below.
+              </p>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleWhatsNextReschedule}
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Reschedule
+                </button>
+                <button
+                  onClick={handleWhatsNextConfirm}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Confirm Inspection Completed</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 4: Preparing report */}
+          {currentStepIndex === 4 && (
+            <div className="space-y-3">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>The technical report is due by {job.date || '28/10/2026'} 6:00 PM.</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
+                <span className="text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                  Preparing report
+                </span>
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                Please submit your finalized survey report using the fields below. You can then press upload to save the document and mark the job as complete.
+              </p>
+
+              {/* Upload Report Inputs (From Video 1) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    Select Report PDF:
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      id="report-upload-file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setReportFileName(e.target.files[0].name);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="report-upload-file"
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <FileUp className="w-4 h-4 text-slate-600" />
+                      <span>Choose file</span>
+                    </label>
+                    <span className="text-xs font-mono text-slate-600 truncate">
+                      {reportFileName || 'No file chosen (e.g. 200742-Level 3.pdf)'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
+                    Digital Report URL:
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://reports.propertygroup.co.uk/rep-..."
+                    value={reportUrl}
+                    onChange={(e) => setReportUrl(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleWhatsNextReschedule}
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Reschedule
+                </button>
+                <button
+                  onClick={handleWhatsNextConfirm}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Upload &amp; Complete Job</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 5: Complete */}
+          {currentStepIndex === 5 && (
+            <div className="space-y-3">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Job Completed &bull; Technical Report Delivered</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
+                All inspection milestones have been completed and the indexed RICS survey PDF has been archived in the customer's portal and dispatched via email.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={() => alert('Downloading official RICS report PDF...')}
+                  className="px-5 py-2.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-sky-400" />
+                  <span>Download Final Report (PDF)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setClientModalTab('calls');
+                    setIsClientModalOpen(true);
+                  }}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Log Post-Survey Debrief Call
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
 
       {/* THREE KEY CARDS ROW: Contacts Card, Property Details Card, Quote Table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -473,6 +783,16 @@ export const JobDetailsPage = () => {
                   <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                   {job.contacts?.client?.email || job.customerEmail}
                 </div>
+                <button
+                  onClick={() => {
+                    setClientModalTab('calls');
+                    setIsClientModalOpen(true);
+                  }}
+                  className="mt-2.5 w-full py-1.5 px-2.5 rounded-xl bg-white hover:bg-[#0B1F4D] text-[#0B1F4D] hover:text-white border border-slate-200 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <PhoneCall className="w-3 h-3 text-[#2563EB]" />
+                  <span>Call Notes &amp; Complaints Log</span>
+                </button>
               </div>
 
               {/* Solicitor */}
@@ -693,7 +1013,7 @@ export const JobDetailsPage = () => {
 
               <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-2">
                 <h4 className="text-xs font-bold text-[#0B1F4D] uppercase tracking-wider">
-                  Scope of Inspection & Specific Instructions
+                  Scope of Inspection &amp; Specific Instructions
                 </h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Full RICS Home Survey Level 2 covering building fabric, dampness testing with Protimeter moisture meter, roof void inspection, services condition ratings (1-3), and formal open-market valuation for purchaser {job.customer}.
@@ -702,35 +1022,121 @@ export const JobDetailsPage = () => {
             </div>
           )}
 
-          {/* 2. Notes and calls */}
+          {/* 2. Notes and calls (SPLIT BUTTONS: Save as note vs Save as call) */}
           {activeTab === 'notes-calls' && (
             <div className="space-y-5 max-w-3xl">
-              {/* Form to add note */}
-              <form onSubmit={handleAddNote} className="space-y-2">
-                <textarea
-                  rows="3"
-                  placeholder="Record customer call summary, surveyor debrief, or agent key pickup notes..."
-                  value={newNoteText}
-                  onChange={(e) => setNewNoteText(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-                />
-                <div className="flex justify-end">
+              {/* Quick Link to Dedicated Client Profile & Complaints */}
+              <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-[#2563EB]" />
+                  <span className="text-xs font-bold text-slate-800">
+                    Client Call History &amp; Complaints Log for {job.customer}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
                   <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    type="button"
+                    onClick={() => {
+                      setClientModalTab('calls');
+                      setIsClientModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-[#0B1F4D] text-[#0B1F4D] hover:text-white border border-slate-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Note</span>
+                    View All Calls
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setClientModalTab('complaints');
+                      setIsClientModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+                  >
+                    Complaints Log
                   </button>
                 </div>
-              </form>
+              </div>
+
+              {/* Form to add note or call with 2 distinct buttons (SurveyBooker format from Video 1) */}
+              <div className="space-y-2.5 p-4 bg-slate-50/90 border border-slate-200 rounded-2xl">
+                <textarea
+                  rows="3"
+                  placeholder="Record customer call summary, complaint details, surveyor debrief, or agent key pickup notes..."
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
+                />
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  {/* Call direction toggle */}
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span className="font-semibold text-[11px]">Direction:</span>
+                    <button
+                      type="button"
+                      onClick={() => setCallDirection('Inbound')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                        callDirection === 'Inbound'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      Inbound Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCallDirection('Outbound')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                        callDirection === 'Outbound'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      Outbound Call
+                    </button>
+                  </div>
+
+                  {/* Two distinct buttons: Save as note & Save as call */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveAsNote}
+                      className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Save as note</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveAsCall}
+                      className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Save as call</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               {/* Notes list */}
               <div className="space-y-3 divide-y divide-slate-100">
                 {(job.notes || []).map((note) => (
                   <div key={note.id} className="pt-3 first:pt-0">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-[#0B1F4D]">{note.author}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-[#0B1F4D]">{note.author}</span>
+                        {note.direction && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              note.direction === 'Inbound'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            }`}
+                          >
+                            {note.direction} Call
+                          </span>
+                        )}
+                      </div>
                       <span className="text-slate-400 text-[11px] font-mono">{note.date}</span>
                     </div>
                     <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/70 p-3 rounded-xl border border-slate-200/60">
@@ -744,12 +1150,11 @@ export const JobDetailsPage = () => {
 
           {/* 3. Tasks */}
           {activeTab === 'tasks' && (
-            <div className="space-y-5 max-w-2xl">
-              {/* Add task form */}
+            <div className="space-y-4 max-w-3xl">
               <form onSubmit={handleAddTask} className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="New operational task (e.g. Call vendor to confirm loft ladder)..."
+                  placeholder="Add a new checklist task..."
                   value={newTaskText}
                   onChange={(e) => setNewTaskText(e.target.value)}
                   className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
@@ -858,186 +1263,158 @@ export const JobDetailsPage = () => {
         </div>
       </div>
 
-      {/* MODAL 1: Send Terms Modal */}
-      <Modal
-        isOpen={isSendTermsModalOpen}
-        onClose={() => setIsSendTermsModalOpen(false)}
-        title="Dispatch Terms of Engagement (RICS Compliance)"
-        subtitle={`Send legal mandate to client ${job.customer} (${job.customerEmail})`}
-        maxWidth="max-w-xl"
-        footer={
-          <div className="flex flex-wrap items-center justify-between w-full gap-2">
-            <button
-              onClick={() => handleConfirmSendTerms(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
-            >
-              ✓ Mark Terms Signed Directly
-            </button>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsSendTermsModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleConfirmSendTerms(false)}
-                className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5 cursor-pointer"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Send Signature Link
-              </button>
-            </div>
-          </div>
-        }
-      >
-        <div className="space-y-4 text-xs">
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 leading-relaxed">
-            The client will receive an email and SMS with a secure link to execute the RICS Level 2 Standard Terms of Engagement. Inspection will remain pending until signed.
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Client Email</label>
-            <input
-              type="email"
-              disabled
-              value={job.customerEmail}
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Accreditation Mandate</label>
-            <input
-              type="text"
-              disabled
-              value="RICS Home Survey Standard (1st Edition, 2026 Mandate)"
-              className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 font-medium"
-            />
-          </div>
-        </div>
-      </Modal>
-
-      {/* MODAL 2: Confirm / Adjust Quote Modal */}
+      {/* Adjust Quote Modal */}
       <Modal
         isOpen={isAdjustQuoteModalOpen}
         onClose={() => setIsAdjustQuoteModalOpen(false)}
-        title="Confirm / Adjust Quotation"
-        subtitle={`Adjust survey fees, discounts, and optional inspection extras for ${job.jobNo}`}
-        maxWidth="max-w-lg"
-        footer={
-          <>
-            <button
-              onClick={() => setIsAdjustQuoteModalOpen(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveQuoteAdjustments}
-              className="px-5 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 shadow-sm flex items-center gap-1.5 cursor-pointer"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Save & Recalculate
-            </button>
-          </>
-        }
+        title="Adjust &amp; Confirm Survey Quotation"
+        size="md"
       >
         <div className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Base Survey Fee (£ GBP)
-            </label>
+            <label className="font-bold text-slate-700 block mb-1">Base Survey Fee (£)</label>
             <input
               type="number"
-              step="10"
               value={quoteForm.baseFee}
               onChange={(e) => setQuoteForm({ ...quoteForm, baseFee: parseFloat(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm"
             />
           </div>
 
-          <div className="space-y-2 pt-1">
-            <span className="block font-semibold text-slate-700">Optional Inspection Extras</span>
-            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-              <span className="font-medium text-slate-700">Drone Roof & Chimney Inspection (+£120.00)</span>
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <span className="font-bold text-slate-700 block">Optional Valuation &amp; Defect Extras:</span>
+            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+              <span>Drone Roof &amp; Flashing Inspection (+£120.00)</span>
               <input
                 type="checkbox"
                 checked={quoteForm.droneExtra}
                 onChange={(e) => setQuoteForm({ ...quoteForm, droneExtra: e.target.checked })}
-                className="w-4 h-4 rounded text-[#2563EB]"
+                className="w-4 h-4 rounded text-blue-600"
               />
             </label>
-            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-              <span className="font-medium text-slate-700">Same-Day Verbal Surveyor Debrief (+£50.00)</span>
+            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+              <span>Same-Day Verbal Debrief by Surveyor (+£50.00)</span>
               <input
                 type="checkbox"
                 checked={quoteForm.debriefExtra}
                 onChange={(e) => setQuoteForm({ ...quoteForm, debriefExtra: e.target.checked })}
-                className="w-4 h-4 rounded text-[#2563EB]"
+                className="w-4 h-4 rounded text-blue-600"
               />
             </label>
-            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-              <span className="font-medium text-slate-700">Thermal Imaging Defect Assessment (+£150.00)</span>
+            <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+              <span>Thermal Imaging Defect Assessment (+£150.00)</span>
               <input
                 type="checkbox"
                 checked={quoteForm.thermalExtra}
                 onChange={(e) => setQuoteForm({ ...quoteForm, thermalExtra: e.target.checked })}
-                className="w-4 h-4 rounded text-[#2563EB]"
+                className="w-4 h-4 rounded text-blue-600"
               />
             </label>
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Client Discount (£ GBP)
-            </label>
+          <div className="pt-2 border-t border-slate-100">
+            <label className="font-bold text-slate-700 block mb-1">Promotional Discount (£)</label>
             <input
               type="number"
-              step="5"
               value={quoteForm.discount}
               onChange={(e) => setQuoteForm({ ...quoteForm, discount: parseFloat(e.target.value) || 0 })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-emerald-700 font-bold"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm"
             />
           </div>
 
-          {/* Real-time Calculation Summary */}
-          <div className="p-3 bg-slate-100 rounded-2xl space-y-1 font-mono text-[11px]">
-            <div className="flex justify-between text-slate-600">
-              <span>Subtotal:</span>
-              <span>£{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>UK VAT (20%):</span>
-              <span>£{vat.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-slate-900 pt-1 border-t border-slate-200 text-xs">
-              <span>Revised Total (inc. VAT):</span>
-              <span className="text-emerald-700 font-black">£{totalAmount.toFixed(2)}</span>
-            </div>
+          {/* Real-time recalculated total */}
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+            <span className="font-bold text-[#0B1F4D]">Total Fee (Inc. 20% VAT):</span>
+            <span className="font-black text-sm text-blue-700 font-mono">
+              £{totalAmount.toFixed(2)}
+            </span>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              onClick={() => setIsAdjustQuoteModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsAdjustQuoteModalOpen(false);
+                addToast({
+                  type: 'success',
+                  title: 'Quotation Updated',
+                  message: `New total £${totalAmount.toFixed(2)} confirmed.`,
+                });
+              }}
+              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold"
+            >
+              Save &amp; Confirm Quote
+            </button>
           </div>
         </div>
       </Modal>
 
-      {/* Mobile Sticky Bottom Action Bar for Send terms & Adjust quote */}
-      <div className="md:hidden fixed bottom-14 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 p-2.5 px-3.5 shadow-xl flex items-center gap-2 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
-        <button
-          onClick={() => setIsAdjustQuoteModalOpen(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold shadow-2xs min-h-[44px]"
-        >
-          <SlidersHorizontal className="w-4 h-4 text-[#2563EB]" />
-          <span>Adjust quote</span>
-        </button>
+      {/* Send Terms Modal */}
+      <Modal
+        isOpen={isSendTermsModalOpen}
+        onClose={() => setIsSendTermsModalOpen(false)}
+        title="Send RICS Terms of Engagement Contract"
+        size="md"
+      >
+        <div className="space-y-4 text-xs">
+          <p className="text-slate-600">
+            Dispatch digital Terms of Engagement agreement for <strong>{job.surveyType}</strong> to{' '}
+            <strong>{job.customerEmail}</strong>.
+          </p>
 
-        <button
-          onClick={() => setIsSendTermsModalOpen(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold shadow-md shadow-[#0B1F4D]/20 min-h-[44px]"
-        >
-          <Send className="w-4 h-4" />
-          <span>Send terms</span>
-        </button>
-      </div>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Document Type:</span>
+              <span className="font-bold text-slate-800">RICS Home Survey Standard (2026/27)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Agreed Fixed Fee:</span>
+              <span className="font-bold text-emerald-700 font-mono">£{totalAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Payment Schedule:</span>
+              <span className="font-bold text-slate-800">100% in advance of site visit</span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3">
+            <button
+              onClick={() => setIsSendTermsModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setIsSendTermsModalOpen(false);
+                updateJob(job.id, { termsStatus: 'Signed' });
+                addToast({
+                  type: 'success',
+                  title: 'Terms of Engagement Dispatched',
+                  message: 'Agreement contract sent to client email.',
+                });
+              }}
+              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold"
+            >
+              Dispatch Agreement Now
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Client Profile & Complaints Modal */}
+      <ClientProfileModal
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        clientEmail={job.customerEmail || 'customer@demo.com'}
+        clientName={job.customer}
+        defaultTab={clientModalTab}
+      />
     </div>
   );
 };
-

@@ -72,7 +72,7 @@ export const RegisterPage = () => {
       <div className="mb-4 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center gap-2.5 text-xs text-blue-900">
         <ShieldCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
         <span>
-          Customer Portal Registration only. Staff and Surveyors are invited by the Super Admin.
+          Customer Portal Registration only. Staff and Surveyors are invited by the Admin.
         </span>
       </div>
 

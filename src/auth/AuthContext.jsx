@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
   // Fast role switcher for demo and route synchronization
   const switchRole = useCallback((newRole) => {
     const roleEmailMap = {
+      admin: 'admin@demo.com',
       super_admin: 'admin@demo.com',
       admin_staff: 'staff@demo.com',
       surveyor: 'surveyor@demo.com',

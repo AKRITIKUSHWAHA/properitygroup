@@ -118,14 +118,18 @@ function AppRoutes() {
 
       {/* 2. Portal Shortcut for Dashboard Navigation */}
       <Route path="/portal" element={<PortalRedirect />} />
-      <Route path="/superadmin" element={<Navigate to="/superadmin/dashboard" replace />} />
-      <Route path="/admin" element={<Navigate to="/superadmin/dashboard" replace />} />
+      <Route path="/superadmin" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
       <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
       <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
       <Route path="/customer" element={<Navigate to="/customer/my-dashboard" replace />} />
 
       {/* 3. Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/backoffice" element={<LoginPage initialMode="backoffice" />} />
+      <Route path="/admin-login" element={<Navigate to="/backoffice" replace />} />
+      <Route path="/surveyor-login" element={<Navigate to="/backoffice" replace />} />
+      <Route path="/staff-login" element={<Navigate to="/backoffice" replace />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -140,34 +144,83 @@ function AppRoutes() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/change-password" element={<ChangePasswordPage />} />
 
-        {/* Super Admin Routes (10 menus) under /superadmin/* */}
-        <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
-          <Route path="/superadmin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/superadmin/users-and-roles" element={<AdminUsersPage />} />
-          <Route path="/superadmin/companies" element={<AdminCompaniesPage />} />
-          <Route path="/superadmin/surveyors" element={<AdminSurveyorsPage />} />
-          <Route path="/superadmin/crm-and-leads" element={<AdminLeadsPage />} />
-          <Route path="/superadmin/survey-jobs" element={<AdminJobsPage />} />
-          <Route path="/superadmin/survey-jobs/:jobId" element={<JobDetailsPage />} />
-          <Route path="/superadmin/booking-calendar" element={<StaffCalendarPage />} />
-          <Route path="/superadmin/quotations-and-payments" element={<AdminQuotesPage />} />
-          <Route path="/superadmin/terms-and-documents" element={<AdminTermsPage />} />
-          <Route path="/superadmin/reports-and-analytics" element={<AdminReportsPage />} />
-          <Route path="/superadmin/settings" element={<AdminSettingsPage />} />
+        {/* Admin Routes (10 primary menus) under /admin/* */}
+        <Route element={<ProtectedRoute allowedRoles={['super_admin', 'admin']} />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
-          {/* Legacy /admin/* redirects for smooth backwards compatibility */}
-          <Route path="/admin/dashboard" element={<Navigate to="/superadmin/dashboard" replace />} />
-          <Route path="/admin/users-and-roles" element={<Navigate to="/superadmin/users-and-roles" replace />} />
-          <Route path="/admin/companies" element={<Navigate to="/superadmin/companies" replace />} />
-          <Route path="/admin/surveyors" element={<Navigate to="/superadmin/surveyors" replace />} />
-          <Route path="/admin/crm-and-leads" element={<Navigate to="/superadmin/crm-and-leads" replace />} />
-          <Route path="/admin/survey-jobs" element={<Navigate to="/superadmin/survey-jobs" replace />} />
+          {/* CRM & Leads + Friendly Aliases */}
+          <Route path="/admin/leads" element={<AdminLeadsPage />} />
+          <Route path="/admin/lead" element={<AdminLeadsPage />} />
+          <Route path="/admin/crm-and-leads" element={<AdminLeadsPage />} />
+
+          {/* Survey Jobs + Friendly Aliases */}
+          <Route path="/admin/jobs" element={<AdminJobsPage />} />
+          <Route path="/admin/job" element={<AdminJobsPage />} />
+          <Route path="/admin/survey-jobs" element={<AdminJobsPage />} />
+          <Route path="/admin/jobs/:jobId" element={<JobDetailsPage />} />
+          <Route path="/admin/job/:jobId" element={<JobDetailsPage />} />
           <Route path="/admin/survey-jobs/:jobId" element={<JobDetailsPage />} />
-          <Route path="/admin/booking-calendar" element={<Navigate to="/superadmin/booking-calendar" replace />} />
-          <Route path="/admin/quotations-and-payments" element={<Navigate to="/superadmin/quotations-and-payments" replace />} />
-          <Route path="/admin/terms-and-documents" element={<Navigate to="/superadmin/terms-and-documents" replace />} />
-          <Route path="/admin/reports-and-analytics" element={<Navigate to="/superadmin/reports-and-analytics" replace />} />
-          <Route path="/admin/settings" element={<Navigate to="/superadmin/settings" replace />} />
+
+          {/* Booking Calendar + Friendly Aliases */}
+          <Route path="/admin/calendar" element={<StaffCalendarPage />} />
+          <Route path="/admin/booking-calendar" element={<StaffCalendarPage />} />
+
+          {/* Quotations & Payments + Friendly Aliases */}
+          <Route path="/admin/quotes" element={<AdminQuotesPage />} />
+          <Route path="/admin/quote" element={<AdminQuotesPage />} />
+          <Route path="/admin/quotations-and-payments" element={<AdminQuotesPage />} />
+
+          {/* Terms & Documents + Friendly Aliases */}
+          <Route path="/admin/terms" element={<AdminTermsPage />} />
+          <Route path="/admin/term" element={<AdminTermsPage />} />
+          <Route path="/admin/terms-and-documents" element={<AdminTermsPage />} />
+
+          {/* Reports & Analytics + Friendly Aliases */}
+          <Route path="/admin/reports" element={<AdminReportsPage />} />
+          <Route path="/admin/report" element={<AdminReportsPage />} />
+          <Route path="/admin/reports-and-analytics" element={<AdminReportsPage />} />
+
+          {/* Users & Roles + Friendly Aliases */}
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/user" element={<AdminUsersPage />} />
+          <Route path="/admin/users-and-roles" element={<AdminUsersPage />} />
+
+          {/* Companies & Surveyors & Settings */}
+          <Route path="/admin/companies" element={<AdminCompaniesPage />} />
+          <Route path="/admin/company" element={<AdminCompaniesPage />} />
+          <Route path="/admin/surveyors" element={<AdminSurveyorsPage />} />
+          <Route path="/admin/surveyor" element={<AdminSurveyorsPage />} />
+          <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          <Route path="/admin/setting" element={<AdminSettingsPage />} />
+
+          {/* Seamless /superadmin/* backwards-compatibility redirects */}
+          <Route path="/superadmin/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="/superadmin/leads" element={<Navigate to="/admin/leads" replace />} />
+          <Route path="/superadmin/lead" element={<Navigate to="/admin/leads" replace />} />
+          <Route path="/superadmin/crm-and-leads" element={<Navigate to="/admin/leads" replace />} />
+          <Route path="/superadmin/jobs" element={<Navigate to="/admin/jobs" replace />} />
+          <Route path="/superadmin/job" element={<Navigate to="/admin/jobs" replace />} />
+          <Route path="/superadmin/survey-jobs" element={<Navigate to="/admin/jobs" replace />} />
+          <Route path="/superadmin/jobs/:jobId" element={<JobDetailsPage />} />
+          <Route path="/superadmin/job/:jobId" element={<JobDetailsPage />} />
+          <Route path="/superadmin/survey-jobs/:jobId" element={<JobDetailsPage />} />
+          <Route path="/superadmin/calendar" element={<Navigate to="/admin/calendar" replace />} />
+          <Route path="/superadmin/booking-calendar" element={<Navigate to="/admin/calendar" replace />} />
+          <Route path="/superadmin/quotes" element={<Navigate to="/admin/quotes" replace />} />
+          <Route path="/superadmin/quote" element={<Navigate to="/admin/quotes" replace />} />
+          <Route path="/superadmin/quotations-and-payments" element={<Navigate to="/admin/quotes" replace />} />
+          <Route path="/superadmin/terms" element={<Navigate to="/admin/terms" replace />} />
+          <Route path="/superadmin/term" element={<Navigate to="/admin/terms" replace />} />
+          <Route path="/superadmin/terms-and-documents" element={<Navigate to="/admin/terms" replace />} />
+          <Route path="/superadmin/reports" element={<Navigate to="/admin/reports" replace />} />
+          <Route path="/superadmin/report" element={<Navigate to="/admin/reports" replace />} />
+          <Route path="/superadmin/reports-and-analytics" element={<Navigate to="/admin/reports" replace />} />
+          <Route path="/superadmin/users" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/superadmin/user" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/superadmin/users-and-roles" element={<Navigate to="/admin/users" replace />} />
+          <Route path="/superadmin/companies" element={<Navigate to="/admin/companies" replace />} />
+          <Route path="/superadmin/surveyors" element={<Navigate to="/admin/surveyors" replace />} />
+          <Route path="/superadmin/settings" element={<Navigate to="/admin/settings" replace />} />
         </Route>
 
         {/* Admin / Staff Routes (8 menus) */}

@@ -24,11 +24,15 @@ import { useToast } from '../../components/ToastContext';
 export const AdminJobsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const baseJobsPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/superadmin/survey-jobs';
+  const baseJobsPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
   const { jobs, addJob } = useJobs();
 
-  const [activeTab, setActiveTab] = useState('All');
+  const queryFilter = useMemo(() => {
+    return new URLSearchParams(location.search).get('filter') || 'All';
+  }, [location.search]);
+
+  const [activeTab, setActiveTab] = useState(queryFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveyorFilter, setSurveyorFilter] = useState('All');
   const [pageSize, setPageSize] = useState(10);
@@ -265,7 +269,7 @@ export const AdminJobsPage = () => {
       <PageHeader
         title="Survey Jobs Master Register"
         subtitle="Manage ongoing RICS inspections, milestone progress, surveyor allocations, and client deliverable ETAs."
-        breadcrumb={['Super Admin', 'Survey Jobs']}
+        breadcrumb={['Admin', 'Survey Jobs']}
         actionLabel="Create Survey Job"
         actionIcon={Plus}
         onAction={() => setIsNewBookingModalOpen(true)}

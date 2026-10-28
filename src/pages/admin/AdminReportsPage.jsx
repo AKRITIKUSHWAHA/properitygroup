@@ -57,7 +57,7 @@ export const AdminReportsPage = () => {
       <PageHeader
         title="Reports & Financial Analytics"
         subtitle="Executive operational performance, RICS delivery turnaround SLAs, and revenue breakdown across the UK."
-        breadcrumb={['Super Admin', 'Reports & Analytics']}
+        breadcrumb={['Admin', 'Reports & Analytics']}
         actionLabel="Export CSV Report"
         actionIcon={Download}
         onAction={handleExportCSV}
