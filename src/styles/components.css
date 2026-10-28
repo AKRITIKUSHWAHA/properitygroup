@@ -1030,13 +1030,13 @@
   border: 1px solid #E2E8F0;
 }
 
-.compact-quote-form .hero-card-header {
+.quote-suite-card-wrap .compact-quote-form .hero-card-header {
   margin-bottom: 1.25rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid #F1F5F9;
 }
 
-.compact-quote-form .hero-card-title {
+.quote-suite-card-wrap .compact-quote-form .hero-card-title {
   font-size: 1.28rem;
   font-weight: 700;
   color: #0F172A;
@@ -1045,7 +1045,7 @@
   line-height: 1.25;
 }
 
-.compact-quote-form .hero-card-desc {
+.quote-suite-card-wrap .compact-quote-form .hero-card-desc {
   font-size: 0.82rem;
   color: #64748B;
   line-height: 1.45;
@@ -5192,33 +5192,29 @@ select.form-input-compact {
               inset 0 1.5px 2px rgba(255, 255, 255, 0.7) !important;
 }
 
-.compact-quote-form .hero-card-header {
+.quote-suite-card-wrap .compact-quote-form .hero-card-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
 }
 
-.compact-quote-form .hero-card-title {
+.quote-suite-card-wrap .compact-quote-form .hero-card-title {
   color: #FFFFFF !important;
   font-family: var(--font-family-serif), 'Playfair Display', Georgia, serif !important;
   font-size: 1.55rem !important;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
 }
 
-.compact-quote-form .hero-card-desc {
+.quote-suite-card-wrap .compact-quote-form .hero-card-desc {
   color: #E2E8F0 !important;
 }
 
-.compact-quote-form label,
-.form-label-compact {
+.quote-suite-card-wrap .compact-quote-form label, .quote-suite-card-wrap .compact-quote-form .form-label-compact {
   color: #F1F5F9 !important;
   font-size: 0.85rem !important;
   font-weight: 600 !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-.compact-quote-form input,
-.compact-quote-form select,
-.compact-quote-form textarea,
-.form-input-compact {
+.quote-suite-card-wrap .compact-quote-form input, .quote-suite-card-wrap .compact-quote-form select, .quote-suite-card-wrap .compact-quote-form textarea {
   background: rgba(255, 255, 255, 0.14) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
@@ -5231,27 +5227,23 @@ select.form-input-compact {
   transition: all 0.2s ease !important;
 }
 
-.compact-quote-form input:focus,
-.compact-quote-form select:focus,
-.compact-quote-form textarea:focus {
+.quote-suite-card-wrap .compact-quote-form input:focus, .quote-suite-card-wrap .compact-quote-form select:focus, .quote-suite-card-wrap .compact-quote-form textarea:focus {
   background: rgba(255, 255, 255, 0.22) !important;
   border-color: #FFFFFF !important;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
   outline: none !important;
 }
 
-.compact-quote-form input::placeholder,
-.compact-quote-form textarea::placeholder {
+.quote-suite-card-wrap .compact-quote-form input::placeholder, .quote-suite-card-wrap .compact-quote-form textarea::placeholder {
   color: #CBD5E1 !important;
 }
 
-.compact-quote-form select option {
+.quote-suite-card-wrap .compact-quote-form select option {
   background: #0A1322 !important;
   color: #FFFFFF !important;
 }
 
-.compact-quote-form .btn-primary,
-.compact-quote-form button[type="submit"] {
+.quote-suite-card-wrap .compact-quote-form .btn-primary, .quote-suite-card-wrap .compact-quote-form button[type="submit"] {
   background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
   color: #060B13 !important;
   font-weight: 700 !important;
@@ -5261,8 +5253,7 @@ select.form-input-compact {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.compact-quote-form .btn-primary:hover,
-.compact-quote-form button[type="submit"]:hover {
+.quote-suite-card-wrap .compact-quote-form .btn-primary:hover, .quote-suite-card-wrap .compact-quote-form button[type="submit"]:hover {
   background: #FFFFFF !important;
   transform: translateY(-2px) scale(1.01) !important;
   box-shadow: 0 16px 36px rgba(255, 255, 255, 0.42) !important;
@@ -7496,4 +7487,273 @@ select.form-input-compact {
   border-radius: 9999px !important;
   text-transform: uppercase !important;
   letter-spacing: 0.04em !important;
+}
+
+/* =============================================================
+   UNIVERSAL HIGH-CONTRAST DARK TEXT FOR WHITE / LIGHT CARDS & FORMS
+   (Ensures No Light-on-Light Anywhere on the Website)
+   ============================================================= */
+.hero-card,
+.compact-quote-form {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  color: #0F172A !important;
+}
+
+.hero-card .hero-card-header,
+.compact-quote-form .hero-card-header {
+  border-bottom: 1px solid #F1F5F9 !important;
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+.hero-card .hero-card-title,
+.compact-quote-form .hero-card-title {
+  color: #0F172A !important;
+  font-family: var(--font-family-serif), 'Playfair Display', Georgia, serif !important;
+  font-size: 1.38rem !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  letter-spacing: -0.015em !important;
+}
+
+.hero-card .hero-card-desc,
+.compact-quote-form .hero-card-desc {
+  color: #334155 !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+  text-shadow: none !important;
+}
+
+.hero-card label,
+.hero-card .form-label,
+.compact-quote-form label,
+.compact-quote-form .form-label-compact,
+.form-label-compact {
+  color: #0F172A !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  letter-spacing: -0.01em !important;
+  margin-bottom: 0.35rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+}
+
+.hero-card .form-label .form-required-badge,
+.hero-card .form-label-compact .req,
+.compact-quote-form .req,
+.form-label-compact .req {
+  color: #DC2626 !important;
+  font-weight: 700 !important;
+}
+
+.hero-card .form-input,
+.hero-card .form-select,
+.hero-card .form-textarea,
+.hero-card input,
+.hero-card select,
+.hero-card textarea,
+.compact-quote-form input,
+.compact-quote-form select,
+.compact-quote-form textarea,
+.compact-quote-form .form-input-compact,
+.form-input-compact {
+  background: #FFFFFF !important;
+  border: 1.5px solid #CBD5E1 !important;
+  color: #0F172A !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  font-size: 0.88rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.2s ease !important;
+}
+
+.hero-card .form-input:focus,
+.hero-card .form-select:focus,
+.hero-card .form-textarea:focus,
+.hero-card input:focus,
+.hero-card select:focus,
+.hero-card textarea:focus,
+.compact-quote-form input:focus,
+.compact-quote-form select:focus,
+.compact-quote-form textarea:focus,
+.compact-quote-form .form-input-compact:focus,
+.form-input-compact:focus {
+  background: #FFFFFF !important;
+  border-color: #142A43 !important;
+  box-shadow: 0 0 0 3px rgba(20, 42, 67, 0.16) !important;
+  outline: none !important;
+  color: #0F172A !important;
+}
+
+.hero-card .form-input::placeholder,
+.hero-card .form-textarea::placeholder,
+.hero-card input::placeholder,
+.hero-card textarea::placeholder,
+.compact-quote-form input::placeholder,
+.compact-quote-form textarea::placeholder,
+.compact-quote-form .form-input-compact::placeholder,
+.form-input-compact::placeholder {
+  color: #64748B !important;
+  font-weight: 400 !important;
+}
+
+.hero-card select option,
+.compact-quote-form select option {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* Privacy Checkbox & Label in Quote Forms */
+.compact-privacy-label {
+  color: #1E293B !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 0.5rem !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+  line-height: 1.45 !important;
+}
+
+.compact-privacy-label input[type="checkbox"] {
+  border: 1.5px solid #64748B !important;
+  border-radius: 4px !important;
+  width: 17px !important;
+  height: 17px !important;
+  margin-top: 2px !important;
+  cursor: pointer !important;
+  accent-color: #142A43 !important;
+}
+
+/* Notes Toggle Button */
+.notes-toggle-btn {
+  color: #142A43 !important;
+  font-weight: 700 !important;
+  font-size: 0.84rem !important;
+  text-decoration: underline !important;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+}
+
+.notes-toggle-btn:hover {
+  color: #0A1624 !important;
+}
+
+/* Submit Button on White Card */
+.hero-card button[type="submit"],
+.hero-card .btn-primary,
+.compact-quote-form button[type="submit"],
+.compact-quote-form .compact-submit-btn,
+.compact-quote-form .btn-primary {
+  background: #142A43 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  border: 1px solid #142A43 !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 8px 22px rgba(20, 42, 67, 0.28) !important;
+  transition: all 0.25s ease !important;
+}
+
+.hero-card button[type="submit"]:hover,
+.hero-card .btn-primary:hover,
+.compact-quote-form button[type="submit"]:hover,
+.compact-quote-form .compact-submit-btn:hover,
+.compact-quote-form .btn-primary:hover {
+  background: #0A1624 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(20, 42, 67, 0.38) !important;
+}
+
+/* Live Availability Status Pill */
+.quote-form-live-status {
+  background: #ECFDF5 !important;
+  border: 1px solid #A7F3D0 !important;
+  color: #065F46 !important;
+  border-radius: 9999px !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 0.65rem !important;
+  text-shadow: none !important;
+}
+
+.quote-form-live-status .live-status-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background-color: #10B981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+/* Form Reassurance Footer Text */
+.compact-form-reassurance {
+  color: #334155 !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
+  margin-top: 0.75rem !important;
+  text-align: center !important;
+}
+
+/* Service Quote Sidebar (Preserves dark navy aesthetic on service pages) */
+.service-quote-sidebar .compact-quote-form {
+  background: rgba(14, 26, 45, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #F8FAFC !important;
+}
+.service-quote-sidebar .compact-quote-form .hero-card-title {
+  color: #FFFFFF !important;
+}
+.service-quote-sidebar .compact-quote-form .hero-card-desc {
+  color: #CBD5E1 !important;
+}
+.service-quote-sidebar .compact-quote-form label,
+.service-quote-sidebar .compact-quote-form .form-label-compact {
+  color: #F1F5F9 !important;
+}
+.service-quote-sidebar .compact-quote-form input,
+.service-quote-sidebar .compact-quote-form select,
+.service-quote-sidebar .compact-quote-form textarea,
+.service-quote-sidebar .compact-quote-form .form-input-compact {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  color: #FFFFFF !important;
+}
+.service-quote-sidebar .compact-quote-form input::placeholder,
+.service-quote-sidebar .compact-quote-form textarea::placeholder {
+  color: #94A3B8 !important;
+}
+.service-quote-sidebar .compact-quote-form select option {
+  background: #0A1322 !important;
+  color: #FFFFFF !important;
+}
+.service-quote-sidebar .compact-quote-form .quote-form-live-status {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
+}
+.service-quote-sidebar .compact-quote-form .notes-toggle-btn {
+  color: #93C5FD !important;
+}
+.service-quote-sidebar .compact-quote-form .compact-privacy-label {
+  color: #CBD5E1 !important;
+}
+.service-quote-sidebar .compact-quote-form .compact-form-reassurance {
+  color: #94A3B8 !important;
+}
+.service-quote-sidebar .compact-quote-form .compact-submit-btn {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
+  color: #060B13 !important;
 }

@@ -399,6 +399,87 @@
   color: #CBD5E1 !important;
 }
 
+/* =============================================================
+   UNIVERSAL HIGH-CONTRAST DARK TYPOGRAPHY FOR WHITE/LIGHT CARDS & FORMS
+   (Fixes all Light-on-Light text across the website)
+   ============================================================= */
+.site-wrapper .luxury-site-canvas .hero-card h1,
+.site-wrapper .luxury-site-canvas .hero-card h2,
+.site-wrapper .luxury-site-canvas .hero-card h3,
+.site-wrapper .luxury-site-canvas .hero-card h4,
+.site-wrapper .luxury-site-canvas .compact-quote-form h1,
+.site-wrapper .luxury-site-canvas .compact-quote-form h2,
+.site-wrapper .luxury-site-canvas .compact-quote-form h3,
+.site-wrapper .luxury-site-canvas .compact-quote-form h4,
+.site-wrapper .luxury-site-canvas .hero-card-title,
+.site-wrapper .luxury-site-canvas .contact-detail-grid h3,
+.site-wrapper .luxury-site-canvas .contact-detail-grid h4,
+.site-wrapper .contact-detail-grid h3,
+.site-wrapper .contact-detail-grid h4,
+.hero-card .hero-card-title,
+.compact-quote-form .hero-card-title {
+  color: #0F172A !important;
+  text-shadow: none !important;
+  font-family: var(--font-family-serif), 'Playfair Display', Georgia, serif !important;
+  font-weight: 700 !important;
+}
+
+.site-wrapper .luxury-site-canvas .hero-card p,
+.site-wrapper .luxury-site-canvas .compact-quote-form p,
+.site-wrapper .luxury-site-canvas .hero-card-desc,
+.site-wrapper .luxury-site-canvas .contact-detail-grid p,
+.site-wrapper .contact-detail-grid p,
+.hero-card p,
+.compact-quote-form p,
+.hero-card-desc {
+  color: #334155 !important;
+  text-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+.site-wrapper .luxury-site-canvas .hero-card label,
+.site-wrapper .luxury-site-canvas .compact-quote-form label,
+.site-wrapper .luxury-site-canvas .form-label-compact,
+.site-wrapper .luxury-site-canvas .form-label,
+.site-wrapper .contact-detail-grid label,
+.hero-card label,
+.compact-quote-form label,
+.form-label-compact {
+  color: #0F172A !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+/* Service Quote Sidebar (Keeps white text on dark navy glass) */
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form h3,
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form .hero-card-title {
+  color: #FFFFFF !important;
+  text-shadow: none !important;
+}
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form p,
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form .hero-card-desc {
+  color: #CBD5E1 !important;
+}
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form label,
+.site-wrapper .luxury-site-canvas .service-quote-sidebar .compact-quote-form .form-label-compact {
+  color: #F1F5F9 !important;
+}
+
+/* Homepage Dedicated Quote Section (Keeps white text on dark manor glass) */
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form h3,
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form .hero-card-title {
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+}
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form p,
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form .hero-card-desc {
+  color: #CBD5E1 !important;
+}
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form label,
+.site-wrapper .luxury-site-canvas .quote-suite-card-wrap .compact-quote-form .form-label-compact {
+  color: #F1F5F9 !important;
+}
+
 /* Responsive typography & section adjustments */
 @media (min-width: 768px) {
   .site-wrapper h1 {
