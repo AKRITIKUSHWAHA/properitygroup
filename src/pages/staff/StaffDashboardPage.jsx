@@ -11,6 +11,7 @@ import {
   PoundSterling,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
+import { SurveyBookerWorkflowBuckets } from '../../components/dashboard/SurveyBookerWorkflowBuckets';
 
 export const StaffDashboardPage = () => {
   const stats = [
@@ -37,6 +38,9 @@ export const StaffDashboardPage = () => {
         actionIcon={CalendarDays}
         onAction={() => alert('Quick Book Survey modal triggered')}
       />
+
+      {/* SurveyBooker 6 Action Buckets Strip (Video 1 Benchmark) */}
+      <SurveyBookerWorkflowBuckets />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -16,6 +16,8 @@ import {
   FileCheck2,
   CreditCard,
   Building,
+  Check,
+  Sparkles
 } from 'lucide-react';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
 import { NewBookingModal } from './NewBookingModal';
@@ -35,7 +37,8 @@ export const BookingCalendar = () => {
   const [viewMode, setViewMode] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'month'
   );
-  const [selectedDayDate, setSelectedDayDate] = useState('27/10/2026');
+  const [selectedDayDate, setSelectedDayDate] = useState('28/10/2026');
+  const [selectedMonthDate, setSelectedMonthDate] = useState('28/10/2026');
   const [weekOffset, setWeekOffset] = useState(0); // 0 = Week 44 (26 Oct - 01 Nov 2026)
   const [monthOffset, setMonthOffset] = useState(0); // 0 = Oct 2026
 
@@ -46,7 +49,62 @@ export const BookingCalendar = () => {
 
   // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // New Task Form
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskTime, setNewTaskTime] = useState('09:00 AM - 11:00 AM');
+  const [newTaskType, setNewTaskType] = useState('inspection');
+
+  // Custom Tasks State matching Video 1
+  const [calendarTasks, setCalendarTasks] = useState([
+    {
+      id: 'tsk-1',
+      date: '28/10/2026',
+      time: '09:00 AM - 11:00 AM',
+      title: 'Inspection date set for 1820942',
+      subtitle: 'Mr Dimitrios Koutoukidis • 36 College Glen, Maidenhead',
+      type: 'inspection',
+      color: 'bg-[#2563EB] text-white',
+    },
+    {
+      id: 'tsk-2',
+      date: '28/10/2026',
+      time: '06:00 PM - 08:00 PM',
+      title: 'Report date set for 1814424',
+      subtitle: 'Rory Maclean • 90 Lime Grove, London HA4 8RW',
+      type: 'report',
+      color: 'bg-[#6D28D9] text-white',
+    },
+    {
+      id: 'tsk-3',
+      date: '28/10/2026',
+      time: '06:00 PM - 07:30 PM',
+      title: 'Report date set for 1815456',
+      subtitle: 'Mr Imran Mahmood • 21 Gladesmere, London',
+      type: 'report',
+      color: 'bg-[#6D28D9] text-white',
+    },
+    {
+      id: 'tsk-4',
+      date: '29/10/2026',
+      time: '10:00 AM - 12:30 PM',
+      title: 'Inspection date set for 1821004',
+      subtitle: 'Giulia Gasparet • 18 Tubbenden Lane, Orpington',
+      type: 'inspection',
+      color: 'bg-[#2563EB] text-white',
+    },
+    {
+      id: 'tsk-5',
+      date: '30/10/2026',
+      time: '09:30 AM - 11:30 AM',
+      title: 'Inspection date set for 1821088',
+      subtitle: 'Abhijeet Dandade • 79 Chiltern Road, Dunstable',
+      type: 'inspection',
+      color: 'bg-[#2563EB] text-white',
+    },
+  ]);
 
   // Toggle surveyor checkbox
   const handleToggleSurveyor = (id) => {
@@ -123,7 +181,6 @@ export const BookingCalendar = () => {
 
   // Dynamic Week Days computation based on weekOffset
   const currentWeekDays = useMemo(() => {
-    // Base week: 26 Oct (Mon) to 01 Nov (Sun) 2026
     const baseDate = new Date(2026, 9, 26 + weekOffset * 7); // Month index 9 is October
     const days = [];
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -137,7 +194,7 @@ export const BookingCalendar = () => {
       const year = d.getFullYear();
       const dateStr = `${dayNum}/${monthNum}/${year}`;
       const shortDate = `${d.getDate()} ${monthNames[d.getMonth()]}`;
-      const isToday = dateStr === '27/10/2026';
+      const isToday = dateStr === '28/10/2026';
 
       days.push({
         name: isToday ? `${dayNames[i]} (Today)` : dayNames[i],
@@ -163,26 +220,11 @@ export const BookingCalendar = () => {
     });
   }, [monthOffset]);
 
-  // Time slots for Day view timeline
-  const dayTimeSlots = [
-    '08:00',
-    '09:00',
-    '10:00',
-    '11:00',
-    '12:00',
-    '13:00',
-    '14:00',
-    '15:00',
-    '16:00',
-    '17:00',
-  ];
-
   // Date controls handlers
   const handlePrevRange = () => {
     if (viewMode === 'week') setWeekOffset((prev) => prev - 1);
     else if (viewMode === 'month') setMonthOffset((prev) => prev - 1);
     else {
-      // Day mode: step back 1 day
       const parts = selectedDayDate.split('/');
       const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]) - 1);
       const newDay = String(d.getDate()).padStart(2, '0');
@@ -195,7 +237,6 @@ export const BookingCalendar = () => {
     if (viewMode === 'week') setWeekOffset((prev) => prev + 1);
     else if (viewMode === 'month') setMonthOffset((prev) => prev + 1);
     else {
-      // Day mode: step forward 1 day
       const parts = selectedDayDate.split('/');
       const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]) + 1);
       const newDay = String(d.getDate()).padStart(2, '0');
@@ -207,7 +248,43 @@ export const BookingCalendar = () => {
   const handleResetToday = () => {
     setWeekOffset(0);
     setMonthOffset(0);
-    setSelectedDayDate('27/10/2026');
+    setSelectedDayDate('28/10/2026');
+    setSelectedMonthDate('28/10/2026');
+  };
+
+  // Add task handler
+  const handleCreateTask = (e) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+
+    const newTask = {
+      id: `tsk-${Date.now()}`,
+      date: selectedMonthDate,
+      time: newTaskTime,
+      title: newTaskTitle.trim(),
+      subtitle: 'Manual operational task',
+      type: newTaskType,
+      color: newTaskType === 'inspection' ? 'bg-[#2563EB] text-white' : 'bg-[#6D28D9] text-white',
+    };
+
+    setCalendarTasks((prev) => [newTask, ...prev]);
+    setNewTaskTitle('');
+    setIsNewTaskModalOpen(false);
+    addToast({
+      type: 'success',
+      title: 'Task Scheduled',
+      message: `Task added to To-Do list for ${selectedMonthDate}.`,
+    });
+  };
+
+  // Active tasks for selected month day
+  const activeDayTasks = calendarTasks.filter((t) => t.date === selectedMonthDate);
+
+  // Selected Day Name e.g. "Wednesday"
+  const getDayName = (dateStr) => {
+    const parts = dateStr.split('/');
+    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    return d.toLocaleDateString('en-GB', { weekday: 'long' });
   };
 
   return (
@@ -244,16 +321,12 @@ export const BookingCalendar = () => {
             </button>
             <span className="px-3.5 py-1.5 text-xs font-bold text-slate-800 font-mono select-none">
               {viewMode === 'day'
-                ? selectedDayDate === '27/10/2026'
-                  ? 'Tuesday, 27 October 2026 (Today)'
+                ? selectedDayDate === '28/10/2026'
+                  ? 'Wednesday, 28 October 2026 (Today)'
                   : selectedDayDate
                 : viewMode === 'week'
-                ? `${currentWeekDays[0]?.shortDate} – ${currentWeekDays[6]?.shortDate} 2026 (Week ${44 + weekOffset})`
-                : monthOffset === 0
-                ? 'October 2026'
-                : monthOffset > 0
-                ? 'November 2026'
-                : 'September 2026'}
+                ? `Week 44 (26 Oct – 01 Nov 2026)`
+                : `October 2026 (SurveyBooker)`}
             </span>
             <button
               onClick={handleNextRange}
@@ -266,75 +339,63 @@ export const BookingCalendar = () => {
 
           <button
             onClick={handleResetToday}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
           >
-            Today
+            Today (28 Oct)
           </button>
         </div>
 
-        {/* Right: + New Booking CTA */}
+        {/* Right: New Booking & Total Counter */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsNewModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0B1F4D]/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>New Booking</span>
+            <span>New Inspection Booking</span>
           </button>
         </div>
       </div>
 
-      {/* Main Grid: Left Surveyor Filters + Right Calendar View */}
+      {/* Main Calendar View Area */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Column: Surveyor filter with checkboxes */}
+        {/* Left Column: Surveyor Checkbox Filter Panel */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs">
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Surveyor Filter
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Certified Surveyors ({selectedSurveyorIds.length}/{SURVEYORS.length})
               </span>
               <button
                 onClick={handleSelectAllSurveyors}
-                className="text-[11px] font-bold text-[#2563EB] hover:underline cursor-pointer"
+                className="text-xs text-[#2563EB] hover:underline font-semibold cursor-pointer"
               >
-                {selectedSurveyorIds.length === SURVEYORS.length ? 'Deselect All' : 'Select All'}
+                {selectedSurveyorIds.length === SURVEYORS.length ? 'Clear all' : 'Select all'}
               </button>
             </div>
 
-            <div className="mt-3.5 space-y-2.5">
-              {SURVEYORS.map((surveyor) => {
-                const isSelected = selectedSurveyorIds.includes(surveyor.id);
+            <div className="space-y-2">
+              {SURVEYORS.map((s) => {
+                const isSelected = selectedSurveyorIds.includes(s.id);
                 return (
                   <label
-                    key={surveyor.id}
-                    className={`flex items-start gap-3 p-2.5 rounded-2xl border transition-all cursor-pointer select-none ${
-                      isSelected
-                        ? 'bg-slate-50/90 border-slate-200'
-                        : 'opacity-40 border-transparent hover:bg-slate-50'
-                    }`}
+                    key={s.id}
+                    className="flex items-center justify-between p-2.5 rounded-2xl border border-slate-200/80 hover:bg-slate-50 transition-colors cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => handleToggleSurveyor(surveyor.id)}
-                      className="w-4 h-4 mt-0.5 rounded text-[#2563EB] focus:ring-[#2563EB]"
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold text-slate-800 truncate">
-                          {surveyor.name}
-                        </span>
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-white shadow-xs"
-                          style={{ backgroundColor: surveyor.color }}
-                        />
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {surveyor.credentials}
-                      </div>
-                      <div className="text-[10px] font-medium text-slate-500 mt-0.5">
-                        Postcodes: <span className="font-semibold text-slate-700">{surveyor.postcodes}</span>
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSurveyor(s.id)}
+                        className="w-4 h-4 rounded text-[#2563EB] focus:ring-[#2563EB]"
+                      />
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">{s.name}</div>
+                        <div className="text-[10px] text-slate-400">{s.postcodes}</div>
                       </div>
                     </div>
                   </label>
@@ -342,33 +403,9 @@ export const BookingCalendar = () => {
               })}
             </div>
           </div>
-
-          {/* Gating Status Compliance Card */}
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-[#0B1F4D] to-[#162E6E] text-white space-y-2.5 shadow-sm">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-              <Lock className="w-4 h-4 text-amber-400" />
-              <span>Inspection Gating Rules</span>
-            </div>
-            <p className="text-[11px] text-slate-200 leading-relaxed">
-              Per UK RICS mandates, inspection slots stay disabled and display{' '}
-              <strong className="text-amber-300">"Waiting for terms and payment"</strong> until both client contract terms are signed and advance fees are settled.
-            </p>
-            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
-              <span>Active Bookings:</span>
-              <span className="font-bold text-white font-mono">
-                {visibleJobs.filter((j) => j.canBook).length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-amber-200">
-              <span>Pending Terms/Payment:</span>
-              <span className="font-bold font-mono">
-                {visibleJobs.filter((j) => !j.canBook).length}
-              </span>
-            </div>
-          </div>
         </div>
 
-        {/* Right Column: Calendar Views (Day, Week, Month) */}
+        {/* Right Column: Calendar Grids (Day, Week, or Month + Daily To-Do List) */}
         <div className="lg:col-span-3">
           {/* 1. WEEK VIEW */}
           {viewMode === 'week' && (
@@ -385,11 +422,7 @@ export const BookingCalendar = () => {
                   >
                     <div className="pb-2.5 border-b border-slate-100 flex items-center justify-between">
                       <div>
-                        <div
-                          className={`text-xs font-bold ${
-                            day.isToday ? 'text-[#2563EB]' : 'text-[#0B1F4D]'
-                          }`}
-                        >
+                        <div className={`text-xs font-bold ${day.isToday ? 'text-[#2563EB]' : 'text-[#0B1F4D]'}`}>
                           {day.shortDate}
                         </div>
                         <div className="text-[10px] font-medium text-slate-400">
@@ -415,58 +448,23 @@ export const BookingCalendar = () => {
                             }}
                             className={`p-2.5 rounded-2xl border border-l-4 text-left transition-all cursor-pointer relative group shadow-2xs ${
                               isWaiting
-                                ? 'bg-amber-50/70 border-amber-300 opacity-90 hover:opacity-100 hover:ring-1 hover:ring-amber-400'
-                                : 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:shadow-xs hover:bg-white'
+                                ? 'bg-amber-50/70 border-amber-300 opacity-90 hover:opacity-100'
+                                : 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white'
                             }`}
                           >
-                            {/* Disabled / Waiting for terms badge */}
-                            {isWaiting ? (
-                              <div className="mb-1.5">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300/80">
-                                  <Lock className="w-2.5 h-2.5 shrink-0" />
-                                  Waiting for terms and payment
-                                </span>
-                              </div>
-                            ) : null}
-
                             <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-slate-500 mb-0.5">
                               <Clock className="w-3 h-3 text-slate-400" />
                               {job.timeSlot}
                             </div>
-
                             <div className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                               {job.property}
                             </div>
-
                             <div className="text-[10px] text-slate-500 mt-1 truncate">
                               {job.surveyType}
-                            </div>
-
-                            <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px]">
-                              <span className="font-semibold text-slate-700 truncate">
-                                {job.surveyor.split(' ')[0]} {job.surveyor.split(' ')[1]}
-                              </span>
-                              <span
-                                className={`font-bold ${
-                                  isWaiting
-                                    ? 'text-amber-800'
-                                    : job.status === 'Completed'
-                                    ? 'text-emerald-700'
-                                    : 'text-[#2563EB]'
-                                }`}
-                              >
-                                {isWaiting ? 'Disabled' : job.status}
-                              </span>
                             </div>
                           </div>
                         );
                       })}
-
-                      {dayJobs.length === 0 && (
-                        <div className="h-full flex items-center justify-center text-center p-4 text-[11px] text-slate-300 italic">
-                          No inspections
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
@@ -493,152 +491,174 @@ export const BookingCalendar = () => {
                 </div>
               </div>
 
-              {/* Day Time Schedule Grid */}
               <div className="space-y-4">
                 {visibleJobs
                   .filter((j) => j.date === selectedDayDate)
                   .map((job) => {
                     const surveyorObj = SURVEYORS.find((s) => s.id === job.surveyorId);
-                    const isWaiting = !job.canBook || job.termsStatus !== 'Signed' || job.paymentStatus !== 'Paid';
-
                     return (
                       <div
                         key={job.id}
                         onClick={() => setSelectedEvent(job)}
                         style={{ borderLeftColor: surveyorObj ? surveyorObj.color : '#2563EB' }}
-                        className={`p-4 rounded-2xl border border-l-4 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                          isWaiting
-                            ? 'bg-amber-50/60 border-amber-300'
-                            : 'bg-slate-50/80 border-slate-200 hover:shadow-xs hover:bg-white'
-                        }`}
+                        className="p-4 rounded-2xl border border-l-4 bg-slate-50/80 border-slate-200 hover:bg-white transition-all cursor-pointer flex items-center justify-between gap-4"
                       >
-                        <div className="space-y-1.5 flex-1">
-                          {isWaiting && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
-                              <Lock className="w-3 h-3" />
-                              Waiting for terms and payment
-                            </span>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-xs font-black text-[#0B1F4D] bg-white px-2.5 py-0.5 rounded-lg border border-slate-200">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-[#2563EB]">
                               {job.timeSlot}
                             </span>
                             <span className="text-sm font-bold text-slate-900">
                               {job.property}, {job.location}
                             </span>
                           </div>
-
-                          <div className="text-xs text-slate-600 flex flex-wrap items-center gap-2">
-                            <span>Client: <strong className="text-slate-800">{job.customer}</strong></span>
-                            <span className="text-slate-300">•</span>
-                            <span>Survey: <strong className="text-slate-800">{job.surveyType}</strong></span>
-                            <span className="text-slate-300">•</span>
-                            <span>Ref: <strong className="font-mono text-slate-700">{job.jobNo}</strong></span>
+                          <div className="text-xs text-slate-500">
+                            Client: <strong>{job.customer}</strong> &bull; Survey: {job.surveyType}
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60">
-                          <div className="text-left md:text-right">
-                            <div className="text-xs font-bold text-slate-800">{job.surveyor}</div>
-                            <div className="text-[10px] text-slate-400">{surveyorObj?.credentials}</div>
-                          </div>
-                          <img
-                            src={surveyorObj?.avatar}
-                            alt={job.surveyor}
-                            className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow-xs"
-                          />
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-slate-800">{job.surveyor}</div>
+                          <div className="text-[10px] text-slate-400">{surveyorObj?.credentials}</div>
                         </div>
                       </div>
                     );
                   })}
-
-                {visibleJobs.filter((j) => j.date === selectedDayDate).length === 0 && (
-                  <div className="text-center py-12 text-slate-400">
-                    <CalendarIcon className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-                    <p className="text-xs font-semibold">No appointments scheduled for {selectedDayDate}.</p>
-                    <button
-                      onClick={() => setIsNewModalOpen(true)}
-                      className="mt-3 px-4 py-2 bg-[#0B1F4D] text-white text-xs font-bold rounded-xl"
-                    >
-                      + Create Booking on this Date
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           )}
 
-          {/* 3. MONTH VIEW */}
+          {/* 3. MONTH VIEW WITH DAILY TO-DO LIST (Matching SurveyBooker Video 1) */}
           {viewMode === 'month' && (
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 overflow-hidden">
-              <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] uppercase tracking-wider text-slate-400 pb-3 border-b border-slate-100">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-                  <div key={d} className="py-1">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 overflow-hidden space-y-6">
+              {/* Month Header Banner */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h4 className="text-base font-extrabold text-[#0B1F4D] tracking-tight">
+                    October 2026 &bull; Inspection &amp; Task Calendar
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Colored dots indicate inspection bookings and report due milestones.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-bold">
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <span className="w-2 h-2 rounded-full bg-blue-600" /> Inspection
+                  </span>
+                  <span className="flex items-center gap-1 text-purple-600">
+                    <span className="w-2 h-2 rounded-full bg-purple-600" /> Report Due
+                  </span>
+                </div>
+              </div>
+
+              {/* Day Name Headers */}
+              <div className="grid grid-cols-7 gap-1 text-center font-bold text-[11px] uppercase tracking-wider text-slate-400">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                  <div key={i} className="py-1">
                     {d}
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-1.5 mt-2.5">
+              {/* 31 Month Days Grid */}
+              <div className="grid grid-cols-7 gap-1.5">
                 {currentMonthDays.map((m) => {
-                  const dayJobs = visibleJobs.filter((j) => j.date === m.dateStr);
-                  const isCurrentDay = m.dateStr === '27/10/2026';
+                  const dayTasks = calendarTasks.filter((t) => t.date === m.dateStr);
+                  const isSelected = selectedMonthDate === m.dateStr;
+                  const isToday = m.dateStr === '28/10/2026';
 
                   return (
                     <div
                       key={m.dayNum}
-                      onClick={() => {
-                        setSelectedDayDate(m.dateStr);
-                        setViewMode('day');
-                      }}
-                      className={`min-h-[78px] p-2 rounded-2xl border flex flex-col justify-between transition-all cursor-pointer ${
-                        isCurrentDay
-                          ? 'border-[#2563EB] bg-blue-50/40 ring-2 ring-blue-500/20 font-bold'
-                          : 'border-slate-100 hover:bg-slate-50 hover:border-slate-300'
+                      onClick={() => setSelectedMonthDate(m.dateStr)}
+                      className={`min-h-[56px] p-1.5 rounded-xl border flex flex-col items-center justify-between transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[#0B1F4D] bg-[#0B1F4D] text-white shadow-xs font-bold'
+                          : isToday
+                          ? 'border-[#0284C7] bg-sky-50 text-[#0284C7] font-black'
+                          : 'border-slate-100 hover:bg-slate-50 hover:border-slate-300 text-slate-700'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className={`text-xs ${isCurrentDay ? 'text-[#2563EB] font-black' : 'text-slate-600'}`}>
-                          {m.dayNum}
-                        </span>
-                        {dayJobs.length > 0 && (
-                          <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                      <span className="text-xs">{m.dayNum}</span>
+
+                      {/* Colored Dots Indicator Strip (From Video 1) */}
+                      <div className="flex items-center gap-1 mt-1">
+                        {dayTasks.some((t) => t.type === 'inspection') && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isSelected ? 'bg-sky-300' : 'bg-blue-600'
+                            }`}
+                          />
                         )}
-                      </div>
-
-                      <div className="space-y-1 mt-1">
-                        {dayJobs.slice(0, 2).map((j) => {
-                          const sObj = SURVEYORS.find((s) => s.id === j.surveyorId);
-                          const isWaiting = !j.canBook || j.termsStatus !== 'Signed' || j.paymentStatus !== 'Paid';
-
-                          return (
-                            <div
-                              key={j.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(j);
-                              }}
-                              style={{
-                                backgroundColor: isWaiting ? '#FEF3C7' : sObj ? sObj.color : '#2563EB',
-                                color: isWaiting ? '#78350F' : '#FFFFFF',
-                              }}
-                              className="text-[9px] font-bold px-1.5 py-0.5 rounded truncate cursor-pointer shadow-2xs"
-                              title={`${j.property} - ${isWaiting ? 'Waiting for terms and payment' : j.surveyor}`}
-                            >
-                              {isWaiting ? '🔒 Wait terms' : j.property}
-                            </div>
-                          );
-                        })}
-                        {dayJobs.length > 2 && (
-                          <span className="text-[9px] text-slate-400 font-bold block">
-                            +{dayJobs.length - 2} more
-                          </span>
+                        {dayTasks.some((t) => t.type === 'report') && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isSelected ? 'bg-purple-300' : 'bg-purple-600'
+                            }`}
+                          />
                         )}
                       </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* DAILY TO-DO LIST (Matching SurveyBooker Video 1) */}
+              <div className="pt-5 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-3.5">
+                  <div>
+                    <h4 className="text-sm font-extrabold text-[#0B1F4D] flex items-center gap-2">
+                      <CalendarIcon className="w-4 h-4 text-[#0284C7]" />
+                      <span>{getDayName(selectedMonthDate)}'s To-Do List</span>
+                    </h4>
+                    <span className="text-xs text-slate-500">
+                      There are {activeDayTasks.length} items to do for {selectedMonthDate}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsNewTaskModalOpen(true)}
+                    className="w-8 h-8 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white flex items-center justify-center shadow-md transition-all hover:scale-105 cursor-pointer"
+                    title="Add task for this date"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Task Cards */}
+                <div className="space-y-2.5">
+                  {activeDayTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className={`p-3.5 rounded-2xl shadow-xs transition-all ${task.color}`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono font-bold opacity-90 mb-1">
+                        <span>{task.time}</span>
+                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-black/20">
+                          {task.type}
+                        </span>
+                      </div>
+                      <div className="font-extrabold text-sm tracking-tight">{task.title}</div>
+                      {task.subtitle && (
+                        <div className="text-xs opacity-90 mt-0.5">{task.subtitle}</div>
+                      )}
+                    </div>
+                  ))}
+
+                  {activeDayTasks.length === 0 && (
+                    <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-xs font-medium">No items scheduled for this date.</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsNewTaskModalOpen(true)}
+                        className="mt-2 text-xs font-bold text-[#0284C7] hover:underline"
+                      >
+                        + Add To-Do Item
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -651,6 +671,66 @@ export const BookingCalendar = () => {
         onClose={() => setIsNewModalOpen(false)}
         onSubmit={handleAddBooking}
       />
+
+      {/* New Task Modal */}
+      <Modal
+        isOpen={isNewTaskModalOpen}
+        onClose={() => setIsNewTaskModalOpen(false)}
+        title={`Add To-Do Item (${selectedMonthDate})`}
+        size="sm"
+      >
+        <form onSubmit={handleCreateTask} className="space-y-3 text-xs">
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Task Title *</label>
+            <input
+              type="text"
+              placeholder="e.g. Inspection date set for #1820942"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Time Slot</label>
+            <input
+              type="text"
+              value={newTaskTime}
+              onChange={(e) => setNewTaskTime(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold text-slate-700 block mb-1">Task Type</label>
+            <select
+              value={newTaskType}
+              onChange={(e) => setNewTaskType(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+            >
+              <option value="inspection">On-Site Inspection (Blue)</option>
+              <option value="report">Report Deadline (Purple)</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsNewTaskModalOpen(false)}
+              className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold"
+            >
+              Add Item
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Event Details / Booking Gating Modal */}
       {selectedEvent && (
@@ -683,7 +763,6 @@ export const BookingCalendar = () => {
           }
         >
           <div className="space-y-4">
-            {/* Gating Alert if waiting for terms/payment */}
             {(!selectedEvent.canBook || selectedEvent.termsStatus !== 'Signed' || selectedEvent.paymentStatus !== 'Paid') ? (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-3">
                 <div className="flex items-center gap-2 font-bold text-xs text-amber-950">
@@ -732,7 +811,7 @@ export const BookingCalendar = () => {
             ) : (
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-bold text-emerald-800">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Inspection Confirmed & Locked (Terms Signed & Payment Received)</span>
+                <span>Inspection Confirmed &amp; Locked (Terms Signed &amp; Payment Received)</span>
               </div>
             )}
 

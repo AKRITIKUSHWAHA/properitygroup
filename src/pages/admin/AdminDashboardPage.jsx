@@ -13,6 +13,7 @@ import { BookingsTrendChart } from '../../components/charts/BookingsTrendChart';
 import { JobsStatusDonutChart } from '../../components/charts/JobsStatusDonutChart';
 import { RecentActivityRow } from '../../components/dashboard/RecentActivityRow';
 import { NewBookingModal } from '../../components/calendar/NewBookingModal';
+import { SurveyBookerWorkflowBuckets } from '../../components/dashboard/SurveyBookerWorkflowBuckets';
 import { useJobs } from '../../mock/jobs';
 import { useToast } from '../../components/ToastContext';
 
@@ -81,6 +82,9 @@ export const AdminDashboardPage = () => {
         onAction={() => setIsModalOpen(true)}
       />
 
+      {/* SurveyBooker 6 Action Buckets Strip (Video 1 Benchmark) */}
+      <SurveyBookerWorkflowBuckets />
+
       {/* 4 KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiCards.map((stat, i) => {
@@ -138,4 +142,3 @@ export const AdminDashboardPage = () => {
     </div>
   );
 };
-

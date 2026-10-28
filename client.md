@@ -112,3 +112,40 @@
   - [x] Add "Which Survey Do I Need?" interactive questionnaire (`SurveySelector.jsx`).
   - [x] Add Trustpilot 4.8★ reviews section and metrics banner (`ReviewsSection.jsx`).
   - [x] Add authentic sample RICS report preview and specimen modal (`SampleReportSection.jsx`).
+
+
+---
+
+## 4. SurveyBooker & e.surv Video Features (From Videos 1 & 2)
+
+- [x] **Feature 1: SurveyBooker 6 Action Buckets Dashboard**
+  - Added `SurveyBookerWorkflowBuckets.jsx` with dynamic live counts:
+    - *Quotes to submit* (LSD / inbound quote inquiries)
+    - *Terms to send* (Accepted proposals awaiting contract)
+    - *Jobs to book* (Payment settled, awaiting inspection scheduling)
+    - *Appointments* (Confirmed field visits)
+    - *Reports to upload* (Awaiting PDF report release)
+    - *Calendar and tasks* (Direct link to calendar)
+  - Integrated in both `AdminDashboardPage.jsx` and `StaffDashboardPage.jsx`.
+
+- [x] **Feature 2: Job Details "What's Next?" Action Box & 6-Stage Pipeline**
+  - Implemented canonical 6-stage SurveyBooker pipeline: `Quote` ➔ `Paid` ➔ `Accepted` ➔ `Booked` ➔ `Preparing report` ➔ `Complete`.
+  - Added dynamic "What's Next?" guidance box with contextual actions for each stage (Confirm/Adjust quote, Confirm inspection, Reschedule, Choose PDF file and Upload Report).
+
+- [x] **Feature 3: Notes & Calls Split Buttons (`Save as note` vs `Save as call`)**
+  - Updated `Notes and calls` tab in `JobDetailsPage.jsx`:
+    - Direction toggle: Inbound vs Outbound call.
+    - Two distinct buttons: `Save as note` (internal staff note) and `Save as call` (auto-timestamped call log that updates both job notes and `clientProfiles.js`).
+
+- [x] **Feature 4: Customer Quote Email Preview (Video 2 Template)**
+  - Enhanced `SendQuoteModal.jsx` with full customer email preview:
+    - e.surv / NJS Property Group header with Trustpilot 5-Star banner.
+    - Dual pricing display (Survey alone vs Survey + Valuation).
+    - 8-point inspection inclusions checklist.
+    - Direct phone booking hotline and verified buyer testimonial.
+
+- [x] **Feature 5: Visual Calendar & Daily To-Do Tasks View**
+  - Updated `BookingCalendar.jsx`:
+    - Month calendar now displays colored dots (Blue = Inspection, Purple = Report due).
+    - Selecting any date renders the Day's To-Do list with time-slot cards.
+    - Quick `+` modal to add new tasks for the selected date.
