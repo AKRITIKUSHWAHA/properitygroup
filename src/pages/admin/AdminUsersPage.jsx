@@ -345,7 +345,7 @@ export const AdminUsersPage = () => {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Role Menu Permissions</span>
+            <span>View Permissions</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-700 font-bold uppercase tracking-wider">
               Active / Inactive
             </span>
@@ -360,7 +360,7 @@ export const AdminUsersPage = () => {
               className="text-xs font-bold text-[#2563EB] hover:text-[#1d4ed8] hover:underline flex items-center gap-1 cursor-pointer"
             >
               <Sliders className="w-3 h-3" />
-              <span>Configure Role Permissions</span>
+              <span>View Permissions</span>
             </button>
           </div>
         )}
