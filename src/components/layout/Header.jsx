@@ -12,7 +12,8 @@ import {
   ArrowRight,
   HelpCircle,
   FileCheck2,
-  Scale
+  Scale,
+  Sparkles
 } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { navigationCategories } from '../../config/navigation';
@@ -44,12 +45,12 @@ export function Header() {
     setActiveDropdown(dropdownKey);
   };
 
-  // Graceful debounce on mouse leave so user can move to dropdown menu without flicker
+  // Graceful debounce on mouse leave so user can move into the menu without flicker
   const handleMouseLeave = () => {
     clearHoverTimeout();
     hoverTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
-    }, 180);
+    }, 220);
   };
 
   // Toggle on click (for keyboard / tap)
@@ -157,7 +158,7 @@ export function Header() {
                 Home
               </NavLink>
 
-              {/* 1. Survey Services Dropdown */}
+              {/* 1. Systematic Mega-Dropdown for Survey Services (e.surv Architecture) */}
               <div
                 className="nav-dropdown-wrapper"
                 onMouseEnter={() => handleMouseEnter('services')}
@@ -185,42 +186,103 @@ export function Header() {
 
                 {activeDropdown === 'services' && (
                   <div
-                    className="nav-dropdown-menu services-dropdown-menu"
+                    className="nav-dropdown-menu nav-mega-menu"
                     role="menu"
-                    aria-label="Survey Services Submenu"
+                    aria-label="Survey Services Mega Menu"
                   >
-                    <div className="dropdown-menu-header">
-                      <span className="dropdown-menu-caption">Independent Technical Inspections</span>
-                    </div>
+                    <div className="mega-menu-grid">
+                      {/* Column 1: Pre-Purchase Residential Surveys */}
+                      <div className="mega-menu-col">
+                        <div className="mega-col-header">
+                          <span className="mega-col-title">Residential Surveys</span>
+                          <span className="mega-col-caption">Pre-Purchase Condition Reports</span>
+                        </div>
+                        <div className="mega-col-items">
+                          {navigationCategories.services.columns[0].items.map(service => (
+                            <Link
+                              key={service.id}
+                              to={service.path}
+                              className="dropdown-item mega-item"
+                              role="menuitem"
+                              onClick={() => setActiveDropdown(null)}
+                            >
+                              <div className="dropdown-item-top">
+                                <span className="dropdown-item-title">{service.name}</span>
+                                <span className="dropdown-item-badge">{service.badge}</span>
+                              </div>
+                              <span className="dropdown-item-desc">{service.description}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
 
-                    <div className="dropdown-items-grid">
-                      {navigationCategories.services.children.map(service => (
-                        <Link
-                          key={service.id}
-                          to={service.path}
-                          className="dropdown-item"
-                          role="menuitem"
-                          onClick={() => setActiveDropdown(null)}
-                        >
-                          <div className="dropdown-item-top">
-                            <span className="dropdown-item-title">{service.name}</span>
-                            <span className="dropdown-item-badge">{service.badge}</span>
+                      {/* Column 2: Specialist Valuations & Dispute Evidence */}
+                      <div className="mega-menu-col">
+                        <div className="mega-col-header">
+                          <span className="mega-col-title">Valuations &amp; Legal</span>
+                          <span className="mega-col-caption">Appraisals &amp; Dispute Evidence</span>
+                        </div>
+                        <div className="mega-col-items">
+                          {navigationCategories.services.columns[1].items.map(item => (
+                            <Link
+                              key={item.id}
+                              to={item.path}
+                              className="dropdown-item mega-item"
+                              role="menuitem"
+                              onClick={() => setActiveDropdown(null)}
+                            >
+                              <div className="dropdown-item-top">
+                                <span className="dropdown-item-title">{item.name}</span>
+                                <span className="dropdown-item-badge">{item.badge}</span>
+                              </div>
+                              <span className="dropdown-item-desc">{item.description}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Column 3: Advice, Coverage Hub & Fast Quotation Action */}
+                      <div className="mega-menu-col mega-col-action">
+                        <div className="mega-col-header">
+                          <span className="mega-col-title">Advice &amp; Fast Action</span>
+                          <span className="mega-col-caption">Guidance &amp; Coverage Hub</span>
+                        </div>
+                        <div className="mega-col-items">
+                          {navigationCategories.services.columns[2].items.map(item => (
+                            <Link
+                              key={item.id}
+                              to={item.path}
+                              className="dropdown-item mega-item-sm"
+                              role="menuitem"
+                              onClick={() => setActiveDropdown(null)}
+                            >
+                              <div className="dropdown-item-title">{item.name}</div>
+                              <span className="dropdown-item-desc">{item.description}</span>
+                            </Link>
+                          ))}
+                        </div>
+
+                        {/* Direct Fast Quotation Action Card */}
+                        <div className="mega-action-card">
+                          <div className="mega-action-card-inner">
+                            <span className="mega-action-title">Need a Survey Quote?</span>
+                            <p className="mega-action-sub">
+                              Receive your fixed-fee written quote within 24 business hours.
+                            </p>
+                            <a
+                              href={isHomePage ? '#quote-section' : '/contact#quote'}
+                              onClick={(e) => {
+                                setActiveDropdown(null);
+                                handleQuoteClick(e);
+                              }}
+                              className="mega-action-btn"
+                            >
+                              <span>Request a Quote</span>
+                              <ArrowRight size={13} aria-hidden="true" />
+                            </a>
                           </div>
-                          <span className="dropdown-item-desc">{service.description}</span>
-                        </Link>
-                      ))}
-                    </div>
-
-                    <div className="dropdown-menu-footer">
-                      <Link
-                        to="/contact#faqs"
-                        className="dropdown-footer-link"
-                        onClick={() => setActiveDropdown(null)}
-                      >
-                        <HelpCircle size={13} aria-hidden="true" />
-                        <span>Compare Survey Levels &amp; Guidance</span>
-                        <ArrowRight size={13} aria-hidden="true" />
-                      </Link>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

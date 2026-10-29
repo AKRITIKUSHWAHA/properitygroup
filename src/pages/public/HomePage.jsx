@@ -10,11 +10,12 @@ import {
   ChevronRight,
   Clock
 } from 'lucide-react';
-import { expertWitnessService } from '../../config/services';
+import { approvedServices, expertWitnessService } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Container } from '../../components/common/Container';
 import { Button } from '../../components/common/Button';
+import { SectionHeading } from '../../components/common/SectionHeading';
 import { CredentialsBanner } from '../../components/common/CredentialsBanner';
 import { CoverageMap } from '../../components/common/CoverageMap';
 import { StepProcess } from '../../components/common/StepProcess';
@@ -30,7 +31,9 @@ export function HomePage() {
 
   const [prefilledService, setPrefilledService] = useState('homebuyer-survey-level-2');
 
+  const [servicesRef, servicesVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
   const [credentialsRef, credentialsVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
+  const [expertiseRef, expertiseVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
   const [expertRef, expertVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
   const [processRef, processVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
   const [coverageRef, coverageVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
@@ -51,7 +54,7 @@ export function HomePage() {
 
   return (
     <div className="home-page luxury-site-canvas">
-      {/* 1. SIGNATURE ARCHITECTURAL HERO & UNIFIED 5-SERVICE SHOWCASE */}
+      {/* 1. MINIMAL & SPACIOUS HERO SECTION (e.surv Architecture) */}
       <ArchitecturalHero onQuoteClick={() => setPrefilledService('homebuyer-survey-level-2')} />
 
       {/* 2. PRACTICE LIVE METRICS STRIP (Verified Standards Only) */}
@@ -81,13 +84,148 @@ export function HomePage() {
         </Container>
       </div>
 
-      {/* 3. CREDENTIALS & ACCREDITATIONS BANNER */}
+      {/* 3. CORE SURVEYING SERVICES SYSTEMATIC OVERVIEW */}
+      <section 
+        id="services-overview" 
+        ref={servicesRef} 
+        className={`section services-overview-section reveal-init ${servicesVisible ? 'is-revealed' : ''}`}
+        aria-label="Core Survey Services"
+      >
+        <Container>
+          <div className="services-overview-header text-center">
+            <span className="section-eyebrow">Core Surveying Practice</span>
+            <h2 className="section-heading-title">Our Independent Survey Services</h2>
+            <p className="section-heading-subtitle">
+              Objective condition reports and valuation appraisals tailored to property age, architectural form, and legal requirements.
+            </p>
+          </div>
+
+          <div className="services-overview-grid">
+            {/* 1. Homebuyer Survey Level 2 */}
+            <Link to="/services/homebuyer-survey-level-2" className="overview-service-card group">
+              <div 
+                className="overview-card-img"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80')` }}
+                role="img"
+                aria-label="Homebuyer Survey Level 2"
+              >
+                <div className="overview-card-badge">Level 2</div>
+              </div>
+              <div className="overview-card-body">
+                <h3 className="overview-card-title">Homebuyer Survey — Level 2</h3>
+                <p className="overview-card-desc">
+                  Essential condition report identifying urgent defects, damp indications, and timber decay in conventional post-1900 properties.
+                </p>
+                <span className="overview-card-action">
+                  <span>Explore Level 2 Details</span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+
+            {/* 2. Building Survey Level 3 (Featured) */}
+            <Link to="/services/building-survey-level-3" className="overview-service-card featured-overview-card group">
+              <div 
+                className="overview-card-img"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85')` }}
+                role="img"
+                aria-label="Building Survey Level 3"
+              >
+                <div className="overview-card-badge">Level 3</div>
+              </div>
+              <div className="overview-card-body">
+                <h3 className="overview-card-title">Building Survey — Level 3</h3>
+                <p className="overview-card-desc">
+                  Comprehensive non-invasive investigation of structural integrity, fabric decay, and prioritized repair schedules for period or altered homes.
+                </p>
+                <span className="overview-card-action">
+                  <span>Explore Level 3 Details</span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+
+            {/* 3. Snagging Report */}
+            <Link to="/services/snagging-report" className="overview-service-card group">
+              <div 
+                className="overview-card-img"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80')` }}
+                role="img"
+                aria-label="New-Build Snagging Report"
+              >
+                <div className="overview-card-badge">New-Build</div>
+              </div>
+              <div className="overview-card-body">
+                <h3 className="overview-card-title">Snagging Report</h3>
+                <p className="overview-card-desc">
+                  Independent quality inspection identifying cosmetic and technical workmanship defects before developer warranty handover.
+                </p>
+                <span className="overview-card-action">
+                  <span>Explore Snagging Details</span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+
+            {/* 4. Valuation Report */}
+            <Link to="/services/valuation-report" className="overview-service-card group">
+              <div 
+                className="overview-card-img"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80')` }}
+                role="img"
+                aria-label="Valuation Report"
+              >
+                <div className="overview-card-badge">Red Book</div>
+              </div>
+              <div className="overview-card-body">
+                <h3 className="overview-card-title">Valuation Report</h3>
+                <p className="overview-card-desc">
+                  RICS Red Book market appraisal for Help to Buy redemption, shared ownership staircasing, probate, and capital gains tax.
+                </p>
+                <span className="overview-card-action">
+                  <span>Explore Valuation Details</span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+
+            {/* 5. Damp Survey */}
+            <Link to="/services/damp-survey" className="overview-service-card group">
+              <div 
+                className="overview-card-img"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80')` }}
+                role="img"
+                aria-label="Damp Survey"
+              >
+                <div className="overview-card-badge">Diagnostics</div>
+              </div>
+              <div className="overview-card-body">
+                <h3 className="overview-card-title">Damp Survey</h3>
+                <p className="overview-card-desc">
+                  Scientific moisture diagnostics identifying rising damp, penetrating damp, and condensation without contractor sales bias.
+                </p>
+                <span className="overview-card-action">
+                  <span>Explore Damp Details</span>
+                  <ArrowRight size={14} aria-hidden="true" />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </Container>
+      </section>
+
+      {/* 4. CREDENTIALS & ACCREDITATIONS BANNER */}
       <div id="credentials" ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>
         <CredentialsBanner />
       </div>
 
-      {/* 4. OBJECTIVE INDEPENDENCE & BUYER PROTECTION PILLARS */}
-      <section id="expertise" className="luxury-dark-section" aria-label="Independent Surveying Expertise">
+      {/* 5. OBJECTIVE INDEPENDENCE & BUYER PROTECTION PILLARS */}
+      <section 
+        id="expertise" 
+        ref={expertiseRef} 
+        className={`luxury-dark-section reveal-init ${expertiseVisible ? 'is-revealed' : ''}`} 
+        aria-label="Independent Surveying Expertise"
+      >
         <Container>
           <div className="luxury-section-header">
             <span className="luxury-section-eyebrow">Pure Independence</span>
@@ -141,7 +279,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 5. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (CPR Part 35) */}
+      {/* 6. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (CPR Part 35) */}
       <section
         id="expert-witness-section"
         ref={expertRef}
@@ -203,7 +341,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 6. 4-STEP CLIENT PROCESS SECTION */}
+      {/* 7. 4-STEP CLIENT PROCESS SECTION */}
       <section
         ref={processRef}
         className={`section workflow-process-section reveal-init ${processVisible ? 'is-revealed' : ''}`}
@@ -214,7 +352,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 7. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
+      {/* 8. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
       <section
         ref={coverageRef}
         className={`section section-alt regional-coverage-section reveal-init ${coverageVisible ? 'is-revealed' : ''}`}
@@ -225,7 +363,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 8. DEDICATED FULL FIXED-FEE QUOTATION SUITE (Preserving All 11 Fields) */}
+      {/* 9. DEDICATED FULL FIXED-FEE QUOTATION SUITE (Preserving All 11 Fields) */}
       <section
         id="quote-section"
         ref={quoteSuiteRef}

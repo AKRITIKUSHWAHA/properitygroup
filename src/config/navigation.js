@@ -19,6 +19,106 @@ export const navigationCategories = {
     name: "Survey Services",
     path: "/services",
     isDropdown: true,
+    isMegaMenu: true,
+    columns: [
+      {
+        id: "surveys-col",
+        title: "Residential Surveys",
+        caption: "Pre-Purchase Condition Reports",
+        items: [
+          {
+            id: "homebuyer-survey-level-2",
+            name: "Homebuyer Survey — Level 2",
+            shortName: "Level 2 Survey",
+            badge: "Level 2",
+            path: "/services/homebuyer-survey-level-2",
+            description: "Essential condition report for conventional post-1900 properties."
+          },
+          {
+            id: "building-survey-level-3",
+            name: "Building Survey — Level 3",
+            shortName: "Level 3 Survey",
+            badge: "Level 3",
+            path: "/services/building-survey-level-3",
+            description: "Comprehensive structural audit for period, altered & larger homes."
+          },
+          {
+            id: "snagging-report",
+            name: "Snagging Report",
+            shortName: "Snagging Report",
+            badge: "New-Build",
+            path: "/services/snagging-report",
+            description: "Independent defect inspection before developer completion handover."
+          }
+        ]
+      },
+      {
+        id: "specialist-col",
+        title: "Valuations & Legal",
+        caption: "Appraisals & Dispute Evidence",
+        items: [
+          {
+            id: "valuation-report",
+            name: "Valuation Report",
+            shortName: "Valuation Report",
+            badge: "Red Book",
+            path: "/services/valuation-report",
+            description: "RICS Red Book appraisals for Help to Buy, probate & capital gains."
+          },
+          {
+            id: "damp-survey",
+            name: "Damp Survey",
+            shortName: "Damp Survey",
+            badge: "Diagnostics",
+            path: "/services/damp-survey",
+            description: "Scientific moisture investigation without contractor sales bias."
+          },
+          {
+            id: "expert-witness",
+            name: "Expert Witness Services",
+            shortName: "Expert Witness",
+            badge: "CPR Part 35",
+            path: "/expert-witness",
+            description: "Court-admissible technical evidence & civil litigation reports."
+          }
+        ]
+      },
+      {
+        id: "guidance-col",
+        title: "Advice & Quick Action",
+        caption: "Guidance & Fast Quotation",
+        items: [
+          {
+            id: "which-survey",
+            name: "Which Survey Do I Need?",
+            shortName: "Survey Guidance",
+            path: "/contact#faqs",
+            description: "Compare survey levels and property suitability."
+          },
+          {
+            id: "locations-covered",
+            name: "Regional Coverage Areas",
+            shortName: "Coverage Areas",
+            path: "/contact#coverage",
+            description: "London, Surrey, Oxfordshire, Buckinghamshire & Berkshire."
+          },
+          {
+            id: "practice-standards",
+            name: "Professional Standards Notice",
+            shortName: "Accreditations",
+            path: "/#credentials",
+            description: "100% independent RICS-aligned survey practice."
+          }
+        ],
+        cta: {
+          title: "Need a Survey Quote?",
+          subtitle: "Fixed-fee written quotation within 24 hours.",
+          buttonText: "Request a Quote",
+          path: "/#quote-section"
+        }
+      }
+    ],
+    // Flat children for mobile / fallback
     children: [
       {
         id: "homebuyer-survey-level-2",
@@ -60,11 +160,7 @@ export const navigationCategories = {
         path: "/services/damp-survey",
         description: "Scientific moisture investigation without contractor sales bias."
       }
-    ],
-    footerLink: {
-      name: "Compare Survey Levels & Advice",
-      path: "/contact#faqs"
-    }
+    ]
   },
   expertWitness: {
     id: "expert-witness",

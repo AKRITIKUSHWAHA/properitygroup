@@ -8432,3 +8432,294 @@ select.form-input-compact {
     height: 180px;
   }
 }
+
+/* =============================================================
+   MEGA-MENU NAVIGATION SYSTEM (e.surv ARCHITECTURE)
+   ============================================================= */
+.site-header .nav-mega-menu {
+  min-width: 840px !important;
+  max-width: 880px !important;
+  padding: 1.25rem 1.35rem !important;
+  border-radius: 20px !important;
+  left: -120px !important;
+}
+
+@media (max-width: 1200px) {
+  .site-header .nav-mega-menu {
+    min-width: 720px !important;
+    left: -180px !important;
+  }
+}
+
+.mega-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.05fr;
+  gap: 1.25rem;
+}
+
+.mega-menu-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.mega-col-header {
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mega-col-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.mega-col-caption {
+  font-size: 0.68rem;
+  color: #94A3B8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.mega-col-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mega-item {
+  padding: 0.65rem 0.75rem !important;
+}
+
+.mega-item-sm {
+  padding: 0.55rem 0.75rem !important;
+}
+
+.mega-item-sm .dropdown-item-title {
+  font-size: 0.84rem !important;
+  color: #F8FAFC !important;
+}
+
+.mega-action-card {
+  margin-top: 0.85rem;
+  padding: 0.95rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(20, 42, 67, 0.75) 0%, rgba(10, 22, 36, 0.95) 100%);
+  border: 1px solid rgba(212, 160, 23, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.mega-action-title {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 0.2rem;
+}
+
+.mega-action-sub {
+  font-size: 0.74rem;
+  color: #CBD5E1;
+  line-height: 1.4;
+  margin: 0 0 0.65rem 0;
+}
+
+.mega-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #FFFFFF;
+  color: #060B13 !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.mega-action-btn:hover {
+  background: #F8FAFC;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
+}
+
+/* =============================================================
+   HERO REFINEMENT (SPACIOUS e.surv STYLE)
+   ============================================================= */
+.hero-eyebrow-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #F8FAFC;
+  letter-spacing: 0.04em;
+  margin-bottom: 1.25rem;
+}
+
+.hero-confidence-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.confidence-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #CBD5E1;
+  font-weight: 500;
+}
+
+/* =============================================================
+   SERVICES OVERVIEW SECTION (HOMEPAGE CLEAN GRID)
+   ============================================================= */
+.services-overview-section {
+  padding: 4.5rem 0 3.5rem;
+  background: #060B13;
+  position: relative;
+}
+
+.services-overview-header {
+  margin-bottom: 2.75rem;
+}
+
+.services-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.overview-service-card {
+  background: rgba(14, 26, 45, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  overflow: hidden;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+}
+
+.overview-service-card:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 45px -10px rgba(0, 0, 0, 0.65);
+  background: rgba(20, 36, 62, 0.82);
+}
+
+.overview-card-img {
+  width: 100%;
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.overview-card-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(10, 18, 30, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 160, 23, 0.4);
+  color: #F8D37D;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.22rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.overview-card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.overview-card-title {
+  color: #FFFFFF !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 0.5rem 0 !important;
+  line-height: 1.3 !important;
+}
+
+.overview-card-desc {
+  color: #94A3B8 !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
+  margin: 0 0 1.25rem 0 !important;
+  flex: 1;
+}
+
+.overview-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #D4A017;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.overview-service-card:hover .overview-card-action {
+  color: #F8D37D;
+  transform: translateX(4px);
+}
+
+@media (max-width: 1024px) {
+  .services-overview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .services-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .overview-card-img {
+    height: 160px;
+  }
+  .hero-confidence-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+.mobile-panel-section-caption {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #94A3B8;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 0.85rem 0.2rem;
+}

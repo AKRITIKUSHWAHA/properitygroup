@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   X,
   ChevronRight,
   ChevronDown,
   Phone,
-  Mail,
   ShieldCheck,
   User,
   MapPin,
-  HelpCircle,
-  Building
+  Building,
+  HelpCircle
 } from 'lucide-react';
 import { navigationCategories } from '../../config/navigation';
 import { siteConfig } from '../../config/siteConfig';
@@ -104,7 +103,7 @@ export function MobileNavigation({ isOpen, onClose }) {
             <ChevronRight size={15} />
           </NavLink>
 
-          {/* 1. Survey Services Accordion */}
+          {/* 1. Systematic Survey Services Accordion (e.surv Architecture) */}
           <div className="mobile-accordion-group">
             <button
               type="button"
@@ -125,7 +124,8 @@ export function MobileNavigation({ isOpen, onClose }) {
 
             {expandedSection === 'services' && (
               <div className="mobile-accordion-panel">
-                {navigationCategories.services.children.map(service => (
+                <div className="mobile-panel-section-caption">Residential Surveys</div>
+                {navigationCategories.services.columns[0].items.map(service => (
                   <NavLink
                     key={service.id}
                     to={service.path}
@@ -138,6 +138,31 @@ export function MobileNavigation({ isOpen, onClose }) {
                     </div>
                   </NavLink>
                 ))}
+
+                <div className="mobile-panel-section-caption" style={{ marginTop: '0.5rem' }}>Valuations &amp; Specialist</div>
+                {navigationCategories.services.columns[1].items.map(item => (
+                  <NavLink
+                    key={item.id}
+                    to={item.path}
+                    className={({ isActive }) => `mobile-sublink ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
+                  >
+                    <div className="mobile-sublink-inner">
+                      <span className="mobile-sublink-title">{item.name}</span>
+                      <span className="mobile-sublink-badge">{item.badge}</span>
+                    </div>
+                  </NavLink>
+                ))}
+
+                <NavLink
+                  to="/contact#faqs"
+                  className="mobile-sublink mobile-sublink-all"
+                  onClick={onClose}
+                  style={{ marginTop: '0.35rem' }}
+                >
+                  <HelpCircle size={13} style={{ marginRight: '6px', color: '#F8D37D' }} />
+                  <span>Which Survey Do I Need? Guide</span>
+                </NavLink>
               </div>
             )}
           </div>
@@ -194,7 +219,7 @@ export function MobileNavigation({ isOpen, onClose }) {
                   className="mobile-sublink mobile-sublink-all"
                   onClick={onClose}
                 >
-                  <MapPin size={13} style={{ marginRight: '6px', color: '#D4A017' }} />
+                  <MapPin size={13} style={{ marginRight: '6px', color: '#F8D37D' }} />
                   <span>All Coverage Areas &amp; Postcodes</span>
                 </NavLink>
               </div>
