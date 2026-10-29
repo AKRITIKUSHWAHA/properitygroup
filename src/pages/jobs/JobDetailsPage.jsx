@@ -379,14 +379,34 @@ export const JobDetailsPage = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Back button */}
-      <div>
+      {/* Breadcrumb & Navigation Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+            <span>UK Property Surveying Practice</span>
+            <span>›</span>
+            <span>Admin</span>
+            <span>›</span>
+            <button
+              onClick={() => navigate(backPath)}
+              className="text-[#2563EB] hover:underline font-bold cursor-pointer"
+            >
+              Survey Jobs
+            </button>
+            <span>›</span>
+            <span className="font-bold text-[#0B1F4D] font-mono">{job.jobNo}</span>
+          </div>
+          <h2 className="text-xl font-extrabold text-[#0B1F4D] tracking-tight">
+            Survey Job Record: {job.jobNo}
+          </h2>
+        </div>
+
         <button
           onClick={() => navigate(backPath)}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0B1F4D] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Survey Jobs Master Register</span>
+          <span>← Back to All Survey Jobs</span>
         </button>
       </div>
 
