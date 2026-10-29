@@ -1,10 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Search,
   Filter,
   Plus,
-  RefreshCw,
   Mail,
   Phone,
   MapPin,
@@ -14,12 +13,15 @@ import {
   CheckCircle2,
   MoreVertical,
   PoundSterling,
-  User,
-  Tag,
   PhoneCall,
   AlertTriangle,
   Send,
   Target,
+  TrendingUp,
+  FileText,
+  Clock,
+  ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -30,21 +32,188 @@ import { NewLeadModal } from '../../components/crm/NewLeadModal';
 import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
-import { INITIAL_LEADS, LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock/leads';
+import { LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock/leads';
+
+// 3-Dot Clean Action Dropdown Menu for each Lead
+const LeadRowActions = ({
+  lead,
+  onView,
+  onQuote,
+  onConvert,
+  onClientProfile,
+  onStatusChange,
+  onDelete,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  const isQuoted = lead.status.toLowerCase() === 'quoted';
+  const isConverted = lead.status.toLowerCase() === 'converted';
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-left" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
+        title="Lead actions"
+        aria-label="Lead actions"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+          {/* Primary Action Based on State */}
+          {!isQuoted && !isConverted && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onQuote(lead);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-950 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer text-left"
+            >
+              <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Send Fee Quote</span>
+            </button>
+          )}
+
+          {isQuoted && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onConvert(lead.id);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Convert to Won Job</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onQuote(lead);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+              >
+                <PoundSterling className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span>Adjust / Resend Quote</span>
+              </button>
+            </>
+          )}
+
+          {/* View Details */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onView(lead);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+          >
+            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <span>View Full Details</span>
+          </button>
+
+          {/* Client Profile with Call Notes & Complaints */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onClientProfile(lead.customerEmail, 'calls');
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+            <span>Call Notes &amp; Complaints</span>
+          </button>
+
+          <div className="h-px bg-slate-100 my-1" />
+
+          {/* Quick Status Submenu */}
+          <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            Update Status
+          </div>
+          {['New', 'Quoted', 'Converted', 'Lost'].map((st) => (
+            <button
+              key={st}
+              type="button"
+              disabled={lead.status === st}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onStatusChange(lead.id, st);
+              }}
+              className={`w-full flex items-center justify-between px-3.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
+                lead.status === st
+                  ? 'text-slate-400 font-bold bg-slate-50 cursor-default'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              <span>{st}</span>
+              {lead.status === st && <CheckCircle2 className="w-3 h-3 text-slate-400" />}
+            </button>
+          ))}
+
+          <div className="h-px bg-slate-100 my-1" />
+
+          {/* Delete Lead */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onDelete(lead.id);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span>Delete Lead</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AdminLeadsPage = () => {
   const { addToast } = useToast();
   const { leads, updateLeadStatus, addLead, deleteLead } = useLeads();
   const location = useLocation();
+
   const queryFilter = useMemo(() => {
     return new URLSearchParams(location.search).get('filter') || 'All';
   }, [location.search]);
+
   const [activeTab, setActiveTab] = useState(queryFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [ownerFilter, setOwnerFilter] = useState('All');
-  const [pageSize, setPageSize] = useState(10);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pageSize] = useState(10);
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -54,17 +223,23 @@ export const AdminLeadsPage = () => {
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
-  // Tab count calculations
+  // Client-Focused Clean Tabs
+  // Groups inbound/in-progress leads together cleanly
   const tabs = useMemo(() => {
-    const list = [
-      { id: 'All', label: 'All', count: leads.length },
-      ...LEAD_STATUSES.map((st) => ({
-        id: st,
-        label: st,
-        count: leads.filter((l) => l.status.toLowerCase() === st.toLowerCase()).length,
-      })),
+    const newCount = leads.filter(
+      (l) => l.status === 'New' || l.status === 'Contacted' || l.status === 'Qualified'
+    ).length;
+    const quotedCount = leads.filter((l) => l.status.toLowerCase() === 'quoted').length;
+    const convertedCount = leads.filter((l) => l.status.toLowerCase() === 'converted').length;
+    const lostCount = leads.filter((l) => l.status.toLowerCase() === 'lost').length;
+
+    return [
+      { id: 'All', label: 'All Leads', count: leads.length },
+      { id: 'New', label: 'New / Inbound', count: newCount },
+      { id: 'Quoted', label: 'Quoted', count: quotedCount },
+      { id: 'Converted', label: 'Converted', count: convertedCount },
+      { id: 'Lost', label: 'Lost', count: lostCount },
     ];
-    return list;
   }, [leads]);
 
   // Unique owners
@@ -85,21 +260,32 @@ export const AdminLeadsPage = () => {
     }, 0);
   }, [quotedLeads]);
 
+  const convertedLeads = useMemo(() => {
+    return leads.filter((l) => l.status.toLowerCase() === 'converted');
+  }, [leads]);
+
   // Filtered dataset
   const filteredLeads = useMemo(() => {
     return leads.filter((item) => {
       // Tab filter
-      if (activeTab !== 'All' && item.status.toLowerCase() !== activeTab.toLowerCase()) {
+      if (activeTab === 'New') {
+        const isNewGroup =
+          item.status === 'New' || item.status === 'Contacted' || item.status === 'Qualified';
+        if (!isNewGroup) return false;
+      } else if (activeTab !== 'All' && item.status.toLowerCase() !== activeTab.toLowerCase()) {
         return false;
       }
+
       // Source filter
       if (sourceFilter !== 'All' && item.source !== sourceFilter) {
         return false;
       }
+
       // Owner filter
       if (ownerFilter !== 'All' && item.owner !== ownerFilter) {
         return false;
       }
+
       // Search term
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
@@ -174,29 +360,28 @@ export const AdminLeadsPage = () => {
     }
   };
 
-  // Simulate loading skeleton
-  const handleSimulateLoading = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 900);
-  };
-
-  // Table columns definition
-  // User spec: table (Lead ID, Customer, Enquiry/Property, Location, Source, Status pill, Created, Owner, Actions)
+  // Streamlined 7-Column Table Specification (Clean & No Horizontal Scroll)
   const columns = [
     {
       key: 'id',
-      header: 'Lead ID',
+      header: 'Lead / Date',
       sortable: true,
-      className: 'font-mono font-bold text-[#0B1F4D] whitespace-nowrap',
+      className: 'whitespace-nowrap w-28',
       render: (val, row) => (
-        <button
-          onClick={() => setViewingLead(row)}
-          className="text-[#2563EB] hover:text-[#0B1F4D] font-bold hover:underline"
-        >
-          {val}
-        </button>
+        <div>
+          <button
+            onClick={() => setViewingLead(row)}
+            className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block"
+            title="Click to view full lead details"
+          >
+            {val}
+          </button>
+          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.created}</div>
+          <div className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            <span className="truncate max-w-[85px]">{row.owner}</span>
+          </div>
+        </div>
       ),
     },
     {
@@ -204,7 +389,7 @@ export const AdminLeadsPage = () => {
       header: 'Customer',
       sortable: true,
       render: (_, row) => (
-        <div className="min-w-[150px]">
+        <div className="max-w-[155px]">
           <button
             onClick={() => {
               setSelectedClientEmail(row.customerEmail);
@@ -213,47 +398,27 @@ export const AdminLeadsPage = () => {
             className="text-left font-bold text-[#0B1F4D] hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer"
             title="Click to view client profile, call history & complaints"
           >
-            <span>{row.customerName}</span>
+            <span className="truncate">{row.customerName}</span>
             <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
           </button>
-          <div className="text-[11px] text-slate-400 mt-0.5 truncate max-w-[170px]">
-            {row.customerEmail}
-          </div>
-          <div className="text-[10px] text-slate-500 font-mono">
-            {row.customerPhone}
-          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5 truncate">{row.customerEmail}</div>
+          <div className="text-[10px] text-slate-400 font-mono">{row.customerPhone}</div>
         </div>
       ),
     },
     {
       key: 'enquiry',
-      header: 'Enquiry / Property',
+      header: 'Survey & Property',
       sortable: true,
       render: (_, row) => (
-        <div className="min-w-[180px] max-w-[240px]">
-          <div className="font-bold text-[#0B1F4D] text-xs truncate">
-            {row.enquiry}
+        <div className="max-w-[210px]">
+          <div className="font-bold text-[#0B1F4D] text-xs truncate">{row.enquiry}</div>
+          <div className="text-[11px] text-slate-600 mt-0.5 flex items-start gap-1">
+            <MapPin className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
+            <span className="truncate">
+              {row.property}, {row.location}
+            </span>
           </div>
-          <div className="text-[11px] text-slate-600 mt-0.5 truncate">
-            {row.property}
-          </div>
-          {row.estimatedValue && (
-            <div className="text-[10px] font-bold text-emerald-700">
-              Est. Value: {row.estimatedValue}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'location',
-      header: 'Location',
-      sortable: true,
-      className: 'whitespace-nowrap',
-      render: (val) => (
-        <div className="flex items-center gap-1.5 text-xs text-slate-700">
-          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-          <span className="truncate max-w-[140px]">{val}</span>
         </div>
       ),
     },
@@ -296,100 +461,56 @@ export const AdminLeadsPage = () => {
       },
     },
     {
+      key: 'estimatedValue',
+      header: 'Quote / Fee',
+      sortable: true,
+      className: 'whitespace-nowrap',
+      render: (val, row) => {
+        const isQuoted = row.status.toLowerCase() === 'quoted';
+        return (
+          <div>
+            <div className="font-mono font-bold text-xs text-slate-900">
+              {val || 'Pending'}
+            </div>
+            {isQuoted && (
+              <span className="text-[10px] text-amber-700 font-semibold block">
+                Proposal Out
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       key: 'status',
       header: 'Status',
       sortable: true,
       render: (val) => <StatusPill status={val} />,
     },
     {
-      key: 'created',
-      header: 'Created',
-      sortable: true,
-      className: 'whitespace-nowrap font-mono text-xs text-slate-600',
-    },
-    {
-      key: 'owner',
-      header: 'Owner',
-      sortable: true,
-      render: (val) => (
-        <div className="flex items-center gap-1.5 whitespace-nowrap">
-          <div className="w-5 h-5 rounded-full bg-[#0B1F4D] text-white text-[9px] font-bold flex items-center justify-center shrink-0">
-            {val.split(' ').map((n) => n[0]).join('')}
-          </div>
-          <span className="text-xs text-slate-700 font-medium">{val}</span>
-        </div>
-      ),
-    },
-    {
       key: 'actions',
       header: 'Actions',
       sortable: false,
-      className: 'text-right whitespace-nowrap',
-      render: (_, row) => {
-        const isQuoted = row.status.toLowerCase() === 'quoted';
-        const isConverted = row.status.toLowerCase() === 'converted';
-
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            {/* 1-Click Send Quote button if not yet quoted */}
-            {!isQuoted && !isConverted && (
-              <button
-                onClick={() => setQuotingLead(row)}
-                title="Dispatch Quotation Proposal (Marks lead as Quoted)"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-[11px] font-black transition-all shadow-2xs cursor-pointer"
-              >
-                <PoundSterling className="w-3 h-3" />
-                <span>Send Quote</span>
-              </button>
-            )}
-
-            {/* If Quoted, show quick deal conversion */}
-            {isQuoted && (
-              <button
-                onClick={() => handleConvertDeal(row.id)}
-                title="Client accepted quote proposal! Convert to live Survey Job"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
-              >
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Convert Deal</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setViewingLead(row)}
-              title="View Details"
-              className="p-1.5 text-slate-400 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-
-            <select
-              value={row.status}
-              onChange={(e) => handleStatusChange(row.id, e.target.value)}
-              className="text-[10px] font-bold bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
-            >
-              {LEAD_STATUSES.map((st) => (
-                <option key={st} value={st}>
-                  {st}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={() => handleDeleteLead(row.id)}
-              title="Delete Lead"
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        );
-      },
+      className: 'text-right whitespace-nowrap w-16',
+      render: (_, row) => (
+        <LeadRowActions
+          lead={row}
+          onView={(lead) => setViewingLead(lead)}
+          onQuote={(lead) => setQuotingLead(lead)}
+          onConvert={handleConvertDeal}
+          onClientProfile={(email, tab) => {
+            setSelectedClientEmail(email);
+            setClientModalTab(tab);
+          }}
+          onStatusChange={handleStatusChange}
+          onDelete={handleDeleteLead}
+        />
+      ),
     },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <PageHeader
         title="CRM & Leads Pipeline"
@@ -399,6 +520,47 @@ export const AdminLeadsPage = () => {
         actionIcon={Plus}
         onAction={() => setIsNewModalOpen(true)}
       />
+
+      {/* 3 Top Executive Metric Highlight Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Inbound Inquiries</span>
+            <Target className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="text-2xl font-black text-[#0B1F4D]">{leads.length} Active Leads</div>
+          <div className="text-xs text-slate-500">
+            Local Surveyors Direct, Website, and Direct Enquiries
+          </div>
+        </div>
+
+        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Quoted Deals Value</span>
+            <TrendingUp className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="text-2xl font-black text-amber-700 font-mono">
+            £{totalQuotedValue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-xs text-slate-500">
+            {quotedLeads.length} Fee proposals dispatched to clients
+          </div>
+        </div>
+
+        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Won Conversions</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-black text-emerald-700">
+            {convertedLeads.length} Converted Jobs
+          </div>
+          <div className="text-xs text-slate-500">
+            {((convertedLeads.length / (leads.length || 1)) * 100).toFixed(1)}% Conversion to live
+            survey instructions
+          </div>
+        </div>
+      </div>
 
       {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -415,17 +577,24 @@ export const AdminLeadsPage = () => {
                 Active Quoted Deals Pipeline
               </h4>
               <p className="text-xs text-slate-600 mt-0.5">
-                Fee proposals dispatched via email or Local Surveyors Direct. Click &apos;Convert Deal&apos; when client accepts.
+                Fee proposals dispatched via email or Local Surveyors Direct. Click &apos;Convert
+                Deal&apos; in actions when client accepts.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Deals Quoted</span>
-              <span className="text-base font-extrabold text-[#0B1F4D]">{quotedLeads.length} Proposals</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Total Deals Quoted
+              </span>
+              <span className="text-base font-extrabold text-[#0B1F4D]">
+                {quotedLeads.length} Proposals
+              </span>
             </div>
             <div className="text-right pl-4 border-l border-amber-200">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pipeline Value</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Pipeline Value
+              </span>
               <span className="text-base font-black text-amber-700 font-mono">
                 £{totalQuotedValue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}
               </span>
@@ -445,7 +614,7 @@ export const AdminLeadsPage = () => {
               placeholder="Search by customer, property, postcode..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all min-h-[44px]"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all min-h-[42px]"
             />
           </div>
 
@@ -453,7 +622,7 @@ export const AdminLeadsPage = () => {
           <button
             type="button"
             onClick={() => setIsMobileFiltersOpen(true)}
-            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold min-h-[44px] shrink-0 cursor-pointer"
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold min-h-[42px] shrink-0 cursor-pointer"
           >
             <Filter className="w-4 h-4 text-[#2563EB]" />
             <span>Filters</span>
@@ -471,7 +640,7 @@ export const AdminLeadsPage = () => {
             <select
               value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px]"
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px] cursor-pointer"
             >
               <option value="All">All Sources</option>
               {LEAD_SOURCES.map((s) => (
@@ -488,7 +657,7 @@ export const AdminLeadsPage = () => {
             <select
               value={ownerFilter}
               onChange={(e) => setOwnerFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px]"
+              className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px] cursor-pointer"
             >
               {owners.map((o) => (
                 <option key={o} value={o}>
@@ -507,20 +676,11 @@ export const AdminLeadsPage = () => {
                 setOwnerFilter('All');
                 setActiveTab('All');
               }}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors min-h-[40px] cursor-pointer"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors min-h-[40px] cursor-pointer"
             >
-              Reset
+              Reset Filters
             </button>
           )}
-
-          {/* Simulate Loading Skeleton Button */}
-          <button
-            onClick={handleSimulateLoading}
-            title="Test loading skeleton"
-            className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 border border-slate-200 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
         </div>
       </div>
 
@@ -591,7 +751,6 @@ export const AdminLeadsPage = () => {
       <Table
         columns={columns}
         data={filteredLeads}
-        isLoading={isLoading}
         pageSize={pageSize}
         emptyTitle="No leads found"
         emptyMessage="No survey enquiries match your selected tab, search terms or filters."
@@ -612,7 +771,7 @@ export const AdminLeadsPage = () => {
           isOpen={!!viewingLead}
           onClose={() => setViewingLead(null)}
           title={`Lead Details: ${viewingLead.id}`}
-          subtitle={`Created on ${viewingLead.created} • Owner: ${viewingLead.owner}`}
+          subtitle={`Created on ${viewingLead.created} • Coordinator: ${viewingLead.owner}`}
           footer={
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-2">
@@ -623,7 +782,7 @@ export const AdminLeadsPage = () => {
                     handleStatusChange(viewingLead.id, e.target.value);
                     setViewingLead((prev) => ({ ...prev, status: e.target.value }));
                   }}
-                  className="px-2 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white"
+                  className="px-2 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white cursor-pointer"
                 >
                   {LEAD_STATUSES.map((st) => (
                     <option key={st} value={st}>
@@ -635,7 +794,7 @@ export const AdminLeadsPage = () => {
 
               <button
                 onClick={() => setViewingLead(null)}
-                className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E]"
+                className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
               >
                 Close
               </button>
@@ -656,15 +815,20 @@ export const AdminLeadsPage = () => {
             </div>
 
             {/* Quick Quotation Action Card */}
-            {viewingLead.status.toLowerCase() !== 'quoted' && viewingLead.status.toLowerCase() !== 'converted' ? (
+            {viewingLead.status.toLowerCase() !== 'quoted' &&
+            viewingLead.status.toLowerCase() !== 'converted' ? (
               <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
                     <PoundSterling className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-amber-950 text-xs block">Ready to issue quote to client?</span>
-                    <span className="text-[11px] text-amber-800">Dispatch fee proposal to mark this lead as &quot;Quoted&quot;.</span>
+                    <span className="font-bold text-amber-950 text-xs block">
+                      Ready to issue quote to client?
+                    </span>
+                    <span className="text-[11px] text-amber-800">
+                      Dispatch fee proposal to mark this lead as &quot;Quoted&quot;.
+                    </span>
                   </div>
                 </div>
                 <button
@@ -683,8 +847,12 @@ export const AdminLeadsPage = () => {
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="font-bold text-indigo-950 text-xs block">Fee Proposal Sent (Status: Quoted)</span>
-                    <span className="text-[11px] text-indigo-700">Deal is live. Convert to confirmed survey booking once accepted.</span>
+                    <span className="font-bold text-indigo-950 text-xs block">
+                      Fee Proposal Sent (Status: Quoted)
+                    </span>
+                    <span className="text-[11px] text-indigo-700">
+                      Deal is live. Convert to confirmed survey booking once accepted.
+                    </span>
                   </div>
                 </div>
                 <button
@@ -730,7 +898,7 @@ export const AdminLeadsPage = () => {
 
               <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Property & Scope
+                  Property &amp; Scope
                 </span>
                 <div className="text-xs font-bold text-[#0B1F4D]">{viewingLead.enquiry}</div>
                 <div className="text-xs text-slate-700 flex items-start gap-1.5">
@@ -746,11 +914,9 @@ export const AdminLeadsPage = () => {
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                Client Notes & Surveyor Inspection Specifics
+                Client Notes &amp; Surveyor Inspection Specifics
               </span>
-              <p className="text-xs text-slate-700 leading-relaxed">
-                {viewingLead.notes}
-              </p>
+              <p className="text-xs text-slate-700 leading-relaxed">{viewingLead.notes}</p>
             </div>
           </div>
         </Modal>
