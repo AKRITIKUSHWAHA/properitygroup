@@ -8514,19 +8514,23 @@ select.form-input-compact {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-.mega-action-title {
+.mega-action-title,
+.site-header .mega-action-title {
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   margin-bottom: 0.2rem;
 }
 
-.mega-action-sub {
+.mega-action-sub,
+.site-header .mega-action-sub,
+.site-wrapper .mega-action-sub,
+p.mega-action-sub {
   font-size: 0.74rem;
-  color: #CBD5E1;
-  line-height: 1.4;
-  margin: 0 0 0.65rem 0;
+  color: #CBD5E1 !important;
+  line-height: 1.4 !important;
+  margin: 0 0 0.65rem 0 !important;
 }
 
 .mega-action-btn {

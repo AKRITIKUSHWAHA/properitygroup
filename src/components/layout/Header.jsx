@@ -266,7 +266,7 @@ export function Header() {
                         <div className="mega-action-card">
                           <div className="mega-action-card-inner">
                             <span className="mega-action-title">Need a Survey Quote?</span>
-                            <p className="mega-action-sub">
+                            <p className="mega-action-sub" style={{ color: '#CBD5E1', margin: '0 0 0.65rem 0' }}>
                               Receive your fixed-fee written quote within 24 business hours.
                             </p>
                             <a
