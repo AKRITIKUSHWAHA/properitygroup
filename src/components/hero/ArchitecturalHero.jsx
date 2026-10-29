@@ -41,7 +41,7 @@ export function ArchitecturalHero({ onQuoteClick }) {
           <div className="luxury-hero-text-block">
             {/* Practice Category Eyebrow */}
             <div className="hero-eyebrow-chip">
-              <ShieldCheck size={14} className="text-gold" aria-hidden="true" />
+              <ShieldCheck size={14} style={{ color: '#FFFFFF' }} aria-hidden="true" />
               <span>RICS-Aligned Independent Practice</span>
             </div>
 
@@ -77,15 +77,15 @@ export function ArchitecturalHero({ onQuoteClick }) {
             {/* Fast Confidence Badges Strip */}
             <div className="hero-confidence-strip">
               <div className="confidence-chip">
-                <CheckCircle2 size={13} className="text-gold" aria-hidden="true" />
+                <CheckCircle2 size={13} style={{ color: '#FFFFFF' }} aria-hidden="true" />
                 <span>Zero Contractor Bias</span>
               </div>
               <div className="confidence-chip">
-                <Clock size={13} className="text-gold" aria-hidden="true" />
+                <Clock size={13} style={{ color: '#FFFFFF' }} aria-hidden="true" />
                 <span>3–5 Days Turnaround</span>
               </div>
               <div className="confidence-chip">
-                <Scale size={13} className="text-gold" aria-hidden="true" />
+                <Scale size={13} style={{ color: '#FFFFFF' }} aria-hidden="true" />
                 <span>CPR Part 35 Ready</span>
               </div>
             </div>

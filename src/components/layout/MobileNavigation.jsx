@@ -160,7 +160,7 @@ export function MobileNavigation({ isOpen, onClose }) {
                   onClick={onClose}
                   style={{ marginTop: '0.35rem' }}
                 >
-                  <HelpCircle size={13} style={{ marginRight: '6px', color: '#F8D37D' }} />
+                  <HelpCircle size={13} style={{ marginRight: '6px', color: '#FFFFFF' }} />
                   <span>Which Survey Do I Need? Guide</span>
                 </NavLink>
               </div>
@@ -219,7 +219,7 @@ export function MobileNavigation({ isOpen, onClose }) {
                   className="mobile-sublink mobile-sublink-all"
                   onClick={onClose}
                 >
-                  <MapPin size={13} style={{ marginRight: '6px', color: '#F8D37D' }} />
+                  <MapPin size={13} style={{ marginRight: '6px', color: '#FFFFFF' }} />
                   <span>All Coverage Areas &amp; Postcodes</span>
                 </NavLink>
               </div>
@@ -295,14 +295,14 @@ export function MobileNavigation({ isOpen, onClose }) {
 
           <div className="mobile-drawer-contact-info">
             <a href={`tel:${siteConfig.contact.telephone}`} className="mobile-hotline-item">
-              <Phone size={14} style={{ color: '#D4A017' }} />
+              <Phone size={14} style={{ color: '#FFFFFF' }} />
               <span>Survey Hotline: <strong>{siteConfig.contact.telephoneDisplay}</strong></span>
             </a>
             <div className="mobile-hours-item">
               <span>{siteConfig.contact.openingHours}</span>
             </div>
             <div className="mobile-standards-item">
-              <ShieldCheck size={13} style={{ color: '#D4A017' }} />
+              <ShieldCheck size={13} style={{ color: '#FFFFFF' }} />
               <span>RICS Home Survey Aligned</span>
             </div>
           </div>

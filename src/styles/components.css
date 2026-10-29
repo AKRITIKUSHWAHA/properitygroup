@@ -7512,9 +7512,9 @@ select.form-input-compact {
 }
 
 .site-header .dropdown-item-badge {
-  background: rgba(212, 160, 23, 0.18) !important;
-  color: #F8D37D !important;
-  border: 1px solid rgba(212, 160, 23, 0.35) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   font-size: 0.68rem !important;
   font-weight: 700 !important;
   padding: 0.15rem 0.5rem !important;
@@ -8126,9 +8126,9 @@ select.form-input-compact {
 }
 
 .site-header .dropdown-item-badge {
-  background: rgba(212, 160, 23, 0.18) !important;
-  color: #F8D37D !important;
-  border: 1px solid rgba(212, 160, 23, 0.35) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   font-size: 0.65rem !important;
   font-weight: 700 !important;
   padding: 0.12rem 0.5rem !important;
@@ -8151,17 +8151,17 @@ select.form-input-compact {
   gap: 0.5rem;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #F8D37D !important;
+  color: #FFFFFF !important;
   text-decoration: none;
   padding: 0.55rem 0.85rem;
   border-radius: 8px;
-  background: rgba(212, 160, 23, 0.15) !important;
-  border: 1px solid rgba(212, 160, 23, 0.35) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   transition: all 0.2s ease;
 }
 
 .dropdown-footer-link:hover {
-  background: rgba(212, 160, 23, 0.25) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
   color: #FFFFFF !important;
 }
 
@@ -8189,8 +8189,8 @@ select.form-input-compact {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(212, 160, 23, 0.18);
-  color: #F8D37D;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8259,7 +8259,7 @@ select.form-input-compact {
   flex-direction: column;
   gap: 2px;
   padding: 0.35rem 0 0.5rem 0.75rem;
-  border-left: 2px solid rgba(212, 160, 23, 0.35);
+  border-left: 2px solid rgba(255, 255, 255, 0.22);
   margin-left: 0.85rem;
   animation: panelSlideDown 0.2s ease-out;
 }
@@ -8286,16 +8286,16 @@ select.form-input-compact {
 .mobile-sublink-badge {
   font-size: 0.62rem;
   font-weight: 700;
-  color: #F8D37D;
-  background: rgba(212, 160, 23, 0.18);
-  border: 1px solid rgba(212, 160, 23, 0.3);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   padding: 0.1rem 0.45rem;
   border-radius: 9999px;
   text-transform: uppercase;
 }
 
 .mobile-sublink-all {
-  color: #F8D37D !important;
+  color: #FFFFFF !important;
   font-weight: 600 !important;
   font-size: 0.84rem !important;
 }
@@ -8303,9 +8303,9 @@ select.form-input-compact {
 .mobile-pill-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #F8D37D;
-  background: rgba(212, 160, 23, 0.18);
-  border: 1px solid rgba(212, 160, 23, 0.3);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   padding: 0.12rem 0.5rem;
   border-radius: 9999px;
   text-transform: uppercase;
@@ -8510,7 +8510,7 @@ select.form-input-compact {
   padding: 0.95rem;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(20, 42, 67, 0.75) 0%, rgba(10, 22, 36, 0.95) 100%);
-  border: 1px solid rgba(212, 160, 23, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -8643,17 +8643,18 @@ select.form-input-compact {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: rgba(10, 18, 30, 0.85);
+  background: rgba(10, 18, 30, 0.88);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(212, 160, 23, 0.4);
-  color: #F8D37D;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.22rem 0.6rem;
+  padding: 0.22rem 0.65rem;
   border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .overview-card-body {
@@ -8683,14 +8684,14 @@ select.form-input-compact {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #D4A017;
+  color: #FFFFFF;
   font-size: 0.84rem;
   font-weight: 600;
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .overview-service-card:hover .overview-card-action {
-  color: #F8D37D;
+  color: #CBD5E1;
   transform: translateX(4px);
 }
 
