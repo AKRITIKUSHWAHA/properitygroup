@@ -88,10 +88,10 @@ export function DampSurveyPage() {
               {/* Overview Card */}
               <div className="service-overview-card">
                 <h2 className="service-section-title">Independent Moisture Diagnostics Free From Sales Bias</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC', marginBottom: '1rem' }}>
                   Damp is among the most frequently cited defects in UK residential survey reports, yet it remains one of the most widely misdiagnosed. Many commercial damp-proofing contractors offer 'free surveys' primarily to sell disruptive, expensive chemical injection treatments, waterproof tanking, or unnecessary plaster destruction.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1', margin: 0 }}>
                   As independent building surveyors, we do not sell damp-proofing products, chemical treatments, or contracting services. Our specialist damp surveys employ calibrated moisture metering, hygrometric readings, and thermal imaging to scientifically differentiate between true rising damp, external penetrating moisture, internal condensation, and historic hygroscopic salt contamination, delivering unbiased remediation strategies.
                 </p>
               </div>

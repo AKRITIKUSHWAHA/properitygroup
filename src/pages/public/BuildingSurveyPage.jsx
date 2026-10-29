@@ -88,10 +88,10 @@ export function BuildingSurveyPage() {
               {/* Overview Card */}
               <div className="service-overview-card">
                 <h2 className="service-section-title">Comprehensive Structural Investigation (Level 3)</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC', marginBottom: '1rem' }}>
                   The RICS Level 3 Building Survey represents the most rigorous, detailed property inspection available in the UK residential sector. Formerly known as a Full Structural Survey, it is specifically commissioned for older properties, architecturally complex structures, listed buildings, and homes that have undergone extensive alterations or show evidence of structural movement.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1', margin: 0 }}>
                   Our surveyors conduct an exhaustive physical investigation into structural fabric integrity, roof trusses, subfloor cavities, foundation stability, moisture transmission, and historic building materials. The resultant report provides a prioritized defect remediation schedule, technical repair advice, and analysis of the consequences of inaction.
                 </p>
               </div>

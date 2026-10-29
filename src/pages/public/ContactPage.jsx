@@ -104,8 +104,8 @@ export function ContactPage() {
             {/* Left Column: Direct Contact & Office Information */}
             <div>
               <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>Get in Touch</h2>
-                <p style={{ color: 'var(--color-muted-text)', fontSize: 'var(--font-size-sm)', lineHeight: '1.6' }}>
+                <h2 style={{ color: '#FFFFFF', marginBottom: '0.5rem', fontWeight: 700 }}>Get in Touch</h2>
+                <p className="contact-lead-text" style={{ color: '#CBD5E1', fontSize: 'var(--font-size-sm)', lineHeight: '1.6' }}>
                   Whether you are purchasing your first home, acquiring a period building, or managing a legal dispute, our surveying team is available to assist.
                 </p>
               </div>

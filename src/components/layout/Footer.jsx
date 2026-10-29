@@ -34,7 +34,7 @@ export function Footer() {
               </span>
             </div>
 
-            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-silver-light)', marginBottom: 'var(--space-4)' }}>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: '#FFFFFF', marginBottom: 'var(--space-4)' }}>
               Independent property surveying, valuation, new-build snagging, damp diagnostics, and expert witness services across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.
             </p>
 
@@ -95,7 +95,7 @@ export function Footer() {
               {siteConfig.techStackNotice.originalBriefNotice}
             </div>
 
-            <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-dark)' }}>
+            <div style={{ marginTop: 'var(--space-3)', fontSize: 'var(--font-size-xs)', color: '#CBD5E1' }}>
               <span>Legacy Services Removed: Construction &amp; Real Estate pages retired. </span>
               <Link to="/redirects" style={{ color: 'var(--color-silver-light)', textDecoration: 'underline' }}>
                 View Redirect Matrix

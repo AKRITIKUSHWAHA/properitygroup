@@ -480,9 +480,9 @@
 .site-wrapper .luxury-site-canvas .service-regional-card p,
 .site-wrapper .luxury-site-canvas .service-comparison-card p,
 .site-wrapper .luxury-site-canvas .hero-card-desc,
-.site-wrapper .luxury-site-canvas .contact-detail-grid p,
+.site-wrapper .luxury-site-canvas .contact-detail-grid .contact-card p,
 .site-wrapper .luxury-site-canvas .contact-faq-item .contact-faq-answer,
-.site-wrapper .contact-detail-grid p,
+.site-wrapper .contact-detail-grid .contact-card p,
 .hero-card p,
 .compact-quote-form p,
 .hero-card-desc,
@@ -496,6 +496,14 @@
   color: #334155 !important;
   text-shadow: none !important;
   font-weight: 500 !important;
+}
+
+.site-wrapper .luxury-site-canvas .contact-detail-grid .contact-lead-text,
+.site-wrapper .contact-detail-grid .contact-lead-text,
+.contact-detail-grid .contact-lead-text,
+.contact-lead-text {
+  color: #CBD5E1 !important;
+  text-shadow: none !important;
 }
 
 .site-wrapper .luxury-site-canvas .hero-card label,

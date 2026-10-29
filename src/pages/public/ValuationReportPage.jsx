@@ -88,10 +88,10 @@ export function ValuationReportPage() {
               {/* Overview Card */}
               <div className="service-overview-card">
                 <h2 className="service-section-title">Authoritative RICS Red Book Property Valuations</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC', marginBottom: '1rem' }}>
                   A formal property valuation is a legally binding appraisal of open market value conducted strictly in accordance with the mandatory RICS Valuation — Global Standards (widely referred to as the 'Red Book'). Unlike automated estate agency estimates, an independent RICS Red Book valuation is supported by physical site inspection, verified Land Registry transactional evidence, and strict professional indemnity compliance.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1', margin: 0 }}>
                   Our reports are recognized and formally accepted by Homes England, major housing associations, HM Revenue &amp; Customs (HMRC), matrimonial solicitors, the Family Division of the High Court, and probate executors across London and the South East.
                 </p>
               </div>

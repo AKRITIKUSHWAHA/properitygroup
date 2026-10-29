@@ -71,11 +71,11 @@ export function ExpertWitnessPage() {
             <div>
               {/* Introduction */}
               <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>Independent Technical Evidence for Property Disputes</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)' }}>
+                <h2 style={{ color: '#FFFFFF', marginBottom: '1rem', fontWeight: 700 }}>Independent Technical Evidence for Property Disputes</h2>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC' }}>
                   When contentious property disputes escalate to formal litigation, arbitration, or pre-action dispute resolution, courts and tribunals require impartial, objective technical evidence. As independent expert surveyors, our duty in expert witness matters is defined by Civil Procedure Rules (CPR) Part 35: our overriding duty is to the Court, rather than to the instructing client.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)' }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1' }}>
                   We provide CPR Part 35 compliant expert reports, advisory technical audits, Scott Schedule contributions, joint expert meetings, and oral testimony at hearings across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.
                 </p>
               </div>

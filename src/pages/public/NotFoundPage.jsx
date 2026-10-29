@@ -13,7 +13,7 @@ export function NotFoundPage() {
   );
 
   return (
-    <div className="not-found-page" style={{ padding: 'var(--space-16) 0' }}>
+    <div className="not-found-page luxury-site-canvas" style={{ padding: 'var(--space-16) 0' }}>
       <Container isNarrow>
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
           <div
@@ -32,10 +32,10 @@ export function NotFoundPage() {
             <AlertCircle size={36} />
           </div>
 
-          <h1 style={{ fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-2)' }}>
+          <h1 style={{ fontSize: 'var(--font-size-3xl)', marginBottom: 'var(--space-2)', color: '#FFFFFF' }}>
             404 — Page Not Found
           </h1>
-          <p style={{ color: 'var(--color-muted-text)', fontSize: 'var(--font-size-md)', maxWidth: '580px', margin: '0 auto var(--space-6)' }}>
+          <p style={{ color: '#CBD5E1', fontSize: 'var(--font-size-md)', maxWidth: '580px', margin: '0 auto var(--space-6)' }}>
             The URL you requested may have been relocated, or belongs to a retired service section. Please use the navigation below to access our active surveying services.
           </p>
 

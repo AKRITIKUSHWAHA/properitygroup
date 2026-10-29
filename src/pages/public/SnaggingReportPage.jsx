@@ -88,10 +88,10 @@ export function SnaggingReportPage() {
               {/* Overview Card */}
               <div className="service-overview-card">
                 <h2 className="service-section-title">Independent Quality Inspection for New-Build Properties</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC', marginBottom: '1rem' }}>
                   Purchasing a newly constructed home represents a substantial investment. While buyers rightfully anticipate flawless craftsmanship, fast-track developer build schedules and subcontracting pressures frequently result in cosmetic blemishes, regulatory non-compliance, and hidden operational defects.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1', margin: 0 }}>
                   Our independent snagging inspection provides an exhaustive room-by-room audit of your new-build property. We identify cosmetic defects, plumbing leaks, thermal bridging, defective insulation, window seal failures, and building regulation discrepancies, delivering a professionally formatted, photographic defect schedule engineered for direct submission to your developer’s customer care division.
                 </p>
               </div>
@@ -126,7 +126,7 @@ export function SnaggingReportPage() {
                 <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   New-Build Warranty Alignment
                 </h3>
-                <p style={{ marginBottom: '1rem', color: 'var(--color-muted-text)', fontSize: '0.9rem' }}>
+                <p style={{ marginBottom: '1rem', color: '#CBD5E1', fontSize: '0.9rem' }}>
                   Our technical defect schedules are structured to hold housebuilders accountable under standard UK warranty and building code criteria:
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>

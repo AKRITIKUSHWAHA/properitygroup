@@ -88,10 +88,10 @@ export function HomebuyerSurveyPage() {
               {/* Overview Card */}
               <div className="service-overview-card">
                 <h2 className="service-section-title">What is an RICS Homebuyer Survey (Level 2)?</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: '#F8FAFC', marginBottom: '1rem' }}>
                   The RICS Level 2 Homebuyer Survey is the UK’s most commissioned residential inspection, purposefully engineered for modern and conventional properties in reasonable structural order. It provides an objective assessment of visible structural elements, roof coverings, fabric condition, and building services using an intuitive traffic-light condition rating.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ lineHeight: '1.7', color: '#CBD5E1', margin: 0 }}>
                   Unlike a basic mortgage valuation (which merely verifies whether the asset represents adequate security for a lender’s loan), our Level 2 Homebuyer Report is commissioned entirely on your behalf to uncover urgent repairs, hidden defects, damp indications, and future maintenance liabilities before legal exchange of contracts.
                 </p>
               </div>
@@ -116,7 +116,7 @@ export function HomebuyerSurveyPage() {
                 <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   Property Suitability Criteria
                 </h3>
-                <p style={{ marginBottom: '1rem', color: 'var(--color-muted-text)', fontSize: '0.9rem' }}>
+                <p style={{ marginBottom: '1rem', color: '#CBD5E1', fontSize: '0.9rem' }}>
                   The Level 2 survey is designed specifically for conventional residential forms:
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
@@ -152,15 +152,15 @@ export function HomebuyerSurveyPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }}>
                     <strong style={{ color: 'var(--color-success)', minWidth: '85px', flexShrink: 0 }}>Condition 1:</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>No repair is currently needed. Normal maintenance must be undertaken in the usual way.</span>
+                    <span style={{ fontSize: '0.82rem', color: '#F8FAFC' }}>No repair is currently needed. Normal maintenance must be undertaken in the usual way.</span>
                   </div>
                   <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)' }}>
                     <strong style={{ color: 'var(--color-warning)', minWidth: '85px', flexShrink: 0 }}>Condition 2:</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>Defects requiring repair or replacement, but are not considered to be serious or urgent.</span>
+                    <span style={{ fontSize: '0.82rem', color: '#F8FAFC' }}>Defects requiring repair or replacement, but are not considered to be serious or urgent.</span>
                   </div>
                   <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)' }}>
                     <strong style={{ color: 'var(--color-danger)', minWidth: '85px', flexShrink: 0 }}>Condition 3:</strong>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
+                    <span style={{ fontSize: '0.82rem', color: '#F8FAFC' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
                   </div>
                 </div>
               </div>
