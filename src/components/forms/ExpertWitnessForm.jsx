@@ -192,7 +192,6 @@ export function ExpertWitnessForm({ className = '' }) {
         <FormField
           id="lawFirmName"
           label="Law Firm / Practice Name"
-          helpText="Leave blank if private individual"
         >
           <input
             type="text"
@@ -253,7 +252,6 @@ export function ExpertWitnessForm({ className = '' }) {
         label="Summary of Dispute &amp; Surveyor Role"
         required
         error={errors.caseSummary}
-        helpText="Briefly describe key allegations, property defect symptoms, or boundary controversy."
       >
         <textarea
           id="caseSummary"
@@ -274,7 +272,6 @@ export function ExpertWitnessForm({ className = '' }) {
           label="Court Directions / Target Report Date"
           required
           error={errors.courtDeadline}
-          helpText="e.g. 15th December 2026 or Pre-action protocol"
         >
           <input
             type="text"
@@ -291,7 +288,6 @@ export function ExpertWitnessForm({ className = '' }) {
         <FormField
           id="propertyLocation"
           label="Subject Property Location / Postcode"
-          helpText="County or borough of inspection"
         >
           <input
             type="text"
