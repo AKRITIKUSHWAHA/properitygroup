@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     const roleEmailMap = {
       admin: 'admin@demo.com',
       super_admin: 'admin@demo.com',
-      admin_staff: 'staff@demo.com',
+      admin_staff: 'admin@demo.com',
       surveyor: 'surveyor@demo.com',
       customer: 'customer@demo.com',
     };

@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sliders,
+  Trash2,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -41,67 +42,51 @@ export const AdminUsersPage = () => {
       role: 'super_admin',
       roleLabel: 'Admin',
       org: 'UK Property Surveying Practice HQ',
-      lastLogin: '27/10/2026, 17:40',
       status: 'Active',
     },
     {
       id: 'USR-02',
-      name: 'Sarah Jenkins',
-      email: 'staff@demo.com',
-      role: 'super_admin',
-      roleLabel: 'Admin',
-      org: 'UK Property Surveying Practice',
-      lastLogin: '27/10/2026, 16:15',
-      status: 'Active',
-    },
-    {
-      id: 'USR-03',
       name: 'David Thorne MRICS',
       email: 'surveyor@demo.com',
       role: 'surveyor',
       roleLabel: 'Surveyor',
       org: 'Thorne Chartered Surveyors',
-      lastLogin: '27/10/2026, 14:30',
       status: 'Active',
     },
     {
-      id: 'USR-04',
+      id: 'USR-03',
       name: 'Oliver Hughes MRICS',
       email: 'oliver.hughes@propertygroup.co.uk',
       role: 'surveyor',
       roleLabel: 'Surveyor',
       org: 'Hughes Building Surveyors',
-      lastLogin: '26/10/2026, 18:20',
       status: 'Active',
     },
     {
-      id: 'USR-05',
+      id: 'USR-04',
       name: 'Claire Bennet AssocRICS',
       email: 'claire.bennet@propertygroup.co.uk',
       role: 'surveyor',
       roleLabel: 'Surveyor',
       org: 'Bennet Defect Specialists',
-      lastLogin: '26/10/2026, 11:05',
       status: 'Active',
     },
     {
-      id: 'USR-06',
+      id: 'USR-05',
       name: 'Emma Watson',
       email: 'customer@demo.com',
       role: 'customer',
       roleLabel: 'Customer',
       org: 'Watson Holdings UK',
-      lastLogin: '27/10/2026, 12:45',
       status: 'Active',
     },
     {
-      id: 'USR-07',
+      id: 'USR-06',
       name: 'Lord Gregory Cavendish',
       email: 'cavendish.holdings@uknet.co.uk',
       role: 'customer',
       roleLabel: 'Customer',
       org: 'Private Client',
-      lastLogin: '25/10/2026, 09:12',
       status: 'Active',
     },
   ]);
@@ -148,6 +133,23 @@ export const AdminUsersPage = () => {
       type: 'success',
       title: 'User Provisioned',
       message: `${newUser.name} added as ${newUser.roleLabel}. Welcome credentials dispatched.`,
+    });
+  };
+
+  const handleDeleteUser = (userId, userName) => {
+    if (userId === 'USR-01' || userName === 'Alexander Sterling') {
+      addToast({
+        type: 'warning',
+        title: 'Action Protected',
+        message: 'The primary Admin account cannot be deleted.',
+      });
+      return;
+    }
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    addToast({
+      type: 'info',
+      title: 'User Removed',
+      message: `${userName} has been removed from platform users.`,
     });
   };
 
@@ -229,12 +231,6 @@ export const AdminUsersPage = () => {
       className: 'text-xs text-slate-700 font-medium',
     },
     {
-      key: 'lastLogin',
-      header: 'Last Authentication',
-      sortable: true,
-      className: 'font-mono text-xs text-slate-500',
-    },
-    {
       key: 'status',
       header: 'Status',
       sortable: true,
@@ -247,55 +243,58 @@ export const AdminUsersPage = () => {
     },
     {
       key: 'actions',
-      header: 'Client History & Logs',
+      header: 'Actions',
       sortable: false,
       className: 'text-right whitespace-nowrap',
       render: (_, row) => {
-        if (row.role === 'customer') {
-          const profile = profiles[row.email];
-          const callsCount = profile?.calls?.length || 0;
-          const complaints = profile?.complaints || [];
-          const openComplaintsCount = complaints.filter(
-            (c) => c.status === 'Open' || c.status === 'Under Investigation'
-          ).length;
-
-          return (
-            <div className="flex items-center justify-end gap-1.5">
-              <button
-                onClick={() => {
-                  setSelectedClientEmail(row.email);
-                  setClientModalTab('calls');
-                }}
-                title="View & Log Call Notes with exact timestamps"
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-[#0B1F4D] text-[#2563EB] hover:text-white text-[11px] font-bold transition-all border border-blue-200/80 cursor-pointer"
-              >
-                <PhoneCall className="w-3 h-3" />
-                <span>Call Notes ({callsCount})</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setSelectedClientEmail(row.email);
-                  setClientModalTab('complaints');
-                }}
-                title="Dedicated Client Complaints Register"
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
-                  openComplaintsCount > 0
-                    ? 'bg-rose-100 hover:bg-rose-600 text-rose-800 hover:text-white border-rose-300 animate-pulse'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                }`}
-              >
-                <AlertTriangle className="w-3 h-3" />
-                <span>Complaints ({complaints.length})</span>
-              </button>
-            </div>
-          );
-        }
+        const isPrimaryAdmin = row.id === 'USR-01' || row.email === 'admin@demo.com';
 
         return (
-          <span className="text-[11px] font-medium text-slate-400">
-            Internal Staff
-          </span>
+          <div className="flex items-center justify-end gap-1.5">
+            {row.role === 'customer' && (
+              <>
+                <button
+                  onClick={() => {
+                    setSelectedClientEmail(row.email);
+                    setClientModalTab('calls');
+                  }}
+                  title="View & Log Call Notes with exact timestamps"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-[#0B1F4D] text-[#2563EB] hover:text-white text-[11px] font-bold transition-all border border-blue-200/80 cursor-pointer"
+                >
+                  <PhoneCall className="w-3 h-3" />
+                  <span>Call Notes</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setSelectedClientEmail(row.email);
+                    setClientModalTab('complaints');
+                  }}
+                  title="Dedicated Client Complaints Register"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer border bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+                >
+                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                  <span>Complaints</span>
+                </button>
+              </>
+            )}
+
+            {!isPrimaryAdmin && (
+              <button
+                onClick={() => handleDeleteUser(row.id, row.name)}
+                title={`Delete ${row.name}`}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {isPrimaryAdmin && (
+              <span className="text-[10px] font-bold text-slate-400 px-2 py-0.5 rounded-full bg-slate-100">
+                Primary Admin
+              </span>
+            )}
+          </div>
         );
       },
     },
