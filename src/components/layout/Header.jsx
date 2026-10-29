@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, Building, User, Phone, Star, ShieldCheck } from 'lucide-react';
+import { Menu, ChevronDown, Building, User, Phone, Clock, ShieldCheck, MapPin, ArrowRight } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { Button } from '../common/Button';
@@ -40,40 +40,63 @@ export function Header() {
   }, [location.pathname]);
 
   const isServicesActive = location.pathname.startsWith('/services');
+  const isHomePage = location.pathname === '/';
+
+  // Smooth scroll to quote section if already on homepage
+  const handleQuoteClick = (e) => {
+    if (isHomePage) {
+      e.preventDefault();
+      const target = document.getElementById('quote-section') || document.getElementById('quote');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   return (
-    <header className="site-header" role="banner">
-      {/* Top Utility Bar (Trustpilot & Hotline Benchmark from esurv.co.uk) */}
-      <div className="header-top-bar">
-        <div className="header-container flex justify-between items-center text-xs">
-          <div className="top-bar-trust flex items-center gap-2">
-            <span className="flex text-emerald-400 font-bold tracking-widest text-[11px]">★★★★★</span>
-            <span className="font-semibold text-white">4.8 / 5 on Trustpilot</span>
-            <span className="text-slate-400 hidden sm:inline">&bull; 100% RICS-Aligned Practice</span>
-          </div>
-          <div className="top-bar-contact flex items-center gap-4">
-            <a href="tel:08001699661" className="top-hotline flex items-center gap-1.5 text-slate-200 hover:text-white transition-colors">
-              <Phone size={12} className="text-emerald-400" />
-              <span>Survey Advisory: <strong className="text-white">0800 169 9661</strong></span>
-            </a>
-            <span className="text-slate-500 hidden md:inline">|</span>
-            <span className="hidden md:inline text-slate-300">Fast 48h Digital Reports</span>
+    <header className={`site-header ${isHomePage ? 'site-header-floating' : ''}`} role="banner">
+      {/* Top Utility Bar with Direct Hotline & Practice Standards (Subpages) */}
+      {!isHomePage && (
+        <div className="header-topbar">
+          <div className="header-container">
+            <div className="header-topbar-inner">
+              <div className="topbar-items">
+                <span className="topbar-item">
+                  <ShieldCheck size={13} aria-hidden="true" />
+                  <span>RICS Home Survey Standard Aligned Practice</span>
+                </span>
+                <span className="topbar-item hide-mobile">
+                  <MapPin size={13} aria-hidden="true" />
+                  <span>London &bull; Surrey &bull; Oxfordshire &bull; Buckinghamshire &bull; Berkshire</span>
+                </span>
+              </div>
+              <div className="topbar-items">
+                <a href={`tel:${siteConfig.contact.telephone}`} className="topbar-item topbar-phone" title="Call Survey Dispatch Hotline">
+                  <Phone size={13} aria-hidden="true" />
+                  <span>Survey Hotline: <strong>{siteConfig.contact.telephoneDisplay}</strong></span>
+                </a>
+                <span className="topbar-item hide-mobile">
+                  <Clock size={13} aria-hidden="true" />
+                  <span>Mon–Fri 8:30–18:00</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Navigation Bar */}
       <div className="header-main">
         <div className="header-container">
           <div className="header-main-inner">
-            {/* Site Logo Placeholder */}
-            <Link to="/" className="site-logo" aria-label={`${siteConfig.companyName} - Home`}>
+            {/* Site Logo Emblem matching Luxury Mockup */}
+            <Link to="/" className="site-logo" aria-label="Surveying Practice - Home">
               <div className="logo-badge" aria-hidden="true">
-                <Building size={24} />
+                <Building size={20} />
               </div>
               <div className="logo-text-group">
-                <span className="logo-title">{siteConfig.companyName}</span>
-                <span className="logo-subtitle">Independent RICS-Aligned Surveyors</span>
+                <span className="logo-title font-serif">Surveying Practice</span>
+                <span className="logo-subtitle">UK Independent Surveyors</span>
               </div>
             </Link>
 
@@ -84,7 +107,7 @@ export function Header() {
               </NavLink>
 
               {/* Services Dropdown */}
-              <div className="nav-dropdown-wrapper" ref={dropdownRef}>
+              <div className="nav-dropdown-wrapper" ref={dropdownRef} onMouseEnter={() => setServicesDropdownOpen(true)} onMouseLeave={() => setServicesDropdownOpen(false)}>
                 <button
                   type="button"
                   className={`nav-dropdown-trigger ${isServicesActive ? 'active' : ''}`}
@@ -94,7 +117,14 @@ export function Header() {
                   aria-label="Survey Services Menu"
                 >
                   <span>Survey Services</span>
-                  <ChevronDown size={14} aria-hidden="true" style={{ transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  <ChevronDown
+                    size={14}
+                    aria-hidden="true"
+                    style={{
+                      transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                  />
                 </button>
 
                 {servicesDropdownOpen && (
@@ -107,7 +137,10 @@ export function Header() {
                         role="menuitem"
                         onClick={() => setServicesDropdownOpen(false)}
                       >
-                        <span className="dropdown-item-title">{service.name}</span>
+                        <div className="dropdown-item-top">
+                          <span className="dropdown-item-title">{service.name}</span>
+                          <span className="dropdown-item-badge">{service.badge}</span>
+                        </div>
                         <span className="dropdown-item-desc">{service.tagline}</span>
                       </Link>
                     ))}
@@ -124,15 +157,15 @@ export function Header() {
               </NavLink>
             </nav>
 
-            {/* Header Actions - Strictly Customer First */}
+            {/* Header Actions */}
             <div className="header-actions">
-              <Button to="/login" variant="secondary" size="md" icon={User} className="header-login-btn">
-                Client Portal
-              </Button>
+              <Link to="/login" className="header-login-glass-btn hide-mobile">
+                Sign In
+              </Link>
 
-              <Button to="/contact#quote" variant="gold" size="md" className="header-quote-btn">
-                Get a Quote
-              </Button>
+              <a href="/#quote-section" onClick={handleQuoteClick} className="header-quote-glass-btn">
+                <span>Request a Quote</span>
+              </a>
 
               <button
                 type="button"

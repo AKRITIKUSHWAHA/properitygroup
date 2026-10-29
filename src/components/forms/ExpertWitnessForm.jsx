@@ -146,14 +146,16 @@ export function ExpertWitnessForm({ className = '' }) {
 
   return (
     <form
-      className={`hero-card ${className}`}
+      className={`hero-card expert-witness-form ${className}`}
       onSubmit={handleSubmit}
       noValidate
       aria-label="Expert Witness Instruction Form"
     >
       <div className="hero-card-header">
-        <h3 className="hero-card-title">Confidential Legal Instruction Enquiry</h3>
-        <p className="hero-card-desc">
+        <h3 className="hero-card-title" style={{ color: '#0F172A', fontWeight: 700 }}>
+          Confidential Legal Instruction Enquiry
+        </h3>
+        <p className="hero-card-desc" style={{ color: '#334155', fontWeight: 500 }}>
           Submit dispute details for preliminary conflict checks, letter of instruction review, and CPR Part 35 readiness.
         </p>
       </div>
@@ -372,7 +374,7 @@ export function ExpertWitnessForm({ className = '' }) {
         {isSubmitting ? 'Verifying Conflict Checks...' : 'Submit Expert Witness Instruction Request'}
       </Button>
 
-      <div style={{ textAlign: 'center', marginTop: 'var(--space-3)', fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
+      <div className="expert-form-reassurance" style={{ textAlign: 'center', marginTop: 'var(--space-3)', fontSize: 'var(--font-size-xs)', color: '#334155', fontWeight: 600 }}>
         Strict litigation confidentiality &bull; Independent CPR Part 35 duty to the Court &bull; Swift response
       </div>
     </form>

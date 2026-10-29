@@ -52,22 +52,43 @@ export function ContactPage() {
   };
 
   return (
-    <div className="contact-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="contact-page service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85)` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <h1>Contact &amp; Coverage Hub</h1>
-          <p className="page-header-desc">
-            Speak with our surveying practice or request an obligation-free, fixed quotation for residential properties across London and the South East.
-          </p>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <h1 className="page-header-title">Contact &amp; Coverage Hub</h1>
+            <p className="page-header-desc">
+              Speak directly with our independent surveying practice or request an obligation-free, fixed quotation for residential properties across London and the Home Counties.
+            </p>
+
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Hotline: {siteConfig.contact.telephoneDisplay}</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>Written Quotes in 24 Hours</span>
+              </span>
+              <span className="service-meta-pill">
+                <MapPin size={14} className="text-white" />
+                <span>London, Surrey, Oxon, Bucks &amp; Berks</span>
+              </span>
+            </div>
+          </div>
         </Container>
       </header>
 
       {/* Main Grid: Contact Details & Quote Form */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1fr 1.25fr', alignItems: 'start' }}>
+          <div className="contact-detail-grid">
             {/* Left Column: Direct Contact & Office Information */}
             <div>
               <div style={{ marginBottom: 'var(--space-8)' }}>
@@ -80,16 +101,16 @@ export function ContactPage() {
               {/* Contact Cards */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
                 {/* Telephone */}
-                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-light-grey)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ width: '42px', height: '42px', backgroundColor: 'var(--color-white)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-navy)', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }}>
-                    <Phone size={20} />
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '16px', display: 'flex', gap: '1rem', alignItems: 'center', border: '1px solid #CBD5E1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                  <div style={{ width: '46px', height: '46px', backgroundColor: '#F1F5F9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#142A43', flexShrink: 0, border: '1px solid #CBD5E1' }}>
+                    <Phone size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', color: 'var(--color-light-text)', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#0F172A', fontWeight: '800', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
                       Enquiries &amp; Quotations
                     </span>
                     <div>
-                      <a href={`tel:${siteConfig.contact.telephone}`} style={{ fontSize: 'var(--font-size-md)', fontWeight: 'bold', color: 'var(--color-primary-navy)' }}>
+                      <a href={`tel:${siteConfig.contact.telephone}`} style={{ fontSize: '1.15rem', fontWeight: '800', color: '#142A43', textDecoration: 'none' }}>
                         {siteConfig.contact.telephoneDisplay}
                       </a>
                     </div>
@@ -97,16 +118,16 @@ export function ContactPage() {
                 </div>
 
                 {/* Email */}
-                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-light-grey)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ width: '42px', height: '42px', backgroundColor: 'var(--color-white)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-navy)', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }}>
-                    <Mail size={20} />
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '16px', display: 'flex', gap: '1rem', alignItems: 'center', border: '1px solid #CBD5E1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                  <div style={{ width: '46px', height: '46px', backgroundColor: '#F1F5F9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#142A43', flexShrink: 0, border: '1px solid #CBD5E1' }}>
+                    <Mail size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', color: 'var(--color-light-text)', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#0F172A', fontWeight: '800', letterSpacing: '0.04em', display: 'block', marginBottom: '2px' }}>
                       Written Correspondence
                     </span>
                     <div>
-                      <a href={`mailto:${siteConfig.contact.email}`} style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'bold', color: 'var(--color-primary-navy)' }}>
+                      <a href={`mailto:${siteConfig.contact.email}`} style={{ fontSize: '0.92rem', fontWeight: '700', color: '#142A43', textDecoration: 'none' }}>
                         {siteConfig.contact.email}
                       </a>
                     </div>
@@ -114,15 +135,15 @@ export function ContactPage() {
                 </div>
 
                 {/* Correspondence Address */}
-                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-light-grey)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ width: '42px', height: '42px', backgroundColor: 'var(--color-white)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-navy)', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }}>
-                    <MapPin size={20} />
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '16px', display: 'flex', gap: '1rem', alignItems: 'flex-start', border: '1px solid #CBD5E1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                  <div style={{ width: '46px', height: '46px', backgroundColor: '#F1F5F9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#142A43', flexShrink: 0, border: '1px solid #CBD5E1', marginTop: '2px' }}>
+                    <MapPin size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', color: 'var(--color-light-text)', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#0F172A', fontWeight: '800', letterSpacing: '0.04em', display: 'block', marginBottom: '4px' }}>
                       Registered Address Placeholder
                     </span>
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-main-text)', margin: '0.25rem 0 0' }}>
+                    <p style={{ fontSize: '0.88rem', color: '#1E293B', fontWeight: '500', margin: 0, lineHeight: '1.55' }}>
                       {siteConfig.contact.address.line1}<br />
                       {siteConfig.contact.address.line2}, {siteConfig.contact.address.city} {siteConfig.contact.address.postcode}
                     </p>
@@ -130,15 +151,15 @@ export function ContactPage() {
                 </div>
 
                 {/* Hours */}
-                <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-light-grey)', borderRadius: 'var(--radius-md)', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ width: '42px', height: '42px', backgroundColor: 'var(--color-white)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-navy)', flexShrink: 0, border: '1px solid var(--color-border-subtle)' }}>
-                    <Clock size={20} />
+                <div style={{ padding: '1.25rem', backgroundColor: '#FFFFFF', borderRadius: '16px', display: 'flex', gap: '1rem', alignItems: 'center', border: '1px solid #CBD5E1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                  <div style={{ width: '46px', height: '46px', backgroundColor: '#F1F5F9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#142A43', flexShrink: 0, border: '1px solid #CBD5E1' }}>
+                    <Clock size={22} />
                   </div>
                   <div>
-                    <span style={{ fontSize: 'var(--font-size-xs)', textTransform: 'uppercase', color: 'var(--color-light-text)', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#0F172A', fontWeight: '800', letterSpacing: '0.04em', display: 'block', marginBottom: '4px' }}>
                       Practice Hours
                     </span>
-                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-main-text)', margin: '0.25rem 0 0' }}>
+                    <p style={{ fontSize: '0.88rem', color: '#1E293B', fontWeight: '600', margin: 0 }}>
                       {siteConfig.contact.openingHours}
                     </p>
                   </div>
@@ -146,11 +167,11 @@ export function ContactPage() {
               </div>
 
               {/* Client Asset & Details Checklist Notice */}
-              <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border-medium)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-white)', fontSize: 'var(--font-size-xs)' }}>
-                <strong style={{ display: 'block', color: 'var(--color-primary-navy)', marginBottom: '0.25rem' }}>
+              <div style={{ padding: '1.25rem', border: '1.5px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', fontSize: '0.85rem', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                <strong style={{ display: 'block', color: '#0F172A', fontWeight: '800', fontSize: '0.9rem', marginBottom: '0.35rem' }}>
                   Client Content Requirement:
                 </strong>
-                <p style={{ color: 'var(--color-muted-text)', margin: 0 }}>
+                <p style={{ color: '#334155', margin: 0, lineHeight: '1.55', fontWeight: '500' }}>
                   Per Part 1.1 of the Master Specification, verified phone numbers, direct email routings, and registered trading office addresses will be inserted once supplied by the client.
                 </p>
               </div>
@@ -184,11 +205,13 @@ export function ContactPage() {
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
+                className="contact-faq-item"
                 style={{
-                  border: '1px solid var(--color-border-subtle)',
+                  border: '1px solid #CBD5E1',
                   borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--color-white)',
-                  overflow: 'hidden'
+                  backgroundColor: '#FFFFFF',
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                 }}
               >
                 <button
@@ -206,22 +229,23 @@ export function ContactPage() {
                     cursor: 'pointer',
                     fontWeight: 'bold',
                     fontSize: 'var(--font-size-sm)',
-                    color: 'var(--color-primary-navy)'
+                    color: '#0F172A'
                   }}
                   aria-expanded={openFaq === idx}
                 >
-                  <span>{faq.q}</span>
+                  <span style={{ color: '#0F172A', fontWeight: 700 }}>{faq.q}</span>
                   <ChevronDown
                     size={16}
                     style={{
                       transform: openFaq === idx ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s',
-                      flexShrink: 0
+                      flexShrink: 0,
+                      color: '#142A43'
                     }}
                   />
                 </button>
                 {openFaq === idx && (
-                  <div style={{ padding: '0 var(--space-4) var(--space-4)', fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)', lineHeight: '1.6' }}>
+                  <div className="contact-faq-answer" style={{ padding: '0 var(--space-4) var(--space-4)', fontSize: 'var(--font-size-xs)', color: '#334155', lineHeight: '1.6', fontWeight: 500 }}>
                     {faq.a}
                   </div>
                 )}

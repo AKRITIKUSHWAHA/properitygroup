@@ -15,6 +15,12 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (defaultServiceId) {
+      setFormData(prev => ({ ...prev, serviceId: defaultServiceId }));
+    }
+  }, [defaultServiceId]);
+
   const [formData, setFormData] = useState({
     propertyType: '',
     propertyAddress: '',

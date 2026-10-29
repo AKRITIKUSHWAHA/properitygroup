@@ -1,5 +1,17 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, MapPin, Check, FileText } from 'lucide-react';
+import {
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  ShieldCheck,
+  MapPin,
+  Check,
+  FileText,
+  Clock,
+  Phone,
+  Building,
+  HelpCircle
+} from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -19,123 +31,154 @@ export function HomebuyerSurveyPage() {
   );
 
   const breadcrumbs = [
+    { label: "Home", path: "/" },
     { label: "Services", path: "/#services" },
     { label: service.name, path: service.path }
   ];
 
   return (
-    <div className="service-page">
-      {/* Header Banner */}
-      <header className="page-header">
+    <div className="service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${service.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">{service.badge}</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {service.ricsBenchmark}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">{service.badge}</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {service.ricsBenchmark}
+              </span>
+            </div>
+            <h1 className="page-header-title">{service.name}</h1>
+            <p className="page-header-desc">{service.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>RICS Benchmark Level 2</span>
+              </span>
+              <span className="service-meta-pill">
+                <Clock size={14} className="text-white" />
+                <span>3 – 5 Business Day Turnaround</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Conventional Homes Built Post-1900</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Surveyor Phone Consultation Included</span>
+              </span>
+            </div>
           </div>
-          <h1>{service.name}</h1>
-          <p className="page-header-desc">{service.tagline}</p>
         </Container>
       </header>
 
       {/* Main Content & Quote Request Grid */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.2fr 0.8fr', alignItems: 'start' }}>
+          <div className="service-detail-grid">
             {/* Left Column: Deep Technical Guidance */}
             <div>
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h2>What is a Homebuyer Survey (Level 2)?</h2>
-                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)' }}>
+              {/* Overview Card */}
+              <div className="service-overview-card">
+                <h2 className="service-section-title">What is an RICS Homebuyer Survey (Level 2)?</h2>
+                <p style={{ fontSize: 'var(--font-size-md)', lineHeight: '1.7', color: 'var(--color-main-text)', marginBottom: '1rem' }}>
                   The RICS Level 2 Homebuyer Survey is the UK’s most commissioned residential inspection, purposefully engineered for modern and conventional properties in reasonable structural order. It provides an objective assessment of visible structural elements, roof coverings, fabric condition, and building services using an intuitive traffic-light condition rating.
                 </p>
-                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)' }}>
+                <p style={{ lineHeight: '1.7', color: 'var(--color-muted-text)', margin: 0 }}>
                   Unlike a basic mortgage valuation (which merely verifies whether the asset represents adequate security for a lender’s loan), our Level 2 Homebuyer Report is commissioned entirely on your behalf to uncover urgent repairs, hidden defects, damp indications, and future maintenance liabilities before legal exchange of contracts.
                 </p>
               </div>
 
-              {/* What the Inspection Includes */}
-              <div style={{ marginBottom: 'var(--space-8)', backgroundColor: 'var(--color-light-grey)', padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
-                  What the Level 2 Inspection Includes:
+              {/* Inclusions Card */}
+              <div className="service-inclusions-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
+                  Comprehensive Inspection Scope:
                 </h3>
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="inclusions-grid-2">
                   {service.inclusions.map((item, idx) => (
-                    <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
-                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Who is This Service Suitable For */}
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
-                  Property Suitability Criteria
-                </h3>
-                <p style={{ marginBottom: 'var(--space-4)', color: 'var(--color-muted-text)', fontSize: 'var(--font-size-sm)' }}>
-                  The Level 2 survey is designed specifically for conventional residential forms:
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-3)' }}>
-                  {service.recommendedFor.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: 'var(--space-3)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: 'var(--color-white)',
-                        fontSize: 'var(--font-size-xs)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}
-                    >
-                      <Check size={14} style={{ color: 'var(--color-primary-navy)' }} />
+                    <div key={idx} className="inclusion-point-item">
+                      <CheckCircle2 size={18} style={{ color: 'var(--color-success)', flexShrink: 0, marginTop: '2px' }} />
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Property Suitability Criteria */}
+              <div className="service-overview-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
+                  Property Suitability Criteria
+                </h3>
+                <p style={{ marginBottom: '1rem', color: 'var(--color-muted-text)', fontSize: '0.9rem' }}>
+                  The Level 2 survey is designed specifically for conventional residential forms:
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                  {service.recommendedFor.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="service-suitability-pill"
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontWeight: 600,
+                        color: '#0F172A'
+                      }}
+                    >
+                      <Check size={14} style={{ color: '#142A43', flexShrink: 0 }} />
+                      <span style={{ color: '#0F172A', fontWeight: 600 }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Traffic Light System Explanation */}
-              <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
+              <div className="service-overview-card">
+                <h3 className="service-section-title" style={{ fontSize: '1.25rem' }}>
                   RICS Condition Ratings Explained
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                  <div style={{ display: 'flex', gap: '1rem', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }}>
-                    <strong style={{ color: 'var(--color-success)', minWidth: '70px' }}>Condition 1:</strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-main-text)' }}>No repair is currently needed. Normal maintenance must be undertaken in the usual way.</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)' }}>
+                    <strong style={{ color: 'var(--color-success)', minWidth: '85px', flexShrink: 0 }}>Condition 1:</strong>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>No repair is currently needed. Normal maintenance must be undertaken in the usual way.</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)' }}>
-                    <strong style={{ color: 'var(--color-warning)', minWidth: '70px' }}>Condition 2:</strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-main-text)' }}>Defects requiring repair or replacement, but are not considered to be serious or urgent.</span>
+                  <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)' }}>
+                    <strong style={{ color: 'var(--color-warning)', minWidth: '85px', flexShrink: 0 }}>Condition 2:</strong>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>Defects requiring repair or replacement, but are not considered to be serious or urgent.</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)' }}>
-                    <strong style={{ color: 'var(--color-danger)', minWidth: '70px' }}>Condition 3:</strong>
-                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-main-text)' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
+                  <div style={{ display: 'flex', gap: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', backgroundColor: 'var(--color-danger-bg)', border: '1px solid var(--color-danger-border)' }}>
+                    <strong style={{ color: 'var(--color-danger)', minWidth: '85px', flexShrink: 0 }}>Condition 3:</strong>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--color-main-text)' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
                   </div>
                 </div>
               </div>
 
               {/* Local Regional Context */}
-              <div style={{ padding: 'var(--space-5)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-                  <MapPin size={18} style={{ color: 'var(--color-primary-navy)' }} />
-                  <span>Regional Focus: London &amp; Home Counties</span>
+              <div className="service-regional-card" style={{ padding: '1.5rem', border: '1px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                  <MapPin size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Regional Focus: London &amp; Home Counties</span>
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-muted-text)' }}>
+                <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.6, fontWeight: 500 }}>
                   Our surveyors possess specific insight into 20th-century housing stock across London boroughs, Surrey commuter expansions, Oxford residential belts, Buckinghamshire suburbs, and Berkshire towns.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Sticky Quote Form */}
-            <div style={{ position: 'sticky', top: '90px' }}>
+            <div className="service-quote-sidebar">
               <QuoteRequestForm defaultServiceId={service.id} />
             </div>
           </div>
@@ -151,4 +194,3 @@ export function HomebuyerSurveyPage() {
     </div>
   );
 }
-

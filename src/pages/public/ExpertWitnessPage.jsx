@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scale, ShieldCheck, CheckCircle2, FileText, Users, ArrowRight, Gavel, HelpCircle, Phone, Mail } from 'lucide-react';
+import { Scale, ShieldCheck, CheckCircle2, FileText, Users, ArrowRight, Gavel, HelpCircle, Phone, Mail, Building } from 'lucide-react';
 import { expertWitnessService } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
@@ -21,26 +21,52 @@ export function ExpertWitnessPage() {
   ];
 
   return (
-    <div className="expert-witness-page">
-      {/* Header Banner */}
-      <header className="page-header" style={{ borderBottomColor: 'var(--color-accent-gold)' }}>
+    <div className="expert-witness-page service-page luxury-site-canvas">
+      {/* High-Impact Architectural Header Banner */}
+      <header
+        className="service-header-hero"
+        style={{ backgroundImage: `url(${expertWitnessService.imageUrl})` }}
+      >
+        <div className="service-header-overlay" />
         <Container>
-          <Breadcrumbs items={breadcrumbs} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-            <Badge variant="gold">Civil Litigation Practice</Badge>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-silver-light)' }}>
-              {expertWitnessService.cprCompliance}
-            </span>
+          <div className="service-header-content">
+            <Breadcrumbs items={breadcrumbs} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: 'var(--space-2)' }}>
+              <Badge variant="gold">Civil Litigation Practice</Badge>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: '#CBD5E1', fontWeight: 600 }}>
+                {expertWitnessService.cprCompliance}
+              </span>
+            </div>
+            <h1 className="page-header-title">{expertWitnessService.name}</h1>
+            <p className="page-header-desc">{expertWitnessService.tagline}</p>
+
+            {/* Service Metadata Strip */}
+            <div className="service-meta-strip">
+              <span className="service-meta-pill">
+                <Scale size={14} className="text-white" />
+                <span>Civil Procedure Rules (CPR) Part 35</span>
+              </span>
+              <span className="service-meta-pill">
+                <ShieldCheck size={14} className="text-white" />
+                <span>Overriding Duty to the Court</span>
+              </span>
+              <span className="service-meta-pill">
+                <Building size={14} className="text-white" />
+                <span>Scott Schedules &amp; Quantum Diagnostics</span>
+              </span>
+              <span className="service-meta-pill">
+                <Phone size={14} className="text-white" />
+                <span>Solicitor &amp; Direct Litigation Instructions</span>
+              </span>
+            </div>
           </div>
-          <h1>{expertWitnessService.name}</h1>
-          <p className="page-header-desc">{expertWitnessService.tagline}</p>
         </Container>
       </header>
 
       {/* Main Section */}
       <section className="section">
         <Container>
-          <div className="grid-2" style={{ gridTemplateColumns: '1.15fr 0.85fr', alignItems: 'start' }}>
+          <div className="expert-detail-grid">
             {/* Left Column: Legal Context & Scope */}
             <div>
               {/* Introduction */}
@@ -56,24 +82,26 @@ export function ExpertWitnessPage() {
 
               {/* Target Audiences (Master Spec Part 7 Item 4) */}
               <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
+                <h3 style={{ marginBottom: 'var(--space-4)', color: '#FFFFFF' }}>
                   Intended Audiences &amp; Instructing Parties
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
                   {expertWitnessService.targetAudiences.map((aud, idx) => (
                     <div
                       key={idx}
+                      className="expert-audience-card"
                       style={{
                         padding: 'var(--space-4)',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-border-subtle)',
-                        backgroundColor: 'var(--color-light-grey)'
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
                       }}
                     >
-                      <h4 style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-primary-navy)', marginBottom: '0.25rem' }}>
+                      <h4 style={{ fontSize: 'var(--font-size-sm)', color: '#0F172A', fontWeight: 700, marginBottom: '0.25rem' }}>
                         {aud.title}
                       </h4>
-                      <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)', margin: 0 }}>
+                      <p style={{ fontSize: 'var(--font-size-xs)', color: '#334155', fontWeight: 500, margin: 0, lineHeight: 1.55 }}>
                         {aud.description}
                       </p>
                     </div>
@@ -83,34 +111,35 @@ export function ExpertWitnessPage() {
 
               {/* Dispute Categories Covered */}
               <div style={{ marginBottom: 'var(--space-8)' }}>
-                <h3 style={{ marginBottom: 'var(--space-3)', color: 'var(--color-primary-navy)' }}>
+                <h3 style={{ marginBottom: 'var(--space-3)', color: '#FFFFFF' }}>
                   Dispute Disciplines &amp; Case Typologies
                 </h3>
                 <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: 'var(--font-size-sm)' }}>
                   {expertWitnessService.disputeCategories.map((item, idx) => (
                     <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Scale size={16} style={{ color: 'var(--color-accent-gold)', flexShrink: 0 }} />
-                      <span>{item}</span>
+                      <span style={{ color: '#E2E8F0', fontWeight: 500 }}>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* 5-Step Instruction Process (Master Spec Part 7 Item 3) */}
-              <div style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)', backgroundColor: 'var(--color-white)', border: '1px solid var(--color-border-medium)', borderRadius: 'var(--radius-lg)' }}>
-                <h3 style={{ marginBottom: 'var(--space-4)', color: 'var(--color-primary-navy)' }}>
+              <div className="expert-process-card" style={{ marginBottom: 'var(--space-8)', padding: 'var(--space-6)', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 'var(--radius-lg)', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)' }}>
+                <h3 style={{ marginBottom: 'var(--space-4)', color: '#0F172A', fontWeight: 700 }}>
                   The Expert Witness Instruction Process
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                   {expertWitnessService.instructionProcess.map(step => (
                     <div key={step.step} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                       <div
+                        className="step-number-badge"
                         style={{
                           width: '28px',
                           height: '28px',
                           borderRadius: '50%',
-                          backgroundColor: 'var(--color-primary-navy)',
-                          color: 'var(--color-white)',
+                          backgroundColor: '#142A43',
+                          color: '#FFFFFF',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -122,10 +151,10 @@ export function ExpertWitnessPage() {
                         {step.step}
                       </div>
                       <div>
-                        <h4 style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-primary-navy)', marginBottom: '0.25rem' }}>
+                        <h4 style={{ fontSize: 'var(--font-size-sm)', color: '#0F172A', fontWeight: 700, marginBottom: '0.25rem' }}>
                           {step.title}
                         </h4>
-                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)', margin: 0 }}>
+                        <p style={{ fontSize: 'var(--font-size-xs)', color: '#334155', fontWeight: 500, margin: 0, lineHeight: 1.55 }}>
                           {step.description}
                         </p>
                       </div>
@@ -135,19 +164,19 @@ export function ExpertWitnessPage() {
               </div>
 
               {/* Professional Credentials & Transparency Safeguard (Master Spec Part 7 Item 2) */}
-              <div style={{ padding: 'var(--space-5)', backgroundColor: 'var(--color-light-grey-alt)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
-                <h4 style={{ color: 'var(--color-primary-navy)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)' }}>
-                  <ShieldCheck size={18} />
-                  <span>Professional Credentials Notice</span>
+              <div className="expert-credentials-notice" style={{ padding: 'var(--space-5)', backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', border: '1px solid #CBD5E1', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)' }}>
+                <h4 style={{ color: '#0F172A', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-2)', fontWeight: 700 }}>
+                  <ShieldCheck size={18} style={{ color: '#142A43' }} />
+                  <span style={{ color: '#0F172A' }}>Professional Credentials Notice</span>
                 </h4>
-                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)', lineHeight: '1.6' }}>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: '#334155', lineHeight: '1.6', fontWeight: 500, margin: 0 }}>
                   In accordance with professional rules, individual surveyor CVs, full statements of courtroom appearance experience, and practicing certificate numbers are confirmed upon formal instruction inquiry. No unverified legal appointments or court credentials are fabricated on this public website.
                 </p>
               </div>
             </div>
 
             {/* Right Column: Separate Expert Witness Enquiry Form (Master Spec Part 7 Item 5) */}
-            <div id="instruction" style={{ position: 'sticky', top: '90px' }}>
+            <div id="instruction" className="service-quote-sidebar">
               <ExpertWitnessForm />
             </div>
           </div>

@@ -15,7 +15,7 @@ export function CredentialsBanner() {
           {/* RICS Standard */}
           <div className="credential-item">
             <div className="credential-icon" aria-hidden="true">
-              <ShieldCheck size={22} className="text-gold" />
+              <ShieldCheck size={22} className="text-white" style={{ color: '#FFFFFF' }} />
             </div>
             <div className="credential-content">
               <div className="credential-title">RICS Standards Aligned</div>
@@ -26,7 +26,7 @@ export function CredentialsBanner() {
           {/* Independent Red Book Valuers */}
           <div className="credential-item">
             <div className="credential-icon" aria-hidden="true">
-              <Award size={22} className="text-gold" />
+              <Award size={22} className="text-white" style={{ color: '#FFFFFF' }} />
             </div>
             <div className="credential-content">
               <div className="credential-title">Independent Valuers</div>
@@ -37,7 +37,7 @@ export function CredentialsBanner() {
           {/* CPR Part 35 Litigation */}
           <div className="credential-item">
             <div className="credential-icon" aria-hidden="true">
-              <Scale size={22} className="text-gold" />
+              <Scale size={22} className="text-white" style={{ color: '#FFFFFF' }} />
             </div>
             <div className="credential-content">
               <div className="credential-title">CPR Part 35 Compliant</div>
@@ -48,7 +48,7 @@ export function CredentialsBanner() {
           {/* PCA Moisture Standards */}
           <div className="credential-item">
             <div className="credential-icon" aria-hidden="true">
-              <CheckCircle2 size={22} className="text-gold" />
+              <CheckCircle2 size={22} className="text-white" style={{ color: '#FFFFFF' }} />
             </div>
             <div className="credential-content">
               <div className="credential-title">PCA Aligned Diagnostics</div>
@@ -64,7 +64,7 @@ export function CredentialsBanner() {
             onClick={() => setShowModal(true)}
             className="credentials-notice-btn"
           >
-            <Info size={14} aria-hidden="true" className="text-gold" />
+            <Info size={14} aria-hidden="true" className="text-white" style={{ color: '#CBD5E1' }} />
             <span>View Professional Standards, Registration &amp; Accreditation Notice</span>
           </button>
         </div>
@@ -89,7 +89,6 @@ export function CredentialsBanner() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '1.5rem',
-              paddingTop: '6rem',
               overflowY: 'auto'
             }}
             role="dialog"
@@ -108,7 +107,8 @@ export function CredentialsBanner() {
                 boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05)',
                 border: '1px solid #E2E8F0',
                 position: 'relative',
-                maxHeight: 'calc(100vh - 8rem)',
+                margin: 'auto',
+                maxHeight: 'min(580px, calc(100vh - 4rem))',
                 overflowY: 'auto'
               }}
               onClick={(e) => e.stopPropagation()}
