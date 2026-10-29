@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
+import { useRolePermissions } from '../mock/permissions';
 
 // Icon map for dynamically rendering Lucide icons by string name
 const ICON_MAP = {
@@ -80,9 +81,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
     return user?.role || 'super_admin';
   };
 
+  const { isMenuPermitted, getPermittedItemsCount } = useRolePermissions();
+
   const activeRole = getActiveRole();
   const roleConfig = ROLE_NAVIGATION[activeRole] || ROLE_NAVIGATION.super_admin;
-  const menuItems = roleConfig.items || [];
+  const allMenuItems = roleConfig.items || [];
+  const menuItems = allMenuItems.filter((item) => isMenuPermitted(activeRole, item.id));
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -230,9 +234,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 Switch Role / Menus
               </div>
               {[
-                { id: 'customer', label: 'Customer', count: 8 },
-                { id: 'surveyor', label: 'Surveyor', count: 6 },
-                { id: 'super_admin', label: 'Admin', count: 10 },
+                { id: 'customer', label: 'Customer', count: getPermittedItemsCount('customer') },
+                { id: 'surveyor', label: 'Surveyor', count: getPermittedItemsCount('surveyor') },
+                { id: 'super_admin', label: 'Admin', count: getPermittedItemsCount('super_admin') },
               ].map((r) => {
                 const isCurrent = activeRole === r.id;
                 return (
