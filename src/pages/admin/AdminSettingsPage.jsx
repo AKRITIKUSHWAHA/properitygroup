@@ -1,30 +1,16 @@
 import React, { useState } from 'react';
 import {
-  Settings,
   PoundSterling,
-  Target,
   Mail,
-  MapPin,
   Save,
   CheckCircle2,
-  SlidersHorizontal,
-  Plus,
-  Edit,
-  Eye,
   Clock,
-  Sparkles,
   RefreshCw,
-  Send,
-  Check,
-  AlertCircle,
-  ShieldCheck,
-  Tag,
-  ArrowRight,
+  Eye,
   Zap,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
-import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { useEmailAutomations } from '../../mock/emailAutomations';
 import { EmailTemplatePreviewModal } from '../../components/admin/EmailTemplatePreviewModal';
@@ -40,11 +26,12 @@ export const AdminSettingsPage = () => {
     renderTemplate,
   } = useEmailAutomations();
 
-  // Exactly the 4 tabs requested by user:
-  // (survey types and pricing, lead sources, email automations, service areas)
-  const [activeTab, setActiveTab] = useState('templates'); // default to templates for immediate verification
+  // Exactly the 2 tabs matching client's workflow:
+  // 1. Email Automations & Workflows (6 SurveyBooker stages)
+  // 2. Survey Types & Pricing (RICS Level 2, Level 3, Valuation rate card)
+  const [activeTab, setActiveTab] = useState('templates');
 
-  // Tab 1: Survey Types & Pricing State
+  // Survey Types & Pricing State
   const [surveyTypes, setSurveyTypes] = useState([
     { id: '1', name: 'RICS Level 2 Home Survey', baseFee: 650, duration: '3.0 Hours', scope: 'Standard residential properties in reasonable condition' },
     { id: '2', name: 'RICS Level 3 Building Survey', baseFee: 1450, duration: '5.0 Hours', scope: 'Period, listed, altered, or dilapidated structures' },
@@ -54,32 +41,12 @@ export const AdminSettingsPage = () => {
     { id: '6', name: 'Expert Witness (CPR Part 35)', baseFee: 2400, duration: '8.0 Hours', scope: 'Court litigation, boundary disputes, disrepair claims' },
   ]);
 
-  // Tab 2: Lead Sources State
-  const [leadSources, setLeadSources] = useState([
-    { id: 'src-1', name: 'Website Organic (SEO)', active: true, cpl: '£14.20', conversion: '74.2%' },
-    { id: 'src-2', name: 'Estate Agent Referrals', active: true, cpl: '£0.00 (Panel)', conversion: '82.5%' },
-    { id: 'src-3', name: 'Local Surveyors Direct', active: true, cpl: '£28.00', conversion: '68.0%' },
-    { id: 'src-4', name: 'Google Ads (Search PPC)', active: true, cpl: '£42.50', conversion: '61.4%' },
-    { id: 'src-5', name: 'Conveyancing Solicitor Panel', active: true, cpl: '£0.00 (B2B)', conversion: '88.1%' },
-    { id: 'src-6', name: 'Expert Witness Direct Referral', active: true, cpl: '£0.00 (Legal)', conversion: '92.0%' },
-  ]);
-
-  // Tab 4: Service Areas State
-  const [serviceAreas, setServiceAreas] = useState([
-    { id: 'area-1', name: 'London South West & Surrey', postcodes: 'SW, KT, TW, GU', leadSurveyor: 'David Thorne MRICS', standardTravel: 'Included' },
-    { id: 'area-2', name: 'London West & Central', postcodes: 'W, WC, NW, EC', leadSurveyor: 'Oliver Hughes MRICS', standardTravel: 'Included' },
-    { id: 'area-3', name: 'Surrey Hills & Outer Border', postcodes: 'RH, CR, SM', leadSurveyor: 'Claire Bennet AssocRICS', standardTravel: 'Included' },
-    { id: 'area-4', name: 'Thames Valley & Berkshire', postcodes: 'OX, RG, HP, SL', leadSurveyor: 'Fiona Macintyre MRICS', standardTravel: '£40 surcharge outside M25' },
-  ]);
-
   // Preview & Edit Automation Modal
   const [previewingAutomation, setPreviewingAutomation] = useState(null);
 
   const tabs = [
-    { id: 'pricing', label: 'Survey Types & Pricing' },
-    { id: 'leads', label: 'Lead Sources' },
     { id: 'templates', label: 'Email Automations & Workflows' },
-    { id: 'areas', label: 'Service Areas' },
+    { id: 'pricing', label: 'Survey Types & Pricing' },
   ];
 
   const handleUpdatePrice = (id, newPrice) => {
@@ -93,17 +60,6 @@ export const AdminSettingsPage = () => {
       type: 'success',
       title: 'Pricing Matrix Saved',
       message: 'Base survey fees have been updated across quote calculations.',
-    });
-  };
-
-  const toggleLeadSource = (id) => {
-    setLeadSources((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s))
-    );
-    addToast({
-      type: 'info',
-      title: 'Lead Source Updated',
-      message: 'Source channel status toggled.',
     });
   };
 
@@ -124,118 +80,16 @@ export const AdminSettingsPage = () => {
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       <PageHeader
         title="System Governance & Settings"
-        subtitle="Configure survey pricing matrices, marketing lead sources, 6-step customer email automations, and regional UK coverage areas."
+        subtitle="Configure 6-stage customer email automation triggers and RICS survey fee rate cards."
         breadcrumb={['Admin', 'Settings']}
       />
 
-      {/* Tabs */}
+      {/* Clean Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* TAB 1: SURVEY TYPES & PRICING */}
-      {activeTab === 'pricing' && (
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                <PoundSterling className="w-5 h-5 text-emerald-600" />
-                <span>RICS Survey Products & Baseline Rate Card</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Configure baseline starting fees, estimated on-site survey inspection durations, and official scope.
-              </p>
-            </div>
-            <button
-              onClick={handleSavePricing}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Rate Card</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {surveyTypes.map((type) => (
-              <div
-                key={type.id}
-                className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300 transition-all space-y-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-bold text-slate-900 text-sm">{type.name}</div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-xs font-bold text-slate-400">£</span>
-                    <input
-                      type="number"
-                      value={type.baseFee}
-                      onChange={(e) => handleUpdatePrice(type.id, e.target.value)}
-                      className="w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-sm font-black font-mono text-[#0B1F4D] text-right focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                    />
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-500 leading-relaxed">{type.scope}</p>
-
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-[11px] text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Typical Duration: {type.duration}</span>
-                  </span>
-                  <span className="font-semibold text-emerald-600">Active in Quote Estimator</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: LEAD SOURCES */}
-      {activeTab === 'leads' && (
-        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                <Target className="w-5 h-5 text-[#2563EB]" />
-                <span>Marketing Lead Sources & Attribution</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Track inquiry acquisition channels, cost-per-lead (CPL), and conversion rates.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {leadSources.map((source) => (
-              <div
-                key={source.id}
-                className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50 flex items-center justify-between gap-4 text-xs"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${source.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                  <div>
-                    <span className="font-bold text-slate-900 block">{source.name}</span>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      CPL: {source.cpl} • Conversion Rate: {source.conversion}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => toggleLeadSource(source.id)}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                    source.active
-                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                      : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                  }`}
-                >
-                  {source.active ? 'Active' : 'Disabled'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: CUSTOMER EMAIL AUTOMATIONS & STAGE TRIGGERS */}
+      {/* ========================================================= */}
+      {/* TAB 1: CUSTOMER EMAIL AUTOMATIONS & WORKFLOWS             */}
+      {/* ========================================================= */}
       {activeTab === 'templates' && (
         <div className="space-y-6">
           {/* Top Banner: Metric Highlights & Controls */}
@@ -250,7 +104,7 @@ export const AdminSettingsPage = () => {
                   Client Journey Email Automations
                 </h3>
                 <p className="text-xs text-slate-200 leading-relaxed">
-                  Har milestone change par customer ko automated professional email send hota hai. Aap har step ko yahan se On / Off kar sakte hain aur templates customize kar sakte hain.
+                  Automated email notifications triggered on client journey milestones. Toggle stages active or paused, customize templates, and configure RICS-compliant email communications.
                 </p>
               </div>
 
@@ -394,7 +248,7 @@ export const AdminSettingsPage = () => {
 
             {sentLogs.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                Stage move hone par automated emails yahan real-time record honge. (Try advancing any job stage in Job Details).
+                Automated emails triggered by workflow stage advancements will appear here in real-time.
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -429,37 +283,57 @@ export const AdminSettingsPage = () => {
         </div>
       )}
 
-      {/* TAB 4: SERVICE AREAS */}
-      {activeTab === 'areas' && (
+      {/* ========================================================= */}
+      {/* TAB 2: SURVEY TYPES & PRICING RATE CARD                   */}
+      {/* ========================================================= */}
+      {activeTab === 'pricing' && (
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div>
               <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-rose-500" />
-                <span>Regional UK Service Areas & Surveyor Allocations</span>
+                <PoundSterling className="w-5 h-5 text-emerald-600" />
+                <span>RICS Survey Products & Baseline Rate Card</span>
               </h3>
               <p className="text-xs text-slate-500">
-                Postcode routing rules ensuring optimal travel radius and mileage efficiency.
+                Configure baseline starting fees, estimated on-site survey inspection durations, and official scope.
               </p>
             </div>
+            <button
+              onClick={handleSavePricing}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save Rate Card</span>
+            </button>
           </div>
 
-          <div className="space-y-3">
-            {serviceAreas.map((area) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {surveyTypes.map((type) => (
               <div
-                key={area.id}
-                className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50 space-y-2 text-xs"
+                key={type.id}
+                className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300 transition-all space-y-3"
               >
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-900 text-sm">{area.name}</h4>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-white border border-slate-200 font-mono font-bold text-[#0B1F4D]">
-                    {area.postcodes}
-                  </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-bold text-slate-900 text-sm">{type.name}</div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-bold text-slate-400">£</span>
+                    <input
+                      type="number"
+                      value={type.baseFee}
+                      onChange={(e) => handleUpdatePrice(type.id, e.target.value)}
+                      className="w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-sm font-black font-mono text-[#0B1F4D] text-right focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600 pt-1">
-                  <div>Lead Surveyor: <strong>{area.leadSurveyor}</strong></div>
-                  <div>Travel Policy: <strong>{area.standardTravel}</strong></div>
+                <p className="text-xs text-slate-500 leading-relaxed">{type.scope}</p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-[11px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Typical Duration: {type.duration}</span>
+                  </span>
+                  <span className="font-semibold text-emerald-600">Active in Quote Estimator</span>
                 </div>
               </div>
             ))}
