@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MapPin, Check, Building2, Compass, ShieldCheck } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { SectionHeading } from './SectionHeading';
@@ -6,7 +7,26 @@ import { Button } from './Button';
 
 export function CoverageMap({ showHeading = true, isCompact = false }) {
   const { coverageAreas } = siteConfig;
-  const [selectedArea, setSelectedArea] = useState(coverageAreas[0].id);
+  const location = useLocation();
+
+  const [selectedArea, setSelectedArea] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const area = searchParams.get('area');
+      if (area && coverageAreas.some(a => a.id === area.toLowerCase())) {
+        return area.toLowerCase();
+      }
+    }
+    return coverageAreas[0].id;
+  });
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const area = searchParams.get('area');
+    if (area && coverageAreas.some(a => a.id === area.toLowerCase())) {
+      setSelectedArea(area.toLowerCase());
+    }
+  }, [location.search, coverageAreas]);
 
   const activeAreaObj = coverageAreas.find(a => a.id === selectedArea) || coverageAreas[0];
 

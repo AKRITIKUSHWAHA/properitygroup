@@ -1,46 +1,92 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, Building, User, Phone, Clock, ShieldCheck, MapPin, ArrowRight } from 'lucide-react';
+import {
+  Menu,
+  ChevronDown,
+  Building,
+  User,
+  Phone,
+  Clock,
+  ShieldCheck,
+  MapPin,
+  ArrowRight,
+  HelpCircle,
+  FileCheck2,
+  Scale
+} from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
-import { approvedServices } from '../../config/services';
-import { Button } from '../common/Button';
+import { navigationCategories } from '../../config/navigation';
 import { MobileNavigation } from './MobileNavigation';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'services' | 'coverage' | 'about' | null
+  const headerNavRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
   const location = useLocation();
 
-  // Close dropdown on outside click or escape
+  const isHomePage = location.pathname === '/';
+  const isServicesActive = location.pathname.startsWith('/services');
+  const isCoverageActive = location.pathname === '/contact' && (location.search.includes('area=') || location.hash === '#coverage');
+  const isAboutActive = location.pathname === '/contact' && !isCoverageActive;
+
+  // Clear hover debounce timeout
+  const clearHoverTimeout = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+
+  // Open dropdown with cancel of any closing timeout
+  const handleMouseEnter = (dropdownKey) => {
+    clearHoverTimeout();
+    setActiveDropdown(dropdownKey);
+  };
+
+  // Graceful debounce on mouse leave so user can move to dropdown menu without flicker
+  const handleMouseLeave = () => {
+    clearHoverTimeout();
+    hoverTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 180);
+  };
+
+  // Toggle on click (for keyboard / tap)
+  const toggleDropdown = (dropdownKey) => {
+    clearHoverTimeout();
+    setActiveDropdown(prev => (prev === dropdownKey ? null : dropdownKey));
+  };
+
+  // Close dropdown on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setServicesDropdownOpen(false);
+      if (headerNavRef.current && !headerNavRef.current.contains(event.target)) {
+        setActiveDropdown(null);
       }
     };
-    const handleEscape = (event) => {
+
+    const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
-        setServicesDropdownOpen(false);
+        setActiveDropdown(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
+      clearHoverTimeout();
     };
   }, []);
 
   // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
-    setServicesDropdownOpen(false);
-  }, [location.pathname]);
-
-  const isServicesActive = location.pathname.startsWith('/services');
-  const isHomePage = location.pathname === '/';
+    setActiveDropdown(null);
+  }, [location.pathname, location.search, location.hash]);
 
   // Smooth scroll to quote section if already on homepage
   const handleQuoteClick = (e) => {
@@ -71,7 +117,11 @@ export function Header() {
                 </span>
               </div>
               <div className="topbar-items">
-                <a href={`tel:${siteConfig.contact.telephone}`} className="topbar-item topbar-phone" title="Call Survey Dispatch Hotline">
+                <a
+                  href={`tel:${siteConfig.contact.telephone}`}
+                  className="topbar-item topbar-phone"
+                  title="Call Survey Dispatch Hotline"
+                >
                   <Phone size={13} aria-hidden="true" />
                   <span>Survey Hotline: <strong>{siteConfig.contact.telephoneDisplay}</strong></span>
                 </a>
@@ -88,7 +138,7 @@ export function Header() {
       {/* Main Navigation Bar */}
       <div className="header-main">
         <div className="header-container">
-          <div className="header-main-inner">
+          <div className="header-main-inner" ref={headerNavRef}>
             {/* Site Logo Emblem matching Luxury Mockup */}
             <Link to="/" className="site-logo" aria-label="Surveying Practice - Home">
               <div className="logo-badge" aria-hidden="true">
@@ -102,17 +152,22 @@ export function Header() {
 
             {/* Desktop Navigation */}
             <nav className="desktop-nav" aria-label="Main Navigation">
+              {/* Home */}
               <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 Home
               </NavLink>
 
-              {/* Services Dropdown */}
-              <div className="nav-dropdown-wrapper" ref={dropdownRef} onMouseEnter={() => setServicesDropdownOpen(true)} onMouseLeave={() => setServicesDropdownOpen(false)}>
+              {/* 1. Survey Services Dropdown */}
+              <div
+                className="nav-dropdown-wrapper"
+                onMouseEnter={() => handleMouseEnter('services')}
+                onMouseLeave={handleMouseLeave}
+              >
                 <button
                   type="button"
-                  className={`nav-dropdown-trigger ${isServicesActive ? 'active' : ''}`}
-                  onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                  aria-expanded={servicesDropdownOpen}
+                  className={`nav-dropdown-trigger ${isServicesActive || activeDropdown === 'services' ? 'active' : ''}`}
+                  onClick={() => toggleDropdown('services')}
+                  aria-expanded={activeDropdown === 'services'}
                   aria-haspopup="true"
                   aria-label="Survey Services Menu"
                 >
@@ -120,41 +175,205 @@ export function Header() {
                   <ChevronDown
                     size={14}
                     aria-hidden="true"
+                    className="dropdown-chevron"
                     style={{
-                      transform: servicesDropdownOpen ? 'rotate(180deg)' : 'none',
+                      transform: activeDropdown === 'services' ? 'rotate(180deg)' : 'none',
                       transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                     }}
                   />
                 </button>
 
-                {servicesDropdownOpen && (
-                  <div className="nav-dropdown-menu" role="menu">
-                    {approvedServices.map(service => (
+                {activeDropdown === 'services' && (
+                  <div
+                    className="nav-dropdown-menu services-dropdown-menu"
+                    role="menu"
+                    aria-label="Survey Services Submenu"
+                  >
+                    <div className="dropdown-menu-header">
+                      <span className="dropdown-menu-caption">Independent Technical Inspections</span>
+                    </div>
+
+                    <div className="dropdown-items-grid">
+                      {navigationCategories.services.children.map(service => (
+                        <Link
+                          key={service.id}
+                          to={service.path}
+                          className="dropdown-item"
+                          role="menuitem"
+                          onClick={() => setActiveDropdown(null)}
+                        >
+                          <div className="dropdown-item-top">
+                            <span className="dropdown-item-title">{service.name}</span>
+                            <span className="dropdown-item-badge">{service.badge}</span>
+                          </div>
+                          <span className="dropdown-item-desc">{service.description}</span>
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="dropdown-menu-footer">
                       <Link
-                        key={service.id}
-                        to={service.path}
-                        className="dropdown-item"
-                        role="menuitem"
-                        onClick={() => setServicesDropdownOpen(false)}
+                        to="/contact#faqs"
+                        className="dropdown-footer-link"
+                        onClick={() => setActiveDropdown(null)}
                       >
-                        <div className="dropdown-item-top">
-                          <span className="dropdown-item-title">{service.name}</span>
-                          <span className="dropdown-item-badge">{service.badge}</span>
-                        </div>
-                        <span className="dropdown-item-desc">{service.tagline}</span>
+                        <HelpCircle size={13} aria-hidden="true" />
+                        <span>Compare Survey Levels &amp; Guidance</span>
+                        <ArrowRight size={13} aria-hidden="true" />
                       </Link>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>
 
-              <NavLink to="/expert-witness" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              {/* 2. Expert Witness */}
+              <NavLink
+                to="/expert-witness"
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              >
                 Expert Witness
               </NavLink>
 
-              <NavLink to="/contact" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                Contact &amp; Coverage
-              </NavLink>
+              {/* 3. Service Coverage Dropdown */}
+              <div
+                className="nav-dropdown-wrapper"
+                onMouseEnter={() => handleMouseEnter('coverage')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  type="button"
+                  className={`nav-dropdown-trigger ${isCoverageActive || activeDropdown === 'coverage' ? 'active' : ''}`}
+                  onClick={() => toggleDropdown('coverage')}
+                  aria-expanded={activeDropdown === 'coverage'}
+                  aria-haspopup="true"
+                  aria-label="Service Coverage Areas Menu"
+                >
+                  <span>Service Coverage</span>
+                  <ChevronDown
+                    size={14}
+                    aria-hidden="true"
+                    className="dropdown-chevron"
+                    style={{
+                      transform: activeDropdown === 'coverage' ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                  />
+                </button>
+
+                {activeDropdown === 'coverage' && (
+                  <div
+                    className="nav-dropdown-menu coverage-dropdown-menu"
+                    role="menu"
+                    aria-label="Service Coverage Submenu"
+                  >
+                    <div className="dropdown-menu-header">
+                      <span className="dropdown-menu-caption">London &amp; The Home Counties</span>
+                    </div>
+
+                    <div className="dropdown-items-grid">
+                      {navigationCategories.coverage.children.map(area => (
+                        <Link
+                          key={area.id}
+                          to={area.path}
+                          className="dropdown-item"
+                          role="menuitem"
+                          onClick={() => setActiveDropdown(null)}
+                        >
+                          <div className="dropdown-item-top">
+                            <span className="dropdown-item-title">{area.name}</span>
+                            <span className="dropdown-item-badge">{area.badge}</span>
+                          </div>
+                          <span className="dropdown-item-desc">{area.description}</span>
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="dropdown-menu-footer">
+                      <Link
+                        to="/contact#coverage"
+                        className="dropdown-footer-link"
+                        onClick={() => setActiveDropdown(null)}
+                      >
+                        <MapPin size={13} aria-hidden="true" />
+                        <span>View All Coverage Areas &amp; Postcodes</span>
+                        <ArrowRight size={13} aria-hidden="true" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. About / Contact Dropdown */}
+              <div
+                className="nav-dropdown-wrapper"
+                onMouseEnter={() => handleMouseEnter('about')}
+                onMouseLeave={handleMouseLeave}
+              >
+                <button
+                  type="button"
+                  className={`nav-dropdown-trigger ${isAboutActive || activeDropdown === 'about' ? 'active' : ''}`}
+                  onClick={() => toggleDropdown('about')}
+                  aria-expanded={activeDropdown === 'about'}
+                  aria-haspopup="true"
+                  aria-label="About & Contact Menu"
+                >
+                  <span>About / Contact</span>
+                  <ChevronDown
+                    size={14}
+                    aria-hidden="true"
+                    className="dropdown-chevron"
+                    style={{
+                      transform: activeDropdown === 'about' ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}
+                  />
+                </button>
+
+                {activeDropdown === 'about' && (
+                  <div
+                    className="nav-dropdown-menu about-dropdown-menu align-right"
+                    role="menu"
+                    aria-label="About and Contact Submenu"
+                  >
+                    <div className="dropdown-menu-header">
+                      <span className="dropdown-menu-caption">Independent Practice Information</span>
+                    </div>
+
+                    <div className="dropdown-items-grid">
+                      {navigationCategories.aboutContact.children.map(item => (
+                        <Link
+                          key={item.id}
+                          to={item.path}
+                          className="dropdown-item"
+                          role="menuitem"
+                          onClick={() => setActiveDropdown(null)}
+                        >
+                          <div className="dropdown-item-top">
+                            <span className="dropdown-item-title">{item.name}</span>
+                          </div>
+                          <span className="dropdown-item-desc">{item.description}</span>
+                        </Link>
+                      ))}
+                    </div>
+
+                    <div className="dropdown-menu-footer dropdown-hotline-footer">
+                      <a
+                        href={`tel:${siteConfig.contact.telephone}`}
+                        className="dropdown-hotline-link"
+                        title="Direct Survey Hotline"
+                      >
+                        <div className="hotline-icon-wrap" aria-hidden="true">
+                          <Phone size={14} />
+                        </div>
+                        <div className="hotline-text-wrap">
+                          <span className="hotline-label">Direct Hotline:</span>
+                          <span className="hotline-number">{siteConfig.contact.telephoneDisplay}</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Header Actions */}
@@ -163,7 +382,11 @@ export function Header() {
                 Sign In
               </Link>
 
-              <a href="/#quote-section" onClick={handleQuoteClick} className="header-quote-glass-btn">
+              <a
+                href={isHomePage ? '#quote-section' : '/contact#quote'}
+                onClick={handleQuoteClick}
+                className="header-quote-glass-btn"
+              >
                 <span>Request a Quote</span>
               </a>
 

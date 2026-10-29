@@ -51,6 +51,18 @@ export function ContactPage() {
     setOpenFaq(openFaq === idx ? null : idx);
   };
 
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    }
+  }, [location.hash, location.pathname, location.search]);
+
   return (
     <div className="contact-page service-page luxury-site-canvas">
       {/* High-Impact Architectural Header Banner */}
@@ -193,7 +205,7 @@ export function ContactPage() {
       </section>
 
       {/* FAQs Section */}
-      <section className="section">
+      <section id="faqs" className="section">
         <Container isNarrow>
           <SectionHeading
             eyebrow="Frequently Asked Questions"

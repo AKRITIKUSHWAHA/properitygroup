@@ -1,41 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ShieldCheck,
-  CheckCircle,
-  FileCheck,
+  CheckCircle2,
   ArrowRight,
   Scale,
-  Award,
-  Clock,
-  Compass,
-  Building,
-  Check,
-  ChevronRight,
   Phone,
-  Mail,
-  HelpCircle,
-  ExternalLink,
-  Info,
-  AlertTriangle,
-  XCircle,
-  CheckCircle2,
-  Calendar,
-  Layers,
-  Sparkles
+  Building,
+  ChevronRight,
+  Clock
 } from 'lucide-react';
-import { approvedServices, expertWitnessService } from '../../config/services';
+import { expertWitnessService } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { Container } from '../../components/common/Container';
-import { SectionHeading } from '../../components/common/SectionHeading';
 import { Button } from '../../components/common/Button';
-import { Badge } from '../../components/common/Badge';
 import { CredentialsBanner } from '../../components/common/CredentialsBanner';
 import { CoverageMap } from '../../components/common/CoverageMap';
 import { StepProcess } from '../../components/common/StepProcess';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
-import { HeroSlider } from '../../components/hero/HeroSlider';
 import { ArchitecturalHero } from '../../components/hero/ArchitecturalHero';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 
@@ -46,20 +29,15 @@ export function HomePage() {
   );
 
   const [prefilledService, setPrefilledService] = useState('homebuyer-survey-level-2');
-  const [selectedComparisonTab, setSelectedComparisonTab] = useState('survey-levels'); // 'survey-levels' | 'valuation-vs-survey'
 
-  const [credentialsRef, credentialsVisible] = useScrollReveal({ threshold: 0.1 });
-  const [servicesRef, servicesVisible] = useScrollReveal({ threshold: 0.08 });
-  const [comparisonRef, comparisonVisible] = useScrollReveal({ threshold: 0.1 });
-  const [trustRef, trustVisible] = useScrollReveal({ threshold: 0.1 });
-  const [expertRef, expertVisible] = useScrollReveal({ threshold: 0.12 });
-  const [processRef, processVisible] = useScrollReveal({ threshold: 0.1 });
-  const [coverageRef, coverageVisible] = useScrollReveal({ threshold: 0.1 });
-  const [quoteSuiteRef, quoteSuiteVisible] = useScrollReveal({ threshold: 0.08 });
-  const [ctaRef, ctaVisible] = useScrollReveal({ threshold: 0.15 });
+  const [credentialsRef, credentialsVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
+  const [expertRef, expertVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
+  const [processRef, processVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
+  const [coverageRef, coverageVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
+  const [quoteSuiteRef, quoteSuiteVisible] = useScrollReveal({ threshold: 0.05, rootMargin: '200px 0px 200px 0px' });
 
   // Smooth scroll to hash on load or page navigation
-  React.useEffect(() => {
+  useEffect(() => {
     if (window.location.hash) {
       const id = window.location.hash.replace('#', '');
       const el = document.getElementById(id);
@@ -71,61 +49,12 @@ export function HomePage() {
     }
   }, []);
 
-  const handleQuickQuoteSelect = ({ serviceId, postcode }) => {
-    if (serviceId) setPrefilledService(serviceId);
-  };
-
   return (
     <div className="home-page luxury-site-canvas">
-      {/* 1. SIGNATURE ARCHITECTURAL LUXURY HERO (MATCHING CLIENT MOCKUP) */}
+      {/* 1. SIGNATURE ARCHITECTURAL HERO & UNIFIED 5-SERVICE SHOWCASE */}
       <ArchitecturalHero onQuoteClick={() => setPrefilledService('homebuyer-survey-level-2')} />
 
-      {/* 1.2. SECONDARY ARCHITECTURAL SERVICES ROW (Valuation & Damp Survey) */}
-      <div className="luxury-hero-canvas luxury-secondary-services-wrap">
-        <div className="luxury-secondary-grid">
-          {/* Card 4: Valuation Report */}
-          <Link to="/services/valuation-report" className="luxury-secondary-card group">
-            <div 
-              className="luxury-secondary-img"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80')`
-              }}
-              role="img"
-              aria-label="Independent RICS Red Book Valuation"
-            >
-              <div className="luxury-card-badge">
-                <span>Red Book</span>
-              </div>
-              <div className="luxury-secondary-overlay">
-                <h3 className="luxury-card-title">Valuation Report</h3>
-                <p className="luxury-card-desc">Help to Buy, Shared Ownership &amp; Probate Appraisals.</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Card 5: Damp Survey */}
-          <Link to="/services/damp-survey" className="luxury-secondary-card group">
-            <div 
-              className="luxury-secondary-img"
-              style={{
-                backgroundImage: `url('https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80')`
-              }}
-              role="img"
-              aria-label="Independent Damp & Moisture Diagnostics"
-            >
-              <div className="luxury-card-badge">
-                <span>Diagnostics</span>
-              </div>
-              <div className="luxury-secondary-overlay">
-                <h3 className="luxury-card-title">Damp Survey</h3>
-                <p className="luxury-card-desc">Scientific moisture investigation without contractor sales.</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* 1.5. PRACTICE LIVE METRICS STRIP (Verified Standards Only) */}
+      {/* 2. PRACTICE LIVE METRICS STRIP (Verified Standards Only) */}
       <div className="practice-metrics-ticker">
         <Container>
           <div className="metrics-ticker-inner">
@@ -152,17 +81,17 @@ export function HomePage() {
         </Container>
       </div>
 
-      {/* 2. CREDENTIALS & ACCREDITATIONS BANNER */}
-      <div ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>
+      {/* 3. CREDENTIALS & ACCREDITATIONS BANNER */}
+      <div id="credentials" ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>
         <CredentialsBanner />
       </div>
 
-      {/* 2.5. ARCHITECTURAL LUXURY EXPERTISE & BUYER PROTECTION */}
+      {/* 4. OBJECTIVE INDEPENDENCE & BUYER PROTECTION PILLARS */}
       <section id="expertise" className="luxury-dark-section" aria-label="Independent Surveying Expertise">
         <Container>
           <div className="luxury-section-header">
             <span className="luxury-section-eyebrow">Pure Independence</span>
-            <h2 className="luxury-section-title">See Beyond the Surface.</h2>
+            <h2 className="luxury-section-title">Independent Buyer Protection</h2>
             <p className="luxury-section-sub">
               A home is an emotional purchase, but structural condition is purely objective. We provide technical clarity without contractor conflicts of interest.
             </p>
@@ -212,204 +141,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 3. WHICH SURVEY DO I NEED? INTERACTIVE DECISION MATRIX */}
-      <section
-        id="comparison-matrix"
-        ref={comparisonRef}
-        className={`section survey-comparison-section reveal-init ${comparisonVisible ? 'is-revealed' : ''}`}
-        aria-label="Survey Level Comparison Guide"
-      >
-        <Container>
-          <SectionHeading
-            eyebrow="Decision Guidance"
-            title="Which Survey Does Your Property Require?"
-            subtitle="Choosing the right survey depends on property age, structural history, and planned alterations. Compare our benchmark inspections below."
-          />
-
-          {/* Interactive Navigation Pills */}
-          <div className="comparison-tabs-pill-wrap" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedComparisonTab === 'survey-levels'}
-              className={`comparison-tab-btn ${selectedComparisonTab === 'survey-levels' ? 'active' : ''}`}
-              onClick={() => setSelectedComparisonTab('survey-levels')}
-            >
-              <Layers size={16} aria-hidden="true" />
-              <span>Level 2 vs Level 3 Comparison</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedComparisonTab === 'valuation-vs-survey'}
-              className={`comparison-tab-btn ${selectedComparisonTab === 'valuation-vs-survey' ? 'active' : ''}`}
-              onClick={() => setSelectedComparisonTab('valuation-vs-survey')}
-            >
-              <Scale size={16} aria-hidden="true" />
-              <span>Mortgage Valuation vs Independent Survey</span>
-            </button>
-          </div>
-
-          {/* Tab 1: Level 2 vs Level 3 Decision Matrix */}
-          {selectedComparisonTab === 'survey-levels' && (
-            <div className="survey-decision-cards-grid">
-              {/* Level 2 Card */}
-              <div className="decision-matrix-card level-2-decision">
-                <div className="matrix-card-header">
-                  <div className="matrix-badge">Conventional &amp; Modern Homes</div>
-                  <h3 className="matrix-title">Homebuyer Survey (Level 2)</h3>
-                  <p className="matrix-summary">
-                    An essential condition report identifying urgent defects, damp indications, and timber decay in conventional properties.
-                  </p>
-                </div>
-
-                <div className="matrix-attributes-list">
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Property Age:</span>
-                    <span className="attr-value">Constructed post-1900</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Construction:</span>
-                    <span className="attr-value">Standard brick, tile, cavity walls</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Condition:</span>
-                    <span className="attr-value">Reasonable order, no major visible distress</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Defect Ratings:</span>
-                    <span className="attr-value">Standard RICS 1-2-3 Condition Ratings</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Report Depth:</span>
-                    <span className="attr-value">Visual non-invasive condition assessment</span>
-                  </div>
-                </div>
-
-                <div className="matrix-footer">
-                  <Link to="/services/homebuyer-survey-level-2" className="matrix-link">
-                    <span>Full Level 2 Details</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                  <a
-                    href="#quote-section"
-                    onClick={() => setPrefilledService('homebuyer-survey-level-2')}
-                    className="btn btn-primary btn-sm"
-                  >
-                    Quote Level 2
-                  </a>
-                </div>
-              </div>
-
-              {/* Level 3 Card */}
-              <div className="decision-matrix-card level-3-decision highlight-card">
-                <div className="matrix-popular-tag">Maximum Structural Depth</div>
-                <div className="matrix-card-header">
-                  <div className="matrix-badge">Period, Altered &amp; Listed Properties</div>
-                  <h3 className="matrix-title">Building Survey (Level 3)</h3>
-                  <p className="matrix-summary">
-                    The most comprehensive non-invasive property investigation available. In-depth diagnosis of structural integrity and repair schedules.
-                  </p>
-                </div>
-
-                <div className="matrix-attributes-list">
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Property Age:</span>
-                    <span className="attr-value">Pre-1900 or period Victorian / Edwardian / Georgian</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Construction:</span>
-                    <span className="attr-value">Non-standard (timber frame, stone, cob) or heavily altered</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Condition:</span>
-                    <span className="attr-value">In disrepair, structural cracks, or significant damp symptoms</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Remediation:</span>
-                    <span className="attr-value">Prioritized repair schedule with consequences of inaction</span>
-                  </div>
-                  <div className="matrix-attribute">
-                    <span className="attr-title">Report Depth:</span>
-                    <span className="attr-value">Exhaustive fabric, roof frame, foundations &amp; subfloor audit</span>
-                  </div>
-                </div>
-
-                <div className="matrix-footer">
-                  <Link to="/services/building-survey-level-3" className="matrix-link">
-                    <span>Full Level 3 Details</span>
-                    <ArrowRight size={14} />
-                  </Link>
-                  <a
-                    href="#quote-section"
-                    onClick={() => setPrefilledService('building-survey-level-3')}
-                    className="btn btn-primary btn-sm"
-                  >
-                    Quote Level 3
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 2: Mortgage Valuation vs Independent Survey (e.surv Essential) */}
-          {selectedComparisonTab === 'valuation-vs-survey' && (
-            <div className="valuation-comparison-wrap">
-              <div className="valuation-table-card">
-                <div className="table-responsive">
-                  <table className="comparison-table">
-                    <thead>
-                      <tr>
-                        <th scope="col" style={{ width: '40%' }}>Inspection Factor</th>
-                        <th scope="col" className="text-center" style={{ width: '30%', backgroundColor: '#F1F5F9' }}>
-                          Lender Mortgage Valuation
-                        </th>
-                        <th scope="col" className="text-center highlight-head" style={{ width: '30%' }}>
-                          Independent RICS Survey
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><strong>Whose Interests Are Protected?</strong></td>
-                        <td className="text-center text-muted">The Mortgage Bank / Lender only</td>
-                        <td className="text-center text-success font-bold">100% You (The Buyer)</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Inspection Time on Site</strong></td>
-                        <td className="text-center text-muted">15 – 25 minutes brief walk-through</td>
-                        <td className="text-center text-success font-bold">2 – 4 hours rigorous examination</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Roof Voids, Chimneys &amp; Drainage</strong></td>
-                        <td className="text-center text-danger"><XCircle size={18} className="inline-block text-danger" /> Not inspected</td>
-                        <td className="text-center text-success"><CheckCircle2 size={18} className="inline-block text-success" /> Meticulously inspected</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Defect Diagnosis &amp; Remediation Advice</strong></td>
-                        <td className="text-center text-danger"><XCircle size={18} className="inline-block text-danger" /> No defect advice given</td>
-                        <td className="text-center text-success"><CheckCircle2 size={18} className="inline-block text-success" /> Clear diagnosis &amp; consequences</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Renegotiation Leverage</strong></td>
-                        <td className="text-center text-muted">Zero legal leverage for buyer</td>
-                        <td className="text-center text-success font-bold">Written evidence to renegotiate price</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Direct Phone Debrief with Surveyor</strong></td>
-                        <td className="text-center text-danger"><XCircle size={18} className="inline-block text-danger" /> Not available</td>
-                        <td className="text-center text-success font-bold">Direct telephone consultation included</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </Container>
-      </section>
-
-      {/* 4. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (CPR Part 35) */}
+      {/* 5. DEDICATED EXPERT WITNESS & LITIGATION PRACTICE (CPR Part 35) */}
       <section
         id="expert-witness-section"
         ref={expertRef}
@@ -471,7 +203,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 7. 4-STEP CLIENT PROCESS SECTION */}
+      {/* 6. 4-STEP CLIENT PROCESS SECTION */}
       <section
         ref={processRef}
         className={`section workflow-process-section reveal-init ${processVisible ? 'is-revealed' : ''}`}
@@ -482,7 +214,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 8. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
+      {/* 7. TARGET SERVICE COVERAGE SECTION (London, Surrey, Oxon, Bucks, Berks) */}
       <section
         ref={coverageRef}
         className={`section section-alt regional-coverage-section reveal-init ${coverageVisible ? 'is-revealed' : ''}`}
@@ -493,7 +225,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* 9. DEDICATED FULL FIXED-FEE QUOTATION SUITE (Preserving All 11 Fields) */}
+      {/* 8. DEDICATED FULL FIXED-FEE QUOTATION SUITE (Preserving All 11 Fields) */}
       <section
         id="quote-section"
         ref={quoteSuiteRef}
@@ -525,38 +257,6 @@ export function HomePage() {
             <div className="reassurance-item">
               <Phone size={18} className="text-navy flex-shrink-0" />
               <span>Direct Phone Support: <strong>{siteConfig.contact.telephoneDisplay}</strong></span>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* 10. FINAL HIGH-IMPACT CLOSING CTA BANNER */}
-      <section
-        ref={ctaRef}
-        className={`final-cta-section reveal-init ${ctaVisible ? 'is-revealed' : ''}`}
-        aria-label="Closing Call to Action"
-      >
-        <div className="final-cta-overlay" />
-        <Container isNarrow>
-          <div className="final-cta-content text-center">
-            <span className="final-cta-eyebrow">Ready to Protect Your Investment?</span>
-            <h2 className="final-cta-title">
-              Instruct an Independent Survey Before Exchange
-            </h2>
-            <p className="final-cta-desc">
-              Make sure you understand the true condition of your prospective property. Receive an objective, detailed technical report delivered directly to your inbox.
-            </p>
-            <div className="final-cta-buttons">
-              <a href="#quote-section" className="btn btn-primary btn-lg">
-                <span>Request a Survey Quote</span>
-                <ArrowRight size={18} />
-              </a>
-              <Button to="/contact" variant="outline-white" size="lg">
-                Speak With A Surveyor
-              </Button>
-            </div>
-            <div className="final-cta-footer-note">
-              <span>Fast Turnaround &bull; RICS Standard Transparency &bull; Call: {siteConfig.contact.telephoneDisplay}</span>
             </div>
           </div>
         </Container>
