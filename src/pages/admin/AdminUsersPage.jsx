@@ -121,7 +121,6 @@ export const AdminUsersPage = () => {
 
     const roleMap = {
       super_admin: 'Admin',
-      admin_staff: 'Admin / Staff',
       surveyor: 'Surveyor',
       customer: 'Customer',
     };
@@ -152,7 +151,6 @@ export const AdminUsersPage = () => {
     return [
       { id: 'All', label: 'All Users', count: users.length },
       { id: 'super_admin', label: 'Admins', count: users.filter((u) => u.role === 'super_admin').length },
-      { id: 'admin_staff', label: 'Staff', count: users.filter((u) => u.role === 'admin_staff').length },
       { id: 'surveyor', label: 'Surveyors', count: users.filter((u) => u.role === 'surveyor').length },
       { id: 'customer', label: 'Customers', count: users.filter((u) => u.role === 'customer').length },
     ];
@@ -210,7 +208,6 @@ export const AdminUsersPage = () => {
       sortable: true,
       render: (val, row) => {
         let badgeColor = 'bg-[#0B1F4D] text-white';
-        if (row.role === 'admin_staff') badgeColor = 'bg-blue-100 text-[#2563EB] border border-blue-200';
         if (row.role === 'surveyor') badgeColor = 'bg-purple-100 text-purple-800 border border-purple-200';
         if (row.role === 'customer') badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
 
@@ -396,7 +393,6 @@ export const AdminUsersPage = () => {
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
               >
                 <option value="super_admin">Admin</option>
-                <option value="admin_staff">Admin / Staff</option>
                 <option value="surveyor">Surveyor</option>
                 <option value="customer">Customer</option>
               </select>
