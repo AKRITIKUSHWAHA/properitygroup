@@ -30,7 +30,9 @@ import {
   FileUp,
   XCircle,
   Archive,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  Eye,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
@@ -38,6 +40,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
+import { useEmailAutomations } from '../../mock/emailAutomations';
 
 // Canonical 6-Step SurveyBooker Pipeline (From Video 1)
 const STATUS_TIMELINE_STEPS = [
@@ -64,6 +67,10 @@ export const JobDetailsPage = () => {
   }, [jobs, jobId]);
 
   const [activeTab, setActiveTab] = useState('job-details'); // 'job-details', 'notes-calls', 'tasks', 'documents', 'emails', 'activity-log'
+
+  // Email Automation Hook
+  const { dispatchStepEmail, automations } = useEmailAutomations();
+  const [viewingEmail, setViewingEmail] = useState(null);
 
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
@@ -143,10 +150,23 @@ export const JobDetailsPage = () => {
       newStatus = 'Completed';
     }
 
+    // Trigger automated email for this milestone
+    const emailResult = dispatchStepEmail(stepIndex, {
+      ...job,
+      quoteTotal: totalAmount.toFixed(2),
+    });
+    let updatedEmails = job.emails || [];
+    let emailActivityText = '';
+
+    if (emailResult && emailResult.wasSent && emailResult.emailRecord) {
+      updatedEmails = [emailResult.emailRecord, ...updatedEmails];
+      emailActivityText = ` • Auto-email sent: "${emailResult.emailRecord.subject}"`;
+    }
+
     const newActivity = {
       id: Date.now(),
       time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      text: `Workflow milestone moved to "${stepName}" (Stage ${stepIndex + 1}/6).`,
+      text: `Workflow milestone moved to "${stepName}" (Stage ${stepIndex + 1}/6)${emailActivityText}.`,
     };
 
     updateJob(job.id, {
@@ -155,14 +175,23 @@ export const JobDetailsPage = () => {
       paymentStatus: newPaymentStatus,
       termsStatus: newTermsStatus,
       canBook: newCanBook,
+      emails: updatedEmails,
       activityLog: [newActivity, ...(job.activityLog || [])],
     });
 
-    addToast({
-      type: 'info',
-      title: 'Survey Stage Updated',
-      message: `Job milestone moved to: ${stepName}.`,
-    });
+    if (emailResult && emailResult.wasSent) {
+      addToast({
+        type: 'success',
+        title: 'Milestone Updated & Client Emailed',
+        message: `Dispatched automated notification to ${job.customerEmail || 'customer@demo.com'} for ${stepName}.`,
+      });
+    } else {
+      addToast({
+        type: 'info',
+        title: 'Survey Stage Updated',
+        message: `Job milestone moved to: ${stepName}.`,
+      });
+    }
   };
 
   // What's Next Action Handlers (Matching Video 1)
@@ -350,14 +379,34 @@ export const JobDetailsPage = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Back button */}
-      <div>
+      {/* Breadcrumb & Navigation Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+            <span>UK Property Surveying Practice</span>
+            <span>›</span>
+            <span>Admin</span>
+            <span>›</span>
+            <button
+              onClick={() => navigate(backPath)}
+              className="text-[#2563EB] hover:underline font-bold cursor-pointer"
+            >
+              Survey Jobs
+            </button>
+            <span>›</span>
+            <span className="font-bold text-[#0B1F4D] font-mono">{job.jobNo}</span>
+          </div>
+          <h2 className="text-xl font-extrabold text-[#0B1F4D] tracking-tight">
+            Survey Job Record: {job.jobNo}
+          </h2>
+        </div>
+
         <button
           onClick={() => navigate(backPath)}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0B1F4D] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Survey Jobs Master Register</span>
+          <span>← Back to All Survey Jobs</span>
         </button>
       </div>
 
@@ -418,6 +467,17 @@ export const JobDetailsPage = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Live Email Automation Indicator */}
+        <div className="flex items-center justify-between text-xs bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl mt-5 border border-white/15">
+          <div className="flex items-center gap-2 text-sky-200">
+            <Zap className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <span>Automated Client Email Active: <strong className="text-white">{STATUS_TIMELINE_STEPS[currentStepIndex]}</strong> notification will be sent on transition</span>
+          </div>
+          <span className="text-[11px] font-mono text-slate-300 hidden sm:inline">
+            Target: {job.customerEmail || 'customer@demo.com'}
+          </span>
         </div>
       </div>
 
@@ -1219,30 +1279,109 @@ export const JobDetailsPage = () => {
 
           {/* 5. Emails */}
           {activeTab === 'emails' && (
-            <div className="space-y-3 max-w-3xl">
-              {(job.emails || []).map((email) => (
-                <div
-                  key={email.id}
-                  className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
-                      <Mail className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">{email.subject}</div>
-                      <div className="text-[11px] text-slate-500">Recipient: {email.to}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      {email.status}
-                    </span>
-                    <div className="text-[10px] font-mono text-slate-400 mt-1">{email.date}</div>
-                  </div>
+            <div className="space-y-4 max-w-4xl">
+              {/* Header Action Bar */}
+              <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[#2563EB]" />
+                    <span>Customer Automated Email Correspondence</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Real-time transactional audit log of emails triggered for <strong>{job.customer}</strong> ({job.customerEmail || 'customer@demo.com'}).
+                  </p>
                 </div>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const result = dispatchStepEmail(currentStepIndex, {
+                      ...job,
+                      quoteTotal: totalAmount.toFixed(2),
+                    });
+                    if (result && result.wasSent) {
+                      updateJob(job.id, {
+                        emails: [result.emailRecord, ...(job.emails || [])],
+                      });
+                      addToast({
+                        type: 'success',
+                        title: 'Email Re-Dispatched',
+                        message: `Sent copy of ${STATUS_TIMELINE_STEPS[currentStepIndex]} notification to ${job.customerEmail || 'customer@demo.com'}.`,
+                      });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer self-start sm:self-auto shrink-0"
+                >
+                  <Send className="w-3.5 h-3.5 text-sky-300" />
+                  <span>Resend Current Milestone Email</span>
+                </button>
+              </div>
+
+              {/* Email List */}
+              {(!job.emails || job.emails.length === 0) ? (
+                <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 text-xs text-slate-400">
+                  No automated emails logged yet. Click any workflow milestone above to trigger customer email.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(job.emails || []).map((email, emailIdx) => (
+                    <div
+                      key={email.id || emailIdx}
+                      className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-300 transition-all space-y-3 shadow-2xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-100">
+                            <Mail className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-slate-900">{email.subject}</span>
+                              {email.stageLabel && (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-[#2563EB] font-bold border border-blue-100">
+                                  {email.stageLabel}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              Recipient: <span className="font-mono">{email.to}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            {email.status || 'Delivered'}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => setViewingEmail(email)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-200/80"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Email</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {email.body && (
+                        <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/60 text-xs text-slate-600 line-clamp-2 font-mono whitespace-pre-line">
+                          {email.body}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          Dispatched: {email.date}
+                        </span>
+                        <span className="text-slate-500 font-medium">Delivered via SMTP Gateway</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1406,6 +1545,59 @@ export const JobDetailsPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* View Full Dispatched Email Modal */}
+      {viewingEmail && (
+        <Modal
+          isOpen={!!viewingEmail}
+          onClose={() => setViewingEmail(null)}
+          title={viewingEmail.subject}
+          subtitle={`Dispatched to ${viewingEmail.to} • ${viewingEmail.date}`}
+          maxWidth="max-w-2xl"
+          footer={
+            <div className="flex items-center justify-between w-full">
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                Status: {viewingEmail.status || 'Delivered'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingEmail(null)}
+                className="px-4 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Close Email
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 w-16 font-semibold">From:</span>
+                <span className="font-bold text-slate-800">UK Property Surveying Practice</span>
+                <span className="text-slate-400 font-mono text-[11px]">&lt;notifications@propertygroup.co.uk&gt;</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 w-16 font-semibold">To:</span>
+                <span className="font-mono text-slate-800">{viewingEmail.to}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 w-16 font-semibold">Date:</span>
+                <span className="font-mono text-slate-700">{viewingEmail.date}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 w-16 font-semibold">Subject:</span>
+                <span className="font-bold text-[#0B1F4D]">{viewingEmail.subject}</span>
+              </div>
+            </div>
+
+            <div className="p-5 bg-white rounded-xl border border-slate-200 leading-relaxed font-sans whitespace-pre-line text-slate-800 shadow-2xs">
+              {viewingEmail.body || (
+                `Dear ${job.customer},\n\nThis is an automated operational notification regarding your survey at ${job.property || job.location}.\n\nReference: ${job.jobNo}\nService: ${job.surveyType}\nStatus: ${job.status}\n\nKind regards,\nUK Property Surveying Practice Team`
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Client Profile & Complaints Modal */}
       <ClientProfileModal

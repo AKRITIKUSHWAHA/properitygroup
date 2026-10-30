@@ -149,3 +149,18 @@
     - Month calendar now displays colored dots (Blue = Inspection, Purple = Report due).
     - Selecting any date renders the Day's To-Do list with time-slot cards.
     - Quick `+` modal to add new tasks for the selected date.
+
+- [x] **Feature 6: 6-Stage Customer Email Automation & Real-Time Triggers**
+  - Added `emailAutomations.js` mock store managing the 6 SurveyBooker stages:
+    - *Stage 1 (Quote):* Quotation Proposal & Inclusions Scope
+    - *Stage 2 (Paid):* Payment Receipt & Welcome Pack
+    - *Stage 3 (Accepted):* Terms of Engagement Signed Confirmation
+    - *Stage 4 (Booked):* Site Inspection Confirmed & Access Logistics
+    - *Stage 5 (Preparing report):* Inspection Completed & Report in Progress
+    - *Stage 6 (Complete):* Final RICS Survey Report Ready for Download
+  - Added Central Governance Control in `AdminSettingsPage.jsx` (`Email Automations & Workflows` tab) with Active/Paused toggles, template editor, variable tags (`{{property_address}}`, `{{customer_name}}`, `{{job_no}}`), and live email preview modal (`EmailTemplatePreviewModal.jsx`).
+  - Added Real-Time Auto-Dispatch in `JobDetailsPage.jsx`:
+    - Stepper advancement automatically formats and dispatches the corresponding milestone email to customer.
+    - Real-time live status indicator below pipeline stepper.
+    - Upgraded `Emails` tab with rich transactional ledger, "View Sent Email" modal, and "Resend Current Milestone Email" action.
+  - Added Customer Portal Inbox Card in `CustomerDashboardPage.jsx` for viewing all official correspondence and notices.

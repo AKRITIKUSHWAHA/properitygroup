@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
+import { useRolePermissions } from '../mock/permissions';
 
 // Icon map for dynamically rendering Lucide icons by string name
 const ICON_MAP = {
@@ -80,9 +81,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
     return user?.role || 'super_admin';
   };
 
+  const { isMenuPermitted, getPermittedItemsCount } = useRolePermissions();
+
   const activeRole = getActiveRole();
   const roleConfig = ROLE_NAVIGATION[activeRole] || ROLE_NAVIGATION.super_admin;
-  const menuItems = roleConfig.items || [];
+  const allMenuItems = roleConfig.items || [];
+  const menuItems = allMenuItems.filter((item) => isMenuPermitted(activeRole, item.id));
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -230,9 +234,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 Switch Role / Menus
               </div>
               {[
-                { id: 'customer', label: 'Customer', count: 8 },
-                { id: 'surveyor', label: 'Surveyor', count: 6 },
-                { id: 'super_admin', label: 'Admin', count: 10 },
+                { id: 'customer', label: 'Customer', count: getPermittedItemsCount('customer') },
+                { id: 'surveyor', label: 'Surveyor', count: getPermittedItemsCount('surveyor') },
+                { id: 'super_admin', label: 'Admin', count: getPermittedItemsCount('super_admin') },
               ].map((r) => {
                 const isCurrent = activeRole === r.id;
                 return (
@@ -263,56 +267,67 @@ export const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex-1 px-2.5 py-2 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-none">
           {menuItems.map((item) => {
             const IconComponent = ICON_MAP[item.icon] || Compass;
+            
+            // Intelligent active matching for nested routes (e.g. /admin/jobs/:id belongs to survey-jobs)
+            const currentPath = location.pathname;
+            const isActive =
+              currentPath === item.path ||
+              (item.id === 'survey-jobs' && (currentPath.startsWith('/admin/jobs') || currentPath.startsWith('/admin/survey-jobs') || currentPath.startsWith('/superadmin/jobs'))) ||
+              (item.id === 'crm-leads' && (currentPath.startsWith('/admin/leads') || currentPath.startsWith('/admin/crm-and-leads'))) ||
+              (item.id === 'users-roles' && (currentPath.startsWith('/admin/users') || currentPath.startsWith('/admin/users-and-roles'))) ||
+              (item.id === 'quotations-payments' && (currentPath.startsWith('/admin/quotes') || currentPath.startsWith('/admin/quotations-and-payments'))) ||
+              (item.id === 'terms-documents' && (currentPath.startsWith('/admin/terms') || currentPath.startsWith('/admin/terms-and-documents'))) ||
+              (item.id === 'dashboard' && (currentPath === '/admin' || currentPath === '/admin/dashboard'));
+
             return (
               <NavLink
                 key={item.id}
                 to={item.path}
                 title={item.name}
-                className={({ isActive }) =>
-                  `group relative flex items-center min-h-[44px] rounded-xl text-xs font-semibold transition-all duration-200 px-3 py-2.5 ${
-                    isActive
-                      ? 'bg-[#0B1F4D] text-white shadow-md shadow-[#0B1F4D]/25 font-bold'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1F4D]'
-                  }`
-                }
+                className={`group relative flex items-center min-h-[44px] rounded-xl text-xs font-semibold transition-all duration-200 px-3 py-2.5 ${
+                  isActive
+                    ? 'bg-[#0B1F4D] text-white shadow-md shadow-[#0B1F4D]/25 font-bold'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-[#0B1F4D]'
+                }`}
               >
-                {({ isActive }) => (
-                  <>
-                    <div className="flex items-center gap-3 truncate w-full">
-                      <IconComponent
-                        className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-105 ${
-                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#0B1F4D]'
-                        }`}
-                      />
-                      {/* Name label shown on mobile, desktop, and tablet when hovered */}
-                      <span
-                        className={`truncate transition-opacity duration-200 ${
-                          isHovered ? 'md:inline' : 'md:hidden lg:inline'
-                        }`}
-                      >
-                        {item.name}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-3 truncate w-full">
+                  <IconComponent
+                    className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-105 ${
+                      isActive ? 'text-white' : 'text-slate-400 group-hover:text-[#0B1F4D]'
+                    }`}
+                  />
+                  {/* Name label shown on mobile, desktop, and tablet when hovered */}
+                  <span
+                    className={`truncate transition-opacity duration-200 ${
+                      isHovered ? 'md:inline' : 'md:hidden lg:inline'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+                </div>
 
-                    {/* Badge */}
-                    {item.badge && (
-                      <span
-                        className={`ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0 transition-opacity ${
-                          isActive
-                            ? 'bg-white/20 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                        } ${isHovered ? 'md:inline' : 'md:hidden lg:inline'}`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-
-                    {/* Tablet Icon Rail Tooltip (when collapsed on md) */}
-                    <div className="hidden md:group-hover:hidden md:block lg:hidden absolute left-full ml-2 px-2.5 py-1 bg-[#0B1F4D] text-white text-[11px] font-bold rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-slate-700">
-                      {item.name}
-                    </div>
-                  </>
+                {/* Badge */}
+                {item.badge && (
+                  <span
+                    className={`ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0 transition-opacity ${
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                    } ${isHovered ? 'md:inline' : 'md:hidden lg:inline'}`}
+                  >
+                    {item.badge}
+                  </span>
                 )}
+
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div className="absolute right-0 top-2 bottom-2 w-1 bg-amber-400 rounded-l-full" />
+                )}
+
+                {/* Tablet Icon Rail Tooltip (when collapsed on md) */}
+                <div className="hidden md:group-hover:hidden md:block lg:hidden absolute left-full ml-2 px-2.5 py-1 bg-[#0B1F4D] text-white text-[11px] font-bold rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                  {item.name}
+                </div>
               </NavLink>
             );
           })}

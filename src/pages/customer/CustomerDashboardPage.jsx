@@ -18,15 +18,23 @@ import {
   Sparkles,
   Receipt,
   FileSpreadsheet,
+  Mail,
+  Eye,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
+import { useJobs } from '../../mock/jobs';
 
 export const CustomerDashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { jobs } = useJobs();
+
+  const customerJob = jobs.find((j) => j.customerEmail === user?.email || j.customer === user?.name) || jobs[0];
+  const customerEmails = customerJob?.emails || [];
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
 
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [bookForm, setBookForm] = useState({
@@ -376,8 +384,87 @@ export const CustomerDashboardPage = () => {
               <span>All reports include surveyor digital signature & RICS accreditation watermark.</span>
             </div>
           </div>
+
+          {/* Customer Email Notifications Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-[#2563EB]" />
+                  <span>Email Correspondence</span>
+                </h3>
+                <p className="text-xs text-slate-500">Milestone updates sent to your email</p>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {customerEmails.length}
+              </span>
+            </div>
+
+            {customerEmails.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-3">No emails logged yet.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {customerEmails.slice(0, 3).map((em, idx) => (
+                  <div
+                    key={em.id || idx}
+                    onClick={() => setSelectedCustomerEmail(em)}
+                    className="p-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 hover:bg-white hover:border-blue-400 transition-all cursor-pointer space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-slate-900 truncate">
+                        {em.subject}
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                        Delivered
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span>{em.date}</span>
+                      <span className="text-[#2563EB] font-sans font-bold flex items-center gap-0.5">
+                        Read <Eye className="w-2.5 h-2.5" />
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* View Email Modal for Customer */}
+      {selectedCustomerEmail && (
+        <Modal
+          isOpen={!!selectedCustomerEmail}
+          onClose={() => setSelectedCustomerEmail(null)}
+          title={selectedCustomerEmail.subject}
+          subtitle={`Dispatched: ${selectedCustomerEmail.date}`}
+          maxWidth="max-w-xl"
+          footer={
+            <div className="flex justify-end w-full">
+              <button
+                type="button"
+                onClick={() => setSelectedCustomerEmail(null)}
+                className="px-4 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-3 text-xs leading-relaxed text-slate-800">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-600">
+              <div>From: UK Property Surveying Practice &lt;notifications@propertygroup.co.uk&gt;</div>
+              <div>Subject: {selectedCustomerEmail.subject}</div>
+            </div>
+            <div className="p-4 bg-white rounded-xl border border-slate-200 whitespace-pre-line font-sans">
+              {selectedCustomerEmail.body || (
+                `Dear ${user?.name || 'Customer'},\n\nThis is an automated operational notification regarding your survey.\n\nKind regards,\nUK Property Surveying Practice Team`
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* MODAL: Book a New Survey */}
       <Modal
