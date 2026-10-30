@@ -94,3 +94,4 @@ client_requirements/
 
 * **[`../client.md`](../client.md):** Full client requirement specification and implementation checklist.
 * **[`../workflow.md`](../workflow.md):** Architectural workflow guide, 3 user roles, and developer reference.
+
