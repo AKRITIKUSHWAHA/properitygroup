@@ -385,8 +385,8 @@
   height: 100%;
   height: 100dvh;
   background-color: rgba(6, 11, 19, 0.94) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.14) !important;
   z-index: 99999;
   box-shadow: -15px 0 45px rgba(0, 0, 0, 0.6);
@@ -3863,8 +3863,8 @@ select.form-input-compact {
 /* Header Luxury Glass Overrides */
 .site-header {
   background-color: rgba(6, 11, 19, 0.85) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
 }
@@ -4085,8 +4085,8 @@ select.form-input-compact {
 
 .luxury-glass-card {
   background: rgba(14, 26, 45, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px;
   padding: 1.75rem 2rem;
@@ -4322,8 +4322,8 @@ select.form-input-compact {
 
 .luxury-pillar-card {
   background: rgba(14, 26, 45, 0.52) !important;
-  backdrop-filter: blur(24px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 22px;
   padding: 2.25rem 2rem;
@@ -4458,8 +4458,8 @@ select.form-input-compact {
   margin: 1.25rem auto 1.75rem !important;
   border-radius: 9999px !important;
   background-color: rgba(10, 18, 30, 0.78) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5) !important;
 }
@@ -4629,8 +4629,8 @@ select.form-input-compact {
 
 .decision-matrix-card {
   background: rgba(14, 26, 45, 0.52) !important;
-  backdrop-filter: blur(28px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 24px !important;
   box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;
@@ -4705,8 +4705,8 @@ select.form-input-compact {
 /* Comparison Table Glassmorphism */
 .valuation-table-card {
   background: rgba(14, 26, 45, 0.55) !important;
-  backdrop-filter: blur(24px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 24px !important;
   box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
@@ -4811,8 +4811,8 @@ select.form-input-compact {
 .luxury-site-canvas .step-card,
 .luxury-site-canvas .process-step {
   background: rgba(14, 26, 45, 0.52) !important;
-  backdrop-filter: blur(24px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 22px !important;
   box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.22) !important;
@@ -4956,8 +4956,8 @@ select.form-input-compact {
   max-width: 980px !important;
   margin: 0 auto !important;
   background: rgba(14, 26, 45, 0.72) !important;
-  backdrop-filter: blur(28px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-left: 5px solid #E2E8F0 !important;
   border-radius: 24px !important;
@@ -5165,7 +5165,7 @@ select.form-input-compact {
   background: linear-gradient(180deg, rgba(8, 14, 24, 0.65) 0%, rgba(20, 28, 40, 0.42) 50%, rgba(6, 11, 19, 0.72) 100%),
               radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.15) 0%, transparent 70%),
               url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85') center/cover no-repeat !important;
-  background-attachment: fixed !important;
+  background-attachment: scroll !important;
   padding: 6.5rem 0 7rem !important;
   border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -5185,8 +5185,8 @@ select.form-input-compact {
               box-shadow 0.6s ease;
   will-change: opacity, transform;
   background: rgba(255, 255, 255, 0.11) !important;
-  backdrop-filter: blur(36px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(160%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.38) !important;
   border-radius: 28px !important;
   padding: clamp(2rem, 5vw, 3rem) !important;
@@ -5478,8 +5478,8 @@ select.form-input-compact {
 .contact-info-card,
 .faq-accordion-item {
   background: rgba(14, 26, 45, 0.65) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 24px !important;
   padding: clamp(1.5rem, 4vw, 2.25rem) !important;
@@ -5644,8 +5644,8 @@ select.form-input-compact {
 
 .service-quote-sidebar .compact-quote-form {
   background: rgba(14, 26, 45, 0.8) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 24px !important;
   box-shadow: 0 25px 50px -10px rgba(0, 0, 0, 0.6) !important;
@@ -5671,8 +5671,8 @@ select.form-input-compact {
 .contact-card,
 .contact-sidebar-card {
   background: rgba(14, 26, 45, 0.65) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 24px !important;
   padding: 2rem !important;
@@ -7481,8 +7481,8 @@ select.form-input-compact {
 /* Glassmorphic Dropdown Menu in Site Header */
 .site-header .nav-dropdown-menu {
   background: rgba(10, 18, 30, 0.95) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 16px !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
@@ -8097,8 +8097,8 @@ select.form-input-compact {
   top: calc(100% + 8px);
   left: 0;
   background: rgba(10, 18, 30, 0.96) !important;
-  backdrop-filter: blur(28px) !important;
-  -webkit-backdrop-filter: blur(28px) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 18px !important;
   box-shadow: 0 24px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
