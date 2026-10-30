@@ -3,11 +3,14 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
 }
 
 body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  overflow-x: clip;
 }
 
 /* Box sizing and base reset scoped to public website */
@@ -28,7 +31,7 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   color: var(--color-main-text);
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 

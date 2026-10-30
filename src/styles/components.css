@@ -3854,7 +3854,7 @@ select.form-input-compact {
   background-color: #060B13;
   color: #F8FAFC;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Header Luxury Glass Overrides */
@@ -5404,7 +5404,7 @@ select.form-input-compact {
   background-color: #060B13 !important;
   color: #F8FAFC !important;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .service-page .section,
@@ -5614,7 +5614,7 @@ select.form-input-compact {
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
-  overflow-x: hidden !important;
+  overflow-x: clip !important;
 }
 
 @media (min-width: 1024px) {
@@ -9153,5 +9153,34 @@ p.mega-action-sub {
   }
   .hero-slide-bg.active {
     transform: none !important;
+  }
+}
+
+/* =============================================================
+   APPLE iOS (IPHONE / IPAD) & TOUCH DEVICE HARDENING
+   ============================================================= */
+@supports (-webkit-touch-callout: none) {
+  /* Disable expensive Gaussian backdrop blur passes on all iPhones & iPads */
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Hardware-accelerated sticky header on iOS Safari */
+  .site-header {
+    background-color: rgba(6, 11, 19, 0.98) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  /* Ensure native iOS momentum inertia physics */
+  body, #root, .site-wrapper {
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Disable 3D perspective trap on iOS WebKit */
+  .quote-suite-card-wrap {
+    perspective: none !important;
+    -webkit-perspective: none !important;
   }
 }
