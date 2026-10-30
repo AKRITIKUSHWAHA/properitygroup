@@ -8770,30 +8770,37 @@ p.mega-action-sub {
    CLIENT REFERENCE HEADER STRIPS (ANNOUNCEMENT + UTILITY)
    ============================================================= */
 .header-announcement-strip {
-  background: #09131F !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(26, 38, 54, 0.90) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
   padding: 0.45rem 0 !important;
   color: #FFFFFF !important;
   font-size: 0.8rem !important;
   transition: all 0.25s ease !important;
+  position: relative !important;
+  z-index: 60 !important;
 }
 
 .announcement-strip-inner {
+  position: relative !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
-  gap: 1rem !important;
+  justify-content: center !important;
   width: 100% !important;
+  min-height: 28px !important;
 }
 
-.announcement-left {
+.announcement-center {
   display: flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 0.55rem !important;
-  color: #F1F5F9 !important;
+  color: #F8FAFC !important;
   font-size: 0.82rem !important;
   font-weight: 500 !important;
   letter-spacing: -0.005em !important;
+  text-align: center !important;
 }
 
 .announcement-home-icon {
@@ -8803,6 +8810,10 @@ p.mega-action-sub {
 }
 
 .announcement-right {
+  position: absolute !important;
+  right: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   display: flex !important;
   align-items: center !important;
   gap: 0.65rem !important;
@@ -8811,7 +8822,7 @@ p.mega-action-sub {
 
 .announcement-login-btn {
   background: #FFFFFF !important;
-  color: #0A1624 !important;
+  color: #070D15 !important;
   font-size: 0.78rem !important;
   font-weight: 700 !important;
   padding: 0.28rem 0.85rem !important;
@@ -8827,9 +8838,9 @@ p.mega-action-sub {
 
 .announcement-login-btn:hover {
   background: #F8FAFC !important;
-  color: #060B13 !important;
+  color: #000000 !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.35) !important;
 }
 
 .announcement-dismiss-btn {
@@ -8853,13 +8864,15 @@ p.mega-action-sub {
   color: #FFFFFF !important;
 }
 
-/* Row 2: Utility Strip */
+/* Row 2: Utility Strip (Deeper Obsidian Tone) */
 .header-utility-strip {
-  background: #060B13 !important;
+  background: #070D15 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   padding: 0.42rem 0 !important;
   color: #CBD5E1 !important;
   font-size: 0.8rem !important;
+  position: relative !important;
+  z-index: 59 !important;
 }
 
 .utility-strip-inner {
@@ -8879,29 +8892,63 @@ p.mega-action-sub {
 .utility-trust-link {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 0.45rem !important;
+  gap: 0.5rem !important;
   text-decoration: none !important;
+  color: #FFFFFF !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.utility-trust-link:hover {
+  opacity: 0.92 !important;
+  transform: translateY(-0.5px) !important;
 }
 
 .trust-highlight {
   color: #FFFFFF !important;
   font-weight: 700 !important;
   text-decoration: underline !important;
-  font-size: 0.85rem !important;
+  text-underline-offset: 3px !important;
+  font-size: 0.84rem !important;
   letter-spacing: -0.01em !important;
 }
 
-.trust-stars-badge {
-  color: #10B981 !important;
-  letter-spacing: 2px !important;
-  font-size: 0.88rem !important;
-  font-weight: 700 !important;
+.trustpilot-star-boxes {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2.5px !important;
 }
 
-.trust-provider {
-  color: #CBD5E1 !important;
-  font-size: 0.78rem !important;
-  font-weight: 500 !important;
+.tp-star-box {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 16px !important;
+  height: 16px !important;
+  background-color: #00b67a !important;
+  border-radius: 1px !important;
+}
+
+.tp-star-box svg {
+  display: block !important;
+}
+
+.trustpilot-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  margin-left: 0.15rem !important;
+}
+
+.tp-logo-star {
+  display: block !important;
+}
+
+.trustpilot-name {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  letter-spacing: -0.01em !important;
 }
 
 .utility-right {
@@ -8936,6 +8983,23 @@ p.mega-action-sub {
   .header-announcement-strip {
     padding: 0.35rem 0 !important;
   }
+  .announcement-strip-inner {
+    position: static !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    min-height: auto !important;
+  }
+  .announcement-center {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    flex: 1 !important;
+  }
+  .announcement-right {
+    position: static !important;
+    transform: none !important;
+    flex-shrink: 0 !important;
+  }
   .announcement-text {
     font-size: 0.7rem !important;
     line-height: 1.25 !important;
@@ -8950,7 +9014,7 @@ p.mega-action-sub {
   .utility-phone-link {
     font-size: 0.88rem !important;
   }
-  .trust-provider {
+  .trustpilot-name {
     display: none !important;
   }
 }

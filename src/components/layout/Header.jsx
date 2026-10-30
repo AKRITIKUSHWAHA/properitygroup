@@ -110,7 +110,7 @@ export function Header() {
         <div className="header-announcement-strip">
           <div className="header-container">
             <div className="announcement-strip-inner">
-              <div className="announcement-left">
+              <div className="announcement-center">
                 <span className="announcement-home-icon" role="img" aria-label="house">🏡</span>
                 <span className="announcement-text">
                   Skip the wait – get a quote, book and pay for your survey online
@@ -141,11 +141,31 @@ export function Header() {
         <div className="header-container">
           <div className="utility-strip-inner">
             <div className="utility-left">
-              <span className="utility-trust-link">
+              <a
+                href="https://www.trustpilot.com/review/esurv.co.uk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="utility-trust-link"
+                title="Read our Excellent reviews on Trustpilot"
+                aria-label="Rated Excellent on Trustpilot with 4.8 out of 5 stars"
+              >
                 <span className="trust-highlight">Excellent</span>
-                <span className="trust-stars-badge" aria-label="5 stars">★★★★★</span>
-                <span className="trust-provider">RICS Aligned Practice</span>
-              </span>
+                <div className="trustpilot-star-boxes" aria-hidden="true">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span key={i} className="tp-star-box">
+                      <svg viewBox="0 0 16 16" width="11" height="11" fill="#FFFFFF">
+                        <path d="M8 0.5l2.4 4.9 5.4 0.8-3.9 3.8 0.9 5.4-4.8-2.5-4.8 2.5 0.9-5.4-3.9-3.8 5.4-0.8z" />
+                      </svg>
+                    </span>
+                  ))}
+                </div>
+                <div className="trustpilot-brand">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="#00b67a" className="tp-logo-star">
+                    <path d="M12 1.5l3.2 6.5 7.2 1.1-5.2 5.1 1.2 7.2-6.4-3.4-6.4 3.4 1.2-7.2-5.2-5.1 7.2-1.1z" />
+                  </svg>
+                  <span className="trustpilot-name">Trustpilot</span>
+                </div>
+              </a>
             </div>
             <div className="utility-right">
               <span className="utility-call-text hide-mobile">Call us free today to book a survey</span>
