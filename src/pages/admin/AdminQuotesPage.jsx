@@ -71,7 +71,7 @@ const QuoteRowActions = ({
   const isPaid = quote.status === 'Paid';
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
+    <div className="relative inline-block text-right" ref={menuRef}>
       <button
         type="button"
         onClick={(e) => {
@@ -86,7 +86,7 @@ const QuoteRowActions = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 top-full mt-1 w-52 sm:w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
           {/* Primary View Action */}
           <button
             type="button"
@@ -441,24 +441,24 @@ export const AdminQuotesPage = () => {
     }
   };
 
-  // Clean, Breathable 6-Column Specification (Fits 100% On Screen, No Horizontal Cutoff)
+  // Clean, Fluid & Responsive 6-Column Specification (Fits on all screens without horizontal cutoff)
   const columns = [
     {
       key: 'refNo',
       header: 'Quote Ref / Date',
       sortable: true,
-      className: 'whitespace-nowrap w-32',
+      className: 'w-[16%] min-w-[100px]',
       render: (val, row) => (
-        <div>
+        <div className="truncate">
           <button
             onClick={() => setSelectedQuoteDetail(row)}
-            className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block"
+            className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block truncate"
             title="Click to view full quote breakdown"
           >
             {val}
           </button>
           <div className="text-[11px] text-slate-500 font-mono mt-0.5">{row.date}</div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
             {row.invoiceNo}
           </div>
         </div>
@@ -468,21 +468,22 @@ export const AdminQuotesPage = () => {
       key: 'client',
       header: 'Customer',
       sortable: true,
+      className: 'w-[23%] min-w-[125px]',
       render: (val, row) => (
-        <div className="max-w-[155px]">
+        <div className="min-w-0">
           <button
             onClick={() => {
               setSelectedClientEmail(row.clientEmail);
               setClientModalTab('calls');
             }}
-            className="text-left font-bold text-slate-900 hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer"
+            className="text-left font-bold text-slate-900 hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer max-w-full"
             title="Click to view client profile, call notes & complaints"
           >
             <span className="truncate">{val}</span>
             <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
           </button>
           <div className="text-[11px] text-slate-500 truncate mt-0.5">{row.clientEmail}</div>
-          <div className="text-[10px] text-slate-400 font-mono">{row.clientPhone || '+44 7700 900000'}</div>
+          <div className="text-[10px] text-slate-400 font-mono truncate">{row.clientPhone || '+44 7700 900000'}</div>
         </div>
       ),
     },
@@ -490,8 +491,9 @@ export const AdminQuotesPage = () => {
       key: 'property',
       header: 'Property & Service',
       sortable: true,
+      className: 'w-[27%] min-w-[135px]',
       render: (val, row) => (
-        <div className="max-w-[210px]">
+        <div className="min-w-0">
           <div className="font-bold text-[#0B1F4D] text-xs truncate" title={val}>
             {val}
           </div>
@@ -509,13 +511,13 @@ export const AdminQuotesPage = () => {
       key: 'totalAmount',
       header: 'Fee & UK VAT',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[18%] min-w-[105px]',
       render: (val, row) => (
-        <div className="font-mono">
-          <div className="font-black text-sm text-[#0B1F4D]">
+        <div className="font-mono min-w-0">
+          <div className="font-black text-xs sm:text-sm text-[#0B1F4D]">
             £{val.toFixed(2)}
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-slate-500 truncate">
             Net £{row.amountExVat.toFixed(2)} + £{row.vatAmount.toFixed(2)} VAT
           </div>
         </div>
@@ -525,14 +527,15 @@ export const AdminQuotesPage = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[11%] min-w-[75px]',
       render: (val) => renderStatusBadge(val),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: '',
       sortable: false,
-      className: 'text-right whitespace-nowrap w-14',
+      headerClassName: 'w-[5%] min-w-[44px]',
+      className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
       render: (_, row) => (
         <QuoteRowActions
           quote={row}
@@ -576,36 +579,36 @@ export const AdminQuotesPage = () => {
         onAction={() => setIsNewQuoteModalOpen(true)}
       />
 
-      {/* Top 3 Executive Metric Cards (Replacing static VAT card with dynamic average fee) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+      {/* Top 3 Executive Metric Cards (Responsive 1/2/3 grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Settled Revenue (Paid)</span>
             <PoundSterling className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-emerald-600 font-mono">
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 font-mono">
             £{totalSettledRevenue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-slate-500">Cleared via Stripe / BACS Direct Debit</div>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Outstanding Invoices</span>
             <Clock className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="text-2xl font-black text-amber-600 font-mono">
+          <div className="text-xl sm:text-2xl font-black text-amber-600 font-mono">
             £{totalOutstanding.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-slate-500">Awaiting client authorization &amp; deposit</div>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-[11px] font-bold uppercase tracking-wider">Average Instruction Fee</span>
             <TrendingUp className="w-4 h-4 text-[#2563EB]" />
           </div>
-          <div className="text-2xl font-black text-[#0B1F4D] font-mono">
+          <div className="text-xl sm:text-2xl font-black text-[#0B1F4D] font-mono">
             £{averageQuoteFee.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-slate-500">{quotes.length} Total Issued Proposals (inc. 20% UK VAT)</div>

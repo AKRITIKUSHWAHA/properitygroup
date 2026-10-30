@@ -13,12 +13,12 @@ export const AppLayout = () => {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-16 lg:pl-[260px] min-w-0 transition-all duration-300">
+      <div className="flex-1 flex flex-col md:pl-16 xl:pl-[260px] min-w-0 transition-all duration-300">
         {/* Sticky Top Bar */}
         <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
         {/* Dynamic Page Content with bottom padding on mobile for the BottomTabBar */}
-        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
+        <main className="flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
           <Outlet />
         </main>
       </div>
