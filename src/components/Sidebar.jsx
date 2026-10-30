@@ -27,6 +27,9 @@ import {
   LogOut,
   X,
   Compass,
+  MessageSquare,
+  Star,
+  History,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
@@ -57,6 +60,10 @@ const ICON_MAP = {
   FileSpreadsheet,
   User,
   HelpCircle,
+  Compass,
+  MessageSquare,
+  Star,
+  History,
 };
 
 export const Sidebar = ({ isOpen, onClose }) => {

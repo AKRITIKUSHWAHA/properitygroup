@@ -154,7 +154,8 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     setIsLoading(true);
 
     try {
-      await login(email, password, rememberMe);
+      const returnUrl = location.state?.from?.pathname;
+      await login(email, password, rememberMe, returnUrl);
     } catch (err) {
       setErrorMessage(
         err.message || 'Authentication failed. Please verify your email and password.'

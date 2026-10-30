@@ -20,11 +20,15 @@ import {
   FileSpreadsheet,
   Mail,
   Eye,
+  Star,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useJobs } from '../../mock/jobs';
+import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
+import { downloadReportPDF } from '../../utils/pdfGenerator';
 
 export const CustomerDashboardPage = () => {
   const { user } = useAuth();
@@ -55,11 +59,17 @@ export const CustomerDashboardPage = () => {
     setBookForm({ property: '', location: '', surveyType: 'RICS Level 2 Home Survey', preferredDate: '' });
   };
 
-  const handleDownloadReport = (reportName) => {
+  const handleDownloadReport = (reportName, property = '14 Mayfair Gate, London W1K 2PB', surveyor = 'David Thorne MRICS') => {
+    downloadReportPDF({
+      jobNo: 'JOB-2026-080',
+      clientName: user?.name || 'Emma Watson',
+      property,
+      surveyorName: surveyor,
+    });
     addToast({
       type: 'success',
       title: 'Downloading Survey Report',
-      message: `${reportName} is downloading to your device.`,
+      message: `${reportName} downloaded successfully to your device.`,
     });
   };
 
@@ -236,6 +246,75 @@ export const CustomerDashboardPage = () => {
         })}
       </div>
 
+      {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
+      <SurveyProgressTracker currentStep={customerJob?.timelineStep || 7} job={customerJob} />
+
+      {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Trustpilot Banner (Client Requirement Point 31) */}
+        <div className="p-5 rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
+              <Star className="w-6 h-6 fill-[#00B67A]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  Trustpilot 4.9 / 5.0
+                </span>
+                <span className="text-xs text-slate-500">★★★★★</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Satisfied with your Level 2 Survey?
+              </h4>
+              <p className="text-xs text-slate-500">
+                Leave a quick review on our official NJS Trustpilot profile.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate('/customer/leave-review')}
+            className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <Star className="w-3.5 h-3.5 fill-white" />
+            <span>Leave Us a Review</span>
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        </div>
+
+        {/* Direct Messages Card (Client Requirement Point 18) */}
+        <div className="p-5 rounded-3xl bg-white border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-blue-50 text-[#0B1F4D] shrink-0">
+              <MessageSquare className="w-6 h-6 text-[#2563EB]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                  Direct Coordinator Chat
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Message NJS Operations Desk
+              </h4>
+              <p className="text-xs text-slate-500">
+                Direct questions, keyholder notes, or queries for David Thorne MRICS.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate('/customer/messages')}
+            className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>Open Messages</span>
+          </button>
+        </div>
+      </div>
+
       {/* 3. TWO COLUMNS: UPCOMING BOOKINGS & RECENT REPORTS WITH DOWNLOAD */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 Cols): Upcoming Bookings */}
@@ -367,7 +446,7 @@ export const CustomerDashboardPage = () => {
 
                     {/* Download button - Full-width on mobile */}
                     <button
-                      onClick={() => handleDownloadReport(report.title)}
+                      onClick={() => handleDownloadReport(report.title, report.property, report.surveyor)}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs min-h-[44px] cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5" />

@@ -18,12 +18,15 @@ import {
   CalendarCheck,
   ChevronRight,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { SurveyBookerWorkflowBuckets } from '../../components/dashboard/SurveyBookerWorkflowBuckets';
 import { NewBookingModal } from '../../components/calendar/NewBookingModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+import { AdminMessagesModal } from '../../components/crm/AdminMessagesModal';
 import { useJobs } from '../../mock/jobs';
+import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
 
 // Canonical 6-Step SurveyBooker Pipeline
@@ -44,8 +47,14 @@ export const AdminDashboardPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBucketFilter, setActiveBucketFilter] = useState('all');
+
+  const { conversations } = useMessages();
+  const totalUnreadMessages = useMemo(() => {
+    return conversations.reduce((sum, c) => sum + (c.unreadAdmin || 0), 0);
+  }, [conversations]);
 
   const handleCreateJob = (newJob) => {
     addJob(newJob);
@@ -71,8 +80,8 @@ export const AdminDashboardPage = () => {
     if (rawStep <= 2) return 'Quote';
     if (rawStep === 3) return 'Paid';
     if (rawStep === 4 || rawStep === 5) return 'Accepted';
-    if (rawStep === 6 || rawStep === 7) return 'Booked';
-    if (rawStep === 8) return 'Preparing report';
+    if (rawStep === 6) return 'Booked';
+    if (rawStep === 7 || rawStep === 8 || rawStep === 9) return 'Preparing report';
     return 'Complete';
   };
 
@@ -179,6 +188,22 @@ export const AdminDashboardPage = () => {
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               />
             </div>
+
+            {/* Messaging Desk Quick Shortcut Button */}
+            <button
+              type="button"
+              onClick={() => setIsMessagesModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#0B1F4D] bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 transition-colors cursor-pointer flex items-center gap-2 shrink-0"
+              title="Open Customer Messaging Inbox"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span className="hidden sm:inline">Client Messages</span>
+              {totalUnreadMessages > 0 && (
+                <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {totalUnreadMessages}
+                </span>
+              )}
+            </button>
 
             {activeBucketFilter !== 'all' && (
               <button
@@ -315,6 +340,12 @@ export const AdminDashboardPage = () => {
         onClose={() => setIsClientModalOpen(false)}
         clientEmail={selectedClientEmail}
         initialTab="calls"
+      />
+
+      {/* Central Messaging Desk Modal */}
+      <AdminMessagesModal
+        isOpen={isMessagesModalOpen}
+        onClose={() => setIsMessagesModalOpen(false)}
       />
     </div>
   );

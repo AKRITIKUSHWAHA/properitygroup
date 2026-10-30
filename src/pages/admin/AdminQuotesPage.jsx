@@ -31,12 +31,15 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { useQuotes } from '../../mock/quotes';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+import { RecordBacsPaymentModal } from '../../components/crm/RecordBacsPaymentModal';
+import { downloadInvoicePDF } from '../../utils/pdfGenerator';
 
 // 3-Dot Clean Action Dropdown Menu for each Quotation
 const QuoteRowActions = ({
   quote,
   onView,
   onMarkPaid,
+  onRecordBacs,
   onDownloadReceipt,
   onResendQuote,
   onOpenClientProfile,
@@ -103,18 +106,33 @@ const QuoteRowActions = ({
 
           {/* Settle / Mark Paid */}
           {!isPaid ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsOpen(false);
-                onMarkPaid(quote.id);
-              }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Mark as Paid (£{quote.totalAmount.toFixed(2)})</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onRecordBacs(quote);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-900 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+              >
+                <PoundSterling className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Record BACS Payment</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onMarkPaid(quote.id);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Mark as Paid (£{quote.totalAmount.toFixed(2)})</span>
+              </button>
+            </>
           ) : (
             <button
               type="button"
@@ -126,7 +144,7 @@ const QuoteRowActions = ({
               className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
             >
               <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Download VAT Receipt</span>
+              <span>Download VAT Receipt (PDF)</span>
             </button>
           )}
 
@@ -199,6 +217,63 @@ export const AdminQuotesPage = () => {
   const [selectedQuoteDetail, setSelectedQuoteDetail] = useState(null);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
+
+  // BACS Settlement Modal State (Client Point 16)
+  const [isBacsModalOpen, setIsBacsModalOpen] = useState(false);
+  const [selectedBacsQuote, setSelectedBacsQuote] = useState(null);
+
+  // Rate Card Calculator State (Client Point 10)
+  const [calcBeds, setCalcBeds] = useState('3 Bedrooms');
+  const [calcEra, setCalcEra] = useState('1919-1980 Post-War');
+  const [calcType, setCalcType] = useState('Terraced House');
+
+  const handleApplyRateCard = (surveyType = formData.surveyType) => {
+    const isLevel3 = surveyType.toLowerCase().includes('l3') || surveyType.toLowerCase().includes('building');
+    let base = 650;
+    if (!isLevel3) {
+      if (calcBeds === '1-2 Bedrooms') base = 550;
+      else if (calcBeds === '3 Bedrooms') base = 650;
+      else if (calcBeds === '4 Bedrooms') base = 750;
+      else if (calcBeds === '5+ Bedrooms') base = 890;
+    } else {
+      if (calcBeds === '1-2 Bedrooms') base = 850;
+      else if (calcBeds === '3 Bedrooms') base = 950;
+      else if (calcBeds === '4 Bedrooms') base = 1150;
+      else if (calcBeds === '5+ Bedrooms') base = 1390;
+    }
+
+    if (calcEra.includes('Victorian')) base += 100;
+    else if (calcEra.includes('1919-1980')) base += 50;
+
+    if (calcType === 'Flat/Apartment') base -= 30;
+    else if (calcType === 'Semi-Detached') base += 40;
+    else if (calcType === 'Detached') base += 80;
+
+    setFormData((prev) => ({ ...prev, baseFee: base }));
+    addToast({
+      type: 'info',
+      title: 'Rate Card Fee Applied',
+      message: `Computed £${base.toFixed(2)} based on ${calcBeds}, ${calcEra}, and ${calcType}.`,
+    });
+  };
+
+  const handleOpenBacsModal = (quote) => {
+    setSelectedBacsQuote(quote);
+    setIsBacsModalOpen(true);
+  };
+
+  const handleBacsPaymentConfirmed = (bacsData) => {
+    if (!selectedBacsQuote) return;
+    updateQuoteStatus(selectedBacsQuote.id, 'Paid');
+    if (selectedQuoteDetail && selectedQuoteDetail.id === selectedBacsQuote.id) {
+      setSelectedQuoteDetail((prev) => ({
+        ...prev,
+        status: 'Paid',
+        paymentMethod: `BACS (${bacsData.reference})`,
+        paidDate: bacsData.date,
+      }));
+    }
+  };
 
   // "+ New Quotation" Form State
   const [formData, setFormData] = useState({
@@ -392,10 +467,21 @@ export const AdminQuotesPage = () => {
   };
 
   const handleDownloadReceipt = (quote) => {
+    downloadInvoicePDF({
+      invoiceNo: quote.invoiceNo || 'INV-2026-101',
+      date: quote.paidDate || quote.date || new Date().toLocaleDateString('en-GB'),
+      clientName: quote.client || 'Client',
+      property: quote.property || 'Property',
+      surveyType: quote.surveyType || 'RICS Level 2 Home Survey',
+      baseFee: quote.baseFee || quote.amountExVat || 770.0,
+      vatAmount: quote.vatAmount || 154.0,
+      totalAmount: quote.totalAmount || 924.0,
+      paymentMethod: quote.paymentMethod || 'BACS Settlement',
+    });
     addToast({
       type: 'success',
-      title: 'VAT Receipt Generated',
-      message: `Downloaded official receipt for ${quote.refNo} (${quote.invoiceNo}).`,
+      title: 'HMRC VAT Receipt Downloaded',
+      message: `Official invoice PDF saved for ${quote.refNo} (${quote.invoiceNo}).`,
     });
   };
 
@@ -539,6 +625,7 @@ export const AdminQuotesPage = () => {
           quote={row}
           onView={(q) => setSelectedQuoteDetail(q)}
           onMarkPaid={handleMarkPaid}
+          onRecordBacs={handleOpenBacsModal}
           onDownloadReceipt={handleDownloadReceipt}
           onResendQuote={handleSendQuote}
           onOpenClientProfile={(email, tab) => {
@@ -781,6 +868,66 @@ export const AdminQuotesPage = () => {
             </div>
           </div>
 
+          {/* Instant Rate Card Calculator Box (Client Point 10) */}
+          <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200/90 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#0B1F4D] flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#2563EB]" />
+                <span>NJS Instant Rate Card Calculator (Survey Booker Engine)</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleApplyRateCard()}
+                className="px-2.5 py-1 bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                Auto-Calculate Fee
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Bedrooms</label>
+                <select
+                  value={calcBeds}
+                  onChange={(e) => setCalcBeds(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                >
+                  <option value="1-2 Bedrooms">1-2 Bedrooms</option>
+                  <option value="3 Bedrooms">3 Bedrooms</option>
+                  <option value="4 Bedrooms">4 Bedrooms</option>
+                  <option value="5+ Bedrooms">5+ Bedrooms</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Property Era / Age</label>
+                <select
+                  value={calcEra}
+                  onChange={(e) => setCalcEra(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                >
+                  <option value="Pre-1919 Victorian">Pre-1919 (Victorian / Period)</option>
+                  <option value="1919-1980 Post-War">1919 - 1980 (Inter/Post-War)</option>
+                  <option value="Modern Post-1980">Post-1980 (Modern Construction)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Property Type</label>
+                <select
+                  value={calcType}
+                  onChange={(e) => setCalcType(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                >
+                  <option value="Flat/Apartment">Flat / Apartment</option>
+                  <option value="Terraced House">Terraced House</option>
+                  <option value="Semi-Detached">Semi-Detached House</option>
+                  <option value="Detached">Detached House</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* Price (Base Fee ex VAT) & Discount */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
@@ -988,24 +1135,55 @@ export const AdminQuotesPage = () => {
             </div>
 
             {selectedQuoteDetail.status === 'Paid' ? (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center justify-between">
-                <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod || 'Stripe UK Online'}</strong></span>
-                <span className="font-mono text-[11px]">{selectedQuoteDetail.paidDate || 'Paid in Full'}</span>
+              <div className="space-y-3">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center justify-between">
+                  <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod || 'Stripe UK Online'}</strong></span>
+                  <span className="font-mono text-[11px]">{selectedQuoteDetail.paidDate || 'Paid in Full'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadReceipt(selectedQuoteDetail)}
+                  className="w-full py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Download className="w-4 h-4 text-sky-400" />
+                  <span>Download VAT Receipt (PDF)</span>
+                </button>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  handleMarkPaid(selectedQuoteDetail.id);
-                  setSelectedQuoteDetail((prev) => ({ ...prev, status: 'Paid' }));
-                }}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
-              >
-                Mark as Paid in Full (£{selectedQuoteDetail.totalAmount.toFixed(2)})
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenBacsModal(selectedQuoteDetail);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <PoundSterling className="w-4 h-4" />
+                  <span>Record BACS Settlement</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleMarkPaid(selectedQuoteDetail.id);
+                    setSelectedQuoteDetail((prev) => ({ ...prev, status: 'Paid' }));
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Mark Paid (£{selectedQuoteDetail.totalAmount.toFixed(2)})
+                </button>
+              </div>
             )}
           </div>
         </Modal>
       )}
+
+      {/* Record Offline BACS Payment Modal (Client Point 16) */}
+      <RecordBacsPaymentModal
+        isOpen={isBacsModalOpen}
+        onClose={() => setIsBacsModalOpen(false)}
+        record={selectedBacsQuote}
+        onPaymentRecorded={handleBacsPaymentConfirmed}
+      />
 
       {/* MODAL 3: Client Profile, Call Notes & Complaints */}
       <ClientProfileModal

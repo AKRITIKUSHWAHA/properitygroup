@@ -1,25 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { Loader2, Building2 } from 'lucide-react';
 
 export const ProtectedRoute = ({ allowedRoles = null, children }) => {
-  const { user, isAuthenticated, isLoading, switchRole } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-
-  // Auto-align demo session role with the route being visited
-  useEffect(() => {
-    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
-    if ((location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) && !isAdmin) {
-      switchRole('super_admin');
-    } else if (location.pathname.startsWith('/staff') && user?.role !== 'admin_staff' && !isAdmin) {
-      switchRole('admin_staff');
-    } else if (location.pathname.startsWith('/surveyor') && user?.role !== 'surveyor' && !isAdmin) {
-      switchRole('surveyor');
-    } else if (location.pathname.startsWith('/customer') && user?.role !== 'customer' && !isAdmin) {
-      switchRole('customer');
-    }
-  }, [location.pathname, user?.role, switchRole]);
 
   if (isLoading) {
     return (
@@ -30,29 +16,46 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
             <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
-            <span>Loading UK Property Surveying Practice...</span>
+            <span>Verifying session security...</span>
           </div>
         </div>
       </div>
     );
   }
 
+  // 1. Strict Authentication Check: If user is not logged in, redirect to designated portal
   if (!isAuthenticated || !user) {
+    const path = location.pathname;
+    if (path.startsWith('/admin') || path.startsWith('/superadmin') || path.startsWith('/staff')) {
+      return <Navigate to="/login/admin" state={{ from: location }} replace />;
+    }
+    if (path.startsWith('/surveyor')) {
+      return <Navigate to="/login/surveyor" state={{ from: location }} replace />;
+    }
+    if (path.startsWith('/customer')) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const isAdmin = user.role === 'super_admin' || user.role === 'admin';
+  // 2. Strict Role Authorization Check:
+  const userRole = user.role;
+  const isAdmin = userRole === 'super_admin' || userRole === 'admin';
 
-  // Admin has universal super-user access to all modules across the application
+  // Super Admin / Admin has operational authority across system modules
   if (isAdmin) {
     return children ? children : <Outlet />;
   }
 
-  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    // If accessing an admin route in demo mode, auto-switch to admin instead of throwing 403
-    if (location.pathname.startsWith('/superadmin') || location.pathname.startsWith('/admin')) {
-      switchRole('super_admin');
-      return children ? children : <Outlet />;
+  // If specific roles are required, ensure user has permitted role
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    // If a Customer attempts to enter Admin or Surveyor routes -> bounce back to Customer portal
+    if (userRole === 'customer') {
+      return <Navigate to="/customer/my-dashboard" replace />;
+    }
+    // If a Surveyor attempts to enter Admin or Customer routes -> bounce back to Surveyor portal
+    if (userRole === 'surveyor') {
+      return <Navigate to="/surveyor/dashboard" replace />;
     }
     return <Navigate to="/403" replace />;
   }

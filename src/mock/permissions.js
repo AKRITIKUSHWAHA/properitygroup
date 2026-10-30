@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ROLE_NAVIGATION } from './navigation';
 
-const STORAGE_KEY = 'property_group_role_menu_permissions_v1';
+const STORAGE_KEY = 'property_group_role_menu_permissions_v2';
 const EVENT_NAME = 'property_group_permissions_changed';
 
 // Canonical default permissions (all menus active by default)
@@ -43,13 +43,19 @@ export const DEFAULT_ROLE_PERMISSIONS = {
   },
   customer: {
     'my-dashboard': true,
-    'my-bookings': true,
     'quotations': true,
+    'my-bookings': true,
+    'track-survey': true,
+    'appointment-details': true,
+    'assigned-surveyor': true,
     'terms-to-sign': true,
     'invoices-payments': true,
     'reports': true,
-    'my-details': true,
+    'messages': true,
+    'leave-review': true,
     'support': true,
+    'my-details': true,
+    'previous-surveys': true,
   },
 };
 

@@ -78,6 +78,12 @@ const CustomerInvoicesPage = lazyNamed(() => import('./pages/customer/CustomerMo
 const CustomerReportsPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerReportsPage');
 const CustomerDetailsPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerDetailsPage');
 const CustomerSupportPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerSupportPage');
+const CustomerTrackSurveyPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerTrackSurveyPage');
+const CustomerAppointmentDetailsPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerAppointmentDetailsPage');
+const CustomerAssignedSurveyorPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerAssignedSurveyorPage');
+const CustomerMessagesPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerMessagesPage');
+const CustomerReviewPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerReviewPage');
+const CustomerPreviousSurveysPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerPreviousSurveysPage');
 
 // Minimal Page Transition Loader
 const PageLoader = () => (
@@ -267,16 +273,22 @@ function AppRoutes() {
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />
           </Route>
 
-          {/* Customer Routes (8 menus) */}
+          {/* Customer Routes (14 menus per Client Requirement Point 12) */}
           <Route element={<ProtectedRoute allowedRoles={['customer', 'super_admin']} />}>
             <Route path="/customer/my-dashboard" element={<CustomerDashboardPage />} />
-            <Route path="/customer/my-bookings" element={<CustomerBookingsPage />} />
             <Route path="/customer/quotations" element={<CustomerQuotationsPage />} />
+            <Route path="/customer/my-bookings" element={<CustomerBookingsPage />} />
+            <Route path="/customer/track-my-survey" element={<CustomerTrackSurveyPage />} />
+            <Route path="/customer/appointment-details" element={<CustomerAppointmentDetailsPage />} />
+            <Route path="/customer/assigned-surveyor" element={<CustomerAssignedSurveyorPage />} />
             <Route path="/customer/terms-to-sign" element={<CustomerTermsPage />} />
             <Route path="/customer/invoices-and-payments" element={<CustomerInvoicesPage />} />
             <Route path="/customer/reports" element={<CustomerReportsPage />} />
-            <Route path="/customer/my-details" element={<CustomerDetailsPage />} />
+            <Route path="/customer/messages" element={<CustomerMessagesPage />} />
+            <Route path="/customer/leave-review" element={<CustomerReviewPage />} />
             <Route path="/customer/support" element={<CustomerSupportPage />} />
+            <Route path="/customer/my-details" element={<CustomerDetailsPage />} />
+            <Route path="/customer/previous-surveys" element={<CustomerPreviousSurveysPage />} />
           </Route>
         </Route>
 

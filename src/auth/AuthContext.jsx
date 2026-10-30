@@ -11,28 +11,27 @@ const REMEMBERED_EMAIL_KEY = 'property_group_remembered_email';
 const REGISTERED_CUSTOMERS_KEY = 'property_group_registered_customers';
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user lazily from localStorage
+  // Initialize user strictly from localStorage; default to null if not authenticated
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed && parsed.email) {
+        if (parsed && parsed.email && parsed.role) {
           return parsed;
         }
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
-    // Default to Super Admin for seamless demo route access
-    return DEMO_USERS['admin@demo.com'];
+    return null;
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  // Fast role switcher for demo and route synchronization
+  // Fast role switcher for development/testing if needed
   const switchRole = useCallback((newRole) => {
     const roleEmailMap = {
       admin: 'admin@demo.com',
@@ -58,10 +57,10 @@ export const AuthProvider = ({ children }) => {
     return '/login';
   }, []);
 
-  // Login handler
-  const login = async (email, password, rememberMe = false) => {
+  // Login handler with optional return redirection
+  const login = async (email, password, rememberMe = false, redirectTo = null) => {
     setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 600));
+    await new Promise((res) => setTimeout(res, 500));
 
     const trimmedEmail = (email || '').trim().toLowerCase();
 
@@ -82,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
     if (!matchedUser) {
       setIsLoading(false);
-      throw new Error('Account not found. Please use one of the demo chips or register as a customer.');
+      throw new Error('Account not found. Please use Quick Fill Demo or register as a customer.');
     }
 
     if (!password || password.trim().length < 4) {
@@ -107,8 +106,22 @@ export const AuthProvider = ({ children }) => {
       message: `Signed in as ${matchedUser.roleLabel} (${matchedUser.company})`,
     });
 
-    const redirectPath = getRoleDashboard(matchedUser.role);
-    navigate(redirectPath, { replace: true });
+    const defaultRolePath = getRoleDashboard(matchedUser.role);
+    
+    // Check if redirectTo is compatible with the logged-in role
+    const isTargetAllowed =
+      redirectTo &&
+      !redirectTo.includes('/login') &&
+      !redirectTo.includes('/403') &&
+      (
+        matchedUser.role === 'super_admin' ||
+        matchedUser.role === 'admin' ||
+        (matchedUser.role === 'surveyor' && redirectTo.startsWith('/surveyor')) ||
+        (matchedUser.role === 'customer' && redirectTo.startsWith('/customer'))
+      );
+
+    const destination = isTargetAllowed ? redirectTo : defaultRolePath;
+    navigate(destination, { replace: true });
     return matchedUser;
   };
 
@@ -180,14 +193,22 @@ export const AuthProvider = ({ children }) => {
 
   // Logout handler
   const logout = () => {
+    const previousRole = user?.role;
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
     addToast({
       type: 'info',
       title: 'Signed Out',
-      message: 'You have been signed out',
+      message: 'You have been securely signed out.',
     });
-    navigate('/login', { replace: true });
+
+    if (previousRole === 'super_admin' || previousRole === 'admin') {
+      navigate('/login/admin', { replace: true });
+    } else if (previousRole === 'surveyor') {
+      navigate('/login/surveyor', { replace: true });
+    } else {
+      navigate('/login', { replace: true });
+    }
   };
 
   // Profile update
