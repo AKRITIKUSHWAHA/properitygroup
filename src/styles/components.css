@@ -2914,6 +2914,7 @@ select.form-input-compact {
 .reveal-init.is-revealed {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+  will-change: auto;
 }
 
 .stagger-item {
@@ -2923,6 +2924,7 @@ select.form-input-compact {
   will-change: opacity, transform;
 }
 
+.is-revealed .stagger-item { will-change: auto; }
 .is-revealed .stagger-item:nth-child(1) { transition-delay: 0.04s; opacity: 1; transform: translate3d(0, 0, 0); }
 .is-revealed .stagger-item:nth-child(2) { transition-delay: 0.12s; opacity: 1; transform: translate3d(0, 0, 0); }
 .is-revealed .stagger-item:nth-child(3) { transition-delay: 0.20s; opacity: 1; transform: translate3d(0, 0, 0); }
@@ -5193,6 +5195,7 @@ select.form-input-compact {
 .is-revealed .quote-suite-card-wrap .compact-quote-form {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
+  will-change: auto;
 }
 
 .quote-suite-card-wrap .compact-quote-form:hover {

@@ -105,7 +105,7 @@ export function HomePage() {
             <Link to="/services/homebuyer-survey-level-2" className="overview-service-card group">
               <div 
                 className="overview-card-img"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80')` }}
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=500&q=75')` }}
                 role="img"
                 aria-label="Homebuyer Survey Level 2"
               >
@@ -127,7 +127,7 @@ export function HomePage() {
             <Link to="/services/building-survey-level-3" className="overview-service-card featured-overview-card group">
               <div 
                 className="overview-card-img"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85')` }}
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=650&q=75')` }}
                 role="img"
                 aria-label="Building Survey Level 3"
               >
@@ -149,7 +149,7 @@ export function HomePage() {
             <Link to="/services/snagging-report" className="overview-service-card group">
               <div 
                 className="overview-card-img"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80')` }}
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=500&q=75')` }}
                 role="img"
                 aria-label="New-Build Snagging Report"
               >
@@ -171,7 +171,7 @@ export function HomePage() {
             <Link to="/services/valuation-report" className="overview-service-card group">
               <div 
                 className="overview-card-img"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80')` }}
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=500&q=75')` }}
                 role="img"
                 aria-label="Valuation Report"
               >
@@ -193,7 +193,7 @@ export function HomePage() {
             <Link to="/services/damp-survey" className="overview-service-card group">
               <div 
                 className="overview-card-img"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80')` }}
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=500&q=75')` }}
                 role="img"
                 aria-label="Damp Survey"
               >
