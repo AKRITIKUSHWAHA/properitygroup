@@ -2911,20 +2911,17 @@ select.form-input-compact {
   opacity: 0;
   transform: translate3d(0, 30px, 0);
   transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
 }
 
 .reveal-init.is-revealed {
   opacity: 1;
   transform: translate3d(0, 0, 0);
-  will-change: auto;
 }
 
 .stagger-item {
   opacity: 0;
   transform: translate3d(0, 26px, 0);
   transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
 }
 
 .is-revealed .stagger-item { will-change: auto; }
@@ -9083,5 +9080,78 @@ p.mega-action-sub {
   }
   .trustpilot-name {
     display: none !important;
+  }
+}
+
+/* =============================================================
+   MOBILE PERFORMANCE HARDENING (60FPS / 120FPS TOUCH SCROLLING)
+   ============================================================= */
+@media (max-width: 768px) {
+  /* 1. Eliminate costly GPU backdrop-filter Gaussian blurs on mobile devices */
+  .site-header,
+  .site-header-floating,
+  .header-announcement-strip,
+  .luxury-glass-card,
+  .luxury-pillar-card,
+  .decision-matrix-card,
+  .valuation-table-card,
+  .workflow-process-section .step-card,
+  .luxury-site-canvas .step-item,
+  .luxury-site-canvas .step-card,
+  .luxury-site-canvas .process-step,
+  .coverage-card,
+  .quote-suite-card-wrap .compact-quote-form,
+  .service-overview-card,
+  .service-inclusions-card,
+  .contact-info-card,
+  .faq-accordion-item,
+  .service-quote-sidebar .compact-quote-form,
+  .contact-card,
+  .contact-sidebar-card,
+  .overview-service-card,
+  .expert-witness-glass-card,
+  .luxury-pill-btn.secondary-glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* 2. Maintain rich, luxury dark backgrounds on mobile cards */
+  .site-header {
+    background-color: rgba(6, 11, 19, 0.98) !important;
+  }
+  .header-announcement-strip {
+    background: #111A27 !important;
+  }
+  .luxury-pillar-card,
+  .decision-matrix-card,
+  .valuation-table-card,
+  .workflow-process-section .step-card,
+  .coverage-card,
+  .service-overview-card,
+  .contact-card,
+  .service-quote-sidebar .compact-quote-form {
+    background: rgba(14, 26, 45, 0.95) !important;
+  }
+  .quote-suite-card-wrap .compact-quote-form {
+    background: rgba(14, 26, 45, 0.96) !important;
+  }
+
+  /* 3. Disable scroll reveal transforms & will-change layer proliferation on mobile */
+  .reveal-init,
+  .stagger-item,
+  .quote-suite-card-wrap .compact-quote-form {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    will-change: auto !important;
+  }
+
+  /* 4. Disable continuous background transform animations on mobile */
+  .hero-slide-bg {
+    transform: none !important;
+    transition: opacity 0.4s ease !important;
+  }
+  .hero-slide-bg.active {
+    transform: none !important;
   }
 }

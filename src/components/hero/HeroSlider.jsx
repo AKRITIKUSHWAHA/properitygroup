@@ -21,7 +21,7 @@ export const HERO_SLIDES = [
     title: "Independent Property Surveys & Valuations Across London & The Home Counties",
     eyebrow: "RICS Home Survey Standard Aligned • Independent Practice",
     subtitle: "Make confident property purchasing decisions with clear, jargon-free technical reports. Inspecting residential properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=85",
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=75",
     altText: "Prestigious British residential property architecture",
     tagline: "Conventional & Modern Homes",
     accent: "Level 2 & Level 3 Surveys"
@@ -31,7 +31,7 @@ export const HERO_SLIDES = [
     title: "Comprehensive Level 3 Building Surveys for Period & Listed Homes",
     eyebrow: "Structural Defect Diagnostics • Historic Fabric Specialists",
     subtitle: "Exhaustive structural investigations, historic lime mortar diagnostics, timber decay mapping, and prioritized remediation schedules for period Victorian, Edwardian, and listed properties.",
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1920&q=85",
+    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=75",
     altText: "Period English heritage residence in the Home Counties",
     tagline: "Historic & Complex Structures",
     accent: "Full Structural Investigation"
@@ -41,7 +41,7 @@ export const HERO_SLIDES = [
     title: "Precision New-Build Snagging & Impartial Red Book Valuations",
     eyebrow: "NHBC Warranty Compliance • RICS Registered Valuers",
     subtitle: "Forensic defect audits for developer warranty remediation alongside legally robust Help to Buy, shared ownership staircasing, probate, and matrimonial asset appraisals.",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=85",
+    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=75",
     altText: "Contemporary high-specification residential architecture",
     tagline: "New-Build Quality & Red Book Valuations",
     accent: "Developer Defect Audits"

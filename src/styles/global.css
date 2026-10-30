@@ -1,5 +1,15 @@
 @import './tokens.css';
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 /* Box sizing and base reset scoped to public website */
 .site-wrapper,
 .site-wrapper *,

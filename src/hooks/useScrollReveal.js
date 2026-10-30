@@ -11,14 +11,20 @@ export function useScrollReveal(options = {}) {
     triggerOnce = true
   } = options;
 
+  // On mobile screens (<= 768px), reveal immediately to eliminate React re-renders and touch scroll lag
+  const isMobile = typeof window !== 'undefined' && (window.innerWidth <= 768 || (window.matchMedia && window.matchMedia('(max-width: 768px)').matches));
   const ref = useRef(null);
-  const [isRevealed, setIsRevealed] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(isMobile);
 
   useEffect(() => {
-    // Respect reduced motion preference
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIsRevealed(true);
-      return;
+    // Respect reduced motion preference or mobile screen performance
+    if (typeof window !== 'undefined') {
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const isSmallScreen = window.innerWidth <= 768 || (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+      if (prefersReduced || isSmallScreen) {
+        setIsRevealed(true);
+        return;
+      }
     }
 
     const element = ref.current;
