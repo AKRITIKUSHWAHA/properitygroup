@@ -138,12 +138,16 @@ function AppRoutes() {
         <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
         <Route path="/customer" element={<Navigate to="/customer/my-dashboard" replace />} />
 
-        {/* 3. Public Auth Routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/backoffice" element={<LoginPage initialMode="backoffice" />} />
-        <Route path="/admin-login" element={<Navigate to="/backoffice" replace />} />
-        <Route path="/surveyor-login" element={<Navigate to="/backoffice" replace />} />
-        <Route path="/staff-login" element={<Navigate to="/backoffice" replace />} />
+        {/* 3. Public Auth Routes - Dedicated role-based entrances */}
+        <Route path="/login" element={<LoginPage roleProp="customer" />} />
+        <Route path="/login/:role" element={<LoginPage />} />
+        <Route path="/admin/login" element={<LoginPage roleProp="super_admin" />} />
+        <Route path="/surveyor/login" element={<LoginPage roleProp="surveyor" />} />
+        <Route path="/customer/login" element={<LoginPage roleProp="customer" />} />
+        <Route path="/backoffice" element={<Navigate to="/login/admin" replace />} />
+        <Route path="/admin-login" element={<Navigate to="/login/admin" replace />} />
+        <Route path="/surveyor-login" element={<Navigate to="/login/surveyor" replace />} />
+        <Route path="/staff-login" element={<Navigate to="/login/admin" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
