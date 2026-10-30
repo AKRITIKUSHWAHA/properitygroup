@@ -13,7 +13,9 @@ import {
   HelpCircle,
   FileCheck2,
   Scale,
-  Sparkles
+  Sparkles,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { navigationCategories } from '../../config/navigation';
@@ -21,6 +23,7 @@ import { MobileNavigation } from './MobileNavigation';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(true);
   const [activeDropdown, setActiveDropdown] = useState(null); // 'services' | 'coverage' | 'about' | null
   const headerNavRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
@@ -101,40 +104,63 @@ export function Header() {
   };
 
   return (
-    <header className={`site-header ${isHomePage ? 'site-header-floating' : ''}`} role="banner">
-      {/* Top Utility Bar with Direct Hotline & Practice Standards (Subpages) */}
-      {!isHomePage && (
-        <div className="header-topbar">
+    <header className="site-header" role="banner">
+      {/* 1. Top Announcement Bar (matching client's reference with Customer Login) */}
+      {showAnnouncement && (
+        <div className="header-announcement-strip">
           <div className="header-container">
-            <div className="header-topbar-inner">
-              <div className="topbar-items">
-                <span className="topbar-item">
-                  <ShieldCheck size={13} aria-hidden="true" />
-                  <span>RICS Home Survey Standard Aligned Practice</span>
-                </span>
-                <span className="topbar-item hide-mobile">
-                  <MapPin size={13} aria-hidden="true" />
-                  <span>London &bull; Surrey &bull; Oxfordshire &bull; Buckinghamshire &bull; Berkshire</span>
+            <div className="announcement-strip-inner">
+              <div className="announcement-left">
+                <span className="announcement-home-icon" role="img" aria-label="house">🏡</span>
+                <span className="announcement-text">
+                  Skip the wait – get a quote, book and pay for your survey online
                 </span>
               </div>
-              <div className="topbar-items">
-                <a
-                  href={`tel:${siteConfig.contact.telephone}`}
-                  className="topbar-item topbar-phone"
-                  title="Call Survey Dispatch Hotline"
+              <div className="announcement-right">
+                <Link to="/login" className="announcement-login-btn">
+                  <span>Customer Login</span>
+                  <ChevronRight size={13} aria-hidden="true" />
+                </Link>
+                <button
+                  type="button"
+                  className="announcement-dismiss-btn"
+                  onClick={() => setShowAnnouncement(false)}
+                  aria-label="Dismiss announcement banner"
+                  title="Dismiss announcement"
                 >
-                  <Phone size={13} aria-hidden="true" />
-                  <span>Survey Hotline: <strong>{siteConfig.contact.telephoneDisplay}</strong></span>
-                </a>
-                <span className="topbar-item hide-mobile">
-                  <Clock size={13} aria-hidden="true" />
-                  <span>Mon–Fri 8:30–18:00</span>
-                </span>
+                  <X size={13} aria-hidden="true" />
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* 2. Secondary Utility / Trust & Hotline Strip (matching client's reference) */}
+      <div className="header-utility-strip">
+        <div className="header-container">
+          <div className="utility-strip-inner">
+            <div className="utility-left">
+              <span className="utility-trust-link">
+                <span className="trust-highlight">Excellent</span>
+                <span className="trust-stars-badge" aria-label="5 stars">★★★★★</span>
+                <span className="trust-provider">RICS Aligned Practice</span>
+              </span>
+            </div>
+            <div className="utility-right">
+              <span className="utility-call-text hide-mobile">Call us free today to book a survey</span>
+              <a
+                href={`tel:${siteConfig.contact.telephone}`}
+                className="utility-phone-link"
+                title="Call Survey Dispatch Hotline"
+              >
+                <Phone size={13} aria-hidden="true" />
+                <span className="utility-phone-number">{siteConfig.contact.telephoneDisplay}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Navigation Bar */}
       <div className="header-main">
