@@ -125,3 +125,4 @@ Surveyor desk job nahi karta, wo car se London aur Home Counties me travel karta
 | **2. Heavy RICS PDF** | 80 photos se server slow hona | Cloudinary/S3 compressed image pipeline + `@react-pdf` |
 | **3. Digital E-Sign** | Legal disputes in UK courts | Signature canvas + IP address & timestamp metadata snapshot |
 | **4. Surveyor Travel** | Missed appointments & daylight loss | Postcode zone filters + Key collection details on mobile cards |
+
