@@ -532,9 +532,7 @@ export const AdminQuotesPage = () => {
     },
     {
       key: 'actions',
-      header: '',
-      sortable: false,
-      headerClassName: 'w-[5%] min-w-[44px]',
+      header: 'Actions', sortable: false, headerClassName: 'text-right w-[8%] min-w-[44px]',
       className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
       render: (_, row) => (
         <QuoteRowActions
