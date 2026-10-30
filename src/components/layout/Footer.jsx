@@ -40,17 +40,17 @@ export function Footer() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: 'var(--font-size-xs)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Phone size={14} style={{ color: 'var(--color-accent-gold)' }} />
+                <Phone size={15} style={{ color: '#FFFFFF', flexShrink: 0 }} />
                 <a href={`tel:${siteConfig.contact.telephone}`} style={{ color: 'var(--color-white)', textDecoration: 'none' }}>
                   {siteConfig.contact.telephoneDisplay}
                 </a>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Mail size={14} style={{ color: 'var(--color-accent-gold)' }} />
+                <Mail size={15} style={{ color: '#FFFFFF', flexShrink: 0 }} />
                 <span>{siteConfig.contact.email}</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <MapPin size={14} style={{ color: 'var(--color-accent-gold)' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <MapPin size={15} style={{ color: '#FFFFFF', flexShrink: 0, marginTop: '2px' }} />
                 <span>Central Correspondence: Pall Mall, London (Client Address Pending)</span>
               </div>
             </div>
@@ -66,7 +66,7 @@ export function Footer() {
                 </li>
               ))}
               <li>
-                <Link to="/expert-witness" style={{ color: 'var(--color-accent-gold)' }}>
+                <Link to="/expert-witness" style={{ color: '#FFFFFF', fontWeight: 600 }}>
                   Expert Witness &amp; Disputes &rarr;
                 </Link>
               </li>
