@@ -125,12 +125,31 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const currentRoleConfig = ROLES_CONFIG[activeRoleKey] || ROLES_CONFIG.customer;
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
-  const [email, setEmail] = useState(() => {
-    if (activeRoleKey === 'customer') {
-      return getRememberedEmail() || currentRoleConfig.defaultEmail;
+  const getInitialEmail = (roleKey) => {
+    const config = ROLES_CONFIG[roleKey] || ROLES_CONFIG.customer;
+    const remembered = getRememberedEmail ? getRememberedEmail(roleKey) : '';
+    if (roleKey === 'customer') {
+      if (remembered && !remembered.includes('surveyor') && !remembered.includes('admin') && remembered !== 'surveyor@demo.com' && remembered !== 'admin@demo.com') {
+        return remembered;
+      }
+      return config.defaultEmail;
     }
-    return currentRoleConfig.defaultEmail;
-  });
+    if (roleKey === 'surveyor') {
+      if (remembered && !remembered.includes('customer') && !remembered.includes('admin') && remembered !== 'customer@demo.com' && remembered !== 'admin@demo.com') {
+        return remembered;
+      }
+      return config.defaultEmail;
+    }
+    if (roleKey === 'super_admin' || roleKey === 'admin') {
+      if (remembered && !remembered.includes('customer') && !remembered.includes('surveyor') && remembered !== 'customer@demo.com' && remembered !== 'surveyor@demo.com') {
+        return remembered;
+      }
+      return config.defaultEmail;
+    }
+    return config.defaultEmail;
+  };
+
+  const [email, setEmail] = useState(() => getInitialEmail(activeRoleKey));
   const [password, setPassword] = useState(DEFAULT_DEMO_PASSWORD);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -139,14 +158,10 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
 
   // Keep state synchronized whenever the route or active role changes
   useEffect(() => {
-    if (activeRoleKey === 'customer') {
-      setEmail(getRememberedEmail() || currentRoleConfig.defaultEmail);
-    } else {
-      setEmail(currentRoleConfig.defaultEmail);
-    }
+    setEmail(getInitialEmail(activeRoleKey));
     setPassword(DEFAULT_DEMO_PASSWORD);
     setErrorMessage('');
-  }, [activeRoleKey, currentRoleConfig.defaultEmail, getRememberedEmail]);
+  }, [activeRoleKey]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -178,7 +193,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
                 </div>
                 <div>
                   <span className="font-extrabold text-[11px] tracking-tight block text-[#0B1F4D] leading-none">
-                    UK PROPERTY SURVEYING
+                    NJS PROPERTY GROUP
                   </span>
                   <span className="text-[9px] font-semibold tracking-wider text-slate-400 block mt-1 uppercase">
                     RICS REGULATED PRACTICE
