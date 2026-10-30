@@ -234,3 +234,4 @@ npm run build
 * **Terms & Documents:** `http://localhost:5175/admin/terms`
 * **Reports & Analytics:** `http://localhost:5175/admin/reports`
 * **Settings & SMTP:** `http://localhost:5175/admin/settings`
+
