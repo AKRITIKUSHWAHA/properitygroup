@@ -43,17 +43,6 @@
 
 ---
 
-### Meeting Transcript: `Google Workspace Shared Inbox & Sales Team Setup` (Date: 2026-10-30)
-* **Participants:** Natasha Shergill (Client) & Harsh Jain
-* **Context:** Setting up centralized email inbox for the NJS Property Group administration and sales team without purchasing separate paid user licenses for each teammate.
-* **Key Decisions:**
-  * Created Google Group Collaborative Inbox: `admin_team@njspropertygroup.com`.
-  * External permissions enabled so incoming quotes from LSD (Local Surveyors Direct) land into the team inbox.
-  * System SMTP Mail Server config aligned with `@njspropertygroup.com`.
-  * *Full dialogue logged in [`client_requirements/meeting_transcript_2026-10-30_google_workspace_setup.md`](./client_requirements/meeting_transcript_2026-10-30_google_workspace_setup.md)*.
-
----
-
 ## 2. Structured Requirements Breakdown
 
 ### Requirement 1: Client Profile — Call Notes & Dedicated Complaints Log (COMPLETED)
