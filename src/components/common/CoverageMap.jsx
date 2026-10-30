@@ -52,7 +52,7 @@ export function CoverageMap({ showHeading = true, isCompact = false }) {
               onClick={() => setSelectedArea(area.id)}
               className={`coverage-tab-btn ${isSelected ? 'active' : ''}`}
             >
-              <MapPin size={15} style={{ color: isSelected ? 'var(--color-accent-gold)' : 'var(--color-silver-dark)' }} />
+              <MapPin size={15} style={{ color: isSelected ? '#FFFFFF' : 'var(--color-silver-dark)' }} />
               <span>{area.name}</span>
             </button>
           );

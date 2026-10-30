@@ -195,13 +195,13 @@ export function ExpertWitnessPage() {
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap', fontSize: 'var(--font-size-sm)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Phone size={16} style={{ color: 'var(--color-accent-gold)' }} />
+                <Phone size={16} style={{ color: '#FFFFFF' }} />
                 <a href={`tel:${siteConfig.contact.telephone}`} style={{ color: 'var(--color-white)', fontWeight: 'bold' }}>
                   {siteConfig.contact.telephoneDisplay}
                 </a>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Mail size={16} style={{ color: 'var(--color-accent-gold)' }} />
+                <Mail size={16} style={{ color: '#FFFFFF' }} />
                 <span style={{ color: 'var(--color-white)' }}>{siteConfig.contact.email}</span>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { approvedServices } from '../../config/services';
+import { siteConfig } from '../../config/siteConfig';
 import { validateQuoteForm } from '../../utils/validation';
 import { FormField } from './FormField';
 import { Button } from '../common/Button';
@@ -133,39 +134,127 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
   };
 
   if (submissionReceipt) {
+    const data = submissionReceipt.data || {};
+    const selectedTimescale = timescaleOptions.find(t => t.value === data.timescale)?.label || 'Standard (1 – 2 weeks)';
+    const selectedPropertyType = propertyTypes.find(p => p.value === data.propertyType)?.label;
     return (
-      <div className={`hero-card ${className}`} style={{ borderLeft: '4px solid var(--color-success)', maxWidth: '520px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-          <CheckCircle2 size={28} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
-          <div>
-            <h3 style={{ fontSize: 'var(--font-size-md)', color: 'var(--color-primary-navy)', margin: 0 }}>
-              Quotation Request Received
-            </h3>
-            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
-              Reference: <strong>{submissionReceipt.referenceId}</strong>
+      <div 
+        className={`hero-card ${className} compact-quote-form quote-success-card`} 
+        style={{ maxWidth: '580px', width: '100%', margin: '0 auto' }}
+      >
+        {/* Success Header Strip */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.12)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.18)', border: '1.5px solid #10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckCircle2 size={24} style={{ color: '#10B981' }} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '-0.01em', fontFamily: 'var(--font-serif)' }}>
+                Quotation Request Received
+              </h3>
+              <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0 }}>
+                Logged with RICS Survey Dispatch Desk
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94A3B8', display: 'block' }}>Reference</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.02em', background: 'rgba(255, 255, 255, 0.08)', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.15)', display: 'inline-block' }}>
+              {submissionReceipt.referenceId}
             </span>
           </div>
         </div>
 
-        <div className="alert-box alert-info" style={{ marginBottom: '1rem', padding: '0.65rem 0.85rem' }}>
-          <div style={{ fontSize: 'var(--font-size-xs)' }}>
-            <strong>Demonstration Notice:</strong> Form validated according to RICS criteria. Payload captured successfully.
+        {/* Client Confirmation Message */}
+        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '14px', padding: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: '0.88rem', color: '#F1F5F9', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+            Thank you, <strong style={{ color: '#FFFFFF' }}>{data.customerName || 'Valued Client'}</strong>. We have received your survey instruction enquiry.
+          </p>
+          <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: 1.5, margin: '0.45rem 0 0 0' }}>
+            A member of our surveying team will review the property details and email your formal fixed-fee quotation to <strong style={{ color: '#E2E8F0' }}>{data.customerEmail}</strong> within <strong style={{ color: '#FFFFFF' }}>24 business hours</strong>.
+          </p>
+        </div>
+
+        {/* Clean Property & Instruction Summary Table (Zero Code/JSON!) */}
+        <div style={{ backgroundColor: 'rgba(10, 18, 30, 0.55)', borderRadius: '12px', padding: '0.85rem 1rem', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '1.25rem' }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: '0.6rem' }}>
+            Instruction Overview
+          </span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.65rem', fontSize: '0.8rem' }}>
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Survey Service:</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.serviceName || 'Home Survey'}</span>
+            </div>
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Property Location:</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.propertyAddress ? `${data.propertyAddress}, ${data.propertyPostcode}` : (data.propertyPostcode || 'Specified Region')}</span>
+            </div>
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Target Timescale:</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 600, textTransform: 'capitalize' }}>{selectedTimescale}</span>
+            </div>
+            <div>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Direct Contact Phone:</span>
+              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.customerPhone || 'Not provided'}</span>
+            </div>
           </div>
         </div>
 
-        <div className="prototype-receipt" style={{ maxHeight: '160px', overflowY: 'auto' }}>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
-            {JSON.stringify(submissionReceipt.data, null, 2)}
-          </pre>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={handleReset}
+            className="compact-submit-btn"
+            style={{
+              flex: '1 1 auto',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)',
+              color: '#060B13',
+              padding: '0.65rem 1.25rem',
+              borderRadius: '9999px',
+              fontSize: '0.84rem',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              cursor: 'pointer',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)'
+            }}
+          >
+            <RefreshCw size={14} />
+            <span>Submit Another Quote</span>
+          </button>
+
+          <a
+            href={`tel:${siteConfig.contact.telephone}`}
+            style={{
+              flex: '1 1 auto',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              color: '#FFFFFF',
+              padding: '0.65rem 1.25rem',
+              borderRadius: '9999px',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span>Call Hotline: {siteConfig.contact.telephoneDisplay}</span>
+          </a>
         </div>
 
-        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <Button variant="secondary" size="sm" onClick={handleReset} icon={RefreshCw}>
-            Submit Another Quote
-          </Button>
-          <Button to="/contact" variant="primary" size="sm">
-            Contact Team
-          </Button>
+        {/* Assurance Note */}
+        <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+            Strictly Confidential &bull; Independent RICS Aligned Practice &bull; Zero Contractor Bias
+          </span>
         </div>
       </div>
     );
