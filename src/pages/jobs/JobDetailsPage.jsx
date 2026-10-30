@@ -33,6 +33,9 @@ import {
   RefreshCw,
   Zap,
   Eye,
+  ShieldCheck,
+  MessageSquare,
+  AlertTriangle,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
@@ -41,6 +44,9 @@ import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { useEmailAutomations } from '../../mock/emailAutomations';
+import { RecordBacsPaymentModal } from '../../components/crm/RecordBacsPaymentModal';
+import { useMessages } from '../../mock/messages';
+import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 
 // Canonical 6-Step SurveyBooker Pipeline (From Video 1)
 const STATUS_TIMELINE_STEPS = [
@@ -78,6 +84,19 @@ export const JobDetailsPage = () => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
+  // BACS & QA & Messages State (Client Points 11, 15, 16, 18)
+  const [isBacsModalOpen, setIsBacsModalOpen] = useState(false);
+  const [qaStatus, setQaStatus] = useState('Pending Approval'); // 'Pending Approval' | 'Approved' | 'Revisions Requested'
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [qaFeedbackText, setQaFeedbackText] = useState('Please clarify moisture readings behind dining room skirting board and specify whether Condition Rating 2 or 3 applies.');
+  const [chatReplyText, setChatReplyText] = useState('');
+
+  // Messages hook
+  const { conversations, sendMessage } = useMessages();
+  const currentConv = conversations.find(
+    (c) => c.jobId === job?.id || c.clientEmail === job?.customerEmail || c.id === 'conv-1'
+  ) || conversations[0];
+
   // Form states for adjusting quote
   const [quoteForm, setQuoteForm] = useState({
     baseFee: job?.quote?.baseFee || 650.0,
@@ -105,14 +124,152 @@ export const JobDetailsPage = () => {
   const vat = subtotal * 0.2; // 20% UK VAT
   const totalAmount = subtotal + vat;
 
+  // QA and BACS handlers
+  const handleApproveQaReport = () => {
+    setQaStatus('Approved');
+    handleStepClick(5); // Complete stage
+    updateJob(job.id, {
+      status: 'Complete',
+      timelineStep: 10,
+      activityLog: [
+        {
+          id: Date.now(),
+          time: new Date().toLocaleDateString('en-GB'),
+          text: 'RICS Survey Report reviewed, approved by Admin QA desk, and released to customer portal.',
+        },
+        ...(job.activityLog || []),
+      ],
+    });
+
+    addToast({
+      type: 'success',
+      title: 'QA Approved & Report Released',
+      message: `Final RICS report released to ${job.customer}'s portal. Review invite email triggered.`,
+    });
+  };
+
+  const handleRequestQaRevisions = (e) => {
+    e.preventDefault();
+    setQaStatus('Revisions Requested');
+    setIsFeedbackModalOpen(false);
+
+    updateJob(job.id, {
+      notes: [
+        {
+          id: Date.now(),
+          author: 'Admin QA Desk',
+          date: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+          text: `[QA Revision Request to ${job.surveyor}]: ${qaFeedbackText}`,
+        },
+        ...(job.notes || []),
+      ],
+    });
+
+    addToast({
+      type: 'info',
+      title: 'Revisions Dispatched to Surveyor',
+      message: `Feedback transmitted to ${job.surveyor}. Status set to Revisions Requested.`,
+    });
+  };
+
+  const handleBacsPaymentRecorded = (bacsData) => {
+    updateJob(job.id, {
+      paymentStatus: 'Paid',
+      canBook: true,
+      timelineStep: Math.max(job.timelineStep || 0, 6),
+      activityLog: [
+        {
+          id: Date.now(),
+          time: new Date().toLocaleDateString('en-GB'),
+          text: `Offline BACS payment of £${bacsData.amount.toFixed(2)} recorded (Ref: ${bacsData.reference}). Official HMRC VAT receipt generated.`,
+        },
+        ...(job.activityLog || []),
+      ],
+    });
+
+    addToast({
+      type: 'success',
+      title: 'BACS Settlement Locked',
+      message: `Payment confirmed for ${job.jobNo}. VAT receipt downloaded.`,
+    });
+  };
+
+  const handleDownloadReport = () => {
+    downloadReportPDF({
+      reportRef: job.jobNo,
+      propertyAddress: `${job.property}, ${job.location}`,
+      clientName: job.customer,
+      surveyDate: job.date || '27/10/2026',
+      surveyorName: job.surveyor || 'David Thorne MRICS',
+      surveyType: job.surveyType,
+      valuation: job.propertyDetails?.value || '£1,450,000',
+    });
+    addToast({
+      type: 'success',
+      title: 'RICS Survey Report Downloaded',
+      message: `Official RICS Home Survey report saved for ${job.jobNo}.`,
+    });
+  };
+
+  const handleDownloadDocument = (doc) => {
+    const docNameLower = (doc.name || '').toLowerCase();
+    const docTypeLower = (doc.type || '').toLowerCase();
+
+    if (docNameLower.includes('report') || docTypeLower.includes('report')) {
+      downloadReportPDF({
+        reportRef: job.jobNo,
+        propertyAddress: `${job.property}, ${job.location}`,
+        clientName: job.customer,
+        surveyDate: job.date || '27/10/2026',
+        surveyorName: job.surveyor || 'David Thorne MRICS',
+        surveyType: job.surveyType,
+        valuation: job.propertyDetails?.value || '£1,450,000',
+      });
+    } else if (docNameLower.includes('terms') || docNameLower.includes('signed') || docTypeLower.includes('legal')) {
+      downloadTermsPDF({
+        jobNo: job.jobNo,
+        clientName: job.customer,
+        property: `${job.property}, ${job.location}`,
+        surveyType: job.surveyType,
+        signatureType: 'drawn',
+        signatureValue: 'Verified Digital Signature',
+      });
+    } else if (docNameLower.includes('invoice') || docNameLower.includes('vat') || docNameLower.includes('receipt') || docTypeLower.includes('invoice')) {
+      downloadInvoicePDF({
+        invoiceNo: `INV-2026-${job.jobNo.replace(/[^0-9]/g, '') || '080'}`,
+        date: job.date || '26/10/2026',
+        clientName: job.customer,
+        property: `${job.property}, ${job.location}`,
+        surveyType: job.surveyType,
+        baseFee: job.quote?.baseFee || 770.0,
+        vatAmount: (job.quote?.baseFee || 770.0) * 0.2,
+        totalAmount: (job.quote?.baseFee || 770.0) * 1.2,
+        paymentMethod: job.paymentStatus === 'Paid' ? 'Online Card / BACS' : 'Pending Settlement',
+      });
+    } else {
+      const blob = new Blob([`NJS Property Group Archive: ${doc.name}\nJob: ${job.jobNo}\nDate: ${doc.date}`], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.name;
+      a.click();
+    }
+
+    addToast({
+      type: 'success',
+      title: 'Downloading Document',
+      message: `Downloaded ${doc.name} for ${job.jobNo}.`,
+    });
+  };
+
   // Calculate current canonical 6-step index
   const getCurrentStepIndex = () => {
     const rawStep = job?.timelineStep || 4;
     if (rawStep <= 2) return 0; // Quote
     if (rawStep === 3) return 1; // Paid
     if (rawStep === 4 || rawStep === 5) return 2; // Accepted
-    if (rawStep === 6 || rawStep === 7) return 3; // Booked
-    if (rawStep === 8) return 4; // Preparing report
+    if (rawStep === 6) return 3; // Booked
+    if (rawStep === 7 || rawStep === 8 || rawStep === 9) return 4; // Preparing report & QA Review
     return 5; // Complete
   };
 
@@ -360,6 +517,7 @@ export const JobDetailsPage = () => {
     { id: 'tasks', label: `Tasks (${(job?.tasks || []).filter((t) => t.done).length}/${job?.tasks?.length || 0})` },
     { id: 'documents', label: `Documents (${job?.documents?.length || 0})` },
     { id: 'emails', label: `Emails (${job?.emails?.length || 0})` },
+    { id: 'messages', label: `Client Messages (${currentConv?.messages?.length || 0})` },
     { id: 'activity-log', label: 'Activity log' },
   ];
 
@@ -383,9 +541,9 @@ export const JobDetailsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-            <span>UK Property Surveying Practice</span>
+            <span>NJS Property Group</span>
             <span>›</span>
-            <span>Admin</span>
+            <span>Admin CRM</span>
             <span>›</span>
             <button
               onClick={() => navigate(backPath)}
@@ -531,8 +689,27 @@ export const JobDetailsPage = () => {
           </div>
         </div>
 
-        {/* Action Buttons: "Send terms" and "Confirm/Adjust quote" */}
+        {/* Action Buttons: "Record BACS Payment", "Client Messages", "Confirm/Adjust quote", "Send terms" */}
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          {job.paymentStatus !== 'Paid' && (
+            <button
+              onClick={() => setIsBacsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+              title="Record offline bank transfer settlement"
+            >
+              <PoundSterling className="w-4 h-4" />
+              <span>Record BACS Payment</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setActiveTab('messages')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-[#0B1F4D] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4 text-[#2563EB]" />
+            <span>Client Messages</span>
+          </button>
+
           <button
             onClick={() => setIsAdjustQuoteModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 hover:border-[#2563EB] bg-white text-slate-700 hover:text-[#2563EB] text-xs font-bold transition-all shadow-2xs cursor-pointer"
@@ -700,84 +877,113 @@ export const JobDetailsPage = () => {
             </div>
           )}
 
-          {/* Stage 4: Preparing report */}
+          {/* Stage 4: Preparing report / RICS QA Review Desk (Client Point 15) */}
           {currentStepIndex === 4 && (
-            <div className="space-y-3">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>The technical report is due by {job.date || '28/10/2026'} 6:00 PM.</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-500 uppercase">Survey Stage:</span>
-                <span className="text-xs font-black text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                  Preparing report
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-900 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>The technical report is due by {job.date || '28/10/2026'} 6:00 PM.</span>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                  48h SLA Tracking Active
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
-                Please submit your finalized survey report using the fields below. You can then press upload to save the document and mark the job as complete.
-              </p>
+              {/* QA Review Workspace Box */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-200 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-blue-200/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#0B1F4D] text-white flex items-center justify-center">
+                      <ShieldCheck className="w-4 h-4 text-sky-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-[#0B1F4D]">
+                        RICS Quality Assurance (QA) Approval Desk
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Review site inspection evidence &amp; draft report before releasing final PDF to client portal.
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Upload Report Inputs (From Video 1) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
-                    Select Report PDF:
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      id="report-upload-file"
-                      accept=".pdf"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setReportFileName(e.target.files[0].name);
-                        }
-                      }}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="report-upload-file"
-                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-300 cursor-pointer flex items-center gap-1.5"
-                    >
-                      <FileUp className="w-4 h-4 text-slate-600" />
-                      <span>Choose file</span>
-                    </label>
-                    <span className="text-xs font-mono text-slate-600 truncate">
-                      {reportFileName || 'No file chosen (e.g. 200742-Level 3.pdf)'}
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 self-start sm:self-center ${
+                      qaStatus === 'Approved'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : qaStatus === 'Revisions Requested'
+                        ? 'bg-rose-100 text-rose-800 border-rose-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    QA Status: {qaStatus}
+                  </span>
+                </div>
+
+                {/* Evidence & Surveyor Notes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Surveyor On-Site Notes
                     </span>
+                    <p className="font-semibold text-slate-800">
+                      {job.surveyor || 'David Thorne MRICS'} &bull; Inspected {job.date || '27/10/2026'}
+                    </p>
+                    <p className="text-[11px] text-slate-600 leading-snug">
+                      Moisture meter readings in rear dining room confirmed <strong>24% WME</strong> dampness in skirting. Roof void insulation non-standard.
+                    </p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">
+                      Submitted Draft Report &amp; Evidence
+                    </span>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-mono text-slate-700">RICS_Level_2_Survey_Draft_v1.pdf</span>
+                      <button
+                        type="button"
+                        onClick={handleDownloadReport}
+                        className="text-[#2563EB] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Preview Draft PDF</span>
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Site Photos: <strong>4 high-res photos captured</strong> on mobile field app.
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-bold text-slate-500 block mb-1">
-                    Digital Report URL:
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://reports.propertygroup.co.uk/rep-..."
-                    value={reportUrl}
-                    onChange={(e) => setReportUrl(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
-                  />
-                </div>
-              </div>
+                {/* Decisive QA Action Buttons */}
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleApproveQaReport}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Approve &amp; Release to Customer</span>
+                  </button>
 
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={handleWhatsNextReschedule}
-                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                >
-                  Reschedule
-                </button>
-                <button
-                  onClick={handleWhatsNextConfirm}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>Upload &amp; Complete Job</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsFeedbackModalOpen(true)}
+                    className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Request Revisions from Surveyor</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleWhatsNextReschedule}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Reschedule
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -794,13 +1000,16 @@ export const JobDetailsPage = () => {
               </p>
               <div className="flex items-center gap-3 pt-2">
                 <button
-                  onClick={() => alert('Downloading official RICS report PDF...')}
+                  type="button"
+                  onClick={handleDownloadReport}
                   className="px-5 py-2.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
                   <Download className="w-4 h-4 text-sky-400" />
                   <span>Download Final Report (PDF)</span>
                 </button>
                 <button
+                  type="button"
+
                   onClick={() => {
                     setClientModalTab('calls');
                     setIsClientModalOpen(true);
@@ -1256,7 +1465,7 @@ export const JobDetailsPage = () => {
                 <div
                   key={doc.id}
                   className="p-4 rounded-2xl border border-slate-200/90 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all flex flex-col justify-between group cursor-pointer"
-                  onClick={() => alert(`Downloading ${doc.name}...`)}
+                  onClick={() => handleDownloadDocument(doc)}
                 >
                   <div>
                     <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#2563EB] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
@@ -1397,6 +1606,97 @@ export const JobDetailsPage = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 7. Client Messages Direct Thread (Client Points 18, 19, 20) */}
+          {activeTab === 'messages' && (
+            <div className="space-y-4 max-w-4xl">
+              <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#2563EB]" />
+                    <span>Direct Portal Chat with {job.customer}</span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Messages sync live with the client's private portal dashboard. Notification copy dispatched to <strong>info@njspropertygroup.com</strong>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-mono">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Real-time Operations Sync Active</span>
+                </div>
+              </div>
+
+              {/* Chat Feed */}
+              <div className="border border-slate-200 rounded-3xl bg-slate-50/50 flex flex-col h-[460px] overflow-hidden">
+                <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                  {(currentConv?.messages || []).map((msg) => {
+                    const isAdmin = msg.role === 'admin';
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-1 px-1">
+                          <span className="text-[10px] font-bold text-slate-600">
+                            {msg.sender}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {msg.time}
+                          </span>
+                        </div>
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs font-medium leading-relaxed shadow-2xs ${
+                            isAdmin
+                              ? 'bg-[#0B1F4D] text-white rounded-tr-xs'
+                              : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs'
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Reply Bar */}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!chatReplyText.trim()) return;
+                    sendMessage(
+                      currentConv?.id || 'conv-1',
+                      chatReplyText.trim(),
+                      'NJS Operations Desk (Sarah)',
+                      'admin'
+                    );
+                    setChatReplyText('');
+                    addToast({
+                      type: 'success',
+                      title: 'Reply Sent to Client',
+                      message: `Sent to ${job.customer}. Notification email dispatched to info@njspropertygroup.com.`,
+                    });
+                  }}
+                  className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    placeholder={`Reply to ${job.customer}...`}
+                    value={chatReplyText}
+                    onChange={(e) => setChatReplyText(e.target.value)}
+                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatReplyText.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Reply</span>
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>
@@ -1573,8 +1873,8 @@ export const JobDetailsPage = () => {
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
               <div className="flex items-center gap-2">
                 <span className="text-slate-400 w-16 font-semibold">From:</span>
-                <span className="font-bold text-slate-800">UK Property Surveying Practice</span>
-                <span className="text-slate-400 font-mono text-[11px]">&lt;notifications@propertygroup.co.uk&gt;</span>
+                <span className="font-bold text-slate-800">NJS Property Group Operations</span>
+                <span className="text-slate-400 font-mono text-[11px]">&lt;info@njspropertygroup.com&gt;</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-slate-400 w-16 font-semibold">To:</span>
@@ -1592,12 +1892,64 @@ export const JobDetailsPage = () => {
 
             <div className="p-5 bg-white rounded-xl border border-slate-200 leading-relaxed font-sans whitespace-pre-line text-slate-800 shadow-2xs">
               {viewingEmail.body || (
-                `Dear ${job.customer},\n\nThis is an automated operational notification regarding your survey at ${job.property || job.location}.\n\nReference: ${job.jobNo}\nService: ${job.surveyType}\nStatus: ${job.status}\n\nKind regards,\nUK Property Surveying Practice Team`
+                `Dear ${job.customer},\n\nThis is an automated operational notification regarding your survey at ${job.property || job.location}.\n\nReference: ${job.jobNo}\nService: ${job.surveyType}\nStatus: ${job.status}\n\nKind regards,\nNJS Property Group Operations Team\ninfo@njspropertygroup.com`
               )}
             </div>
           </div>
         </Modal>
       )}
+
+      {/* Record Offline BACS Payment Modal (Client Point 16) */}
+      <RecordBacsPaymentModal
+        isOpen={isBacsModalOpen}
+        onClose={() => setIsBacsModalOpen(false)}
+        record={job}
+        onPaymentRecorded={handleBacsPaymentRecorded}
+      />
+
+      {/* Request QA Revisions Modal (Client Point 15) */}
+      <Modal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        title="Request Surveyor Revisions (QA Desk)"
+        subtitle={`Send formal QA revision notes back to ${job.surveyor || 'surveyor'}.`}
+        maxWidth="max-w-lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setIsFeedbackModalOpen(false)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="qa-feedback-form"
+              className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Dispatch Feedback to Surveyor</span>
+            </button>
+          </>
+        }
+      >
+        <form id="qa-feedback-form" onSubmit={handleRequestQaRevisions} className="space-y-4 text-xs">
+          <p className="text-slate-600 leading-relaxed">
+            Please specify the revisions required on the draft RICS survey report before approval can be granted:
+          </p>
+          <textarea
+            required
+            rows={4}
+            value={qaFeedbackText}
+            onChange={(e) => setQaFeedbackText(e.target.value)}
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+          />
+          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px]">
+            This notice will be recorded in the job audit log and sent to {job.surveyor}'s field portal for corrections.
+          </div>
+        </form>
+      </Modal>
 
       {/* Client Profile & Complaints Modal */}
       <ClientProfileModal

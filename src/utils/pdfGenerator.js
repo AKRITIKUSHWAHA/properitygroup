@@ -610,3 +610,4 @@ export const downloadReportPDF = ({
   doc.save(`NJS_RICS_Survey_Report_${jobNo}.pdf`);
   return true;
 };
+

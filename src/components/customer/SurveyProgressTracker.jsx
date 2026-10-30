@@ -352,3 +352,4 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
     </div>
   );
 };
+

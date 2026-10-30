@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, User, ShieldCheck, AlertCircle, Building2, Send } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, ShieldCheck, AlertCircle, Building2, Send, Key, AlertTriangle } from 'lucide-react';
 import { Modal } from '../common/Modal';
-import { SURVEYORS } from '../../mock/jobs';
+import { SURVEYORS, useJobs } from '../../mock/jobs';
 
 export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
+  const { jobs } = useJobs();
   const [formData, setFormData] = useState({
     customer: '',
     customerEmail: '',
@@ -14,11 +15,25 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     surveyorId: 'srv-1',
     date: '28/10/2026',
     timeSlot: '10:00 - 13:00',
+    accessType: 'Keys with Selling Agent',
+    keyRef: 'Foxtons Mayfair Ref #FX-402',
+    conciergeCode: '#8492',
+    sellingAgent: 'Sarah Croft (020 7629 8171)',
     termsSigned: false,
     paymentReceived: false,
   });
 
   const [error, setError] = useState('');
+
+  // Conflict / Double-Booking Check
+  const selectedSurveyor = SURVEYORS.find((s) => s.id === formData.surveyorId) || SURVEYORS[0];
+  const conflictJob = jobs.find(
+    (j) =>
+      j.surveyorId === formData.surveyorId &&
+      j.date === formData.date &&
+      j.status !== 'Cancelled' &&
+      (j.timeSlot === formData.timeSlot || j.timeSlot?.split(' - ')[0] === formData.timeSlot?.split(' - ')[0])
+  );
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -64,7 +79,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
         bedrooms: '3 Bedrooms, 2 Bathrooms',
         tenure: 'Freehold',
         listedBuilding: 'None',
-        accessDetails: 'Keys to be collected from agent',
+        accessDetails: `${formData.accessType}: ${formData.keyRef} (Concierge/Code: ${formData.conciergeCode})`,
         yearBuilt: 'c. 1950',
         propertyType: 'Residential Property',
       },
@@ -77,7 +92,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
       contacts: {
         client: { name: formData.customer, role: 'Buyer', phone: formData.customerPhone, email: formData.customerEmail },
         solicitor: { name: 'Solicitors Direct', firm: 'Conveyancers UK', phone: '', email: '', ref: '' },
-        agent: { name: 'Key Agent', agency: 'Local Estate Agent', phone: '', email: '' },
+        agent: { name: formData.sellingAgent, agency: 'Selling Agent', phone: '', email: '' },
       },
       notes: [],
       tasks: [],
@@ -252,6 +267,90 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               <option value="14:00 - 17:00">14:00 - 17:00 (Afternoon)</option>
               <option value="15:00 - 18:00">15:00 - 18:00 (Late Afternoon)</option>
             </select>
+          </div>
+        </div>
+
+        {/* Double-Booking Prevention Warning Banner (Client Point 11) */}
+        {conflictJob && (
+          <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2.5 text-xs text-amber-950 animate-in fade-in">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-extrabold text-amber-900">⚠️ Surveyor Double-Booking Detected:</span>
+              <p className="mt-0.5 leading-relaxed">
+                <strong>{selectedSurveyor.name}</strong> already has job <strong>{conflictJob.jobNo}</strong> scheduled on <strong>{formData.date}</strong> at <strong>{conflictJob.timeSlot}</strong> for <em>{conflictJob.property}</em>. Please select an alternate slot or reassign to avoid surveyor overlap.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Access & Keyholder Logistics (Client Point 11) */}
+        <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#0B1F4D]">
+            <Key className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Keyholder &amp; On-Site Access Logistics</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                Access Type / Key Collection
+              </label>
+              <select
+                name="accessType"
+                value={formData.accessType}
+                onChange={handleChange}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="Keys with Selling Agent">Keys with Selling Agent</option>
+                <option value="Vendor / Homeowner on Site">Vendor / Homeowner on Site</option>
+                <option value="Key Safe / Lockbox">Key Safe / Lockbox</option>
+                <option value="Building Concierge">Building Concierge</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                Branch Ref / Key Code
+              </label>
+              <input
+                type="text"
+                name="keyRef"
+                placeholder="e.g. Foxtons Mayfair #FX-402"
+                value={formData.keyRef}
+                onChange={handleChange}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                Concierge / Alarm Code
+              </label>
+              <input
+                type="text"
+                name="conciergeCode"
+                placeholder="e.g. #8492"
+                value={formData.conciergeCode}
+                onChange={handleChange}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                Selling Agent Contact
+              </label>
+              <input
+                type="text"
+                name="sellingAgent"
+                placeholder="e.g. Sarah Croft (020 7629 8171)"
+                value={formData.sellingAgent}
+                onChange={handleChange}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </div>
 

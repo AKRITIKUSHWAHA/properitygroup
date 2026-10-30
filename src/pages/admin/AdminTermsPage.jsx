@@ -33,6 +33,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { TERMS_TEMPLATES, useTerms } from '../../mock/terms';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+import { downloadTermsPDF } from '../../utils/pdfGenerator';
 
 // Clean 3-Dot Action Dropdown Menu for each Agreement row
 const AgreementRowActions = ({
@@ -288,9 +289,17 @@ export const AdminTermsPage = () => {
 
   // Quick Action Handlers
   const handleDownloadSignedCopy = (agreement) => {
+    downloadTermsPDF({
+      jobNo: agreement.jobNo || agreement.refNo,
+      clientName: agreement.client,
+      property: agreement.property,
+      surveyType: agreement.templateName || 'RICS Level 2 Home Survey',
+      signatureType: 'drawn',
+      signatureValue: 'Verified Digital Signature',
+    });
     addToast({
       type: 'success',
-      title: 'Downloading Signed Agreement',
+      title: 'Signed Agreement Downloaded',
       message: `Downloaded executed PDF certificate for ${agreement.refNo} (${agreement.auditCode || 'Verified e-signature'}).`,
     });
   };

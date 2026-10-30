@@ -43,6 +43,7 @@ import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
+import { useMessages } from '../../mock/messages';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -1297,67 +1298,53 @@ export const CustomerAssignedSurveyorPage = () => {
 export const CustomerMessagesPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { conversations, sendMessage, markAsRead } = useMessages();
 
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'NJS Admin Team (Sarah)',
-      role: 'admin',
-      text: 'Good morning Emma, thank you for booking your survey for 14 Mayfair Gate. Surveyor David Thorne MRICS is confirmed for tomorrow morning.',
-      time: '26/10/2026, 14:10',
-    },
-    {
-      id: 2,
-      sender: 'Emma Watson',
-      role: 'client',
-      text: 'Thank you Sarah! Please note that the keys are held at Foxtons Mayfair under ref FX-402, and there is a damp spot behind the dining room skirting to look at.',
-      time: '26/10/2026, 14:35',
-    },
-    {
-      id: 3,
-      sender: 'NJS Admin Team (Sarah)',
-      role: 'admin',
-      text: 'Noted with thanks! David has added a specific damp meter check in the dining room to his inspection checklist.',
-      time: '26/10/2026, 15:02',
-    },
-  ]);
+  // Find active conversation for current customer
+  const currentConv = conversations.find(
+    (c) => c.clientEmail === user?.email || c.id === 'conv-1'
+  ) || conversations[0];
 
+  const messages = currentConv?.messages || [];
   const [inputMessage, setInputMessage] = useState('');
+
+  useEffect(() => {
+    if (currentConv?.id) {
+      markAsRead(currentConv.id, 'client');
+    }
+  }, [currentConv?.id]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    const newMsg = {
-      id: Date.now(),
-      sender: user?.name || 'Emma Watson',
-      role: 'client',
-      text: inputMessage,
-      time: 'Just now',
-    };
-
-    setMessages([...messages, newMsg]);
+    const textToSend = inputMessage;
     setInputMessage('');
+
+    sendMessage(
+      currentConv?.id || 'conv-1',
+      textToSend,
+      user?.name || 'Emma Watson',
+      'client'
+    );
 
     addToast({
       type: 'success',
-      title: 'Message Sent',
-      message: 'Your query has been sent to the NJS office coordinator.',
+      title: 'Message Sent to NJS Desk',
+      message: 'Your query has been dispatched to operations (info@njspropertygroup.com).',
     });
 
-    // Point 20 Messaging Automation: Simulated auto-acknowledgement
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          sender: 'NJS Automated Coordinator',
-          role: 'admin',
-          text: 'Thank you for your message. An NJS property coordinator has received your query and will respond shortly.',
-          time: 'Just now',
-        },
-      ]);
-    }, 1200);
+    // Point 20 Messaging Automation: Simulated auto-acknowledgement if it was first customer response
+    if (messages.filter(m => m.role === 'client').length === 0) {
+      setTimeout(() => {
+        sendMessage(
+          currentConv?.id || 'conv-1',
+          'Thank you for your message. An NJS property coordinator has received your query and will respond shortly.',
+          'NJS Automated Coordinator',
+          'admin'
+        );
+      }, 1200);
+    }
   };
 
   const handleAttach = () => {
