@@ -6,11 +6,7 @@ export const AuthLayout = ({ children, title, subtitle }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/login');
-    }
+    navigate('/');
   };
 
   return (
@@ -45,15 +41,14 @@ export const AuthLayout = ({ children, title, subtitle }) => {
           </Link>
 
           {/* Top Bar Back Button */}
-          <button
-            type="button"
-            onClick={handleBack}
+          <Link
+            to="/"
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-700 hover:text-[#0B1F4D] text-xs font-bold shadow-xs hover:shadow-md border border-slate-200/90 transition-all cursor-pointer backdrop-blur-md active:scale-95"
-            title="Go Back"
+            title="Back to Landing Page"
           >
             <ArrowLeft className="w-4 h-4 text-[#0B1F4D]" />
             <span>Back</span>
-          </button>
+          </Link>
         </div>
 
         {/* Center Content: Floating White Card */}

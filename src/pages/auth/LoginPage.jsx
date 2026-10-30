@@ -94,11 +94,7 @@ export const LoginPage = ({ initialMode = null }) => {
     ROLES_CONFIG.find((r) => r.id === selectedRole) || ROLES_CONFIG[0];
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
+    navigate('/');
   };
 
   const handleSelectRole = (role) => {
@@ -146,14 +142,13 @@ export const LoginPage = ({ initialMode = null }) => {
                 </div>
               </Link>
 
-              <button
-                type="button"
-                onClick={handleBack}
+              <Link
+                to="/"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
-              </button>
+              </Link>
             </div>
 
             {/* Header Titles */}
