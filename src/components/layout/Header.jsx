@@ -486,10 +486,6 @@ export function Header() {
 
             {/* Header Actions */}
             <div className="header-actions">
-              <Link to="/login" className="header-login-glass-btn hide-mobile">
-                Sign In
-              </Link>
-
               <a
                 href={isHomePage ? '#quote-section' : '/contact#quote'}
                 onClick={handleQuoteClick}
