@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -18,6 +18,11 @@ import {
   FileText,
   AlertCircle,
   TrendingUp,
+  MoreVertical,
+  PhoneCall,
+  Copy,
+  DollarSign,
+  FileCheck,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -25,6 +30,159 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { useQuotes } from '../../mock/quotes';
+import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
+
+// 3-Dot Clean Action Dropdown Menu for each Quotation
+const QuoteRowActions = ({
+  quote,
+  onView,
+  onMarkPaid,
+  onDownloadReceipt,
+  onResendQuote,
+  onOpenClientProfile,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleCopy = (e, text, label) => {
+    e.stopPropagation();
+    setIsOpen(false);
+    navigator.clipboard?.writeText(text);
+    addToast({
+      type: 'info',
+      title: 'Copied to Clipboard',
+      message: `${label}: ${text}`,
+    });
+  };
+
+  const isPaid = quote.status === 'Paid';
+
+  return (
+    <div className="relative inline-block text-right" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
+        title="Quotation actions"
+        aria-label="Quotation actions"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 w-52 sm:w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+          {/* Primary View Action */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onView(quote);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-[#0B1F4D] bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+          >
+            <Eye className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+            <span>View Fee Breakdown</span>
+          </button>
+
+          {/* Settle / Mark Paid */}
+          {!isPaid ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onMarkPaid(quote.id);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Mark as Paid (£{quote.totalAmount.toFixed(2)})</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onDownloadReceipt(quote);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Download VAT Receipt</span>
+            </button>
+          )}
+
+          {/* Resend Proposal */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onResendQuote(quote.id, quote.clientEmail);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+          >
+            <Send className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>Resend Proposal Email</span>
+          </button>
+
+          {/* Client Profile with Call Notes & Complaints */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              onOpenClientProfile(quote.clientEmail, 'calls');
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+            <span>Call Notes &amp; Complaints</span>
+          </button>
+
+          <div className="h-px bg-slate-100 my-1" />
+
+          {/* Copy Shortcuts */}
+          <button
+            type="button"
+            onClick={(e) => handleCopy(e, quote.refNo, 'Quotation Ref')}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+          >
+            <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>Copy Quote Ref ({quote.refNo})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => handleCopy(e, quote.property, 'Property')}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+          >
+            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span>Copy Property Address</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AdminQuotesPage = () => {
   const { addToast } = useToast();
@@ -34,11 +192,13 @@ export const AdminQuotesPage = () => {
   const [activeTab, setActiveTab] = useState('Quotations');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
 
   // Modals state
   const [isNewQuoteModalOpen, setIsNewQuoteModalOpen] = useState(false);
   const [selectedQuoteDetail, setSelectedQuoteDetail] = useState(null);
+  const [selectedClientEmail, setSelectedClientEmail] = useState(null);
+  const [clientModalTab, setClientModalTab] = useState('calls');
 
   // "+ New Quotation" Form State
   const [formData, setFormData] = useState({
@@ -117,7 +277,7 @@ export const AdminQuotesPage = () => {
       invoiceNo: `INV-2026-${Math.floor(110 + Math.random() * 889)}`,
       client: formData.client.trim(),
       clientEmail: formData.clientEmail.trim() || 'client@example.co.uk',
-      clientPhone: formData.customerPhone || '+44 7700 900000',
+      clientPhone: formData.clientPhone || '+44 7700 900000',
       property: formData.property.trim(),
       location: formData.location.trim() || 'London, UK',
       surveyType: formData.surveyType,
@@ -170,10 +330,10 @@ export const AdminQuotesPage = () => {
     const outstandingCount = quotes.filter((q) => q.status !== 'Paid').length;
 
     return [
-      { id: 'Quotations', label: 'Quotations', count: quotationsCount },
-      { id: 'Invoices', label: 'Invoices', count: invoicesCount },
-      { id: 'Payments', label: 'Payments', count: paymentsCount },
-      { id: 'Outstanding', label: 'Outstanding', count: outstandingCount },
+      { id: 'Quotations', label: 'All Quotations', count: quotationsCount },
+      { id: 'Invoices', label: 'Invoices Issued', count: invoicesCount },
+      { id: 'Payments', label: 'Paid & Settled', count: paymentsCount },
+      { id: 'Outstanding', label: 'Awaiting Payment', count: outstandingCount },
     ];
   }, [quotes]);
 
@@ -201,6 +361,7 @@ export const AdminQuotesPage = () => {
           item.refNo.toLowerCase().includes(query) ||
           item.invoiceNo.toLowerCase().includes(query) ||
           item.client.toLowerCase().includes(query) ||
+          item.clientEmail?.toLowerCase().includes(query) ||
           item.property.toLowerCase().includes(query) ||
           item.surveyType.toLowerCase().includes(query);
         if (!match) return false;
@@ -230,33 +391,41 @@ export const AdminQuotesPage = () => {
     });
   };
 
+  const handleDownloadReceipt = (quote) => {
+    addToast({
+      type: 'success',
+      title: 'VAT Receipt Generated',
+      message: `Downloaded official receipt for ${quote.refNo} (${quote.invoiceNo}).`,
+    });
+  };
+
   // Status badge renderer: Draft, Sent, Viewed, Accepted, Paid
   const renderStatusBadge = (status) => {
     switch (status) {
       case 'Paid':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
             Paid
           </span>
         );
       case 'Accepted':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
             <CheckCircle2 className="w-3 h-3 text-indigo-600" />
             Accepted
           </span>
         );
       case 'Viewed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
             <Eye className="w-3 h-3 text-purple-600" />
             Viewed
           </span>
         );
       case 'Sent':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
             <Send className="w-3 h-3 text-[#2563EB]" />
             Sent
           </span>
@@ -264,7 +433,7 @@ export const AdminQuotesPage = () => {
       case 'Draft':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
             <FileText className="w-3 h-3 text-slate-400" />
             Draft
           </span>
@@ -272,24 +441,25 @@ export const AdminQuotesPage = () => {
     }
   };
 
-  // Required table columns:
-  // Amount ex VAT, VAT 20%, Total, Status (Draft, Sent, Viewed, Accepted, Paid)
+  // Clean, Fluid & Responsive 6-Column Specification (Fits on all screens without horizontal cutoff)
   const columns = [
     {
       key: 'refNo',
-      header: 'Reference #',
+      header: 'Quote Ref / Date',
       sortable: true,
-      className: 'font-mono font-bold text-[#0B1F4D] whitespace-nowrap',
+      className: 'w-[16%] min-w-[100px]',
       render: (val, row) => (
-        <div>
+        <div className="truncate">
           <button
             onClick={() => setSelectedQuoteDetail(row)}
-            className="text-[#2563EB] hover:text-[#0B1F4D] font-bold hover:underline cursor-pointer"
+            className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block truncate"
+            title="Click to view full quote breakdown"
           >
             {val}
           </button>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-            {activeTab === 'Invoices' || activeTab === 'Payments' ? row.invoiceNo : row.date}
+          <div className="text-[11px] text-slate-500 font-mono mt-0.5">{row.date}</div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
+            {row.invoiceNo}
           </div>
         </div>
       ),
@@ -298,10 +468,22 @@ export const AdminQuotesPage = () => {
       key: 'client',
       header: 'Customer',
       sortable: true,
+      className: 'w-[23%] min-w-[125px]',
       render: (val, row) => (
-        <div className="min-w-[140px]">
-          <div className="font-bold text-slate-900 text-xs">{val}</div>
-          <div className="text-[11px] text-slate-400 truncate max-w-[160px]">{row.clientEmail}</div>
+        <div className="min-w-0">
+          <button
+            onClick={() => {
+              setSelectedClientEmail(row.clientEmail);
+              setClientModalTab('calls');
+            }}
+            className="text-left font-bold text-slate-900 hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer max-w-full"
+            title="Click to view client profile, call notes & complaints"
+          >
+            <span className="truncate">{val}</span>
+            <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
+          </button>
+          <div className="text-[11px] text-slate-500 truncate mt-0.5">{row.clientEmail}</div>
+          <div className="text-[10px] text-slate-400 font-mono truncate">{row.clientPhone || '+44 7700 900000'}</div>
         </div>
       ),
     },
@@ -309,35 +491,35 @@ export const AdminQuotesPage = () => {
       key: 'property',
       header: 'Property & Service',
       sortable: true,
+      className: 'w-[27%] min-w-[135px]',
       render: (val, row) => (
-        <div className="min-w-[180px] max-w-[240px]">
-          <div className="font-bold text-slate-800 text-xs truncate">{val}</div>
-          <div className="text-[11px] text-[#2563EB] font-semibold truncate mt-0.5">{row.surveyType}</div>
+        <div className="min-w-0">
+          <div className="font-bold text-[#0B1F4D] text-xs truncate" title={val}>
+            {val}
+          </div>
+          <div className="text-[11px] text-[#2563EB] font-semibold truncate mt-0.5">
+            {row.surveyType}
+          </div>
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5 truncate">
+            <MapPin className="w-2.5 h-2.5 text-rose-500 shrink-0" />
+            <span className="truncate">{row.location}</span>
+          </div>
         </div>
       ),
     },
     {
-      key: 'amountExVat',
-      header: 'Amount ex VAT',
-      sortable: true,
-      className: 'font-mono font-bold text-slate-800 whitespace-nowrap',
-      render: (val) => `£${val.toFixed(2)}`,
-    },
-    {
-      key: 'vatAmount',
-      header: 'VAT 20%',
-      sortable: true,
-      className: 'font-mono font-medium text-slate-500 whitespace-nowrap',
-      render: (val) => `£${val.toFixed(2)}`,
-    },
-    {
       key: 'totalAmount',
-      header: 'Total (inc. VAT)',
+      header: 'Fee & UK VAT',
       sortable: true,
-      className: 'font-mono font-black text-[#0B1F4D] whitespace-nowrap',
+      className: 'w-[18%] min-w-[105px]',
       render: (val, row) => (
-        <div className="font-black text-sm text-[#0B1F4D]">
-          £{val.toFixed(2)}
+        <div className="font-mono min-w-0">
+          <div className="font-black text-xs sm:text-sm text-[#0B1F4D]">
+            £{val.toFixed(2)}
+          </div>
+          <div className="text-[10px] text-slate-500 truncate">
+            Net £{row.amountExVat.toFixed(2)} + £{row.vatAmount.toFixed(2)} VAT
+          </div>
         </div>
       ),
     },
@@ -345,40 +527,27 @@ export const AdminQuotesPage = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
+      className: 'w-[11%] min-w-[75px]',
       render: (val) => renderStatusBadge(val),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: '',
       sortable: false,
-      className: 'text-right whitespace-nowrap',
+      headerClassName: 'w-[5%] min-w-[44px]',
+      className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5">
-          {row.status !== 'Paid' ? (
-            <button
-              onClick={() => handleMarkPaid(row.id)}
-              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-[11px] font-bold border border-emerald-200 transition-colors cursor-pointer"
-            >
-              Mark Paid
-            </button>
-          ) : (
-            <button
-              onClick={() => addToast({ type: 'info', title: 'Receipt Download', message: `Downloaded receipt for ${row.refNo}.` })}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
-              title="Download VAT Receipt"
-            >
-              <Download className="w-4 h-4" />
-            </button>
-          )}
-
-          <button
-            onClick={() => setSelectedQuoteDetail(row)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
-            title="View Breakdown"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-        </div>
+        <QuoteRowActions
+          quote={row}
+          onView={(q) => setSelectedQuoteDetail(q)}
+          onMarkPaid={handleMarkPaid}
+          onDownloadReceipt={handleDownloadReceipt}
+          onResendQuote={handleSendQuote}
+          onOpenClientProfile={(email, tab) => {
+            setSelectedClientEmail(email);
+            setClientModalTab(tab);
+          }}
+        />
       ),
     },
   ];
@@ -392,8 +561,14 @@ export const AdminQuotesPage = () => {
     return quotes.filter((q) => q.status !== 'Paid').reduce((acc, q) => acc + q.totalAmount, 0);
   }, [quotes]);
 
+  const averageQuoteFee = useMemo(() => {
+    if (quotes.length === 0) return 0;
+    const total = quotes.reduce((acc, q) => acc + q.totalAmount, 0);
+    return total / quotes.length;
+  }, [quotes]);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <PageHeader
         title="Quotations & Payment Gateway"
@@ -404,45 +579,39 @@ export const AdminQuotesPage = () => {
         onAction={() => setIsNewQuoteModalOpen(true)}
       />
 
-      {/* Top 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500">Settled Revenue (Paid)</span>
-            <div className="text-2xl font-black text-emerald-600 font-mono mt-1">
-              £{totalSettledRevenue.toFixed(2)}
-            </div>
-            <span className="text-[11px] text-slate-400">Cleared via Stripe / BACS</span>
+      {/* Top 3 Executive Metric Cards (Responsive 1/2/3 grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Settled Revenue (Paid)</span>
+            <PoundSterling className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
-            <PoundSterling className="w-6 h-6" />
+          <div className="text-xl sm:text-2xl font-black text-emerald-600 font-mono">
+            £{totalSettledRevenue.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
+          <div className="text-xs text-slate-500">Cleared via Stripe / BACS Direct Debit</div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500">Outstanding Invoices</span>
-            <div className="text-2xl font-black text-amber-600 font-mono mt-1">
-              £{totalOutstanding.toFixed(2)}
-            </div>
-            <span className="text-[11px] text-slate-400">Awaiting client authorization</span>
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Outstanding Invoices</span>
+            <Clock className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="p-3 rounded-2xl bg-amber-50 text-amber-600">
-            <Clock className="w-6 h-6" />
+          <div className="text-xl sm:text-2xl font-black text-amber-600 font-mono">
+            £{totalOutstanding.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
+          <div className="text-xs text-slate-500">Awaiting client authorization &amp; deposit</div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500">Standard VAT Rate</span>
-            <div className="text-2xl font-black text-[#0B1F4D] font-mono mt-1">
-              20.0% UK
-            </div>
-            <span className="text-[11px] text-slate-400">HMRC Registered Schedule</span>
+        <div className="p-4 sm:p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1 sm:col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Average Instruction Fee</span>
+            <TrendingUp className="w-4 h-4 text-[#2563EB]" />
           </div>
-          <div className="p-3 rounded-2xl bg-blue-50 text-[#2563EB]">
-            <Receipt className="w-6 h-6" />
+          <div className="text-xl sm:text-2xl font-black text-[#0B1F4D] font-mono">
+            £{averageQuoteFee.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
+          <div className="text-xs text-slate-500">{quotes.length} Total Issued Proposals (inc. 20% UK VAT)</div>
         </div>
       </div>
 
@@ -450,45 +619,51 @@ export const AdminQuotesPage = () => {
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-lg">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by quote #, invoice #, client, or property..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all min-h-[42px]"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400 text-xs font-semibold">Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer"
-          >
-            <option value="All">All Statuses</option>
-            <option value="Draft">Draft</option>
-            <option value="Sent">Sent</option>
-            <option value="Viewed">Viewed</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Paid">Paid</option>
-          </select>
-
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <span className="text-slate-400 text-[11px] font-semibold">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer min-h-[40px]"
             >
-              Clear
+              <option value="All">All Statuses</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Viewed">Viewed</option>
+              <option value="Accepted">Accepted</option>
+              <option value="Paid">Paid</option>
+            </select>
+          </div>
+
+          {(searchTerm || statusFilter !== 'All' || activeTab !== 'Quotations') && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('All');
+                setActiveTab('Quotations');
+              }}
+              className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer min-h-[40px]"
+            >
+              Reset Filters
             </button>
           )}
         </div>
       </div>
 
-      {/* Table Component */}
+      {/* Main Table Component (Fit 100% on screen, 0 horizontal scroll) */}
       <Table
         columns={columns}
         data={filteredData}
@@ -541,7 +716,7 @@ export const AdminQuotesPage = () => {
                 <option value="Building L3 (RICS Level 3)">Building L3 (RICS Level 3)</option>
                 <option value="Snagging (New Build Inspection)">Snagging (New Build Inspection)</option>
                 <option value="Valuation (Red Book Residential)">Valuation (Red Book Residential)</option>
-                <option value="Damp & Defect Survey">Damp & Defect Survey</option>
+                <option value="Damp &amp; Defect Survey">Damp &amp; Defect Survey</option>
                 <option value="Expert Witness (CPR Part 35)">Expert Witness (CPR Part 35)</option>
               </select>
             </div>
@@ -660,11 +835,11 @@ export const AdminQuotesPage = () => {
           {/* Optional Inspection Extras */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <span className="font-bold text-slate-800 block text-xs">
-              Inspection Extras & Add-ons
+              Inspection Extras &amp; Add-ons
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white cursor-pointer transition-colors">
-                <span className="font-medium text-slate-700">Drone Roof & Flashing (+£120.00)</span>
+                <span className="font-medium text-slate-700">Drone Roof &amp; Flashing (+£120.00)</span>
                 <input
                   type="checkbox"
                   name="droneExtra"
@@ -816,8 +991,8 @@ export const AdminQuotesPage = () => {
 
             {selectedQuoteDetail.status === 'Paid' ? (
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center justify-between">
-                <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod}</strong></span>
-                <span className="font-mono text-[11px]">{selectedQuoteDetail.paidDate}</span>
+                <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod || 'Stripe UK Online'}</strong></span>
+                <span className="font-mono text-[11px]">{selectedQuoteDetail.paidDate || 'Paid in Full'}</span>
               </div>
             ) : (
               <button
@@ -833,6 +1008,14 @@ export const AdminQuotesPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* MODAL 3: Client Profile, Call Notes & Complaints */}
+      <ClientProfileModal
+        isOpen={!!selectedClientEmail}
+        onClose={() => setSelectedClientEmail(null)}
+        clientEmail={selectedClientEmail}
+        initialTab={clientModalTab}
+      />
     </div>
   );
 };

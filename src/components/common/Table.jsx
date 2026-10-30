@@ -73,7 +73,7 @@ export const Table = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col w-full">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden flex flex-col w-full min-h-[360px]">
       {isLoading ? (
         <TableSkeleton rows={pageSize > 5 ? 5 : pageSize} cols={columns.length} />
       ) : paginatedData.length === 0 ? (
@@ -110,7 +110,7 @@ export const Table = ({
 
               return (
                 <div key={rowKey} className="p-3.5 space-y-2.5 bg-white hover:bg-slate-50/60 transition-colors">
-                  {/* Card Header: Primary identifier + Status/Badge */}
+                  {/* Card Header: Primary identifier + Status & Actions */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       {firstCol && (
@@ -125,11 +125,18 @@ export const Table = ({
                       )}
                     </div>
 
-                    {statusCol && (
-                      <div className="shrink-0">
-                        {statusCol.render ? statusCol.render(row[statusCol.key], row) : row[statusCol.key]}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {statusCol && (
+                        <div>
+                          {statusCol.render ? statusCol.render(row[statusCol.key], row) : row[statusCol.key]}
+                        </div>
+                      )}
+                      {actionCol && (
+                        <div>
+                          {actionCol.render ? actionCol.render(row[actionCol.key], row) : null}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* 2 Key Attributes Preview */}
@@ -162,13 +169,6 @@ export const Table = ({
                           </div>
                         );
                       })}
-
-                      {/* Action column in expanded drawer */}
-                      {actionCol && (
-                        <div className="pt-2 flex items-center justify-end border-t border-slate-100">
-                          {actionCol.render ? actionCol.render(row[actionCol.key], row) : null}
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -176,7 +176,7 @@ export const Table = ({
                   <button
                     type="button"
                     onClick={() => toggleRowExpand(rowKey)}
-                    className="w-full mt-1 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[44px] cursor-pointer"
+                    className="w-full mt-1 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[40px] cursor-pointer"
                   >
                     <span>{isExpanded ? 'Hide Details' : 'View Full Details'}</span>
                     <ExpandIcon className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -187,10 +187,10 @@ export const Table = ({
           </div>
 
           {/* ========================================================= */}
-          {/* DESKTOP VIEW (md+): Standard Sticky Header Table */}
+          {/* DESKTOP VIEW (md+): Responsive Sticky Header Table */}
           {/* ========================================================= */}
           <div className="hidden md:block overflow-x-auto min-w-full">
-            <table className="w-full text-left text-xs sm:text-sm text-slate-600">
+            <table className="w-full table-fixed text-left text-xs sm:text-sm text-slate-600">
               <thead className="bg-slate-100/90 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider select-none backdrop-blur-xs">
                 <tr>
                   {columns.map((col, idx) => {
@@ -201,7 +201,7 @@ export const Table = ({
                       <th
                         key={col.key || idx}
                         onClick={() => isSortable && handleSort(col.key)}
-                        className={`py-3.5 px-4 sm:px-5 ${
+                        className={`py-3 px-3 sm:px-3.5 lg:px-4 ${col.className || ''} ${
                           isSortable ? 'cursor-pointer hover:bg-slate-200/60 transition-colors' : ''
                         } ${col.headerClassName || ''}`}
                       >
@@ -239,7 +239,7 @@ export const Table = ({
                         return (
                           <td
                             key={col.key || colIdx}
-                            className={`py-3.5 px-4 sm:px-5 text-xs text-slate-700 ${col.className || ''}`}
+                            className={`py-3 px-3 sm:px-3.5 lg:px-4 text-xs text-slate-700 ${col.className || ''}`}
                           >
                             {col.render ? col.render(val, row) : val}
                           </td>

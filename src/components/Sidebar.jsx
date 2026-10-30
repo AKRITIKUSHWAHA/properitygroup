@@ -174,7 +174,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
             /* Tablet icon rail vs hover expansion */
             isHovered
               ? 'md:w-[260px] md:z-50'
-              : 'md:w-16 lg:w-[260px]'
+              : 'md:w-16 xl:w-[260px]'
           }
         `}
       >
@@ -185,7 +185,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
               <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
             </div>
             {/* Brand text visible on desktop, mobile, and tablet when hovered */}
-            <div className={`min-w-0 flex-1 transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
+            <div className={`min-w-0 flex-1 transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden xl:block'}`}>
               <div className="text-[11px] font-black text-[#0B1F4D] tracking-tight leading-[1.25] uppercase">
                 UK Property Surveying Practice
               </div>
@@ -206,7 +206,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         {/* Role Badge & Quick Switcher */}
-        <div ref={roleDropdownRef} className={`relative px-3 pt-3 pb-1 transition-opacity ${isHovered ? 'md:block' : 'md:hidden lg:block'}`}>
+        <div ref={roleDropdownRef} className={`relative px-3 pt-3 pb-1 transition-opacity ${isHovered ? 'md:block' : 'md:hidden xl:block'}`}>
           <button
             type="button"
             onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}

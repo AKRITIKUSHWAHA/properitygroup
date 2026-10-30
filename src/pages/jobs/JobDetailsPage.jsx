@@ -405,8 +405,8 @@ export const JobDetailsPage = () => {
           onClick={() => navigate(backPath)}
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 shadow-2xs transition-all cursor-pointer self-start sm:self-auto"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>← Back to All Survey Jobs</span>
+          <ArrowLeft className="w-4 h-4 text-[#2563EB]" />
+          <span>Back to All Survey Jobs</span>
         </button>
       </div>
 
