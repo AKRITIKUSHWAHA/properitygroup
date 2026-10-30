@@ -116,45 +116,53 @@ export const AdminReportsPage = () => {
         return {
           revenue: '£356,200',
           revChange: '+11.2% vs Aug',
-          surveys: '156 Jobs',
-          survChange: '+9.4%',
+          surveysCount: '156',
+          surveysUnit: 'Jobs',
+          survChange: '+9.4% volume',
           conversion: '68.5%',
-          convChange: '+2.8%',
-          sla: '39.2 Hours',
-          slaNote: '96.8% on-time',
+          convChange: '+2.8% vs Aug',
+          slaCount: '39.2',
+          slaUnit: 'Hours',
+          slaNote: '96.8% within 48h SLA',
         };
       case 'Q3 2026':
         return {
           revenue: '£1,048,900',
           revChange: '+15.7% vs Q2',
-          surveys: '452 Jobs',
-          survChange: '+14.1%',
+          surveysCount: '452',
+          surveysUnit: 'Jobs',
+          survChange: '+14.1% volume',
           conversion: '70.4%',
-          convChange: '+3.5%',
-          sla: '38.8 Hours',
-          slaNote: '97.1% on-time',
+          convChange: '+3.5% vs Q2',
+          slaCount: '38.8',
+          slaUnit: 'Hours',
+          slaNote: '97.1% within 48h SLA',
         };
       case 'YTD 2026':
         return {
           revenue: '£3,418,600',
           revChange: '+22.4% vs 2025',
-          surveys: '1,492 Jobs',
-          survChange: '+18.6%',
+          surveysCount: '1,492',
+          surveysUnit: 'Jobs',
+          survChange: '+18.6% volume',
           conversion: '71.8%',
-          convChange: '+4.5%',
-          sla: '38.5 Hours',
-          slaNote: '97.2% on-time',
+          convChange: '+4.5% vs 2025',
+          slaCount: '38.5',
+          slaUnit: 'Hours',
+          slaNote: '97.2% within 48h SLA',
         };
       case 'October 2026':
       default:
         return {
           revenue: '£421,860',
           revChange: '+18.4% vs Sep',
-          surveys: '176 Jobs',
-          survChange: '+12.5%',
+          surveysCount: '176',
+          surveysUnit: 'Jobs',
+          survChange: '+12.5% volume',
           conversion: '71.2%',
-          convChange: '+4.1%',
-          sla: '38.4 Hours',
+          convChange: '+4.1% vs Sep',
+          slaCount: '38.4',
+          slaUnit: 'Hours',
           slaNote: '97.4% within 48h SLA',
         };
     }
@@ -430,78 +438,84 @@ export const AdminReportsPage = () => {
       {/* 4 TOP EXECUTIVE KPI METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-3">
+            <span className="text-xs font-semibold">Gross Invoiced Revenue</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+              <PoundSterling className="w-4 h-4" />
+            </div>
+          </div>
           <div>
-            <span className="text-xs font-semibold text-slate-500 block mb-1">
-              Gross Invoiced Revenue
-            </span>
-            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight font-mono">
+            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight">
               {kpiData.revenue}
             </div>
             <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="w-3.5 h-3.5 shrink-0" />
               <span>{kpiData.revChange}</span>
             </div>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <PoundSterling className="w-6 h-6" />
           </div>
         </div>
 
         {/* KPI 2 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 block mb-1">
-              Total Survey Inspections
-            </span>
-            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight font-mono">
-              {kpiData.surveys}
-            </div>
-            <div className="text-[11px] font-bold text-blue-600 flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>{kpiData.survChange} volume</span>
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-3">
+            <span className="text-xs font-semibold">Total Survey Inspections</span>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] shrink-0">
+              <ClipboardCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] shrink-0">
-            <ClipboardCheck className="w-6 h-6" />
+          <div>
+            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight flex items-baseline gap-1.5">
+              <span>{kpiData.surveysCount}</span>
+              <span className="text-sm font-semibold text-slate-400">
+                {kpiData.surveysUnit}
+              </span>
+            </div>
+            <div className="text-[11px] font-bold text-blue-600 flex items-center gap-1 mt-1">
+              <TrendingUp className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>{kpiData.survChange}</span>
+            </div>
           </div>
         </div>
 
         {/* KPI 3 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-3">
+            <span className="text-xs font-semibold">Inquiry Conversion Rate</span>
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
           <div>
-            <span className="text-xs font-semibold text-slate-500 block mb-1">
-              Inquiry Conversion Rate
-            </span>
-            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight font-mono">
+            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight">
               {kpiData.conversion}
             </div>
             <div className="text-[11px] font-bold text-indigo-600 flex items-center gap-1 mt-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" />
-              <span>{kpiData.convChange} vs benchmark</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span>{kpiData.convChange}</span>
             </div>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-            <TrendingUp className="w-6 h-6" />
           </div>
         </div>
 
         {/* KPI 4 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-500 block mb-1">
-              Average SLA Turnaround
-            </span>
-            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight font-mono">
-              {kpiData.sla}
-            </div>
-            <div className="text-[11px] font-bold text-purple-600 flex items-center gap-1 mt-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-              <span>{kpiData.slaNote}</span>
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 mb-3">
+            <span className="text-xs font-semibold">Average SLA Turnaround</span>
+            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0">
-            <Clock className="w-6 h-6" />
+          <div>
+            <div className="text-2xl font-black text-[#0B1F4D] tracking-tight flex items-baseline gap-1.5">
+              <span>{kpiData.slaCount}</span>
+              <span className="text-sm font-semibold text-slate-400">
+                {kpiData.slaUnit}
+              </span>
+            </div>
+            <div className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>{kpiData.slaNote}</span>
+            </div>
           </div>
         </div>
       </div>
