@@ -1188,9 +1188,10 @@ select.form-input-compact {
 }
 
 .compact-submit-btn {
-  background-color: var(--color-primary-navy) !important;
-  color: #FFFFFF !important;
-  border: 1.5px solid var(--color-primary-navy) !important;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
+  background-color: #FFFFFF !important;
+  color: #060B13 !important;
+  border: 1.5px solid #FFFFFF !important;
   border-radius: var(--radius-pill) !important;
   height: 44px !important;
   padding: 0.65rem 1.35rem !important;
@@ -1198,15 +1199,17 @@ select.form-input-compact {
   font-weight: 700 !important;
   margin-top: 0.45rem;
   letter-spacing: 0.01em;
-  box-shadow: 0 4px 14px rgba(20, 42, 67, 0.25) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
   transition: all var(--transition-fast) !important;
 }
 
 .compact-submit-btn:hover {
-  background-color: var(--color-primary-light) !important;
-  border-color: var(--color-primary-light) !important;
-  box-shadow: 0 6px 18px rgba(20, 42, 67, 0.35) !important;
-  transform: translateY(-1px);
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-color: #FFFFFF !important;
+  color: #000000 !important;
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-2px);
 }
 
 .hero-card-header {
@@ -7686,11 +7689,8 @@ select.form-input-compact {
 }
 
 /* Submit Button on White Card */
-.hero-card button[type="submit"],
-.hero-card .btn-primary,
-.compact-quote-form button[type="submit"],
-.compact-quote-form .compact-submit-btn,
-.compact-quote-form .btn-primary {
+.hero-card:not(.compact-quote-form) button[type="submit"],
+.hero-card:not(.compact-quote-form) .btn-primary {
   background: #142A43 !important;
   color: #FFFFFF !important;
   font-weight: 700 !important;
@@ -7700,14 +7700,72 @@ select.form-input-compact {
   transition: all 0.25s ease !important;
 }
 
-.hero-card button[type="submit"]:hover,
-.hero-card .btn-primary:hover,
-.compact-quote-form button[type="submit"]:hover,
-.compact-quote-form .compact-submit-btn:hover,
-.compact-quote-form .btn-primary:hover {
-  background: #0A1624 !important;
+.hero-card:not(.compact-quote-form) button[type="submit"]:hover,
+.hero-card:not(.compact-quote-form) .btn-primary:hover {
+  background: #1E3E63 !important;
+  color: #FFFFFF !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 12px 30px rgba(20, 42, 67, 0.38) !important;
+}
+
+/* Submit Button on Dark / Glassy Quote Forms (Homepage, Service Sidebars, Contact Page) */
+.compact-quote-form button[type="submit"],
+.compact-quote-form .compact-submit-btn,
+.compact-quote-form .btn-primary,
+.compact-quote-form .btn-gold {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
+  background-color: #FFFFFF !important;
+  color: #060B13 !important;
+  font-weight: 700 !important;
+  border: 1px solid #FFFFFF !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.compact-quote-form button[type="submit"]:hover,
+.compact-quote-form .compact-submit-btn:hover,
+.compact-quote-form .btn-primary:hover,
+.compact-quote-form .btn-gold:hover,
+.service-quote-sidebar .compact-submit-btn:hover,
+.service-quote-sidebar button[type="submit"]:hover {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: #FFFFFF !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 36px rgba(255, 255, 255, 0.45) !important;
+}
+
+.compact-quote-form button[type="submit"]:active,
+.compact-quote-form .compact-submit-btn:active,
+.service-quote-sidebar .compact-submit-btn:active {
+  background: #F1F5F9 !important;
+  background-color: #F1F5F9 !important;
+  color: #000000 !important;
+  transform: translateY(0px) !important;
+}
+
+.compact-quote-form button[type="submit"] span,
+.compact-quote-form .compact-submit-btn span,
+.service-quote-sidebar .compact-submit-btn span {
+  color: inherit !important;
+}
+
+.compact-quote-form button[type="submit"] svg,
+.compact-quote-form .compact-submit-btn svg,
+.service-quote-sidebar .compact-submit-btn svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  transition: transform 0.2s ease !important;
+}
+
+.compact-quote-form button[type="submit"]:hover svg,
+.compact-quote-form .compact-submit-btn:hover svg,
+.service-quote-sidebar .compact-submit-btn:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: translateX(3px) !important;
 }
 
 /* Live Availability Status Pill */
@@ -8763,6 +8821,15 @@ p.mega-action-sub {
   background: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%) !important;
   background-color: #FFFFFF !important;
   color: #060B13 !important;
+  border: 1px solid #FFFFFF !important;
+}
+
+.service-quote-sidebar .compact-quote-form .compact-submit-btn:hover {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  box-shadow: 0 12px 36px rgba(255, 255, 255, 0.45) !important;
+  transform: translateY(-2px) !important;
 }
 
 
