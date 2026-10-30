@@ -90,7 +90,21 @@ client_requirements/
 
 ---
 
+## 👥 3. Live Client Meeting & Setup Notes
+
+### Meeting: Google Workspace Shared Inbox & Sales Team Setup (30 October 2026)
+* **Participants:** Natasha Shergill (Client / NJS Property Group) & Harsh Jain (Tech Lead)
+* **Topic:** Setting up a cost-effective shared inbox for the sales & survey operations team (`admin_team@njspropertygroup.com`) without purchasing expensive individual Google Workspace user licenses for every team member.
+* **Solution Implemented:**
+  * Created Google Group Collaborative Inbox: `admin_team@njspropertygroup.com` / `admin_sales_team@njspropertygroup.com`.
+  * External inbound permissions enabled so incoming quotes from LSD (Local Surveyors Direct) and client enquiries land directly into the collaborative inbox.
+  * Connected to our CRM Leads and SMTP mail configuration.
+* **Full Transcript File:** See [`meeting_transcript_2026-10-30_google_workspace_setup.md`](./meeting_transcript_2026-10-30_google_workspace_setup.md) for word-for-word dialogue and setup steps.
+
+---
+
 ## 🔗 Related Documentation
 
+* **[`meeting_transcript_2026-10-30_google_workspace_setup.md`](./meeting_transcript_2026-10-30_google_workspace_setup.md):** Client live meeting transcript on Google Workspace & group inbox.
 * **[`../client.md`](../client.md):** Full client requirement specification and implementation checklist.
 * **[`../workflow.md`](../workflow.md):** Architectural workflow guide, 3 user roles, and developer reference.
