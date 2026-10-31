@@ -721,3 +721,91 @@ body {
   background-color: var(--color-midnight-canvas) !important;
 }
 
+
+/* ==========================================================================
+   Survey Selector High-Contrast Overrides (Fix invisible text on white canvas)
+   ========================================================================== */
+.site-wrapper .selector-layout-card {
+  background: #FFFFFF !important;
+}
+
+.site-wrapper .selector-group-title,
+.selector-group-title {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper button.selector-option-btn,
+.site-wrapper .selector-option-btn,
+.selector-option-btn {
+  color: #1E293B !important;
+  text-shadow: none !important;
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+.site-wrapper button.selector-option-btn span,
+.site-wrapper .selector-option-btn span,
+.selector-option-btn span {
+  color: #1E293B !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper button.selector-option-btn:hover,
+.site-wrapper .selector-option-btn:hover,
+.selector-option-btn:hover {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+.site-wrapper button.selector-option-btn:hover span,
+.site-wrapper .selector-option-btn:hover span,
+.selector-option-btn:hover span {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper button.selector-option-btn.is-selected,
+.site-wrapper .selector-option-btn.is-selected,
+.selector-option-btn.is-selected {
+  background: #EFF6FF !important;
+  border-color: #0284C7 !important;
+  color: #0369A1 !important;
+  font-weight: 700 !important;
+}
+
+.site-wrapper button.selector-option-btn.is-selected span,
+.site-wrapper .selector-option-btn.is-selected span,
+.selector-option-btn.is-selected span {
+  color: #0369A1 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+.site-wrapper button.selector-toggle-btn,
+.site-wrapper .selector-toggle-btn,
+.selector-toggle-btn {
+  color: #334155 !important;
+  text-shadow: none !important;
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+.site-wrapper button.selector-toggle-btn:hover,
+.site-wrapper .selector-toggle-btn:hover,
+.selector-toggle-btn:hover {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+.site-wrapper button.selector-toggle-btn.is-selected,
+.site-wrapper .selector-toggle-btn.is-selected,
+.selector-toggle-btn.is-selected {
+  background: #EFF6FF !important;
+  border-color: #0284C7 !important;
+  color: #0369A1 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+}

@@ -6694,21 +6694,40 @@ select.form-input-compact {
   border-radius: 10px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #334155;
+  color: #1E293B !important;
+  text-shadow: none !important;
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
 }
 
+.selector-option-btn span {
+  color: #1E293B !important;
+  text-shadow: none !important;
+}
+
 .selector-option-btn:hover {
   background: #F1F5F9;
   border-color: #CBD5E1;
+  color: #0F172A !important;
+}
+
+.selector-option-btn:hover span {
+  color: #0F172A !important;
+  text-shadow: none !important;
 }
 
 .selector-option-btn.is-selected {
   background: #EFF6FF;
   border-color: #0284C7;
-  color: #0369A1;
+  color: #0369A1 !important;
+  font-weight: 700 !important;
+}
+
+.selector-option-btn.is-selected span {
+  color: #0369A1 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
 }
 
 .selector-option-btn.compact {
@@ -6746,16 +6765,24 @@ select.form-input-compact {
   border-radius: 10px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
+  color: #334155 !important;
+  text-shadow: none !important;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.selector-toggle-btn:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+  color: #0F172A !important;
 }
 
 .selector-toggle-btn.is-selected {
   background: #EFF6FF;
   border-color: #0284C7;
-  color: #0369A1;
-  font-weight: 700;
+  color: #0369A1 !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
 }
 
 .recommendation-result-box {
