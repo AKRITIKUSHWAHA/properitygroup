@@ -247,7 +247,7 @@ export const EmailTemplatePreviewModal = ({
                   <div className="flex items-center gap-2 text-slate-700">
                     <span className="w-16 text-slate-400 font-semibold">From:</span>
                     <strong className="text-slate-900">NJS Property Group</strong>
-                    <span className="font-mono text-slate-400 text-[11px]">&lt;notifications@propertygroup.co.uk&gt;</span>
+                    <span className="font-mono text-slate-400 text-[11px]">&lt;notifications@njspropertygroup.com&gt;</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700">
                     <span className="w-16 text-slate-400 font-semibold">To:</span>

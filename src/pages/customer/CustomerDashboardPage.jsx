@@ -533,7 +533,7 @@ export const CustomerDashboardPage = () => {
         >
           <div className="space-y-3 text-xs leading-relaxed text-slate-800">
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-600">
-              <div>From: NJS Property Group &lt;notifications@propertygroup.co.uk&gt;</div>
+              <div>From: NJS Property Group &lt;notifications@njspropertygroup.com&gt;</div>
               <div>Subject: {selectedCustomerEmail.subject}</div>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200 whitespace-pre-line font-sans">

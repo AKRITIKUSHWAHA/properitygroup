@@ -153,11 +153,11 @@ export function ContactPage() {
                   </div>
                   <div>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#0F172A', fontWeight: '800', letterSpacing: '0.04em', display: 'block', marginBottom: '4px' }}>
-                      Registered Address Placeholder
+                      Registered Office Address
                     </span>
                     <p style={{ fontSize: '0.88rem', color: '#1E293B', fontWeight: '500', margin: 0, lineHeight: '1.55' }}>
                       {siteConfig.contact.address.line1}<br />
-                      {siteConfig.contact.address.line2}, {siteConfig.contact.address.city} {siteConfig.contact.address.postcode}
+                      {siteConfig.contact.address.city} {siteConfig.contact.address.postcode}
                     </p>
                   </div>
                 </div>
@@ -178,13 +178,13 @@ export function ContactPage() {
                 </div>
               </div>
 
-              {/* Client Asset & Details Checklist Notice */}
+              {/* RICS Practice Notice */}
               <div style={{ padding: '1.25rem', border: '1.5px solid #CBD5E1', borderRadius: '16px', backgroundColor: '#FFFFFF', fontSize: '0.85rem', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
                 <strong style={{ display: 'block', color: '#0F172A', fontWeight: '800', fontSize: '0.9rem', marginBottom: '0.35rem' }}>
-                  Client Content Requirement:
+                  RICS Regulated Practice:
                 </strong>
                 <p style={{ color: '#334155', margin: 0, lineHeight: '1.55', fontWeight: '500' }}>
-                  Per Part 1.1 of the Master Specification, verified phone numbers, direct email routings, and registered trading office addresses will be inserted once supplied by the client.
+                  All survey instructions and written quotations adhere strictly to the Royal Institution of Chartered Surveyors (RICS) Home Survey Standard.
                 </p>
               </div>
             </div>

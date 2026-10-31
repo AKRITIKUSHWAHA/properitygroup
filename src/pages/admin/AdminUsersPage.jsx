@@ -144,7 +144,7 @@ export const AdminUsersPage = () => {
     {
       id: 'USR-03',
       name: 'Oliver Hughes MRICS',
-      email: 'oliver.hughes@propertygroup.co.uk',
+      email: 'oliver.hughes@njspropertygroup.com',
       role: 'surveyor',
       roleLabel: 'Surveyor',
       org: 'Hughes Building Surveyors',
@@ -153,7 +153,7 @@ export const AdminUsersPage = () => {
     {
       id: 'USR-04',
       name: 'Claire Bennet AssocRICS',
-      email: 'claire.bennet@propertygroup.co.uk',
+      email: 'claire.bennet@njspropertygroup.com',
       role: 'surveyor',
       roleLabel: 'Surveyor',
       org: 'Bennet Defect Specialists',
@@ -489,7 +489,7 @@ export const AdminUsersPage = () => {
             <input
               type="email"
               required
-              placeholder="fiona@propertygroup.co.uk"
+              placeholder="fiona@njspropertygroup.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"

@@ -36,7 +36,7 @@ export const AdminSurveyorsPage = () => {
       assignedJobs: 12 + idx * 3,
       status: 'Active Field',
       phone: `+44 7700 900${idx + 1}84`,
-      email: `${s.name.toLowerCase().split(' ')[0]}@propertygroup.co.uk`,
+      email: `${s.name.toLowerCase().split(' ')[0]}@njspropertygroup.com`,
       specialism: idx === 0 ? 'Valuation & Level 2' : idx === 1 ? 'Period Structures & Level 3' : 'Damp, Timber & Defects',
     })),
   ]);
@@ -83,7 +83,7 @@ export const AdminSurveyorsPage = () => {
       assignedJobs: 0,
       status: 'Active Field',
       phone: formData.phone || '+44 7700 900999',
-      email: formData.email || `${formData.name.toLowerCase().split(' ')[0]}@propertygroup.co.uk`,
+      email: formData.email || `${formData.name.toLowerCase().split(' ')[0]}@njspropertygroup.com`,
       specialism: 'RICS Residential Inspections',
     };
 
@@ -462,7 +462,7 @@ export const AdminSurveyorsPage = () => {
               <label className="block font-bold text-slate-700 mb-1">Practice Email Address</label>
               <input
                 type="email"
-                placeholder="surveyor@propertygroup.co.uk"
+                placeholder="surveyor@njspropertygroup.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"

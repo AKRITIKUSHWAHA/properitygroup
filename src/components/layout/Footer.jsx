@@ -51,7 +51,7 @@ export function Footer() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <MapPin size={15} style={{ color: '#FFFFFF', flexShrink: 0, marginTop: '2px' }} />
-                <span>Central Correspondence: Pall Mall, London (Client Address Pending)</span>
+                <span>Registered Office: 124 City Road, London EC1V 2NX</span>
               </div>
             </div>
           </div>

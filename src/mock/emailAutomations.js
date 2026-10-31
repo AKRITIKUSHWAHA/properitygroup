@@ -240,7 +240,7 @@ export const useEmailAutomations = () => {
       .replace(/\{\{surveyor_name\}\}/g, data.surveyor || 'David Thorne MRICS')
       .replace(/\{\{inspection_date\}\}/g, data.date || 'Tomorrow, 10:00 AM')
       .replace(/\{\{time_slot\}\}/g, data.timeSlot || '09:30 AM - 12:00 PM')
-      .replace(/\{\{action_link\}\}/g, 'https://propertygroup.co.uk/customer/portal');
+      .replace(/\{\{action_link\}\}/g, 'https://njspropertygroup.com/customer/portal');
   };
 
   // Dispatch an automated step email

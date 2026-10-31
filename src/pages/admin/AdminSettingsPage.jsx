@@ -28,11 +28,11 @@ const DEFAULT_SMTP = {
   host: 'smtp.office365.com',
   port: '587',
   encryption: 'TLS',
-  username: 'surveys@propertygroup.co.uk',
+  username: 'surveys@njspropertygroup.com',
   password: 'SG.ProdKey_98124_UKSurv2026',
   fromName: 'NJS Property Group',
-  fromEmail: 'surveys@propertygroup.co.uk',
-  replyTo: 'enquiries@propertygroup.co.uk',
+  fromEmail: 'surveys@njspropertygroup.com',
+  replyTo: 'enquiries@njspropertygroup.com',
   footerText: 'RICS Regulated Firm #048291 • Professional Indemnity Insured to £2,000,000',
   status: 'Verified',
   lastVerified: '29/10/2026, 16:45',
@@ -65,7 +65,7 @@ export const AdminSettingsPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState('admin@propertygroup.co.uk');
+  const [testEmailAddress, setTestEmailAddress] = useState('admin@njspropertygroup.com');
   const [isSendingTest, setIsSendingTest] = useState(false);
 
   // Survey Types & Pricing Rate Card
@@ -350,7 +350,7 @@ export const AdminSettingsPage = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. surveys@propertygroup.co.uk or apikey"
+                  placeholder="e.g. surveys@njspropertygroup.com or apikey"
                   value={smtpConfig.username}
                   onChange={(e) => handleInputChange('username', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"
@@ -420,7 +420,7 @@ export const AdminSettingsPage = () => {
                 <input
                   type="email"
                   required
-                  placeholder="e.g. surveys@propertygroup.co.uk"
+                  placeholder="e.g. surveys@njspropertygroup.com"
                   value={smtpConfig.fromEmail}
                   onChange={(e) => handleInputChange('fromEmail', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"
@@ -433,7 +433,7 @@ export const AdminSettingsPage = () => {
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. enquiries@propertygroup.co.uk"
+                  placeholder="e.g. enquiries@njspropertygroup.com"
                   value={smtpConfig.replyTo}
                   onChange={(e) => handleInputChange('replyTo', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"
@@ -589,7 +589,7 @@ export const AdminSettingsPage = () => {
               <input
                 type="email"
                 required
-                placeholder="e.g. admin@propertygroup.co.uk"
+                placeholder="e.g. admin@njspropertygroup.com"
                 value={testEmailAddress}
                 onChange={(e) => setTestEmailAddress(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
