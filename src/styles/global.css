@@ -511,6 +511,55 @@ body {
   font-weight: 500 !important;
 }
 
+/* Privacy Notice Card High-Contrast Overrides */
+.site-wrapper .luxury-site-canvas .privacy-notice-card,
+.site-wrapper .privacy-notice-card,
+.privacy-notice-card {
+  color: #0F172A !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card h2,
+.site-wrapper .luxury-site-canvas .privacy-notice-card h4,
+.site-wrapper .privacy-notice-card h2,
+.site-wrapper .privacy-notice-card h4,
+.privacy-notice-card h2,
+.privacy-notice-card h4 {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card p,
+.site-wrapper .privacy-notice-card p,
+.privacy-notice-card p {
+  color: #334155 !important;
+  text-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card span,
+.site-wrapper .privacy-notice-card span,
+.privacy-notice-card span {
+  text-shadow: none !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card .privacy-subcard,
+.privacy-notice-card .privacy-subcard {
+  background-color: #F8FAFC !important;
+  border: 1px solid #E2E8F0 !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card .privacy-subcard h4,
+.privacy-notice-card .privacy-subcard h4 {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+.site-wrapper .luxury-site-canvas .privacy-notice-card .privacy-subcard p,
+.privacy-notice-card .privacy-subcard p {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
 .site-wrapper .luxury-site-canvas .contact-detail-grid .contact-lead-text,
 .site-wrapper .contact-detail-grid .contact-lead-text,
 .contact-detail-grid .contact-lead-text,

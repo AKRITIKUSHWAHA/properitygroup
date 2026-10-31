@@ -207,52 +207,52 @@ export function ContactPage() {
       {/* Privacy Notice Section (UK GDPR & RICS Compliant) */}
       <section id="privacy" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
         <Container isNarrow>
-          <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
+          <div className="privacy-notice-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
               <div style={{ width: '40px', height: '40px', backgroundColor: '#0B1F4D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em' }}>Legal &amp; Compliance</span>
+                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em', display: 'block' }}>Legal &amp; Compliance</span>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Privacy Notice &amp; Data Protection</h2>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, marginBottom: '1.25rem', fontWeight: 500 }}>
               NJS Property Group Ltd (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) is committed to protecting your privacy in full compliance with the UK General Data Protection Regulation (UK GDPR) and Data Protection Act 2018.
             </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div className="privacy-subcard" style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>1. Data Controller</h4>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                   NJS Property Group Ltd, 124 City Road, London EC1V 2NX. Contact: <a href="mailto:info@njspropertygroup.com" style={{ color: '#2563EB', textDecoration: 'underline' }}>info@njspropertygroup.com</a>.
                 </p>
               </div>
 
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div className="privacy-subcard" style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>2. Information We Collect</h4>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                   Instructing client names, property addresses, contact telephone, email, and access instructions strictly to fulfill survey quotations and inspections.
                 </p>
               </div>
 
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div className="privacy-subcard" style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>3. How We Use Your Data</h4>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                   Solely for conducting RICS property inspections, producing diagnostic survey reports, issuing VAT invoices, and statutory audit compliance. Zero third-party marketing sales.
                 </p>
               </div>
 
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div className="privacy-subcard" style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>4. Your Statutory Rights</h4>
-                <p style={{ fontSize: '0.8rem', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
                   You hold the legal right to request access, rectification, or erasure of your personal data at any time by contacting our compliance officer at info@njspropertygroup.com.
                 </p>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0, fontStyle: 'italic' }}>
+            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>
               Last revised: October 2026 • Registered in England &amp; Wales • Regulated by the Royal Institution of Chartered Surveyors.
             </p>
           </div>
