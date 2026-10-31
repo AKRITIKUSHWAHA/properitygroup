@@ -273,12 +273,12 @@ export const AdminCompaniesPage = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                 <tr>
-                  <th className="py-3 px-4 sm:px-5">Agency &amp; Branch</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Key Contact Person</th>
-                  <th className="py-3 px-4">Branch Address &amp; Keyholding</th>
-                  <th className="py-3 px-4 text-center">Referred Volume</th>
-                  <th className="py-3 px-4 sm:px-5 text-right">Actions</th>
+                  <th className="py-3 px-4 sm:px-5 min-w-[230px]">Agency &amp; Branch</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                  <th className="py-3 px-4 min-w-[230px]">Key Contact Person</th>
+                  <th className="py-3 px-4 min-w-[250px]">Branch Address &amp; Keyholding</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Referred Volume</th>
+                  <th className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -289,7 +289,7 @@ export const AdminCompaniesPage = () => {
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
                     {/* 1. Agency Logo Badge + Name + Branch */}
-                    <td className="py-3.5 px-4 sm:px-5">
+                    <td className="py-3.5 px-4 sm:px-5 min-w-[230px]">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-extrabold text-xs shadow-xs shrink-0">
                           {company.code}
@@ -313,37 +313,41 @@ export const AdminCompaniesPage = () => {
                       </span>
                     </td>
 
-                    {/* 3. Key Contact & Communication Pills */}
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <span>{company.contact}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">({company.role})</span>
+                    {/* 3. Key Contact Person (Clean & Spacious) */}
+                    <td className="py-3.5 px-4 min-w-[230px]">
+                      <div>
+                        <div className="font-bold text-slate-900 text-xs whitespace-nowrap">
+                          {company.contact}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate max-w-[220px] mt-0.5">
+                          {company.role}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1.5 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={(e) => handleCopy(e, company.phone, 'Phone')}
                           title="Click to copy phone"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-mono transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer"
                         >
-                          <Phone className="w-2.5 h-2.5 text-emerald-600" />
+                          <Phone className="w-3 h-3 text-emerald-600 shrink-0" />
                           <span>{company.phone}</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={(e) => handleCopy(e, company.email, 'Email')}
-                          title="Click to copy email"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-mono transition-colors cursor-pointer"
+                          title={`Copy ${company.email}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer"
                         >
-                          <Mail className="w-2.5 h-2.5 text-blue-600" />
+                          <Mail className="w-3 h-3 text-blue-600 shrink-0" />
                           <span>Email</span>
                         </button>
                       </div>
                     </td>
 
                     {/* 4. Address & Key Access Note */}
-                    <td className="py-3.5 px-4 max-w-xs">
+                    <td className="py-3.5 px-4 min-w-[250px] max-w-sm">
                       <div className="flex items-start gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                         <div>
@@ -351,7 +355,7 @@ export const AdminCompaniesPage = () => {
                             {company.address}
                           </div>
                           {company.keyHolding && (
-                            <div className="text-[10.5px] text-slate-400 mt-0.5 truncate max-w-[240px]" title={company.keyHolding}>
+                            <div className="text-[10.5px] text-slate-400 mt-0.5 truncate max-w-[260px]" title={company.keyHolding}>
                               {company.keyHolding}
                             </div>
                           )}
