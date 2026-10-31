@@ -21,6 +21,7 @@ import { CoverageMap } from '../../components/common/CoverageMap';
 import { StepProcess } from '../../components/common/StepProcess';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { ArchitecturalHero } from '../../components/hero/ArchitecturalHero';
+import { SurveySelector } from '../../components/home/SurveySelector';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 export function HomePage() {
@@ -85,6 +86,7 @@ export function HomePage() {
       </div>
 
       {/* 3. CORE SURVEYING SERVICES SYSTEMATIC OVERVIEW */}
+      <div id="services" style={{ position: 'relative', top: '-80px', height: 0 }} aria-hidden="true" />
       <section 
         id="services-overview" 
         ref={servicesRef} 
@@ -213,6 +215,9 @@ export function HomePage() {
           </div>
         </Container>
       </section>
+
+      {/* 3B. INTERACTIVE SURVEY SELECTOR DECISION MATRIX */}
+      <SurveySelector />
 
       {/* 4. CREDENTIALS & ACCREDITATIONS BANNER */}
       <div id="credentials" ref={credentialsRef} className={`reveal-init ${credentialsVisible ? 'is-revealed' : ''}`}>

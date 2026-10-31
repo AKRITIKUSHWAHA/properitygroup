@@ -10,7 +10,8 @@ import {
   Clock,
   Phone,
   Building,
-  HelpCircle
+  HelpCircle,
+  Download
 } from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
@@ -21,6 +22,7 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { CoverageMap } from '../../components/common/CoverageMap';
+import { downloadReportPDF } from '../../utils/pdfGenerator';
 
 export function HomebuyerSurveyPage() {
   const service = approvedServices.find(s => s.id === 'homebuyer-survey-level-2');
@@ -163,6 +165,29 @@ export function HomebuyerSurveyPage() {
                     <span style={{ fontSize: '0.82rem', color: '#F8FAFC' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Sample Report Download Card */}
+              <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
+                <div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>Sample Level 2 Survey Report</h4>
+                  <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>Review an anonymised sample report showing full RICS condition ratings &amp; diagnostic findings.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => downloadReportPDF({
+                    jobNo: 'SAMPLE-LVL2-2026',
+                    clientName: 'Sample Client',
+                    property: '18 Richmond Hill, Richmond TW10 6QX',
+                    surveyType: 'RICS Level 2 Home Survey',
+                    propertyType: 'Semi-Detached House (c. 1934)',
+                  })}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', fontWeight: 600, borderRadius: '10px' }}
+                >
+                  <Download size={15} />
+                  <span>Download Sample PDF</span>
+                </button>
               </div>
 
               {/* Local Regional Context */}

@@ -155,7 +155,7 @@ export function MobileNavigation({ isOpen, onClose }) {
                 ))}
 
                 <NavLink
-                  to="/contact#faqs"
+                  to="/#which-survey"
                   className="mobile-sublink mobile-sublink-all"
                   onClick={onClose}
                   style={{ marginTop: '0.35rem' }}

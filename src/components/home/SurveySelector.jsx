@@ -69,7 +69,7 @@ export function SurveySelector() {
   const rec = getRecommendation();
 
   return (
-    <section className="section survey-selector-section section-alt" aria-label="Survey Decision Tool">
+    <section id="which-survey" className="section survey-selector-section section-alt" aria-label="Survey Decision Tool">
       <Container>
         <SectionHeading
           eyebrow="Interactive Decision Tool"

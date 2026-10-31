@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.clear();
     }
     return null;
   });

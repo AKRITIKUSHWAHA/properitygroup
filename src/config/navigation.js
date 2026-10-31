@@ -92,7 +92,7 @@ export const navigationCategories = {
             id: "which-survey",
             name: "Which Survey Do I Need?",
             shortName: "Survey Guidance",
-            path: "/contact#faqs",
+            path: "/#which-survey",
             description: "Compare survey levels and property suitability."
           },
           {
