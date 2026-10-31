@@ -261,7 +261,7 @@ export const AdminCompaniesPage = () => {
           </div>
         </div>
 
-        {/* Directory List / Rows */}
+        {/* Directory Table Form */}
         {filtered.length === 0 ? (
           <div className="p-12 text-center text-slate-400 bg-slate-50/50">
             <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -269,128 +269,160 @@ export const AdminCompaniesPage = () => {
             <p className="text-xs text-slate-500 mt-1">Try clearing your search keyword.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {filtered.map((company) => (
-              <div
-                key={company.id}
-                onClick={() => setViewingCompany(company)}
-                className="p-4 sm:p-5 hover:bg-slate-50/80 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer group"
-              >
-                {/* Left: Agency Logo Badge + Name + Branch */}
-                <div className="flex items-start gap-3.5 min-w-[260px]">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-extrabold text-sm shadow-xs shrink-0">
-                    {company.code}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
-                        {company.name}
-                      </h4>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
+                <tr>
+                  <th className="py-3 px-4 sm:px-5">Agency &amp; Branch</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Key Contact Person</th>
+                  <th className="py-3 px-4">Branch Address &amp; Keyholding</th>
+                  <th className="py-3 px-4 text-center">Referred Volume</th>
+                  <th className="py-3 px-4 sm:px-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((company) => (
+                  <tr
+                    key={company.id}
+                    onClick={() => setViewingCompany(company)}
+                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                  >
+                    {/* 1. Agency Logo Badge + Name + Branch */}
+                    <td className="py-3.5 px-4 sm:px-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-extrabold text-xs shadow-xs shrink-0">
+                          {company.code}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
+                            {company.name}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            {company.branch}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* 2. Status Badge */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                        Active Partner
+                        <span>Active Partner</span>
                       </span>
-                    </div>
-                    <div className="text-xs text-slate-500 mt-0.5 font-medium">{company.branch}</div>
-                  </div>
-                </div>
+                    </td>
 
-                {/* Middle: Contact Person & Communication Pills */}
-                <div className="min-w-[220px] space-y-1 text-xs">
-                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span>{company.contact}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">({company.role})</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={(e) => handleCopy(e, company.phone, 'Phone')}
-                      title="Click to copy phone"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono transition-colors"
-                    >
-                      <Phone className="w-3 h-3 text-emerald-600" />
-                      <span>{company.phone}</span>
-                    </button>
+                    {/* 3. Key Contact & Communication Pills */}
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span>{company.contact}</span>
+                        <span className="text-[10px] text-slate-400 font-normal">({company.role})</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(e, company.phone, 'Phone')}
+                          title="Click to copy phone"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-mono transition-colors cursor-pointer"
+                        >
+                          <Phone className="w-2.5 h-2.5 text-emerald-600" />
+                          <span>{company.phone}</span>
+                        </button>
 
-                    <button
-                      type="button"
-                      onClick={(e) => handleCopy(e, company.email, 'Email')}
-                      title="Click to copy email"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono transition-colors"
-                    >
-                      <Mail className="w-3 h-3 text-blue-600" />
-                      <span>Email</span>
-                    </button>
-                  </div>
-                </div>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(e, company.email, 'Email')}
+                          title="Click to copy email"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10.5px] font-mono transition-colors cursor-pointer"
+                        >
+                          <Mail className="w-2.5 h-2.5 text-blue-600" />
+                          <span>Email</span>
+                        </button>
+                      </div>
+                    </td>
 
-                {/* Address with Location Pin */}
-                <div className="min-w-[200px] text-xs text-slate-600 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span className="leading-tight">{company.address}</span>
-                </div>
+                    {/* 4. Address & Key Access Note */}
+                    <td className="py-3.5 px-4 max-w-xs">
+                      <div className="flex items-start gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-xs text-slate-700 font-medium leading-tight">
+                            {company.address}
+                          </div>
+                          {company.keyHolding && (
+                            <div className="text-[10.5px] text-slate-400 mt-0.5 truncate max-w-[240px]" title={company.keyHolding}>
+                              {company.keyHolding}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
 
-                {/* Right: Referral Volume & 3-Dot Actions */}
-                <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-xs text-[#0B1F4D] bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
-                      {company.leads} Referred Surveys
-                    </span>
-                  </div>
+                    {/* 5. Referred Volume */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-[#0B1F4D] bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200 inline-block">
+                        {company.leads} Referred Surveys
+                      </span>
+                    </td>
 
-                  {/* Actions Dropdown */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdownId(activeDropdownId === company.id ? null : company.id);
-                      }}
-                      className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {activeDropdownId === company.id && (
-                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                    {/* 6. Actions Dropdown */}
+                    <td className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap">
+                      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveDropdownId(null);
-                            setViewingCompany(company);
+                            setActiveDropdownId(activeDropdownId === company.id ? null : company.id);
                           }}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Options"
                         >
-                          <Building className="w-3.5 h-3.5 text-blue-600" />
-                          <span>View Branch Details</span>
+                          <MoreVertical className="w-4 h-4" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopy(e, company.phone, 'Phone number')}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Copy Contact</span>
-                        </button>
+                        {activeDropdownId === company.id && (
+                          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                setViewingCompany(company);
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Building className="w-3.5 h-3.5 text-blue-600" />
+                              <span>View Branch Details</span>
+                            </button>
 
-                        <div className="my-1 border-t border-slate-100" />
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopy(e, company.phone, 'Phone number')}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Copy Contact</span>
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteCompany(e, company.id, company.name)}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                          <span>Remove Branch</span>
-                        </button>
+                            <div className="my-1 border-t border-slate-100" />
+
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteCompany(e, company.id, company.name)}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                              <span>Remove Branch</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
