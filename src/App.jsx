@@ -217,9 +217,12 @@ function AppRoutes() {
             <Route path="/admin/user" element={<AdminUsersPage />} />
             <Route path="/admin/users-and-roles" element={<AdminUsersPage />} />
 
-            {/* Companies & Surveyors & Settings */}
+            {/* Companies & Partner Portal & Surveyors & Settings */}
             <Route path="/admin/companies" element={<AdminCompaniesPage />} />
             <Route path="/admin/company" element={<AdminCompaniesPage />} />
+            <Route path="/admin/partner-portal" element={<PartnerPortalPage inAdminShell={true} />} />
+            <Route path="/admin/partners" element={<Navigate to="/admin/partner-portal" replace />} />
+            <Route path="/admin/partner" element={<Navigate to="/admin/partner-portal" replace />} />
             <Route path="/admin/surveyors" element={<AdminSurveyorsPage />} />
             <Route path="/admin/surveyor" element={<AdminSurveyorsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
@@ -227,6 +230,9 @@ function AppRoutes() {
 
             {/* Seamless /superadmin/* backwards-compatibility redirects */}
             <Route path="/superadmin/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/superadmin/partner-portal" element={<Navigate to="/admin/partner-portal" replace />} />
+            <Route path="/superadmin/partners" element={<Navigate to="/admin/partner-portal" replace />} />
+            <Route path="/superadmin/partner" element={<Navigate to="/admin/partner-portal" replace />} />
             <Route path="/superadmin/leads" element={<Navigate to="/admin/leads" replace />} />
             <Route path="/superadmin/lead" element={<Navigate to="/admin/leads" replace />} />
             <Route path="/superadmin/crm-and-leads" element={<Navigate to="/admin/leads" replace />} />

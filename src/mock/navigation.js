@@ -8,7 +8,7 @@ const adminNavConfig = {
     { id: 'dashboard', name: 'Dashboard', path: '/admin/dashboard', icon: 'LayoutDashboard', badge: null },
     { id: 'users-roles', name: 'Users & Roles', path: '/admin/users-and-roles', icon: 'Users', badge: null },
     { id: 'companies', name: 'Companies', path: '/admin/companies', icon: 'Building2', badge: null },
-    { id: 'partner-portal', name: 'Partner Portal', path: '/partners', icon: 'Handshake', badge: 'Point 29' },
+    { id: 'partner-portal', name: 'Partner Portal', path: '/admin/partner-portal', icon: 'Handshake', badge: 'Point 29' },
     { id: 'surveyors', name: 'Surveyors', path: '/admin/surveyors', icon: 'UserCheck', badge: null },
     { id: 'crm-leads', name: 'CRM & Leads', path: '/admin/crm-and-leads', icon: 'Target', badge: '14' },
     { id: 'survey-jobs', name: 'Survey Jobs', path: '/admin/survey-jobs', icon: 'ClipboardCheck', badge: '84' },
