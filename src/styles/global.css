@@ -809,3 +809,33 @@ body {
   text-shadow: none !important;
   font-weight: 700 !important;
 }
+
+/* ==========================================================================
+   Sample Report Download Card High-Contrast Overrides
+   ========================================================================== */
+.site-wrapper .luxury-site-canvas .sample-report-download-card,
+.sample-report-download-card {
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+}
+
+.site-wrapper .luxury-site-canvas .sample-report-download-card h4,
+.site-wrapper .luxury-site-canvas .sample-report-download-card .sample-report-title,
+.site-wrapper .sample-report-download-card h4,
+.sample-report-download-card h4,
+.sample-report-download-card .sample-report-title {
+  color: #0F172A !important;
+  text-shadow: none !important;
+  font-family: var(--font-family-base), 'Plus Jakarta Sans', system-ui, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.site-wrapper .luxury-site-canvas .sample-report-download-card p,
+.site-wrapper .luxury-site-canvas .sample-report-download-card .sample-report-subtitle,
+.site-wrapper .sample-report-download-card p,
+.sample-report-download-card p,
+.sample-report-download-card .sample-report-subtitle {
+  color: #475569 !important;
+  text-shadow: none !important;
+  font-weight: 500 !important;
+}

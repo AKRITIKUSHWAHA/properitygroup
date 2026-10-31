@@ -165,10 +165,10 @@ export function BuildingSurveyPage() {
               </div>
 
               {/* Sample Level 3 Report Download Card */}
-              <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
+              <div className="sample-report-download-card" style={{ padding: '1.25rem 1.5rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
                 <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>Sample Level 3 Building Survey Report</h4>
-                  <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '4px 0 0' }}>Review an anonymised comprehensive structural survey report with prioritized defects &amp; repairs.</p>
+                  <h4 className="sample-report-title" style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>Sample Level 3 Building Survey Report</h4>
+                  <p className="sample-report-subtitle" style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0 0' }}>Review an anonymised comprehensive structural survey report with prioritized defects &amp; repairs.</p>
                 </div>
                 <button
                   type="button"
