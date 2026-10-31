@@ -129,7 +129,7 @@ export const AdminUsersPage = () => {
       email: 'admin@demo.com',
       role: 'super_admin',
       roleLabel: 'Admin',
-      org: 'UK Property Surveying Practice HQ',
+      org: 'NJS Property Group HQ',
       status: 'Active',
     },
     {
@@ -208,7 +208,7 @@ export const AdminUsersPage = () => {
       email: formData.email.trim(),
       role: formData.role,
       roleLabel: roleMap[formData.role],
-      org: formData.org.trim() || 'UK Property Surveying Practice',
+      org: formData.org.trim() || 'NJS Property Group',
       lastLogin: 'Never',
       status: 'Active',
     };

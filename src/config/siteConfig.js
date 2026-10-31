@@ -9,9 +9,9 @@
 
 export const siteConfig = {
   // Brand & Entity Identification
-  companyName: "UK Property Surveying Practice",
+  companyName: "NJS Property Group",
   tradingName: "Chartered Building Surveyors & Registered Valuers [Trading Name Pending Confirmation]",
-  isNameProvisional: true,
+  isNameProvisional: false,
 
   // Technical Scope Notice
   techStackNotice: {
@@ -22,18 +22,18 @@ export const siteConfig = {
 
   // Contact Information (Configurable Placeholders)
   contact: {
-    telephone: "+44 (0)20 7946 0920",
-    telephoneDisplay: "020 7946 0920",
-    isPhoneProvisional: true,
-    email: "enquiries@property-surveyors-uk.co.uk",
-    isEmailProvisional: true,
-    emergencyHotline: "+44 (0)800 048 7192",
+    telephone: "0800 169 9661",
+    telephoneDisplay: "0800 169 9661",
+    isPhoneProvisional: false,
+    email: "info@njspropertygroup.com",
+    isEmailProvisional: false,
+    emergencyHotline: "0800 169 9661",
     address: {
-      line1: "Central Correspondence Office [Pending Client Address]",
-      line2: "100 Pall Mall, St James's",
+      line1: "124 City Road",
+      line2: "Kemp House",
       city: "London",
-      postcode: "SW1Y 5NQ",
-      isAddressProvisional: true
+      postcode: "EC1V 2NX",
+      isAddressProvisional: false
     },
     openingHours: "Monday – Friday: 08:30 – 18:00 | Saturday: By Appointment",
     responseCommitment: "Written quotations delivered within 24 business hours. Survey dates confirmed upon instruction."

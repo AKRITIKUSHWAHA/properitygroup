@@ -246,8 +246,8 @@ export const EmailTemplatePreviewModal = ({
                 <div className="p-4 space-y-2 border-b border-slate-100 text-xs">
                   <div className="flex items-center gap-2 text-slate-700">
                     <span className="w-16 text-slate-400 font-semibold">From:</span>
-                    <strong className="text-slate-900">UK Property Surveying Practice</strong>
-                    <span className="font-mono text-slate-400 text-[11px]">&lt;notifications@propertygroup.co.uk&gt;</span>
+                    <strong className="text-slate-900">NJS Property Group</strong>
+                    <span className="font-mono text-slate-400 text-[11px]">&lt;notifications@njspropertygroup.com&gt;</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-700">
                     <span className="w-16 text-slate-400 font-semibold">To:</span>
@@ -266,11 +266,11 @@ export const EmailTemplatePreviewModal = ({
                     <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
-                          UK
+                          NJS
                         </div>
                         <div>
                           <div className="font-black text-xs tracking-tight uppercase">
-                            UK Property Surveying Practice
+                            NJS Property Group
                           </div>
                           <div className="text-[10px] text-slate-300">
                             Independent RICS-Aligned Chartered Surveyors

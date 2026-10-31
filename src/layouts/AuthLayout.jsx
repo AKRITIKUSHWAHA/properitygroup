@@ -32,7 +32,7 @@ export const AuthLayout = ({ children, title, subtitle }) => {
             </div>
             <div>
               <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
-                UK Property Surveying Practice
+                NJS Property Group
               </div>
               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
                 INDEPENDENT RICS-ALIGNED SURVEYORS
@@ -70,7 +70,7 @@ export const AuthLayout = ({ children, title, subtitle }) => {
 
         {/* Bottom subtle copyright / disclaimer */}
         <div className="relative z-20 px-6 sm:px-12 pb-5 sm:pb-6 flex items-center justify-between text-[11px] text-slate-400">
-          <span>© 2026 UK Property Surveying Practice. All rights reserved.</span>
+          <span>© 2026 NJS Property Group. All rights reserved.</span>
           <span className="hidden sm:inline">RICS Certified Platform</span>
         </div>
       </div>

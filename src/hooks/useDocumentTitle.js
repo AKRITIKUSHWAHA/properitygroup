@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 export function useDocumentTitle(title, description) {
   useEffect(() => {
     if (title) {
-      document.title = `${title} | UK Property Surveying Practice`;
+      document.title = `${title} | NJS Property Group`;
     }
 
     if (description) {

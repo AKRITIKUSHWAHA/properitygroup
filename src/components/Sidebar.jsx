@@ -170,7 +170,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
             {/* Brand text visible on desktop, mobile, and tablet when hovered */}
             <div className={`min-w-0 flex-1 transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden xl:block'}`}>
               <div className="text-[11px] font-black text-[#0B1F4D] tracking-tight leading-[1.25] uppercase">
-                UK Property Surveying Practice
+                NJS Property Group
               </div>
               <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight">
                 INDEPENDENT RICS-ALIGNED SURVEYORS

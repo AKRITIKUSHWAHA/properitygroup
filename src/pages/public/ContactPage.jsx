@@ -13,7 +13,7 @@ export function ContactPage() {
   const location = useLocation();
 
   useDocumentTitle(
-    "Contact & Service Coverage | UK Property Surveying Practice",
+    "Contact & Service Coverage | NJS Property Group",
     "Contact our RICS-aligned property surveyors for quotations and advice across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Swift quotation turnaround."
   );
 

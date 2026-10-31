@@ -8,7 +8,7 @@ import { Button } from '../../components/common/Button';
 
 export function NotFoundPage() {
   useDocumentTitle(
-    "Page Not Found (404) | UK Property Surveying Practice",
+    "Page Not Found (404) | NJS Property Group",
     "The requested page could not be located. Browse our 5 approved surveying services or contact our team."
   );
 

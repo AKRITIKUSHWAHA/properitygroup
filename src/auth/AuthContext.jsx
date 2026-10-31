@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
     addToast({
       type: 'success',
       title: 'Customer Account Created',
-      message: `Welcome to UK Property Surveying Practice, ${fullName}!`,
+      message: `Welcome to NJS Property Group, ${fullName}!`,
     });
 
     navigate('/customer/my-dashboard', { replace: true });
