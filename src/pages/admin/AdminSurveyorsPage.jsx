@@ -209,153 +209,164 @@ export const AdminSurveyorsPage = () => {
             <p className="text-xs text-slate-500 mt-1">Try clearing your search keyword.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {filtered.map((surveyor) => (
-              <div
-                key={surveyor.id}
-                onClick={() => setViewingSurveyor(surveyor)}
-                className="p-4 sm:p-5 hover:bg-slate-50/80 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 cursor-pointer group"
-              >
-                {/* Left: Avatar with Ring + Name & Email */}
-                <div className="flex items-start gap-3.5 min-w-[270px]">
-                  <div className="relative shrink-0">
-                    <img
-                      src={surveyor.avatar}
-                      alt={surveyor.name}
-                      className="w-11 h-11 rounded-2xl object-cover ring-2 ring-white shadow-xs"
-                    />
-                    <span
-                      className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white"
-                      style={{ backgroundColor: surveyor.color || '#2563EB' }}
-                      title="Calendar Color Badge"
-                    />
-                  </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
+                <tr>
+                  <th className="py-3 px-4 sm:px-5 min-w-[240px]">Chartered Surveyor</th>
+                  <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                  <th className="py-3 px-4 min-w-[240px]">Direct Contact</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Territory</th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap">Monthly Workload</th>
+                  <th className="py-3 px-4 whitespace-nowrap">PII Insurance</th>
+                  <th className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((surveyor) => (
+                  <tr
+                    key={surveyor.id}
+                    onClick={() => setViewingSurveyor(surveyor)}
+                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                  >
+                    {/* 1. Chartered Surveyor Avatar + Name + Credentials */}
+                    <td className="py-3.5 px-4 sm:px-5 min-w-[240px]">
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <img
+                            src={surveyor.avatar}
+                            alt={surveyor.name}
+                            className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white shadow-xs"
+                          />
+                          <span
+                            className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
+                            style={{ backgroundColor: surveyor.color || '#2563EB' }}
+                            title="Calendar Color Badge"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors whitespace-nowrap">
+                            {surveyor.name}
+                          </div>
+                          <div className="text-[11px] text-slate-500 font-medium truncate max-w-[210px] mt-0.5">
+                            {surveyor.credentials}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
 
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
-                        {surveyor.name}
-                      </h4>
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {/* 2. Status Badge */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                        Active Field
+                        <span>Active Field</span>
                       </span>
-                    </div>
+                    </td>
 
-                    <div className="text-xs font-semibold text-slate-600 mt-0.5">
-                      {surveyor.credentials}
-                    </div>
+                    {/* 3. Direct Contact (Phone & Email Pills) */}
+                    <td className="py-3.5 px-4 min-w-[240px]">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(e, surveyor.phone, 'Mobile')}
+                          title="Click to copy phone"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                        >
+                          <Phone className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span>{surveyor.phone}</span>
+                        </button>
 
-                    {/* Quick Phone & Email Chips */}
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopy(e, surveyor.phone, 'Mobile')}
-                        title="Click to copy phone"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono transition-colors"
-                      >
-                        <Phone className="w-3 h-3 text-emerald-600" />
-                        <span>{surveyor.phone}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopy(e, surveyor.email, 'Email')}
+                          title={`Copy ${surveyor.email}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                        >
+                          <Mail className="w-3 h-3 text-blue-600 shrink-0" />
+                          <span>Email</span>
+                        </button>
+                      </div>
+                    </td>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopy(e, surveyor.email, 'Email')}
-                        title="Click to copy email"
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-mono transition-colors"
-                      >
-                        <Mail className="w-3 h-3 text-blue-600" />
-                        <span>{surveyor.email}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                    {/* 4. Coverage Territory */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200 inline-block">
+                        {surveyor.postcodes}
+                      </span>
+                    </td>
 
-                {/* Middle: Territory & Active Workload */}
-                <div className="flex items-center gap-6 min-w-[260px] text-xs">
-                  {/* Postcode Coverage Territory */}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Territory
-                    </span>
-                    <span className="font-mono font-bold text-xs text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 inline-block">
-                      {surveyor.postcodes}
-                    </span>
-                  </div>
+                    {/* 5. Monthly Workload */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                      <span className="font-mono font-bold text-xs text-slate-900 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200 inline-block">
+                        {surveyor.assignedJobs} Inspections
+                      </span>
+                    </td>
 
-                  {/* Monthly Load */}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Monthly Workload
-                    </span>
-                    <span className="font-mono font-bold text-slate-900 text-xs block">
-                      {surveyor.assignedJobs} Inspections
-                    </span>
-                  </div>
-                </div>
+                    {/* 6. PII Insurance Validation */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="text-[11px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 inline-flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>PII Valid: {surveyor.piiExpiry}</span>
+                      </span>
+                    </td>
 
-                {/* Right: PII Insurance & 3-Dot Actions */}
-                <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0">
-                  <div className="text-right">
-                    <span className="text-[11px] font-mono font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                      PII Valid: {surveyor.piiExpiry}
-                    </span>
-                  </div>
-
-                  {/* Actions Dropdown */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdownId(activeDropdownId === surveyor.id ? null : surveyor.id);
-                      }}
-                      className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {activeDropdownId === surveyor.id && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+                    {/* 7. Actions Dropdown */}
+                    <td className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap">
+                      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveDropdownId(null);
-                            setViewingSurveyor(surveyor);
+                            setActiveDropdownId(activeDropdownId === surveyor.id ? null : surveyor.id);
                           }}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Options"
                         >
-                          <User className="w-3.5 h-3.5 text-blue-600" />
-                          <span>View Surveyor Profile</span>
+                          <MoreVertical className="w-4 h-4" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleCopy(e, surveyor.phone, 'Mobile number')}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Copy Mobile Phone</span>
-                        </button>
+                        {activeDropdownId === surveyor.id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                setViewingSurveyor(surveyor);
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <User className="w-3.5 h-3.5 text-blue-600" />
+                              <span>View Surveyor Profile</span>
+                            </button>
 
-                        <div className="my-1 border-t border-slate-100" />
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopy(e, surveyor.phone, 'Mobile number')}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Copy Mobile Phone</span>
+                            </button>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteSurveyor(e, surveyor.id, surveyor.name)}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                          <span>Offboard Surveyor</span>
-                        </button>
+                            <div className="my-1 border-t border-slate-100" />
+
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteSurveyor(e, surveyor.id, surveyor.name)}
+                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                              <span>Offboard Surveyor</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
