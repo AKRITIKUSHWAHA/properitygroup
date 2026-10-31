@@ -211,34 +211,6 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
               </p>
             </div>
 
-            {/* Demo Quick Fill Helper - Modern SaaS layout */}
-            <div className="mb-4 p-2.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl flex items-center justify-between gap-2.5 transition-colors">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-[#0B1F4D]/5 text-[#0B1F4D] flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
-                    {currentRoleConfig.demoName}
-                  </div>
-                  <div className="text-xs font-semibold text-slate-700 truncate">
-                    {currentRoleConfig.defaultEmail}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail(currentRoleConfig.defaultEmail);
-                  setPassword(DEFAULT_DEMO_PASSWORD);
-                  setErrorMessage('');
-                }}
-                className="px-3 py-1.5 rounded-lg bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-[11px] font-bold transition-all cursor-pointer shrink-0 shadow-xs active:scale-95"
-              >
-                Quick Fill
-              </button>
-            </div>
-
             {/* Error Message Alert */}
             {errorMessage && (
               <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2 text-rose-700 text-xs animate-in fade-in">
@@ -259,7 +231,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  placeholder={currentRoleConfig.defaultEmail}
+                  placeholder="e.g. name@njspropertygroup.com"
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all disabled:opacity-50"
                 />
               </div>
@@ -275,7 +247,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
-                    placeholder="••••••••••••"
+                    placeholder="Enter your password"
                     className="w-full px-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all disabled:opacity-50 font-mono"
                   />
                   <button

@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
 
     if (!matchedUser) {
       setIsLoading(false);
-      throw new Error('Account not found. Please use Quick Fill Demo or register as a customer.');
+      throw new Error('Invalid email or password. Please verify your credentials or register.');
     }
 
     if (!password || password.trim().length < 4) {
