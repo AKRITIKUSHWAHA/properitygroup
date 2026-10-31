@@ -1068,3 +1068,64 @@ body {
     box-sizing: border-box !important;
   }
 }
+
+/* =============================================================
+   ULTRA-FAST PERFORMANCE ENGINE (60FPS / 120FPS SILKY SCROLLING)
+   Eliminates GPU bottleneck & frame drops on iPhone (iOS) & laptops
+   ============================================================= */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Eliminate costly Gaussian backdrop blurs that freeze mobile & laptop GPUs */
+.site-wrapper *,
+* {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Replace expensive transparent blurry filters with rich, crisp midnight navy luxury backgrounds */
+.site-header {
+  background-color: #070F1E !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+}
+
+.luxury-glass-card,
+.luxury-pillar-card,
+.decision-matrix-card,
+.valuation-table-card,
+.workflow-process-section .step-card,
+.coverage-card,
+.service-overview-card,
+.service-inclusions-card,
+.contact-info-card,
+.faq-accordion-item,
+.contact-card,
+.contact-sidebar-card,
+.overview-service-card,
+.expert-witness-glass-card {
+  background: #0E1B2E !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+}
+
+.quote-suite-card-wrap .compact-quote-form {
+  background: #0D1C33 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Eliminate scroll animation lag & transform jitter */
+.reveal-init,
+.stagger-item,
+.quote-suite-card-wrap .compact-quote-form {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  will-change: auto !important;
+  animation: none !important;
+}
