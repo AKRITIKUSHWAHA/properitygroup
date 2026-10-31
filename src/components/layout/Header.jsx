@@ -187,13 +187,13 @@ export function Header() {
         <div className="header-container">
           <div className="header-main-inner" ref={headerNavRef}>
             {/* Site Logo Emblem matching Luxury Mockup */}
-            <Link to="/" className="site-logo" aria-label="Surveying Practice - Home">
+            <Link to="/" className="site-logo" aria-label="NJS Property Group - Home">
               <div className="logo-badge" aria-hidden="true">
                 <Building size={20} />
               </div>
               <div className="logo-text-group">
-                <span className="logo-title font-serif">Surveying Practice</span>
-                <span className="logo-subtitle">UK Independent Surveyors</span>
+                <span className="logo-title font-serif">NJS Property Group</span>
+                <span className="logo-subtitle">RICS Regulated Surveyors</span>
               </div>
             </Link>
 

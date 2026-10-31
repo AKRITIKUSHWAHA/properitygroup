@@ -76,7 +76,7 @@ export function MobileNavigation({ isOpen, onClose }) {
                 {siteConfig.companyName}
               </span>
               <span style={{ fontSize: '0.68rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                UK Independent Surveyors
+                RICS Regulated Surveyors
               </span>
             </div>
           </div>

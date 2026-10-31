@@ -178,7 +178,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
                 </div>
                 <div>
                   <span className="font-extrabold text-[11px] tracking-tight block text-[#0B1F4D] leading-none">
-                    UK PROPERTY SURVEYING
+                    NJS PROPERTY GROUP
                   </span>
                   <span className="text-[9px] font-semibold tracking-wider text-slate-400 block mt-1 uppercase">
                     RICS REGULATED PRACTICE
