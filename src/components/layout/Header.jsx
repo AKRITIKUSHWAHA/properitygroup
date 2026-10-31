@@ -142,7 +142,7 @@ export function Header() {
           <div className="utility-strip-inner">
             <div className="utility-left">
               <a
-                href="https://www.trustpilot.com/review/esurv.co.uk"
+                href="https://www.trustpilot.com/review/njspropertygroup.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="utility-trust-link"
