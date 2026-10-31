@@ -11,7 +11,7 @@ export const siteConfig = {
   // Brand & Entity Identification
   companyName: "NJS Property Group",
   tradingName: "Chartered Building Surveyors & Registered Valuers [Trading Name Pending Confirmation]",
-  isNameProvisional: true,
+  isNameProvisional: false,
 
   // Technical Scope Notice
   techStackNotice: {
@@ -30,7 +30,7 @@ export const siteConfig = {
     emergencyHotline: "+44 (0)20 8947 8840",
     address: {
       line1: "124 City Road",
-      line2: "London",
+      line2: "Kemp House",
       city: "London",
       postcode: "EC1V 2NX",
       isAddressProvisional: false

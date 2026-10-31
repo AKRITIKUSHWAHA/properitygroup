@@ -266,7 +266,7 @@ export const EmailTemplatePreviewModal = ({
                     <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
-                          UK
+                          NJS
                         </div>
                         <div>
                           <div className="font-black text-xs tracking-tight uppercase">

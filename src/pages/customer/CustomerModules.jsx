@@ -642,7 +642,7 @@ export const CustomerTermsPage = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Access Arrangement:</span>
-              <span className="font-bold text-slate-900">Keys with Foxtons Mayfair</span>
+              <span className="font-bold text-emerald-700">Arranged Directly with Estate Agent</span>
             </div>
           </div>
 
@@ -1096,7 +1096,7 @@ export const CustomerTrackSurveyPage = () => {
               <div>
                 <strong className="text-emerald-950 block">Stage 7: On-Site Inspection Completed</strong>
                 <span className="text-emerald-800 text-[11px]">
-                  David Thorne MRICS concluded physical inspection at 14 Mayfair Gate on 27/10/2026, 12:45. Keys safely returned to Foxtons Mayfair.
+                  David Thorne MRICS concluded physical inspection at 14 Mayfair Gate on 27/10/2026, 12:45. Key access concluded and site secured.
                 </span>
               </div>
             </div>
@@ -1150,8 +1150,8 @@ export const CustomerAppointmentDetailsPage = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
-        title="Appointment & Keyholder Details"
-        subtitle="Specific timing, key collection protocols, and on-site access instructions for your survey."
+        title="Appointment Details"
+        subtitle="Specific timing, inspection window, and surveyor details for your survey."
         breadcrumb={['Customer Portal', 'Appointment Details']}
       />
 
@@ -1191,21 +1191,40 @@ export const CustomerAppointmentDetailsPage = () => {
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[#2563EB]" />
-            <h3 className="text-sm font-bold text-[#0B1F4D]">Access & Key Collection</h3>
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <h3 className="text-sm font-bold text-[#0B1F4D]">Property Access Coordination</h3>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-2">
-            <div className="font-bold text-slate-900">Keyholder / Estate Agency:</div>
-            <div className="text-slate-700">Foxtons Mayfair Branch (Ref #FX-402)</div>
-            <div className="text-slate-500 text-[11px]">Phone: 020 7946 0888 (Agent Sarah Croft)</div>
-            <div className="pt-2 border-t border-slate-200 text-slate-700">
-              Concierge Access: Code <strong>8492#</strong> for security gates
+          <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-xs space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-emerald-950">Arranged Directly with Selling Agent</span>
+            </div>
+            <p className="text-[11.5px] text-slate-600 leading-relaxed pt-1">
+              Our chartered surveyor coordinates access logistics directly with the estate agency and keyholder prior to arrival.
+            </p>
+          </div>
+
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500">Access Arrangement:</span>
+              <span className="font-bold text-slate-800">Direct Surveyor Coordination</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-slate-100">
+              <span className="text-slate-500">Client Attendance:</span>
+              <span className="font-bold text-emerald-700">Not Required (Zero Hassle)</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-slate-500">Key & Entry Protocols:</span>
+              <span className="font-semibold text-slate-600 flex items-center gap-1">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>Restricted to Surveyor & Selling Agent</span>
+              </span>
             </div>
           </div>
 
-          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800">
-            <strong>Note for Client:</strong> You do not need to be physically present at the property during the inspection. Our surveyor arranges entry directly with the selling agent.
+          <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
+            <strong>Security Notice:</strong> In compliance with UK property vendor security standards, internal key tags and private building entry codes are restricted exclusively to the assigned RICS surveyor. You do not need to attend in person.
           </div>
         </div>
       </div>

@@ -93,8 +93,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(matchedUser));
 
     if (rememberMe) {
+      localStorage.setItem(`${REMEMBERED_EMAIL_KEY}_${matchedUser.role}`, trimmedEmail);
       localStorage.setItem(REMEMBERED_EMAIL_KEY, trimmedEmail);
     } else {
+      localStorage.removeItem(`${REMEMBERED_EMAIL_KEY}_${matchedUser.role}`);
       localStorage.removeItem(REMEMBERED_EMAIL_KEY);
     }
 
@@ -240,7 +242,25 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
         updateProfile,
         getRoleDashboard,
-        getRememberedEmail: () => localStorage.getItem(REMEMBERED_EMAIL_KEY) || '',
+        getRememberedEmail: (role) => {
+          if (role) {
+            const roleKey = `${REMEMBERED_EMAIL_KEY}_${role}`;
+            const roleVal = localStorage.getItem(roleKey);
+            if (roleVal) return roleVal;
+          }
+          const legacy = localStorage.getItem(REMEMBERED_EMAIL_KEY) || '';
+          if (!legacy) return '';
+          if (role === 'customer' && (legacy.includes('surveyor') || legacy.includes('admin'))) {
+            return '';
+          }
+          if (role === 'surveyor' && (legacy.includes('customer') || legacy.includes('admin'))) {
+            return '';
+          }
+          if ((role === 'super_admin' || role === 'admin') && (legacy.includes('customer') || legacy.includes('surveyor'))) {
+            return '';
+          }
+          return legacy;
+        },
       }}
     >
       {children}

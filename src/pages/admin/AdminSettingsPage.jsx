@@ -28,11 +28,11 @@ const DEFAULT_SMTP = {
   host: 'smtp.office365.com',
   port: '587',
   encryption: 'TLS',
-  username: 'surveys@njspropertygroup.com',
+  username: 'info@njspropertygroup.com',
   password: 'SG.ProdKey_98124_UKSurv2026',
   fromName: 'NJS Property Group',
-  fromEmail: 'surveys@njspropertygroup.com',
-  replyTo: 'enquiries@njspropertygroup.com',
+  fromEmail: 'info@njspropertygroup.com',
+  replyTo: 'info@njspropertygroup.com',
   footerText: 'RICS Regulated Firm #048291 • Professional Indemnity Insured to £2,000,000',
   status: 'Verified',
   lastVerified: '29/10/2026, 16:45',
@@ -257,11 +257,10 @@ export const AdminSettingsPage = () => {
                     key={p.id}
                     type="button"
                     onClick={() => handleSelectPreset(p)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      isSelected
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isSelected
                         ? 'bg-[#0B1F4D] text-white shadow-xs'
                         : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
-                    }`}
+                      }`}
                   >
                     {p.label}
                   </button>
@@ -350,7 +349,7 @@ export const AdminSettingsPage = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. surveys@njspropertygroup.com or apikey"
+                  placeholder="e.g. info@njspropertygroup.com or apikey"
                   value={smtpConfig.username}
                   onChange={(e) => handleInputChange('username', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"
@@ -420,7 +419,7 @@ export const AdminSettingsPage = () => {
                 <input
                   type="email"
                   required
-                  placeholder="e.g. surveys@njspropertygroup.com"
+                  placeholder="e.g. info@njspropertygroup.com"
                   value={smtpConfig.fromEmail}
                   onChange={(e) => handleInputChange('fromEmail', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"
@@ -433,7 +432,7 @@ export const AdminSettingsPage = () => {
                 </label>
                 <input
                   type="email"
-                  placeholder="e.g. enquiries@njspropertygroup.com"
+                  placeholder="e.g. info@njspropertygroup.com"
                   value={smtpConfig.replyTo}
                   onChange={(e) => handleInputChange('replyTo', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all"

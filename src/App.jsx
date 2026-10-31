@@ -85,6 +85,9 @@ const CustomerMessagesPage = lazyNamed(() => import('./pages/customer/CustomerMo
 const CustomerReviewPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerReviewPage');
 const CustomerPreviousSurveysPage = lazyNamed(() => import('./pages/customer/CustomerModules'), 'CustomerPreviousSurveysPage');
 
+// Point 29: Estate Agent & Referral Partner Portal
+const PartnerPortalPage = lazyNamed(() => import('./pages/partner/PartnerPortalPage'), 'PartnerPortalPage');
+
 // Minimal Page Transition Loader
 const PageLoader = () => (
   <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -143,6 +146,11 @@ function AppRoutes() {
         <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
         <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
         <Route path="/customer" element={<Navigate to="/customer/my-dashboard" replace />} />
+        
+        {/* Point 29: Estate Agent & Referral Partner Portal */}
+        <Route path="/partners" element={<PartnerPortalPage />} />
+        <Route path="/partner" element={<Navigate to="/partners" replace />} />
+        <Route path="/partner/dashboard" element={<Navigate to="/partners" replace />} />
 
         {/* 3. Public Auth Routes - Dedicated role-based entrances */}
         <Route path="/login" element={<LoginPage roleProp="customer" />} />

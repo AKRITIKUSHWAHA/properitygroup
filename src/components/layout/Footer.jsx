@@ -128,6 +128,9 @@ export function Footer() {
           <div className="footer-bottom-links">
             <Link to="/contact">Client Enquiry Form</Link>
             <Link to="/contact#privacy">Privacy Notice</Link>
+            <Link to="/contact#complaints">Complaints Procedure</Link>
+            <Link to="/partners" className="text-slate-400 hover:text-white transition-colors">Estate Agent Partner Portal</Link>
+
             {/* Discreet Back-Office link for Practice Personnel only */}
             <Link
               to="/backoffice"
