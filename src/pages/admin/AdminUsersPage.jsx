@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Users,
   Search,
@@ -177,12 +178,23 @@ export const AdminUsersPage = () => {
       org: 'Private Client',
       status: 'Active',
     },
+    {
+      id: 'USR-07',
+      name: 'Sarah Croft',
+      email: 'partner@demo.com',
+      role: 'partner',
+      roleLabel: 'Estate Agent Partner',
+      org: 'Foxtons Mayfair Branch',
+      status: 'Active',
+    },
   ]);
 
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'permissions' || searchParams.get('tab') === 'permissions' ? 'permissions' : 'users';
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [mainView, setMainView] = useState('users'); // 'users' | 'permissions'
+  const [mainView, setMainView] = useState(initialView); // 'users' | 'permissions'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -200,6 +212,7 @@ export const AdminUsersPage = () => {
       super_admin: 'Admin',
       surveyor: 'Surveyor',
       customer: 'Customer',
+      partner: 'Estate Agent Partner',
     };
 
     const newUser = {
@@ -247,6 +260,7 @@ export const AdminUsersPage = () => {
       { id: 'super_admin', label: 'Admins', count: users.filter((u) => u.role === 'super_admin').length },
       { id: 'surveyor', label: 'Surveyors', count: users.filter((u) => u.role === 'surveyor').length },
       { id: 'customer', label: 'Customers', count: users.filter((u) => u.role === 'customer').length },
+      { id: 'partner', label: 'Estate Agents', count: users.filter((u) => u.role === 'partner').length },
     ];
   }, [users]);
 
@@ -507,6 +521,7 @@ export const AdminUsersPage = () => {
                 <option value="super_admin">Admin</option>
                 <option value="surveyor">Surveyor</option>
                 <option value="customer">Customer</option>
+                <option value="partner">Estate Agent / Referral Partner</option>
               </select>
             </div>
 

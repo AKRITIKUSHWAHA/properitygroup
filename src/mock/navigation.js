@@ -1,5 +1,5 @@
 // Role-to-menu navigation configuration for NJS Property Group
-// 4 roles: Admin (10), Admin/Staff (8), Surveyor (6), Customer (8)
+// Roles: Admin (11), Admin/Staff (8), Surveyor (6), Customer (14), Partner (4)
 
 const adminNavConfig = {
   defaultPath: '/admin/dashboard',
@@ -8,6 +8,7 @@ const adminNavConfig = {
     { id: 'dashboard', name: 'Dashboard', path: '/admin/dashboard', icon: 'LayoutDashboard', badge: null },
     { id: 'users-roles', name: 'Users & Roles', path: '/admin/users-and-roles', icon: 'Users', badge: null },
     { id: 'companies', name: 'Companies', path: '/admin/companies', icon: 'Building2', badge: null },
+    { id: 'partner-portal', name: 'Partner Portal', path: '/partners', icon: 'Handshake', badge: 'Point 29' },
     { id: 'surveyors', name: 'Surveyors', path: '/admin/surveyors', icon: 'UserCheck', badge: null },
     { id: 'crm-leads', name: 'CRM & Leads', path: '/admin/crm-and-leads', icon: 'Target', badge: '14' },
     { id: 'survey-jobs', name: 'Survey Jobs', path: '/admin/survey-jobs', icon: 'ClipboardCheck', badge: '84' },
@@ -65,6 +66,16 @@ export const ROLE_NAVIGATION = {
       { id: 'support', name: 'Support', path: '/customer/support', icon: 'HelpCircle', badge: null },
       { id: 'my-details', name: 'My Details', path: '/customer/my-details', icon: 'User', badge: null },
       { id: 'previous-surveys', name: 'Previous Surveys', path: '/customer/previous-surveys', icon: 'History', badge: null },
+    ],
+  },
+  partner: {
+    defaultPath: '/partners',
+    label: 'Estate Agent / Partner',
+    items: [
+      { id: 'partner-portal', name: 'Referral & Commission Ledger', path: '/partners', icon: 'Handshake', badge: 'Active' },
+      { id: 'submit-referral', name: 'Submit Survey Referral', path: '/partners?action=submit', icon: 'Send', badge: '1-Click' },
+      { id: 'property-intel', name: 'Property Intelligence (EPC & Land Reg)', path: '/partners?tab=intel', icon: 'Search', badge: 'Point 26' },
+      { id: 'specimen-report', name: 'Buyer Specimen Report', path: '/partners?action=specimen', icon: 'FileDown', badge: 'PDF' },
     ],
   },
 };

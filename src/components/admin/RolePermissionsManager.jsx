@@ -27,6 +27,15 @@ import {
   FileSpreadsheet,
   HelpCircle,
   Check,
+  Handshake,
+  Compass,
+  MessageSquare,
+  Star,
+  History,
+  Search,
+  FileDown,
+  Send,
+  FileText,
 } from 'lucide-react';
 import { ROLE_NAVIGATION } from '../../mock/navigation';
 import { useRolePermissions, MENU_DESCRIPTIONS } from '../../mock/permissions';
@@ -55,6 +64,15 @@ const ICON_MAP = {
   FileSpreadsheet,
   User,
   HelpCircle,
+  Handshake,
+  Compass,
+  MessageSquare,
+  Star,
+  History,
+  Search,
+  FileDown,
+  Send,
+  FileText,
 };
 
 const ROLES_LIST = [
@@ -77,10 +95,18 @@ const ROLES_LIST = [
   {
     id: 'customer',
     name: 'Customer',
-    badge: 'Client Self-Service Portal',
-    description: 'Homebuyer & property client portal for reviewing quotations, e-signing terms of engagement, and downloading finalized reports.',
+    badge: 'Client Self-Service Portal (14 Tabs)',
+    description: 'Homebuyer & property client portal for tracking inspections, reviewing quotations, e-signing terms of engagement, and downloading finalized reports.',
     icon: User,
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  },
+  {
+    id: 'partner',
+    name: 'Estate Agent / Partner',
+    badge: 'Referral Partner Portal (Point 29)',
+    description: 'Estate agency branches (Foxtons, Savills, Dexters) submitting buyer survey referrals, tracking milestones, and monitoring £50 BACS commissions.',
+    icon: Handshake,
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
   },
 ];
 
@@ -93,12 +119,16 @@ export const RolePermissionsManager = () => {
   const roleNavItems = ROLE_NAVIGATION[selectedRole]?.items || [];
 
   const handleToggle = (menuItem) => {
-    // Prevent disabling primary dashboard
-    if (menuItem.id === 'dashboard' || menuItem.id === 'my-dashboard') {
+    // Prevent disabling primary dashboard / home landing view
+    if (
+      menuItem.id === 'dashboard' ||
+      menuItem.id === 'my-dashboard' ||
+      (selectedRole === 'partner' && menuItem.id === 'partner-portal')
+    ) {
       addToast({
         type: 'warning',
         title: 'Core Menu Protected',
-        message: 'The primary Dashboard menu cannot be disabled as it serves as the home landing view.',
+        message: 'The primary Dashboard / Portal home cannot be disabled as it serves as the home landing view.',
       });
       return;
     }
@@ -165,8 +195,8 @@ export const RolePermissionsManager = () => {
         </button>
       </div>
 
-      {/* Role Selection Tabs (3 Roles) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Role Selection Tabs (4 Roles: Admin, Surveyor, Customer, Estate Agent Partner) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {ROLES_LIST.map((role) => {
           const isSelected = selectedRole === role.id;
           const RoleIcon = role.icon;
@@ -206,7 +236,7 @@ export const RolePermissionsManager = () => {
               </div>
 
               <div className="font-extrabold text-xs sm:text-sm text-[#0B1F4D] flex items-center gap-1.5">
-                <span>{role.name} Role</span>
+                <span>{role.name}</span>
                 {isSelected && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
               </div>
               <div className="text-[10px] text-slate-400 font-medium truncate mt-0.5">
@@ -260,7 +290,10 @@ export const RolePermissionsManager = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {roleNavItems.map((item) => {
             const isPermitted = isMenuPermitted(selectedRole, item.id);
-            const isCore = item.id === 'dashboard' || item.id === 'my-dashboard';
+            const isCore =
+              item.id === 'dashboard' ||
+              item.id === 'my-dashboard' ||
+              (selectedRole === 'partner' && item.id === 'partner-portal');
             const Icon = ICON_MAP[item.icon] || LayoutDashboard;
             const desc = MENU_DESCRIPTIONS[item.id] || 'Core surveying platform module';
 

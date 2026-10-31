@@ -42,6 +42,20 @@ export const DEMO_USERS = {
     dateJoined: '02/09/2025',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
   },
+  'partner@demo.com': {
+    id: 'usr_partner',
+    email: 'partner@demo.com',
+    name: 'Sarah Croft',
+    role: 'partner',
+    roleLabel: 'Estate Agency Partner',
+    department: 'Sales & Referrals',
+    company: 'Foxtons Mayfair Branch',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80',
+    phone: '020 7946 0888',
+    currency: 'GBP',
+    dateJoined: '10/01/2026',
+    badgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
+  },
 };
 
 export const DEFAULT_DEMO_PASSWORD = 'Password123!';

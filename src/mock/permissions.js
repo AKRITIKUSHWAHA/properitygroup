@@ -13,6 +13,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'dashboard': true,
     'users-roles': true,
     'companies': true,
+    'partner-portal': true,
     'surveyors': true,
     'crm-leads': true,
     'survey-jobs': true,
@@ -25,6 +26,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'dashboard': true,
     'users-roles': true,
     'companies': true,
+    'partner-portal': true,
     'surveyors': true,
     'crm-leads': true,
     'survey-jobs': true,
@@ -57,6 +59,12 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'my-details': true,
     'previous-surveys': true,
   },
+  partner: {
+    'partner-portal': true,
+    'submit-referral': true,
+    'property-intel': true,
+    'specimen-report': true,
+  },
 };
 
 export const MENU_DESCRIPTIONS = {
@@ -64,6 +72,7 @@ export const MENU_DESCRIPTIONS = {
   'dashboard': 'Executive operations, KPI metrics, survey bookings pipeline, and recent activity.',
   'users-roles': 'Manage user accounts, client profiles, and RBAC menu visibility permissions.',
   'companies': 'Panel partnerships with London & UK estate agency branches and legal conveyancers.',
+  'partner-portal': 'Estate Agent & Referral Partner Portal, referral commission tracking, and pipeline status.',
   'surveyors': 'Chartered surveyors panel, coverage territories, accreditation, and workload.',
   'crm-leads': 'Inbound LSD quote requests, lead status pipeline, and deal conversions.',
   'survey-jobs': 'Master register of all Level 2 and Level 3 inspection instructions and milestones.',
@@ -77,15 +86,25 @@ export const MENU_DESCRIPTIONS = {
   'site-visits': 'On-site property inspection checklist, condition ratings, and photos.',
   'upload-reports': 'RICS format PDF draft report compilation and upload release.',
   'my-availability': 'Surveyor weekly diary, blocked inspection dates, and travel radius capacity.',
-  // Customer menus
+  // Customer menus (14 client portal tabs)
   'my-dashboard': 'Client overview, instruction progress tracker, and quick status actions.',
-  'my-bookings': 'Scheduled surveyor inspection date, property address, and arrival window.',
   'quotations': 'Received fee proposals, survey scope breakdown, and 1-click acceptance.',
+  'my-bookings': 'Scheduled surveyor inspection date, property address, and arrival window.',
+  'track-survey': 'Real-time 10-step survey progression status tracker from instruction to QA signoff.',
+  'appointment-details': 'Confirmed site inspection date, arrival window, and private surveyor access coordination.',
+  'assigned-surveyor': 'Assigned MRICS Chartered Surveyor profile, qualifications, and direct communication liaisons.',
   'terms-to-sign': 'Terms of engagement letter awaiting client digital e-signature.',
   'invoices-payments': 'Survey fee payment receipts, invoice PDF downloads, and card payments.',
   'reports': 'Finalized RICS Homebuyer / Building survey PDF report downloads.',
-  'my-details': 'Client contact details, billing address, and notification preferences.',
+  'messages': 'Direct messaging thread between homebuyer client, surveyor, and back-office staff.',
+  'leave-review': 'Verified Trustpilot feedback rating and client satisfaction testimonial.',
   'support': 'Helpdesk assistance, surveyor liaison queries, and phone support hotline.',
+  'my-details': 'Client contact details, billing address, and notification preferences.',
+  'previous-surveys': 'Archive history of past property survey instructions and past inspection reports.',
+  // Partner / Estate Agent menus (Point 29)
+  'submit-referral': 'Instant 1-click survey instruction referral submission modal with property preview.',
+  'property-intel': 'UK Postcode Property Intelligence with EPC Energy Ratings, floor area (sqm), and Land Registry sold prices.',
+  'specimen-report': 'Buyer sample RICS PDF specimen survey report download for estate agency clients.',
 };
 
 // Retrieve stored permissions or initialize with defaults
@@ -101,6 +120,7 @@ export const getStoredPermissions = () => {
         admin: { ...DEFAULT_ROLE_PERMISSIONS.admin, ...(parsed.admin || parsed.super_admin || {}) },
         surveyor: { ...DEFAULT_ROLE_PERMISSIONS.surveyor, ...(parsed.surveyor || {}) },
         customer: { ...DEFAULT_ROLE_PERMISSIONS.customer, ...(parsed.customer || {}) },
+        partner: { ...DEFAULT_ROLE_PERMISSIONS.partner, ...(parsed.partner || {}) },
       };
     }
   } catch {
@@ -173,7 +193,7 @@ export const useRolePermissions = () => {
     const roleUpdated = {};
     roleItems.forEach(item => {
       // Keep dashboard active to prevent lockout
-      if (item.id === 'dashboard' || item.id === 'my-dashboard') {
+      if (item.id === 'dashboard' || item.id === 'my-dashboard' || (normalizedRole === 'partner' && item.id === 'partner-portal')) {
         roleUpdated[item.id] = true;
       } else {
         roleUpdated[item.id] = active;

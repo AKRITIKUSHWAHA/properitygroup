@@ -30,6 +30,7 @@ import {
   MessageSquare,
   Star,
   History,
+  Handshake,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
@@ -64,6 +65,7 @@ const ICON_MAP = {
   MessageSquare,
   Star,
   History,
+  Handshake,
 };
 
 export const Sidebar = ({ isOpen, onClose }) => {
