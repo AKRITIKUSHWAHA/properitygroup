@@ -1,5 +1,5 @@
 // Client Profiles Mock Store with Call Communication Notes & Dedicated Complaints Log
-// Matches exact UK Property Surveying Practice specifications
+// Matches exact NJS Property Group specifications
 
 import { useState, useEffect } from 'react';
 

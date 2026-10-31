@@ -1,4 +1,4 @@
-// Role-to-menu navigation configuration for UK Property Surveying Practice
+// Role-to-menu navigation configuration for NJS Property Group
 // 4 roles: Admin (10), Admin/Staff (8), Surveyor (6), Customer (8)
 
 const adminNavConfig = {

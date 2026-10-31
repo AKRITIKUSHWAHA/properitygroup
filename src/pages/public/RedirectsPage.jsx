@@ -7,7 +7,7 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export function RedirectsPage() {
   useDocumentTitle(
-    "Production 301 Redirect Matrix | UK Property Surveying Practice",
+    "Production 301 Redirect Matrix | NJS Property Group",
     "Production HTTP 301 server redirects and legacy service decommissioning documentation."
   );
 

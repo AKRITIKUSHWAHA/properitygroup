@@ -229,7 +229,7 @@ export const RegisterPage = () => {
               className="w-4 h-4 mt-0.5 rounded text-[#2563EB] focus:ring-[#2563EB]/40 border-slate-300"
             />
             <span className="text-xs text-slate-600 leading-snug">
-              I agree to the UK Property Surveying Practice{' '}
+              I agree to the NJS Property Group{' '}
               <span className="font-semibold text-[#0B1F4D]">Terms of Service</span> and{' '}
               <span className="font-semibold text-[#0B1F4D]">Privacy Policy</span> (UK GDPR compliant).
             </span>

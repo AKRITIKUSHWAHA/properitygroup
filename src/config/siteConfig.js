@@ -9,7 +9,7 @@
 
 export const siteConfig = {
   // Brand & Entity Identification
-  companyName: "UK Property Surveying Practice",
+  companyName: "NJS Property Group",
   tradingName: "Chartered Building Surveyors & Registered Valuers [Trading Name Pending Confirmation]",
   isNameProvisional: true,
 

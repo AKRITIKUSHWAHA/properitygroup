@@ -16,7 +16,7 @@ export const TERMS_TEMPLATES = [
     keyClauses: [
       { num: '1.1', title: 'Scope of Service', text: 'Visual inspection of surface fabric, accessible roofs from 3m ladders, and damp testing. Does not involve opening up concealed structures or testing electrical circuits.' },
       { num: '2.4', title: 'Advance Settlement Requirement', text: 'In accordance with RICS mandates, inspection dates remain tentative until both digital execution of terms and fee payment have been settled.' },
-      { num: '3.1', title: 'Liability Cap', text: 'UK Property Surveying Practice’s liability arising from this inspection is limited to £250,000 or the market valuation of the subject property, whichever is lower.' },
+      { num: '3.1', title: 'Liability Cap', text: 'NJS Property Group’s liability arising from this inspection is limited to £250,000 or the market valuation of the subject property, whichever is lower.' },
       { num: '4.2', title: 'Consumer Cancellation Rights', text: 'Client maintains statutory 14-day cancellation right unless express consent is provided to conduct the site survey within this timeframe.' },
     ],
   },
@@ -80,7 +80,7 @@ export const TERMS_TEMPLATES = [
     piiCap: '£500,000 Diagnostic Indemnity',
     summary: 'Independent diagnostic investigation of rising damp, penetrating damp, condensation, black mould, and timber decay (dry rot / wet rot) without contractor sales bias.',
     keyClauses: [
-      { num: '1.1', title: 'Independent Non-Contractor Status', text: 'UK Property Surveying Practice does not sell chemical damp proofing or timber treatments. All diagnostic advice is completely independent and objective.' },
+      { num: '1.1', title: 'Independent Non-Contractor Status', text: 'NJS Property Group does not sell chemical damp proofing or timber treatments. All diagnostic advice is completely independent and objective.' },
       { num: '2.3', title: 'Instrument Calibration', text: 'Use of electronic electrical resistance meters, carbide testing, and thermal imaging cameras in conformity with BS 6576.' },
       { num: '3.2', title: 'Historic Fabric Protection', text: 'For pre-1919 properties, lime plaster and breathable construction methodologies are strictly mandated.' },
     ],

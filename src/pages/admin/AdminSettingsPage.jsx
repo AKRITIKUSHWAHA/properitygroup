@@ -30,7 +30,7 @@ const DEFAULT_SMTP = {
   encryption: 'TLS',
   username: 'surveys@propertygroup.co.uk',
   password: 'SG.ProdKey_98124_UKSurv2026',
-  fromName: 'UK Property Surveying Practice',
+  fromName: 'NJS Property Group',
   fromEmail: 'surveys@propertygroup.co.uk',
   replyTo: 'enquiries@propertygroup.co.uk',
   footerText: 'RICS Regulated Firm #048291 • Professional Indemnity Insured to £2,000,000',
@@ -406,7 +406,7 @@ export const AdminSettingsPage = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. UK Property Surveying Practice"
+                  placeholder="e.g. NJS Property Group"
                   value={smtpConfig.fromName}
                   onChange={(e) => handleInputChange('fromName', e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 transition-all font-semibold"

@@ -19,7 +19,7 @@ export const DEFAULT_EMAIL_AUTOMATIONS = [
     preview: 'Formal fixed-fee proposal with 8-point inspection checklist, terms, and booking deposit option.',
     templateBody: `Dear {{customer_name}},
 
-Thank you for instructing UK Property Surveying Practice. Please find your formal fixed-fee quotation for the {{survey_type}} at:
+Thank you for instructing NJS Property Group. Please find your formal fixed-fee quotation for the {{survey_type}} at:
 
 {{property_address}}
 
@@ -35,7 +35,7 @@ To accept this quotation and secure your priority inspection slot:
 {{action_link}}
 
 Warm regards,
-Client Services Team | UK Property Surveying Practice`,
+Client Services Team | NJS Property Group`,
     tags: ['Quote Proposal', 'Fixed Fee', 'RICS Standards'],
   },
   {
@@ -166,7 +166,7 @@ Please log in to your secure client portal below to download your full signed PD
 Post-Inspection Surveyor Consultation:
 Your surveyor {{surveyor_name}} is available to discuss any urgent Condition 3 defects or valuation notes with you over the phone.
 
-Thank you for choosing UK Property Surveying Practice.
+Thank you for choosing NJS Property Group.
 
 Best regards,
 Director of Professional Services`,

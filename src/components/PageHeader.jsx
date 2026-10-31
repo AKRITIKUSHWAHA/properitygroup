@@ -23,7 +23,7 @@ export const PageHeader = ({
         {/* Breadcrumb (horizontally scrollable on small mobile) */}
         {breadcrumb.length > 0 && (
           <nav className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-1 font-medium overflow-x-auto scrollbar-none whitespace-nowrap">
-            <span>UK Property Surveying Practice</span>
+            <span>NJS Property Group</span>
             {breadcrumb.map((crumb, idx) => (
               <React.Fragment key={idx}>
                 <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />

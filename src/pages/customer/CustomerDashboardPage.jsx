@@ -533,12 +533,12 @@ export const CustomerDashboardPage = () => {
         >
           <div className="space-y-3 text-xs leading-relaxed text-slate-800">
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 font-mono text-[11px] text-slate-600">
-              <div>From: UK Property Surveying Practice &lt;notifications@propertygroup.co.uk&gt;</div>
+              <div>From: NJS Property Group &lt;notifications@propertygroup.co.uk&gt;</div>
               <div>Subject: {selectedCustomerEmail.subject}</div>
             </div>
             <div className="p-4 bg-white rounded-xl border border-slate-200 whitespace-pre-line font-sans">
               {selectedCustomerEmail.body || (
-                `Dear ${user?.name || 'Customer'},\n\nThis is an automated operational notification regarding your survey.\n\nKind regards,\nUK Property Surveying Practice Team`
+                `Dear ${user?.name || 'Customer'},\n\nThis is an automated operational notification regarding your survey.\n\nKind regards,\nNJS Property Group Team`
               )}
             </div>
           </div>
