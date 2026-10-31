@@ -168,10 +168,15 @@ export function HomebuyerSurveyPage() {
               </div>
 
               {/* Sample Report Download Card */}
-              <div className="sample-report-download-card" style={{ padding: '1.25rem 1.5rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
-                <div>
-                  <h4 className="sample-report-title" style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>Sample Level 2 Survey Report</h4>
-                  <p className="sample-report-subtitle" style={{ fontSize: '0.82rem', color: '#475569', margin: '4px 0 0' }}>Review an anonymised sample report showing full RICS condition ratings &amp; diagnostic findings.</p>
+              <div className="sample-report-download-card">
+                <div className="sample-report-left">
+                  <div className="sample-report-icon-box">
+                    <FileText size={22} style={{ color: '#0284C7' }} />
+                  </div>
+                  <div>
+                    <h4 className="sample-report-title">Sample Level 2 Survey Report</h4>
+                    <p className="sample-report-subtitle">Review an anonymised sample report showing full RICS condition ratings &amp; diagnostic findings.</p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -182,8 +187,7 @@ export function HomebuyerSurveyPage() {
                     surveyType: 'RICS Level 2 Home Survey',
                     propertyType: 'Semi-Detached House (c. 1934)',
                   })}
-                  className="btn btn-primary btn-sm"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', fontWeight: 600, borderRadius: '10px' }}
+                  className="btn btn-primary btn-sm sample-report-btn"
                 >
                   <Download size={15} />
                   <span>Download Sample PDF</span>
