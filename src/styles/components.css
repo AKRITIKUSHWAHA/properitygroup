@@ -9105,8 +9105,56 @@ p.mega-action-sub {
   .utility-phone-link {
     font-size: 0.88rem !important;
   }
+  .utility-strip-inner {
+    gap: 0.35rem !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+  }
+  .utility-trust-link {
+    gap: 0.35rem !important;
+    flex-shrink: 0 !important;
+  }
+  .trust-highlight {
+    font-size: 0.78rem !important;
+    text-decoration: underline !important;
+    font-weight: 700 !important;
+  }
+  .trustpilot-star-boxes {
+    gap: 1.5px !important;
+    flex-shrink: 0 !important;
+  }
+  .tp-star-box {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .tp-star-box svg {
+    width: 9.5px !important;
+    height: 9.5px !important;
+  }
+  .trustpilot-brand {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.2rem !important;
+    margin-left: 0.15rem !important;
+    flex-shrink: 0 !important;
+  }
+  .trustpilot-brand svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
   .trustpilot-name {
-    display: none !important;
+    display: inline-block !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    color: #FFFFFF !important;
+    letter-spacing: -0.01em !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .utility-phone-link {
+    font-size: 0.84rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 }
 

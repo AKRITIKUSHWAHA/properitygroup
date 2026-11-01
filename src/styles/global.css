@@ -1129,3 +1129,23 @@ body {
   will-change: auto !important;
   animation: none !important;
 }
+
+/* ==========================================================================
+   Trustpilot Header Banner (Ensure 'Trustpilot' text is always visible)
+   ========================================================================== */
+.site-wrapper .trustpilot-name,
+.trustpilot-name {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+.site-wrapper .trustpilot-brand,
+.trustpilot-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
