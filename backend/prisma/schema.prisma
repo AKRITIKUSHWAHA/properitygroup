@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  SURVEYOR
+  CUSTOMER
+  STAFF
+  PARTNER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum JobStage {
+  QUOTE
+  PAID
+  ACCEPTED
+  BOOKED
+  PREPARING_REPORT
+  COMPLETE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUOTE_SENT
+  CONVERTED
+  LOST
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+// -------------------------------------------------------------
+// MODELS
+// -------------------------------------------------------------
+
+model User {
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  password     String
+  role         Role             @default(CUSTOMER)
+  phone        String?
+  avatar       String?
+  status       UserStatus       @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  surveyorProfile SurveyorProfile?
+  assignedJobs    Job[]            @relation("SurveyorJobs")
+  clientJobs      Job[]            @relation("ClientJobs")
+  messagesSent    Message[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model SurveyorProfile {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accreditation    String   @default("MRICS") // MRICS, FRICS, AssocRICS
+  ricsNumber       String?
+  piiPolicyNumber  String?
+  piiExpiryDate    DateTime?
+  piiValidated     Boolean  @default(true)
+  postcodesCovered String   @default("SW, W, WC, EC, NW") // Comma-separated UK outward postal areas
+  activeLoad       Int      @default(0)
+  maxLoad          Int      @default(10)
+  rating           Float    @default(4.9)
+  available        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("surveyor_profiles")
+}
+
+model Company {
+  id                    Int      @id @default(autoincrement())
+  name                  String
+  branchName            String?
+  address               String?
+  contactName           String?
+  contactEmail          String?
+  contactPhone          String?
+  referralRate          Float    @default(10.0) // Commission percentage
+  totalInstructions     Int      @default(0)
+  keyCollectionProtocol String?  @db.Text
+  status                String   @default("ACTIVE")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  leads                 Lead[]
+  jobs                  Job[]
+
+  @@map("companies")
+}
+
+model Lead {
+  id              Int            @id @default(autoincrement())
+  reference       String         @unique // LEAD-2026-001
+  clientName      String
+  clientEmail     String
+  clientPhone     String?
+  propertyAddress String
+  postcode        String
+  serviceType     String         @default("RICS Level 2 Home Survey")
+  propertyType    String?
+  estimatedValue  Float?
+  source          String         @default("WEBSITE") // WEBSITE, LSD, PHONE, PARTNER_AGENCY
+  status          LeadStatus     @default(NEW)
+  companyId       Int?
+  company         Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  quotes          Quote[]
+  jobs            Job[]
+  callLogs        CallLog[]
+  complaints      ComplaintLog[]
+
+  @@map("leads")
+}
+
+model CallLog {
+  id              Int      @id @default(autoincrement())
+  leadId          Int?
+  lead            Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  jobId           Int?
+  job             Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  callerName      String
+  callTime        DateTime @default(now())
+  durationMinutes Int?
+  summary         String   @db.Text
+  handlerName     String
+  createdAt       DateTime @default(now())
+
+  @@map("call_logs")
+}
+
+model ComplaintLog {
+  id              Int       @id @default(autoincrement())
+  leadId          Int?
+  lead            Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  jobId           Int?
+  job             Job?      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title           String
+  description     String    @db.Text
+  severity        String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status          String    @default("OPEN") // OPEN, INVESTIGATING, RESOLVED
+  resolutionNotes String?   @db.Text
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@map("complaint_logs")
+}
+
+model Job {
+  id                     Int            @id @default(autoincrement())
+  reference              String         @unique // JOB-2026-080
+  stage                  JobStage       @default(QUOTE)
+  serviceType            String         @default("RICS Level 2 Home Survey")
+  propertyAddress        String
+  postcode               String
+  clientName             String
+  clientEmail            String
+  clientPhone            String?
+  clientId               Int?
+  client                 User?          @relation("ClientJobs", fields: [clientId], references: [id], onDelete: SetNull)
+  surveyorId             Int?
+  surveyor               User?          @relation("SurveyorJobs", fields: [surveyorId], references: [id], onDelete: SetNull)
+  leadId                 Int?
+  lead                   Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  companyId              Int?
+  company                Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  inspectionDate         DateTime?
+  inspectionTime         String?
+  keyCollectionDetails   String?        @db.Text
+  specialInstructions    String?        @db.Text
+  estimatedTurnaroundDays Int           @default(5)
+  reportPdfUrl           String?
+  reportGeneratedAt      DateTime?
+  qaApprovedBy           String?
+  qaApprovedAt           DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  quotes                 Quote[]
+  terms                  Term[]
+  invoices               Invoice[]
+  messages               Message[]
+  callLogs               CallLog[]
+  complaints             ComplaintLog[]
+  auditTimeline          AuditLog[]
+
+  @@map("jobs")
+}
+
+model Quote {
+  id          Int         @id @default(autoincrement())
+  reference   String      @unique // QTE-2026-101
+  jobId       Int?
+  job         Job?        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  leadId      Int?
+  lead        Lead?       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  baseFee     Float
+  vatRate     Float       @default(20.0) // UK VAT 20%
+  vatAmount   Float
+  totalAmount Float
+  inclusions  String?     @db.Text // JSON string list of deliverables
+  status      QuoteStatus @default(DRAFT)
+  validUntil  DateTime?
+  acceptedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("quotes")
+}
+
+model Term {
+  id              Int       @id @default(autoincrement())
+  reference       String    @unique // TRM-2026-080
+  jobId           Int
+  job             Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  clientName      String
+  clientEmail     String
+  documentTitle   String    @default("RICS Standard Terms of Engagement")
+  content         String    @db.Text
+  signed          Boolean   @default(false)
+  signatureData   String?   @db.Text // Base64 signature image or typed signature
+  signedAt        DateTime?
+  signerIp        String?
+  signerUserAgent String?
+  tamperAuditHash String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("terms")
+}
+
+model Invoice {
+  id                    Int           @id @default(autoincrement())
+  invoiceNumber         String        @unique // INV-2026-080
+  jobId                 Int
+  job                   Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  clientName            String
+  clientEmail           String
+  subtotal              Float
+  vatAmount             Float
+  total                 Float
+  status                InvoiceStatus @default(PENDING)
+  paymentMethod         String? // STRIPE_CARD, BACS_TRANSFER, APPLE_PAY
+  stripePaymentIntentId String?
+  stripeReceiptUrl      String?
+  bacsReference         String?
+  paidAt                DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  conversationId String // conv-1, conv-2, etc.
+  jobId          Int?
+  job            Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  senderId       Int?
+  sender         User?    @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  senderName     String
+  role           String   @default("admin") // admin, customer, surveyor
+  content        String   @db.Text
+  readByAdmin    Boolean  @default(false)
+  readByCustomer Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@map("messages")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  jobId     Int?
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  details   String?  @db.Text
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+

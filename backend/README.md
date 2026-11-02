@@ -14,3 +14,4 @@ This directory houses the backend service for the NJS Property Group platform.
 5. **Realtime / Direct Messaging**: Isolated message threads between Admin & Customer
 6. **Digital Signature Audit Trail**: Legally binding signature capture with IP, timestamp, and user agent
 7. **Document & Photo Storage**: S3 / Cloudinary for surveyor inspection photos & RICS reports
+
