@@ -57,7 +57,7 @@ export const TopBar = ({ onToggleSidebar }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-3 sm:px-6 bg-white/95 backdrop-blur-md border-b border-slate-300/80 shadow-2xs pt-[env(safe-area-inset-top,0px)]">
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-3 sm:px-6 bg-white/95 backdrop-blur-md border-b border-slate-300/80 shadow-2xs pt-[env(safe-area-inset-top,0px)] shrink-0">
       {/* Left: Mobile Hamburger & Search / Tagline */}
       <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
         <button
