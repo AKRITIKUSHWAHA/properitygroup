@@ -39,3 +39,4 @@ export const surveyorAvailabilityApi = {
   getAvailability: () => api.get('/surveyor/my-availability'),
   updateAvailability: (data) => api.patch('/surveyor/my-availability', data),
 };
+

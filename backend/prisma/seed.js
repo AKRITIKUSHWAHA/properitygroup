@@ -24,7 +24,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   const salt = await bcrypt.genSalt(10);
-  const defaultPassword = await bcrypt.hash('password123', salt);
+  const defaultPassword = await bcrypt.hash('Password123!', salt);
 
   // 1. Create Admins
   const admin = await prisma.user.create({

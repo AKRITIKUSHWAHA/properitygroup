@@ -247,3 +247,4 @@ updateFile('frontend/src/pages/surveyor/SurveyorDashboardPage.jsx', (code) => {
 });
 
 console.log('🏁 All portal UI pages and mocks integrated with backend REST APIs!');
+

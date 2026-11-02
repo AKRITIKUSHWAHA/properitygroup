@@ -97,3 +97,4 @@ export const adminSettingsApi = {
   getSettings: () => api.get('/settings'),
   updateSettings: (settingsData) => api.patch('/settings', settingsData),
 };
+

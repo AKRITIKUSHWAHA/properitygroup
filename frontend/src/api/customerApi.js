@@ -81,3 +81,4 @@ export const customerDetailsApi = {
 export const customerPreviousSurveysApi = {
   getSurveys: () => api.get('/customer/previous-surveys'),
 };
+
