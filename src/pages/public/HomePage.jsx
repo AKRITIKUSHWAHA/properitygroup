@@ -98,7 +98,7 @@ export function HomePage() {
             <span className="section-eyebrow">Core Surveying Practice</span>
             <h2 className="section-heading-title">Our Independent Survey Services</h2>
             <p className="section-heading-subtitle">
-              Objective condition reports and valuation appraisals tailored to property age, architectural form, and legal requirements.
+              Objective condition reports and valuations tailored to your property's age, construction, and legal requirements.
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export function HomePage() {
               <div className="overview-card-body">
                 <h3 className="overview-card-title">Homebuyer Survey — Level 2</h3>
                 <p className="overview-card-desc">
-                  Essential condition report identifying urgent defects, damp indications, and timber decay in conventional post-1900 properties.
+                  Clear condition report highlighting urgent defects, damp indications, and timber decay in post-1900 homes.
                 </p>
                 <span className="overview-card-action">
                   <span>Explore Level 2 Details</span>
@@ -138,7 +138,7 @@ export function HomePage() {
               <div className="overview-card-body">
                 <h3 className="overview-card-title">Building Survey — Level 3</h3>
                 <p className="overview-card-desc">
-                  Comprehensive non-invasive investigation of structural integrity, fabric decay, and prioritized repair schedules for period or altered homes.
+                  In-depth structural audit with prioritized repair schedules for older, altered, or complex properties.
                 </p>
                 <span className="overview-card-action">
                   <span>Explore Level 3 Details</span>
@@ -160,7 +160,7 @@ export function HomePage() {
               <div className="overview-card-body">
                 <h3 className="overview-card-title">Snagging Report</h3>
                 <p className="overview-card-desc">
-                  Independent quality inspection identifying cosmetic and technical workmanship defects before developer warranty handover.
+                  Detailed inspection identifying cosmetic and technical defects before developer warranty handover.
                 </p>
                 <span className="overview-card-action">
                   <span>Explore Snagging Details</span>
@@ -182,7 +182,7 @@ export function HomePage() {
               <div className="overview-card-body">
                 <h3 className="overview-card-title">Valuation Report</h3>
                 <p className="overview-card-desc">
-                  RICS Red Book market appraisal for Help to Buy redemption, shared ownership staircasing, probate, and capital gains tax.
+                  RICS Red Book market appraisals for Help to Buy, shared ownership, probate, and tax purposes.
                 </p>
                 <span className="overview-card-action">
                   <span>Explore Valuation Details</span>
@@ -204,7 +204,7 @@ export function HomePage() {
               <div className="overview-card-body">
                 <h3 className="overview-card-title">Damp Survey</h3>
                 <p className="overview-card-desc">
-                  Scientific moisture diagnostics identifying rising damp, penetrating damp, and condensation without contractor sales bias.
+                  Scientific moisture diagnostics identifying damp and condensation without contractor sales bias.
                 </p>
                 <span className="overview-card-action">
                   <span>Explore Damp Details</span>
@@ -236,7 +236,7 @@ export function HomePage() {
             <span className="luxury-section-eyebrow">Pure Independence</span>
             <h2 className="luxury-section-title">Independent Buyer Protection</h2>
             <p className="luxury-section-sub">
-              A home is an emotional purchase, but structural condition is purely objective. We provide technical clarity without contractor conflicts of interest.
+              Objective technical clarity and buyer protection with zero contractor conflicts of interest.
             </p>
           </div>
 
@@ -247,7 +247,7 @@ export function HomePage() {
               </div>
               <h3 className="luxury-pillar-title">Zero Contractor Bias</h3>
               <p className="luxury-pillar-text">
-                We sell independent diagnostic reports only. We never quote for building work, damp treatments, or remedial contracting.
+                We provide diagnostic reports only. We never sell building work, damp treatments, or remedial contracting.
               </p>
             </div>
 
@@ -257,7 +257,7 @@ export function HomePage() {
               </div>
               <h3 className="luxury-pillar-title">Direct Surveyor Debrief</h3>
               <p className="luxury-pillar-text">
-                Speak directly with the chartered surveyor who inspected your prospective property before and after legal exchange.
+                Speak directly with the surveyor who inspected your property, before and after your report is delivered.
               </p>
             </div>
 
@@ -267,7 +267,7 @@ export function HomePage() {
               </div>
               <h3 className="luxury-pillar-title">Traffic-Light Defect Ratings</h3>
               <p className="luxury-pillar-text">
-                Instant visual prioritization using RICS 1-2-3 condition ratings so you know exactly which repairs to renegotiate.
+                Clear RICS 1-2-3 ratings highlight urgent defects so you can renegotiate repairs with confidence.
               </p>
             </div>
 
@@ -277,7 +277,7 @@ export function HomePage() {
               </div>
               <h3 className="luxury-pillar-title">Survey vs Mortgage Valuation</h3>
               <p className="luxury-pillar-text">
-                Mortgage valuations protect the lender’s loan only. Our independent survey is commissioned 100% to protect your capital.
+                Mortgage valuations protect the lender's loan only. Our independent survey protects your purchase.
               </p>
             </div>
           </div>
@@ -306,7 +306,7 @@ export function HomePage() {
                 </h2>
 
                 <p className="expert-card-desc">
-                  We provide independent, CPR Part 35 compliant expert witness reports, forensic defect audits, Scott Schedule contributions, and oral testimony at hearings for boundary demarcations, defective construction claims, subsidence causation, and surveyor negligence disputes across London and the South East.
+                  Independent, CPR Part 35 compliant expert witness reports, forensic defect audits, Scott Schedules, and dispute testimony across London and the South East.
                 </p>
 
                 <div className="expert-cta-group">
@@ -380,7 +380,7 @@ export function HomePage() {
             <span className="section-eyebrow">Fixed-Fee Quotation Engine</span>
             <h2 className="section-heading-title">Request Your Fixed-Fee Survey Quote</h2>
             <p className="section-heading-subtitle">
-              Receive a transparent, fixed quotation with zero hidden fees. Our independent surveyors inspect properties throughout London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.
+              Transparent, fixed-fee quotes with zero hidden costs across London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire.
             </p>
           </div>
 
