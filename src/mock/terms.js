@@ -297,16 +297,18 @@ export const useTerms = () => {
     setAgreements((prev) => [newAgreement, ...prev]);
   };
 
-  const markAgreementSigned = (id) => {
+  const markAgreementSigned = (idOrJobNo, details = {}) => {
     setAgreements((prev) =>
       prev.map((a) => {
-        if (a.id !== id) return a;
+        if (a.id !== idOrJobNo && a.jobNo !== idOrJobNo) return a;
         return {
           ...a,
           status: 'Signed',
-          signedDate: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-          signerIp: '86.142.19.42 (London, UK)',
-          auditCode: `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`,
+          signedDate: details.signedDate || `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+          signerIp: details.signerIp || '86.142.19.42 (London, UK)',
+          auditCode: details.auditCode || `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`,
+          signatureType: details.signatureType || 'typed',
+          signatureValue: details.signatureValue || a.client,
         };
       })
     );

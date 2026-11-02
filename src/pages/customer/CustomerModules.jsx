@@ -45,6 +45,7 @@ import { useJobs, SURVEYORS } from '../../mock/jobs';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
+import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -80,14 +81,70 @@ export const CustomerTermsPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
+  const { jobs, updateJob } = useJobs();
+  const { agreements, setAgreements, markAgreementSigned } = useTerms();
+
+  // 1. Strict customer job isolation
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const currentJob = myJobs[0] || null;
+
+  // 2. Locate linked agreement in terms repository
+  const currentAgreement = agreements.find((a) => {
+    if (currentJob?.id && a.jobNo === currentJob.id) return true;
+    const uEmail = (user?.email || '').toLowerCase().trim();
+    const aEmail = (a.signerEmail || '').toLowerCase().trim();
+    if (uEmail && aEmail && uEmail === aEmail) return true;
+    if (uEmail.includes('harrison') && aEmail.includes('harrison')) return true;
+    return false;
+  });
+
+  const isAlreadySigned =
+    currentAgreement?.status === 'Signed' || currentJob?.termsStatus === 'Signed';
+
+  // 3. Dynamic property and fee values
+  const propertyAddress = currentJob?.property
+    ? `${currentJob.property}, ${currentJob.location || ''}`
+    : '14 Mayfair Gate, Mayfair, London W1K 2PB';
+  const surveyType = currentJob?.surveyType || 'RICS Level 2 Home Survey';
+  const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
+  const appointmentSlot = currentJob?.date
+    ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
+    : '27 Oct, 10:00 - 13:00';
+  const jobNo = currentJob?.id || 'JOB-2026-080';
+
+  const baseFee = currentJob?.quote?.baseFee || (surveyType.includes('Level 3') ? 1450 : 770);
+  const vatAmount = Math.round(baseFee * 0.2);
+  const grossTotal = baseFee + vatAmount;
+
+  // 4. Match service-specific clauses from TERMS_TEMPLATES
+  const activeTemplate = React.useMemo(() => {
+    const st = surveyType.toLowerCase();
+    if (st.includes('level 3') || st.includes('building')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3') || TERMS_TEMPLATES[1];
+    }
+    if (st.includes('valuation')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-valuation') || TERMS_TEMPLATES[3];
+    }
+    if (st.includes('snagging')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-snagging') || TERMS_TEMPLATES[2];
+    }
+    if (st.includes('damp')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-damp') || TERMS_TEMPLATES[4];
+    }
+    if (st.includes('expert')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-expert-witness') || TERMS_TEMPLATES[5];
+    }
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l2') || TERMS_TEMPLATES[0];
+  }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
   const [stage, setStage] = useState('sign');
+  const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
   // Sign Form State
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
-  const [typedName, setTypedName] = useState(user?.name || 'Emma Watson');
+  const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || 'Emma Watson');
 
   // Canvas ref for drawn signature
   const canvasRef = useRef(null);
@@ -100,7 +157,7 @@ export const CustomerTermsPage = () => {
     number: '•••• •••• •••• 4242',
     expiry: '12/28',
     cvc: '892',
-    name: user?.name || 'Emma Watson',
+    name: user?.name || currentJob?.customer || 'Customer Account',
     postcode: 'W1K 2PB',
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -121,8 +178,8 @@ export const CustomerTermsPage = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const x = (e.clientX || (e.touches && e.touches[0]?.clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0]?.clientY)) - rect.top;
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -135,8 +192,8 @@ export const CustomerTermsPage = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    const x = (e.clientX || (e.touches && e.touches[0]?.clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0]?.clientY)) - rect.top;
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -185,7 +242,7 @@ export const CustomerTermsPage = () => {
     addToast({
       type: 'success',
       title: 'Agreement Digitally Executed',
-      message: 'Your Terms of Engagement have been cryptographically stamped and registered.',
+      message: 'Your Terms of Engagement have been cryptographically stamped. Proceeding to payment.',
     });
     setStage('payment');
   };
@@ -194,15 +251,81 @@ export const CustomerTermsPage = () => {
     e.preventDefault();
     setIsProcessingPayment(true);
 
+    let signatureVal = typedName;
+    if (signatureType === 'drawn' && canvasRef.current) {
+      try {
+        signatureVal = canvasRef.current.toDataURL('image/png');
+      } catch {
+        signatureVal = typedName;
+      }
+    }
+
     setTimeout(() => {
+      const nowString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
+
+      // 1. Update in useTerms store
+      if (currentAgreement?.id) {
+        markAgreementSigned(currentAgreement.id, {
+          signedDate: nowString,
+          signerIp: '86.142.19.42 (London, UK)',
+          auditCode: generatedAuditCode,
+          signatureType,
+          signatureValue: signatureVal,
+        });
+      } else if (currentJob?.id) {
+        // Create new executed agreement in store
+        setAgreements((prev) => [
+          {
+            id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+            refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+            jobNo: currentJob.id,
+            client: user?.name || currentJob.customer || 'Customer',
+            signerEmail: user?.email || currentJob.customerEmail,
+            property: propertyAddress,
+            location: currentJob.location || 'London, UK',
+            serviceKey: activeTemplate.serviceKey,
+            templateName: activeTemplate.name,
+            versionYear: `${activeTemplate.version} / ${activeTemplate.year}`,
+            status: 'Signed',
+            sentDate: new Date().toLocaleDateString('en-GB'),
+            signedDate: nowString,
+            signerIp: '86.142.19.42 (London, UK)',
+            auditCode: generatedAuditCode,
+            downloadUrl: '#download-signed-pdf',
+          },
+          ...prev,
+        ]);
+      }
+
+      // 2. Update in useJobs store
+      if (currentJob?.id) {
+        updateJob(currentJob.id, {
+          termsStatus: 'Signed',
+          paymentStatus: 'Paid',
+          canBook: true,
+          timelineStep: 4,
+          tasks: (currentJob.tasks || []).map((t) => ({ ...t, done: true })),
+          activityLog: [
+            {
+              id: Date.now(),
+              time: nowString,
+              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & settled invoice (£${grossTotal}).`,
+            },
+            ...(currentJob.activityLog || []),
+          ],
+        });
+      }
+
       setIsProcessingPayment(false);
       setStage('confirmed');
+
       addToast({
         type: 'success',
         title: 'Advance Payment Successful',
-        message: 'Stripe transaction authorized. Your inspection slot is officially locked.',
+        message: `Stripe transaction of £${grossTotal.toFixed(2)} authorized. Terms of engagement recorded.`,
       });
-    }, 1200);
+    }, 1000);
   };
 
   const handleDownloadSignedPDF = () => {
@@ -216,21 +339,185 @@ export const CustomerTermsPage = () => {
     }
 
     downloadTermsPDF({
-      jobNo: 'JOB-2026-080',
-      clientName: user?.name || typedName,
-      property: '14 Mayfair Gate, London W1K 2PB',
-      surveyType: 'RICS Level 2 Home Survey',
+      jobNo: jobNo,
+      clientName: user?.name || currentJob?.customer || typedName,
+      property: propertyAddress,
+      surveyType: surveyType,
+      agreedFee: `£${grossTotal.toFixed(2)} (inc. 20% VAT)`,
+      signedDate: currentAgreement?.signedDate || new Date().toLocaleDateString('en-GB'),
+      signedTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
       signatureType,
       signatureValue: signatureVal,
+      ipAddress: currentAgreement?.signerIp || '86.142.19.104',
     });
 
     addToast({
       type: 'success',
-      title: 'Downloading PDF',
-      message: 'Generating your signed Terms of Engagement agreement.',
+      title: 'Downloading Signed PDF',
+      message: 'Generating your executed Terms of Engagement with audit seal.',
     });
   };
 
+  // ==========================================
+  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
+  // ==========================================
+  if (isAlreadySigned && stage !== 'confirmed') {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        <PageHeader
+          title="Terms of Engagement & Digital Signature"
+          subtitle="Your legally binding RICS contractual agreement has been executed and securely registered in practice audit archives."
+          breadcrumb={['Customer Portal', 'Terms to Sign']}
+        />
+
+        {/* Executed Status Card */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          {/* Top Verification Banner */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  RICS Mandated Contract • Digitally Executed
+                </div>
+                <h3 className="text-xl font-black tracking-tight">Terms of Engagement Signed</h3>
+              </div>
+            </div>
+
+            <div className="text-left sm:text-right text-xs text-white/90 space-y-0.5 font-mono">
+              <div>Ref: <strong>{currentAgreement?.refNo || 'AGR-2026-081'}</strong></div>
+              <div>Audit Code: <strong>{currentAgreement?.auditCode || 'DOC-ESIGN-VERIFIED'}</strong></div>
+              <div>Executed: <strong>{currentAgreement?.signedDate || '26/10/2026, 11:15'}</strong></div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Instruction Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Instructing Client</span>
+                <strong className="text-slate-900 font-extrabold text-sm">{user?.name || currentJob?.customer}</strong>
+                <span className="text-[11px] text-slate-500 block truncate">{user?.email || currentJob?.customerEmail}</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Subject Property</span>
+                <strong className="text-slate-900 font-extrabold text-xs block truncate">{propertyAddress.split(',')[0]}</strong>
+                <span className="text-[11px] text-slate-500 block truncate">{propertyAddress}</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Agreed Fee Status</span>
+                <strong className="text-emerald-700 font-extrabold text-sm block">£{grossTotal.toFixed(2)}</strong>
+                <span className="text-[10px] font-semibold text-emerald-600 block">Advance Settlement Cleared ✓</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Assigned Surveyor</span>
+                <strong className="text-slate-900 font-extrabold text-xs block truncate">{surveyorName}</strong>
+                <span className="text-[10px] font-semibold text-amber-700 block">Confirmed Appointment</span>
+              </div>
+            </div>
+
+            {/* Digital Signature Seal */}
+            <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-[#0B1F4D]">Digital Signature on Record:</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Legally Binding (ECA 2000)
+                  </span>
+                </div>
+                <div className="font-serif italic text-2xl text-[#0B1F4D] font-bold tracking-wide">
+                  {user?.name || currentJob?.customer}
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  Signer IP: {currentAgreement?.signerIp || '86.142.19.42 (London, UK)'} • Cryptographic Checksum Verified
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadSignedPDF}
+                  className="px-5 py-3 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Signed PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Contract Clauses Accordion */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowClausesAccordion(!showClausesAccordion)}
+                className="w-full p-4 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-[#0B1F4D]" />
+                  <span className="text-xs font-bold text-slate-900">
+                    View Executed Agreement Terms ({activeTemplate.shortName})
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-[#0B1F4D]">
+                  {showClausesAccordion ? 'Hide Clauses' : 'Show Clauses'}
+                </span>
+              </button>
+
+              {showClausesAccordion && (
+                <div className="p-5 bg-white text-xs text-slate-600 space-y-3.5 border-t border-slate-200">
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Template: {activeTemplate.name} • Version: {activeTemplate.version} ({activeTemplate.year})
+                  </div>
+                  {activeTemplate.keyClauses?.map((clause, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <strong className="text-slate-900 block font-bold">
+                        Clause {clause.num}: {clause.title}
+                      </strong>
+                      <p className="leading-relaxed">{clause.text}</p>
+                    </div>
+                  ))}
+                  <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-100">
+                    Governing Body: {activeTemplate.governingBody} • Professional Indemnity Cap: {activeTemplate.piiCap}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Portal Action Navigation */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/customer/track-my-survey')}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Compass className="w-4 h-4 text-[#0B1F4D]" />
+                <span>Track Live Survey Progress</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/customer/invoices-and-payments')}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Receipt className="w-4 h-4 text-emerald-700" />
+                <span>View Invoices & Payments</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // CASE B: PENDING SIGNING & ADVANCE PAYMENT FLOW
+  // ==========================================
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
@@ -271,73 +558,77 @@ export const CustomerTermsPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-md">
-                  Private Client Instruction
+                  Private Client Instruction • Ref #{jobNo}
                 </span>
                 <h3 className="text-lg font-black text-[#0B1F4D] mt-1">
-                  14 Mayfair Gate, Mayfair, London W1K 2PB
+                  {propertyAddress}
                 </h3>
               </div>
               <div className="text-right sm:text-right">
                 <span className="text-xs text-slate-500 block">Agreed Survey Fee</span>
-                <span className="text-xl font-black text-[#0B1F4D]">£924.00</span>
-                <span className="text-[10px] text-slate-400 block">(£770.00 + 20% UK VAT)</span>
+                <span className="text-xl font-black text-[#0B1F4D]">£{grossTotal.toFixed(2)}</span>
+                <span className="text-[10px] text-slate-400 block">(£{baseFee.toFixed(2)} + 20% UK VAT)</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Service Level</span>
-                <strong className="text-slate-900">RICS Level 2 Survey</strong>
+                <strong className="text-slate-900 font-extrabold">{surveyType}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Lead Surveyor</span>
-                <strong className="text-slate-900">David Thorne MRICS</strong>
+                <strong className="text-slate-900 font-extrabold">{surveyorName}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Appointment Slot</span>
-                <strong className="text-slate-900">27 Oct, 10:00 - 13:00</strong>
+                <strong className="text-slate-900 font-extrabold">{appointmentSlot}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Turnaround Time</span>
-                <strong className="text-slate-900">48 Hours post-visit</strong>
+                <strong className="text-slate-900 font-extrabold">48 Hours post-visit</strong>
               </div>
             </div>
           </div>
 
-          {/* Legal Scrollable Contract Box */}
+          {/* Legal Scrollable Contract Box with Service-Specific Clauses */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-4">
-            <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#2563EB]" />
-              <span>RICS Standard Letter of Engagement (Professional Standard)</span>
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#2563EB]" />
+                <span>{activeTemplate.name}</span>
+              </h4>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                {activeTemplate.version} / {activeTemplate.year}
+              </span>
+            </div>
 
             <div className="h-64 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 space-y-3 leading-relaxed font-sans">
               <p className="font-bold text-slate-900">
-                1. Scope of the RICS Home Survey (Level 2)
+                1. Scope of the {surveyType}
               </p>
               <p>
-                NJS Property Group agrees to carry out a physical visual inspection of 14 Mayfair Gate, London W1K 2PB in accordance with the current RICS Home Survey Standard (Professional Standard, UK). The surveyor is a qualified Chartered Surveyor (MRICS) registered with the Royal Institution of Chartered Surveyors.
+                NJS Property Group agrees to carry out a physical visual inspection of {propertyAddress} in accordance with {activeTemplate.governingBody}. The surveyor is a qualified Chartered Surveyor (MRICS) registered with the Royal Institution of Chartered Surveyors.
+              </p>
+              {activeTemplate.keyClauses?.map((c, i) => (
+                <div key={i} className="space-y-1">
+                  <p className="font-bold text-slate-900">
+                    {c.num}. {c.title}
+                  </p>
+                  <p>{c.text}</p>
+                </div>
+              ))}
+              <p className="font-bold text-slate-900">
+                Fees, Cancellation & Refunds
               </p>
               <p>
-                The inspection examines accessible internal and external surfaces. We do not lift fitted carpets, remove floorboards, or force entry into sealed roof voids. Specialist services (gas, electrics, drainage) are inspected visually for observable signs of defects and appropriate testing will be recommended where warranted.
+                The total fixed fee of £{grossTotal.toFixed(2)} (inclusive of 20% VAT) is payable upon execution of these terms. Under the Consumer Contracts Regulations 2013, you hold a 14-day statutory right of cancellation.
               </p>
               <p className="font-bold text-slate-900">
-                2. Fees, Cancellation & Refunds
+                Professional Indemnity Cover
               </p>
               <p>
-                The total fixed fee of £924.00 (inclusive of VAT) is payable upon execution of these terms. Under the Consumer Contracts Regulations 2013, you hold a 14-day statutory right of cancellation. If the inspection takes place within this period with your agreement, cancellation within 24 hours of the booked slot will incur a 50% survey cancellation charge.
-              </p>
-              <p className="font-bold text-slate-900">
-                3. Liability & Professional Indemnity
-              </p>
-              <p>
-                NJS Property Group maintains comprehensive Professional Indemnity Insurance with an aggregate indemnity limit of £5,000,000. Our liability is restricted to the instructing client and cannot be relied upon by third parties or mortgage lenders without written consent.
-              </p>
-              <p className="font-bold text-slate-900">
-                4. Complaints Handling & RICS Regulation
-              </p>
-              <p>
-                We operate a formal Complaints Handling Procedure approved by the RICS. In the event of an unresolved dispute, clients are entitled to refer the matter to the Property Ombudsman.
+                NJS Property Group maintains comprehensive Professional Indemnity Insurance backed by RSA with indemnity cover up to {activeTemplate.piiCap}.
               </p>
             </div>
 
@@ -350,7 +641,7 @@ export const CustomerTermsPage = () => {
                 className="w-4 h-4 mt-0.5 rounded text-[#0B1F4D] focus:ring-[#0B1F4D]"
               />
               <span className="text-xs text-slate-700 leading-normal">
-                I confirm that I am the instructing client, have read the full RICS Letter of Engagement clauses above, and agree to be legally bound by these terms.
+                I confirm that I am the instructing client ({user?.name || currentJob?.customer}), have read the full RICS Letter of Engagement clauses above, and agree to be legally bound by these terms.
               </span>
             </label>
           </div>
@@ -398,7 +689,7 @@ export const CustomerTermsPage = () => {
                   type="text"
                   value={typedName}
                   onChange={(e) => setTypedName(e.target.value)}
-                  placeholder="e.g. Emma Watson"
+                  placeholder="e.g. Harrison Croft"
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 font-serif text-lg text-[#0B1F4D] focus:ring-2 focus:ring-[#0B1F4D] focus:border-transparent"
                 />
                 <span className="text-[11px] text-slate-400 block">
@@ -586,7 +877,7 @@ export const CustomerTermsPage = () => {
                     ) : (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>Pay £924.00 & Confirm Booking</span>
+                        <span>Pay £{grossTotal.toFixed(2)} & Confirm Booking</span>
                       </>
                     )}
                   </button>
@@ -604,39 +895,31 @@ export const CustomerTermsPage = () => {
 
               <div className="space-y-2">
                 <div className="flex justify-between text-slate-600">
-                  <span>RICS Level 2 Survey:</span>
-                  <span>£650.00</span>
+                  <span>{surveyType}:</span>
+                  <span>£{baseFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Drone Roof Inspection:</span>
-                  <span>+£120.00</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Same-Day Verbal Debrief:</span>
-                  <span>+£50.00</span>
-                </div>
-                <div className="flex justify-between text-emerald-700 font-bold">
-                  <span>Discount Applied:</span>
-                  <span>-£50.00</span>
+                  <span>Direct Telephone Debrief:</span>
+                  <span className="text-emerald-700 font-bold">Included</span>
                 </div>
                 <div className="flex justify-between font-bold text-slate-800 pt-1 border-t border-slate-200">
                   <span>Subtotal ex VAT:</span>
-                  <span>£770.00</span>
+                  <span>£{baseFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>UK VAT (20%):</span>
-                  <span>£154.00</span>
+                  <span>£{vatAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-black text-[#0B1F4D] pt-2 border-t border-slate-300">
                   <span>Gross Total Due:</span>
-                  <span className="text-emerald-700">£924.00</span>
+                  <span className="text-emerald-700">£{grossTotal.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 space-y-1">
                 <div>• Merchant: NJS Property Group Ltd</div>
                 <div>• 256-bit SSL Encrypted Payment</div>
-                <div>• Instant VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
+                <div>• Official VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
               </div>
             </div>
           </div>
@@ -655,18 +938,22 @@ export const CustomerTermsPage = () => {
               Inspection Confirmed & Locked!
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Your Terms of Engagement are executed and advance payment of £924.00 has been received in full.
+              Your Terms of Engagement are executed and advance payment of £{grossTotal.toFixed(2)} has been received in full.
             </p>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-w-md mx-auto text-xs text-left space-y-2">
             <div className="flex justify-between">
+              <span className="text-slate-500">Subject Property:</span>
+              <span className="font-bold text-slate-900">{propertyAddress}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-slate-500">Inspection Slot:</span>
-              <span className="font-bold text-slate-900">Tuesday, 27 October 2026 (10:00 - 13:00)</span>
+              <span className="font-bold text-slate-900">{appointmentSlot}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Assigned Surveyor:</span>
-              <span className="font-bold text-slate-900">David Thorne MRICS</span>
+              <span className="font-bold text-slate-900">{surveyorName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Access Arrangement:</span>
