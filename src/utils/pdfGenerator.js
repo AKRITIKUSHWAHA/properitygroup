@@ -269,20 +269,28 @@ export const downloadInvoicePDF = ({
   clientName = 'Emma Watson',
   property = '14 Mayfair Gate, London W1K 2PB',
   surveyType = 'RICS Level 2 Home Survey',
-  invoiceDate = '26/10/2026',
-  paymentDate = '26/10/2026, 11:20',
+  invoiceDate = null,
+  date = null,
+  paymentDate = null,
   paymentMethod = 'Stripe Credit Card (•••• 4242)',
-  baseFee = 650.0,
-  extras = [
-    { name: 'Drone Roof & Flashing Inspection', amount: 120.0 },
-    { name: 'Same-day Verbal Debrief by Surveyor', amount: 50.0 },
-  ],
-  discount = 50.0,
+  baseFee = 770.0,
+  vatAmount = null,
+  totalAmount = null,
+  extras = [],
+  discount = 0.0,
   vatRate = 0.2, // 20%
 }) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  drawNJSHeader(doc, 'VAT INVOICE & RECEIPT', `Invoice No: ${invoiceNo} • Status: PAID`);
+  const effectiveInvoiceDate = invoiceDate || date || new Date().toLocaleDateString('en-GB');
+  const effectivePaymentDate = paymentDate || `${effectiveInvoiceDate}, 11:20`;
+  const isPaid = !paymentMethod?.toLowerCase().includes('pending') && !paymentMethod?.toLowerCase().includes('unpaid');
+
+  drawNJSHeader(
+    doc,
+    'VAT INVOICE & RECEIPT',
+    `Invoice No: ${invoiceNo} • Status: ${isPaid ? 'PAID' : 'PAYMENT DUE'}`
+  );
 
   // Invoice Meta
   doc.setFillColor(248, 250, 252);
@@ -305,7 +313,7 @@ export const downloadInvoicePDF = ({
   doc.text('Invoice Date:', 125, 57);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(invoiceDate, 155, 57);
+  doc.text(effectiveInvoiceDate, 155, 57);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
@@ -324,7 +332,7 @@ export const downloadInvoicePDF = ({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text('Payment Method:', 125, 75);
-  doc.setTextColor(22, 101, 52);
+  doc.setTextColor(isPaid ? 22 : 180, isPaid ? 101 : 83, isPaid ? 52 : 9);
   doc.text(paymentMethod, 155, 75);
 
   // Line Items Table Header
@@ -338,12 +346,22 @@ export const downloadInvoicePDF = ({
   doc.text('VAT (20%)', 140, 93.5);
   doc.text('Amount (£)', 190, 93.5, { align: 'right' });
 
+  // Calculate clean subtotal, VAT and total
+  const subtotal = totalAmount !== null
+    ? totalAmount / (1 + vatRate)
+    : (baseFee || 770.0) + (extras || []).reduce((sum, e) => sum + (e.amount || 0), 0) - (discount || 0);
+  const vatTotal = vatAmount !== null ? vatAmount : subtotal * vatRate;
+  const total = totalAmount !== null ? totalAmount : subtotal + vatTotal;
+
   // Rows
   let curY = 103;
-  const items = [
-    { desc: `${surveyType} (Full Property Inspection)`, sub: 'Level 2 Professional Service', amount: baseFee },
-    ...extras.map((ex) => ({ desc: ex.name, sub: 'Optional Add-on Service', amount: ex.amount })),
-  ];
+  const items = [];
+  if (extras && extras.length > 0) {
+    items.push({ desc: `${surveyType} (Full Property Inspection)`, sub: 'Professional RICS Service', amount: baseFee });
+    extras.forEach((ex) => items.push({ desc: ex.name, sub: 'Optional Add-on Service', amount: ex.amount }));
+  } else {
+    items.push({ desc: `${surveyType} (Physical Site Inspection & Comprehensive Report)`, sub: 'RICS Regulated Practice Mandate', amount: subtotal });
+  }
   if (discount > 0) {
     items.push({ desc: 'Promotional Welcome Discount', sub: 'Applied at checkout', amount: -discount });
   }
@@ -376,10 +394,6 @@ export const downloadInvoicePDF = ({
 
   // Totals Box
   curY += 6;
-  const subtotal = baseFee + extras.reduce((sum, e) => sum + e.amount, 0) - discount;
-  const vatTotal = subtotal * vatRate;
-  const total = subtotal + vatTotal;
-
   doc.setDrawColor(226, 232, 240);
   doc.line(120, curY, 195, curY);
   curY += 5;
@@ -387,11 +401,11 @@ export const downloadInvoicePDF = ({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text('Subtotal (Net):', 130, curY);
+  doc.text('Subtotal (Net ex. VAT):', 125, curY);
   doc.text(`£${subtotal.toFixed(2)}`, 190, curY, { align: 'right' });
 
   curY += 6;
-  doc.text('UK VAT @ 20%:', 130, curY);
+  doc.text('UK VAT @ 20%:', 125, curY);
   doc.text(`£${vatTotal.toFixed(2)}`, 190, curY, { align: 'right' });
 
   curY += 7;
@@ -400,26 +414,44 @@ export const downloadInvoicePDF = ({
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(255, 255, 255);
-  doc.text('Total Paid:', 125, curY + 2);
+  doc.text(isPaid ? 'Total Settled:' : 'Total Amount Due:', 125, curY + 2);
   doc.text(`£${total.toFixed(2)}`, 190, curY + 2, { align: 'right' });
 
-  // Paid Stamp
+  // Paid Stamp / Settlement Advice
   curY += 18;
-  doc.setDrawColor(22, 163, 74);
-  doc.setLineWidth(1);
-  doc.setFillColor(240, 253, 244);
-  doc.roundedRect(15, curY, 95, 22, 2, 2, 'FD');
+  if (isPaid) {
+    doc.setDrawColor(22, 163, 74);
+    doc.setLineWidth(1);
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(15, curY, 105, 22, 2, 2, 'FD');
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(22, 163, 74);
-  doc.text('✔ PAID IN FULL', 22, curY + 8);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(22, 163, 74);
+    doc.text('✔ PAID IN FULL — OFFICIAL VAT RECEIPT', 20, curY + 8);
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor(21, 128, 61);
-  doc.text(`Settled via Stripe Gateway on ${paymentDate}`, 22, curY + 14);
-  doc.text(`Transaction Reference: TXN-STRIPE-${Date.now().toString(16).toUpperCase()}`, 22, curY + 18);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(21, 128, 61);
+    doc.text(`Settled via ${paymentMethod} on ${effectivePaymentDate}`, 20, curY + 14);
+    doc.text(`Transaction Reference: TXN-NJS-${Date.now().toString(16).toUpperCase()}`, 20, curY + 18);
+  } else {
+    doc.setDrawColor(234, 88, 12);
+    doc.setLineWidth(1);
+    doc.setFillColor(255, 247, 237);
+    doc.roundedRect(15, curY, 105, 22, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(194, 65, 12);
+    doc.text('PAYMENT ADVICE — AWAITING SETTLEMENT', 20, curY + 8);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(154, 52, 18);
+    doc.text('Barclays Client Escrow: Sort Code 20-45-77 • Account 83920194', 20, curY + 14);
+    doc.text(`Payment Reference: ${invoiceNo} • Settlement due upon terms execution`, 20, curY + 18);
+  }
 
   drawNJSFooter(doc, 1, 1);
 
