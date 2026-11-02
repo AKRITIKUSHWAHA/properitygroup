@@ -1707,7 +1707,10 @@ export const CustomerInvoicesPage = () => {
 export const CustomerReportsPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
+  const [reviewPromptJob, setReviewPromptJob] = useState(null);
+  const [promptRating, setPromptRating] = useState(5);
+  const [promptFeedback, setPromptFeedback] = useState('');
 
   const myCompletedJobs = jobs.filter(
     (j) => isJobForCustomer(j, user) && (j.status === 'Completed' || j.timelineStep >= 7)
@@ -1715,6 +1718,7 @@ export const CustomerReportsPage = () => {
 
   const reports = myCompletedJobs.map((j) => ({
     id: `RPT-${j.id.replace('JOB-2026-', '')}`,
+    jobRef: j.id,
     title: `RICS_${j.surveyType?.replace(/[^a-zA-Z0-9]/g, '_')}_${j.property?.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     property: `${j.property}, ${j.location}`,
     date: j.date || '27/10/2026',
@@ -1735,6 +1739,13 @@ export const CustomerReportsPage = () => {
       title: 'Report Downloaded',
       message: `Downloaded official RICS report for ${r.property}`,
     });
+
+    const targetJob = myCompletedJobs.find((j) => j.id === r.jobRef || r.id.includes(j.id.replace('JOB-2026-', '')));
+    if (targetJob && !targetJob.reviewSubmitted) {
+      setTimeout(() => {
+        setReviewPromptJob(targetJob);
+      }, 500);
+    }
   };
 
   const handleDownloadSample = (level) => {
@@ -1802,6 +1813,104 @@ export const CustomerReportsPage = () => {
             No completed reports released yet for your properties. Reports are uploaded within 48h-72h following inspection.
           </div>
         )}
+
+      {/* Post-Download Trustpilot Feedback Modal */}
+      {reviewPromptJob && (
+        <Modal
+          isOpen={!!reviewPromptJob}
+          onClose={() => setReviewPromptJob(null)}
+          title="Survey Delivered: How Was Your Experience?"
+          size="md"
+        >
+          <div className="space-y-5 text-center py-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#00B67A]/10 text-[#00B67A] flex items-center justify-center mx-auto">
+              <Star className="w-8 h-8 fill-[#00B67A]" />
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold mb-2">
+                <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+                <span>Verified Trustpilot Invitation</span>
+              </div>
+              <h3 className="text-base font-black text-[#0B1F4D]">
+                Rate Surveyor {reviewPromptJob.surveyor || 'David Thorne MRICS'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Your official report for <strong>{reviewPromptJob.property}</strong> has been downloaded. Would you share 30 seconds of feedback on Trustpilot?
+              </p>
+            </div>
+
+            {/* Star Picker */}
+            <div className="flex items-center justify-center gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setPromptRating(star)}
+                  className="p-1 text-amber-400 hover:scale-125 transition-transform cursor-pointer"
+                >
+                  <Star
+                    className={`w-7 h-7 ${star <= promptRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            <div className="text-xs font-bold text-slate-700">
+              {promptRating === 5 ? 'Excellent ★★★★★' : `${promptRating} Stars Selected`}
+            </div>
+
+            <textarea
+              rows={2}
+              value={promptFeedback}
+              onChange={(e) => setPromptFeedback(e.target.value)}
+              placeholder="Brief comments on report clarity, turnaround speed, or surveyor thoroughness (optional)..."
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+            />
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setReviewPromptJob(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all cursor-pointer"
+              >
+                Maybe Later
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateJob(reviewPromptJob.id, {
+                    reviewSubmitted: true,
+                    reviewRating: promptRating,
+                    reviewFeedback: promptFeedback || 'Excellent survey turnaround and clear advice.',
+                    reviewDate: new Date().toISOString(),
+                    activityLog: [
+                      {
+                        id: Date.now(),
+                        time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+                        text: `⭐ Customer submitted ${promptRating}-star verified Trustpilot review: "${promptFeedback || 'Excellent turnaround and thorough inspection.'}"`,
+                      },
+                      ...(reviewPromptJob.activityLog || []),
+                    ],
+                  });
+                  setReviewPromptJob(null);
+                  addToast({
+                    type: 'success',
+                    title: 'Feedback Saved & Trustpilot Opened',
+                    message: 'Thank you for rating NJS Property Group!',
+                  });
+                  window.open('https://www.trustpilot.com/review/njspropertygroup.com', '_blank', 'noopener,noreferrer');
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <Star className="w-3.5 h-3.5 fill-white" />
+                <span>Submit &amp; Open Trustpilot</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
         {/* Specimen / Sample Reports */}
         <div className="mt-8 pt-6 border-t border-slate-200">
@@ -2271,15 +2380,50 @@ export const CustomerMessagesPage = () => {
 // 10. LEAVE A REVIEW PAGE (Trustpilot Integration)
 // ==========================================
 export const CustomerReviewPage = () => {
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
+  const { user } = useAuth();
+  const { jobs, updateJob } = useJobs();
   const { addToast } = useToast();
 
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const completedJob = myJobs.find((j) => j.status === 'Completed' || j.timelineStep >= 10) || myJobs[0] || null;
+
+  const [rating, setRating] = useState(completedJob?.reviewRating || 5);
+  const [reviewText, setReviewText] = useState(completedJob?.reviewFeedback || '');
+  const [isSubmitted, setIsSubmitted] = useState(!!completedJob?.reviewSubmitted);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Sync state if job updates
+  useEffect(() => {
+    if (completedJob) {
+      if (completedJob.reviewRating) setRating(completedJob.reviewRating);
+      if (completedJob.reviewFeedback) setReviewText(completedJob.reviewFeedback);
+      if (completedJob.reviewSubmitted !== undefined) setIsSubmitted(completedJob.reviewSubmitted);
+    }
+  }, [completedJob?.id, completedJob?.reviewSubmitted]);
+
   const handleOpenTrustpilot = () => {
+    if (completedJob?.id) {
+      updateJob(completedJob.id, {
+        reviewSubmitted: true,
+        reviewRating: rating,
+        reviewFeedback: reviewText || 'Excellent surveying turnaround, thorough technical inspection and clear advice.',
+        reviewDate: new Date().toISOString(),
+        activityLog: [
+          {
+            id: Date.now(),
+            time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+            text: `⭐ Customer submitted ${rating}-star verified Trustpilot review: "${reviewText || 'Excellent service and clear survey report.'}"`,
+          },
+          ...(completedJob.activityLog || []),
+        ],
+      });
+    }
+    setIsSubmitted(true);
+    setIsEditing(false);
     addToast({
       type: 'success',
-      title: 'Opening Trustpilot',
-      message: 'Redirecting to the verified NJS Property Group Trustpilot profile.',
+      title: 'Review Logged & Trustpilot Opened',
+      message: 'Thank you! Redirecting to the verified NJS Property Group Trustpilot profile.',
     });
     window.open('https://www.trustpilot.com/review/njspropertygroup.com', '_blank', 'noopener,noreferrer');
   };
@@ -2292,63 +2436,135 @@ export const CustomerReviewPage = () => {
         breadcrumb={['Customer Portal', 'Leave a Review']}
       />
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 space-y-6 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
-          <Star className="w-4 h-4 fill-emerald-600 text-emerald-600" />
-          <span>Trustpilot Verified Partner • Rated 4.9 / 5.0</span>
-        </div>
+      {isSubmitted && !isEditing ? (
+        <div className="bg-white rounded-3xl border border-emerald-200/90 shadow-sm p-6 sm:p-8 space-y-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#00B67A] flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8 text-[#00B67A]" />
+          </div>
 
-        <div>
-          <h3 className="text-xl font-black text-[#0B1F4D]">
-            How was your experience with NJS Property Group?
-          </h3>
-          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-            Your review regarding the Level 2 Survey at 14 Mayfair Gate helps us maintain our high RICS quality standards.
-          </p>
-        </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold">
+            <Star className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+            <span>Verified Trustpilot Review Recorded</span>
+          </div>
 
-        {/* Interactive Star Picker */}
-        <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              onClick={() => setRating(star)}
-              className="p-1 text-amber-400 hover:scale-125 transition-transform cursor-pointer"
+          <div>
+            <h3 className="text-xl font-black text-[#0B1F4D]">
+              Thank You for Reviewing NJS Property Group!
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Your feedback for <strong>{completedJob?.property || '14 Mayfair Gate'}</strong> has been registered and helps us uphold RICS excellence.
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl max-w-lg mx-auto text-left space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 text-amber-400">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    className={`w-4 h-4 ${s <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                  />
+                ))}
+                <span className="text-xs font-bold text-slate-700 ml-1.5">{rating}.0 / 5.0</span>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">Verified Client</span>
+            </div>
+            <p className="text-xs text-slate-700 italic">
+              "{reviewText || completedJob?.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
+            </p>
+            <div className="text-[10px] text-slate-500 font-medium pt-1 border-t border-slate-200/60">
+              Surveyor: <strong>{completedJob?.surveyor || 'David Thorne MRICS'}</strong> • {completedJob?.surveyType || 'RICS Level 2 Home Survey'}
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="https://www.trustpilot.com/review/njspropertygroup.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-[#00B67A] hover:bg-[#009E6B] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
             >
-              <Star
-                className={`w-8 h-8 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
-              />
+              <Star className="w-4 h-4 fill-white" />
+              <span>View on Trustpilot</span>
+              <ExternalLink className="w-4 h-4" />
+            </a>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="px-5 py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+            >
+              Edit Feedback
             </button>
-          ))}
+          </div>
         </div>
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 space-y-6 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+            <Star className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+            <span>Trustpilot Verified Partner • Rated 4.9 / 5.0</span>
+          </div>
 
-        <div className="text-xs text-slate-600 font-bold">
-          {rating === 5 ? 'Excellent ★★★★★' : `${rating} Stars Selected`}
-        </div>
+          <div>
+            <h3 className="text-xl font-black text-[#0B1F4D]">
+              How was your experience with Surveyor {completedJob?.surveyor || 'David Thorne MRICS'}?
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Your review regarding the {completedJob?.surveyType || 'RICS Level 2 Survey'} at {completedJob?.property || '14 Mayfair Gate'} helps us maintain our high RICS quality standards.
+            </p>
+          </div>
 
-        <textarea
-          rows={3}
-          value={reviewText}
-          onChange={(e) => setReviewText(e.target.value)}
-          placeholder="Briefly describe the turnaround speed, surveyor thoroughness, or report clarity..."
-          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800"
-        />
+          {/* Interactive Star Picker */}
+          <div className="flex items-center justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                className="p-1 text-amber-400 hover:scale-125 transition-transform cursor-pointer"
+              >
+                <Star
+                  className={`w-8 h-8 ${star <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                />
+              </button>
+            ))}
+          </div>
 
-        <div className="pt-2">
-          <button
-            onClick={handleOpenTrustpilot}
-            className="px-6 py-3.5 bg-[#00B67A] hover:bg-[#009E6B] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
-          >
-            <Star className="w-4 h-4 fill-white" />
-            <span>Submit Review on Trustpilot</span>
-            <ExternalLink className="w-4 h-4" />
-          </button>
+          <div className="text-xs text-slate-600 font-bold">
+            {rating === 5 ? 'Excellent ★★★★★' : `${rating} Stars Selected`}
+          </div>
+
+          <textarea
+            rows={3}
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+            placeholder="Briefly describe the turnaround speed, surveyor thoroughness, or report clarity..."
+            className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-800"
+          />
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={handleOpenTrustpilot}
+              className="px-6 py-3.5 bg-[#00B67A] hover:bg-[#009E6B] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md inline-flex items-center gap-2 cursor-pointer"
+            >
+              <Star className="w-4 h-4 fill-white" />
+              <span>Submit Review on Trustpilot</span>
+              <ExternalLink className="w-4 h-4" />
+            </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-3 text-slate-500 hover:text-slate-700 text-xs font-bold"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
           <span className="text-[10px] text-slate-400 block mt-2">
             Opens genuine NJS Property Group review page: trustpilot.com/review/njspropertygroup.com
           </span>
         </div>
-      </div>
+      )}
     </div>
   );
 };
