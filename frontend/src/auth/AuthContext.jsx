@@ -258,6 +258,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        isAuthenticated: Boolean(user),
         isLoading,
         login,
         registerCustomer,
