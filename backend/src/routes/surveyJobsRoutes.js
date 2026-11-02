@@ -12,15 +12,15 @@ import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 const router = Router();
 
 router.use(verifyJWT);
-router.use(authorizeRoles('ADMIN'));
+// Allow ADMIN, SURVEYOR, and CUSTOMER with automatic role-based scoping
+router.use(authorizeRoles('ADMIN', 'SURVEYOR', 'CUSTOMER'));
 
 // Menu 6: Survey Jobs Endpoints
 router.get('/', getSurveyJobs);
 router.get('/metrics', getSurveyJobsMetrics);
 router.get('/:id', getSurveyJobById);
-router.post('/', createSurveyJob);
+router.post('/', authorizeRoles('ADMIN'), createSurveyJob);
 router.patch('/:id/stage', updateJobStage);
-router.patch('/:id/assign-surveyor', assignSurveyor);
+router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN'), assignSurveyor);
 
 export default router;
-

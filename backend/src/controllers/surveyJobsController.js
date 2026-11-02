@@ -12,8 +12,22 @@ export const getSurveyJobs = async (req, res, next) => {
     const { stage, surveyorId, search } = req.query;
     const where = {};
 
+    // Automatic role-based scoping (Surveyor gets assigned jobs, Customer gets their surveys)
+    if (req.user?.role === 'SURVEYOR') {
+      where.OR = [
+        { surveyorId: req.user.id },
+        { surveyor: { email: req.user.email } },
+      ];
+    } else if (req.user?.role === 'CUSTOMER') {
+      where.OR = [
+        { clientId: req.user.id },
+        { clientEmail: req.user.email },
+      ];
+    } else if (surveyorId) {
+      where.surveyorId = parseInt(surveyorId);
+    }
+
     if (stage) where.stage = stage.toUpperCase();
-    if (surveyorId) where.surveyorId = parseInt(surveyorId);
     if (search) {
       where.OR = [
         { reference: { contains: search } },

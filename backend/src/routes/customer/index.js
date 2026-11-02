@@ -43,15 +43,19 @@ router.use('/invoices-and-payments', customerInvoicesAndPaymentsRoutes);
 
 // 9. My Reports
 router.use('/reports', customerReportsRoutes);
+router.use('/survey-reports', customerReportsRoutes);
 
 // 10. Messages
 router.use('/messages', customerMessagesRoutes);
 
 // 11. Leave a Review
 router.use('/leave-review', customerReviewRoutes);
+router.use('/feedback-review', customerReviewRoutes);
+router.use('/reviews', customerReviewRoutes);
 
 // 12. Support
 router.use('/support', customerSupportRoutes);
+router.use('/support-tickets', customerSupportRoutes);
 
 // 13. My Details
 router.use('/my-details', customerDetailsRoutes);

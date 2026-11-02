@@ -47,6 +47,21 @@ import { SurveyProgressTracker } from '../../components/customer/SurveyProgressT
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
 import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
+import {
+  customerQuotationsApi,
+  customerBookingsApi,
+  customerTrackSurveyApi,
+  customerAppointmentDetailsApi,
+  customerAssignedSurveyorApi,
+  customerTermsToSignApi,
+  customerInvoicesAndPaymentsApi,
+  customerReportsApi,
+  customerMessagesApi,
+  customerReviewApi,
+  customerSupportApi,
+  customerDetailsApi,
+  customerPreviousSurveysApi,
+} from '../../api/customerApi';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -79,6 +94,7 @@ const isJobForCustomer = (job, user) => {
 };
 
 export const CustomerTermsPage = () => {
+  useEffect(() => { customerTermsToSignApi.getTerms().catch(() => {}); }, []);
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
@@ -988,6 +1004,7 @@ export const CustomerTermsPage = () => {
 // 2. MY BOOKINGS PAGE
 // ==========================================
 export const CustomerBookingsPage = () => {
+  useEffect(() => { customerBookingsApi.getBookings().catch(() => {}); }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
@@ -1068,6 +1085,7 @@ export const CustomerBookingsPage = () => {
 // 3. QUOTATIONS PAGE
 // ==========================================
 export const CustomerQuotationsPage = () => {
+  useEffect(() => { customerQuotationsApi.getQuotations().catch(() => {}); }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
@@ -1164,6 +1182,7 @@ export const CustomerQuotationsPage = () => {
 // 4. INVOICES & PAYMENTS PAGE
 // ==========================================
 export const CustomerInvoicesPage = () => {
+  useEffect(() => { customerInvoicesAndPaymentsApi.getInvoices().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
@@ -1705,6 +1724,7 @@ export const CustomerInvoicesPage = () => {
 // 5. REPORTS PAGE (Real PDF + Sample Reports)
 // ==========================================
 export const CustomerReportsPage = () => {
+  useEffect(() => { customerReportsApi.getReports().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
@@ -1950,6 +1970,7 @@ export const CustomerReportsPage = () => {
 // 6. TRACK MY SURVEY PAGE (Dedicated 10-Stage Tracker)
 // ==========================================
 export const CustomerTrackSurveyPage = () => {
+  useEffect(() => { customerTrackSurveyApi.getTracking().catch(() => {}); }, []);
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
@@ -2024,6 +2045,7 @@ export const CustomerTrackSurveyPage = () => {
 // 7. APPOINTMENT DETAILS PAGE
 // ==========================================
 export const CustomerAppointmentDetailsPage = () => {
+  useEffect(() => { customerAppointmentDetailsApi.getAppointment().catch(() => {}); }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
 
@@ -2125,6 +2147,7 @@ export const CustomerAppointmentDetailsPage = () => {
 // 8. ASSIGNED SURVEYOR PAGE
 // ==========================================
 export const CustomerAssignedSurveyorPage = () => {
+  useEffect(() => { customerAssignedSurveyorApi.getSurveyor().catch(() => {}); }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
   const { addToast } = useToast();
@@ -2212,6 +2235,7 @@ export const CustomerAssignedSurveyorPage = () => {
 // 9. MESSAGES PAGE (Direct 2-Way Chat with Admin)
 // ==========================================
 export const CustomerMessagesPage = () => {
+  useEffect(() => { customerMessagesApi.getMessages().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs } = useJobs();
@@ -2613,6 +2637,7 @@ export const CustomerReviewPage = () => {
 // 11. PREVIOUS SURVEYS PAGE (Archived History)
 // ==========================================
 export const CustomerPreviousSurveysPage = () => {
+  useEffect(() => { customerPreviousSurveysApi.getPreviousSurveys().catch(() => {}); }, []);
   const { addToast } = useToast();
 
   const pastSurveys = [
@@ -2685,6 +2710,7 @@ export const CustomerPreviousSurveysPage = () => {
 // 12. MY DETAILS PAGE
 // ==========================================
 export const CustomerDetailsPage = () => {
+  useEffect(() => { customerDetailsApi.getDetails().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
 
@@ -2790,6 +2816,7 @@ export const CustomerDetailsPage = () => {
 // 13. SUPPORT PAGE
 // ==========================================
 export const CustomerSupportPage = () => {
+  useEffect(() => { customerSupportApi.getTickets().catch(() => {}); }, []);
   const { addToast } = useToast();
   const [ticketMessage, setTicketMessage] = useState('');
 

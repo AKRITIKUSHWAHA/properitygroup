@@ -11,7 +11,9 @@ router.use(verifyJWT);
 router.use(authorizeRoles('CUSTOMER'));
 
 // Customer Menu 12: Support
+router.get('/', getSupportTickets);
 router.get('/tickets', getSupportTickets);
+router.post('/', createSupportTicket);
 router.post('/tickets', createSupportTicket);
 
 export default router;

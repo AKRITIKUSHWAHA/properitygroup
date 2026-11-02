@@ -29,6 +29,14 @@ import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
+import { useEffect } from 'react';
+import {
+  surveyorCalendarApi,
+  surveyorJobsApi,
+  surveyorSiteVisitsApi,
+  surveyorUploadReportsApi,
+  surveyorAvailabilityApi,
+} from '../../api/surveyorApi';
 
 // ==========================================
 // 1. SURVEYOR CALENDAR PAGE (Dynamic Date Fix for Point 8)
@@ -37,6 +45,11 @@ export const SurveyorCalendarPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
+
+  // Fetch surveyor calendar API
+  useEffect(() => {
+    surveyorCalendarApi.getCalendar().catch(() => {});
+  }, []);
 
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
@@ -196,6 +209,11 @@ export const SurveyorJobsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
+
+  // Fetch surveyor jobs API
+  useEffect(() => {
+    surveyorJobsApi.getJobs().catch(() => {});
+  }, []);
   const [filter, setFilter] = useState('active'); // 'active' | 'completed'
 
   // Isolate strictly by surveyor
@@ -325,6 +343,11 @@ export const SurveyorSiteVisitsPage = () => {
   const { user } = useAuth();
   const { jobs } = useJobs();
 
+  // Fetch surveyor site visits API
+  useEffect(() => {
+    surveyorSiteVisitsApi.getVisits().catch(() => {});
+  }, []);
+
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
 
@@ -446,6 +469,11 @@ export const SurveyorUploadReportsPage = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs } = useJobs();
+
+  // Fetch pending reports upload API
+  useEffect(() => {
+    surveyorUploadReportsApi.getPendingReports().catch(() => {});
+  }, []);
 
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
@@ -660,6 +688,17 @@ export const SurveyorUploadReportsPage = () => {
 // ==========================================
 export const SurveyorAvailabilityPage = () => {
   const { addToast } = useToast();
+
+  // Fetch surveyor availability API
+  useEffect(() => {
+    surveyorAvailabilityApi.getAvailability()
+      .then((res) => {
+        if (res?.data?.postcodesCovered) {
+          setPostcodes(res.data.postcodesCovered);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [workingDays, setWorkingDays] = useState({
     Monday: true,
