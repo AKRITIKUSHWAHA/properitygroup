@@ -32,3 +32,4 @@ test-results
 # Temporary audio/video files
 *.ogg
 *.mp4
+*.zip
