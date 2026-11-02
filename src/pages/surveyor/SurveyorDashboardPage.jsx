@@ -24,6 +24,8 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
+import { useAuth } from '../../auth/AuthContext';
+import { useJobs } from '../../mock/jobs';
 
 /**
  * Mobile-First Surveyor Field Portal Dashboard
@@ -39,8 +41,39 @@ import { Modal } from '../../components/common/Modal';
 export const SurveyorDashboardPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
 
-  // On-Site Status for Primary Job (JOB-2026-080, 14 Mayfair Gate)
+  // Strict surveyor job isolation
+  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
+  const surveyorName = user?.name;
+
+  const myJobs = jobs.filter((j) =>
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName)
+  );
+
+  const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
+  const primaryJob = activeJobs[0] || myJobs[0] || {
+    id: 'JOB-2026-080',
+    property: '14 Mayfair Gate',
+    location: 'Mayfair, London W1K 2PB',
+    surveyType: 'RICS Level 2 Home Survey',
+    customer: 'Emma Watson',
+    customerPhone: '+44 7700 900147',
+    timeSlot: '10:00 - 13:00',
+    status: 'In Progress',
+    countdown: '34h 22m remaining',
+    propertyDetails: {
+      accessDetails: 'Keys with Foxtons Mayfair (Branch Ref #FX-402)',
+      yearBuilt: 'c. 1892 (Victorian)',
+      propertyType: 'Mansion Apartment',
+    },
+  };
+
+  const secondaryJob = activeJobs[1] || null;
+
+  // On-Site Status for Primary Job
   // 'scheduled' | 'arrived' | 'completed' | 'qa_submitted'
   const [jobStage, setJobStage] = useState('arrived');
   const [arrivalTimestamp, setArrivalTimestamp] = useState('Today at 10:02 AM');
@@ -81,7 +114,7 @@ export const SurveyorDashboardPage = () => {
     addToast({
       type: 'success',
       title: 'GPS Site Arrival Recorded',
-      message: `Checked in at 14 Mayfair Gate at ${timeStr}. On-site inspection clock activated.`,
+      message: `Checked in at ${primaryJob.property} at ${timeStr}. On-site inspection clock activated.`,
     });
   };
 
@@ -92,7 +125,7 @@ export const SurveyorDashboardPage = () => {
     addToast({
       type: 'success',
       title: 'Inspection Completed',
-      message: `On-site survey marked complete at ${timeStr}. Please ensure keys are returned to Foxtons Mayfair.`,
+      message: `On-site survey marked complete at ${timeStr}. Please ensure keys are returned to agent/vendor.`,
     });
   };
 
@@ -124,7 +157,7 @@ export const SurveyorDashboardPage = () => {
     addToast({
       type: 'success',
       title: 'Report Submitted for QA Review',
-      message: 'Draft RICS Level 2 report and site evidence dispatched to Admin Quality Review Desk.',
+      message: `Draft ${primaryJob.surveyType} report and site evidence for ${primaryJob.id} dispatched to Admin Quality Review Desk.`,
     });
   };
 
@@ -148,10 +181,10 @@ export const SurveyorDashboardPage = () => {
               <span>Report Delivery SLA Tracker</span>
             </div>
             <h2 className="text-lg sm:text-xl font-black">
-              14 Mayfair Gate — Level 2 Survey
+              {primaryJob.property} — {primaryJob.surveyType}
             </h2>
             <p className="text-xs text-blue-100">
-              Target turnaround: 48 hours post-inspection • Instructing Client: Emma Watson
+              Target turnaround: 48 hours post-inspection • Instructing Client: {primaryJob.customer}
             </p>
           </div>
 
@@ -182,7 +215,7 @@ export const SurveyorDashboardPage = () => {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200 font-mono">
-                JOB-2026-080
+                {primaryJob.id}
               </span>
               <span
                 className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider
@@ -208,17 +241,17 @@ export const SurveyorDashboardPage = () => {
             </div>
 
             <h3 className="text-xl font-black text-slate-900 mt-1.5">
-              14 Mayfair Gate, Mayfair, London W1K 2PB
+              {primaryJob.property}, {primaryJob.location}
             </h3>
             <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>Inspection Slot: <strong>10:00 – 13:00 (Today)</strong></span>
+              <span>Inspection Slot: <strong>{primaryJob.timeSlot || '10:00 – 13:00 (Today)'}</strong></span>
             </p>
           </div>
 
           {/* Google Maps Link */}
           <a
-            href="https://maps.google.com/?q=14+Mayfair+Gate+London+W1K+2PB"
+            href={`https://maps.google.com/?q=${encodeURIComponent(`${primaryJob.property} ${primaryJob.location || ''}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors shrink-0 self-start sm:self-auto cursor-pointer"
@@ -235,10 +268,10 @@ export const SurveyorDashboardPage = () => {
               <Key className="w-3.5 h-3.5 text-amber-500" />
               <span>Key Collection</span>
             </span>
-            <div className="font-bold text-slate-900">Foxtons Mayfair Branch</div>
-            <div className="text-slate-600 text-[11px]">Branch Ref: <strong>#FX-402</strong></div>
+            <div className="font-bold text-slate-900 truncate">{primaryJob.propertyDetails?.accessDetails || 'Keys with estate agent'}</div>
+            <div className="text-slate-600 text-[11px]">Property Type: <strong>{primaryJob.propertyDetails?.propertyType || 'Residential'}</strong></div>
             <div className="text-slate-500 text-[11px] pt-1 border-t border-slate-200">
-              Selling Agent: Sarah Croft (Knight Frank)
+              Client Contact: {primaryJob.customer} ({primaryJob.customerPhone || '+44 7700 900147'})
             </div>
           </div>
 
@@ -393,33 +426,35 @@ export const SurveyorDashboardPage = () => {
         </div>
       </div>
 
-      {/* 5. SECOND APPOINTMENT (Afternoon Slot) */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <div>
-            <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
-              JOB-2026-081
+      {/* 5. SECOND APPOINTMENT (If allocated in diary) */}
+      {secondaryJob && (
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
+                {secondaryJob.id}
+              </span>
+              <h4 className="text-base font-bold text-slate-900 mt-1">
+                {secondaryJob.property}, {secondaryJob.location}
+              </h4>
+              <span className="text-xs text-slate-500">Slot: {secondaryJob.timeSlot || '14:30 – 17:00 (Afternoon Inspection)'}</span>
+            </div>
+
+            <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">
+              {secondaryJob.status}
             </span>
-            <h4 className="text-base font-bold text-slate-900 mt-1">
-              24 Kensington Palace Gardens, London W8 4QQ
-            </h4>
-            <span className="text-xs text-slate-500">Slot: 14:30 – 17:00 (Afternoon Inspection)</span>
           </div>
 
-          <span className="text-xs font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-xl">
-            Upcoming Today
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
-          <div className="p-3 bg-slate-50 rounded-xl">
-            Service: <strong>RICS Level 3 Building Survey (4 Storeys + Vault)</strong>
-          </div>
-          <div className="p-3 bg-slate-50 rounded-xl">
-            Access: <strong>Concierge Security Gate (Code #8492)</strong>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
+            <div className="p-3 bg-slate-50 rounded-xl">
+              Service: <strong>{secondaryJob.surveyType}</strong>
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl">
+              Access: <strong>{secondaryJob.propertyDetails?.accessDetails || 'Keys with estate agent'}</strong>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* MODAL: ADD SITE PHOTO & DEFECT NOTE */}
       {isPhotoModalOpen && (
