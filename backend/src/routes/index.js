@@ -14,6 +14,8 @@ import settingsRoutes from './settingsRoutes.js';
 import customerRouter from './customer/index.js';
 import surveyorRouter from './surveyor/index.js';
 import uploadRoutes from './uploadRoutes.js';
+import paymentRoutes from './paymentRoutes.js';
+import postcodeRoutes from './postcodeRoutes.js';
 
 const router = Router();
 
@@ -84,5 +86,11 @@ router.use('/surveyor', surveyorRouter);
 
 // Local File Uploads (Server Disk Storage)
 router.use('/uploads', uploadRoutes);
+
+// Stripe Online Card Payments
+router.use('/payments', paymentRoutes);
+
+// UK Postcode & Address Lookup
+router.use('/postcodes', postcodeRoutes);
 
 export default router;
