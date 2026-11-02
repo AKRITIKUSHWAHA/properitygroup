@@ -22,10 +22,14 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
-import { Table } from '../../components/common/Table';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { NewLeadModal } from '../../components/crm/NewLeadModal';
@@ -360,154 +364,56 @@ export const AdminLeadsPage = () => {
     }
   };
 
-  // Streamlined 7-Column Table Specification (Clean & No Horizontal Scroll)
-  const columns = [
-    {
-      key: 'id',
-      header: 'Lead / Date',
-      sortable: true,
-      className: 'whitespace-nowrap w-28',
-      render: (val, row) => (
-        <div>
-          <button
-            onClick={() => setViewingLead(row)}
-            className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block"
-            title="Click to view full lead details"
-          >
-            {val}
-          </button>
-          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.created}</div>
-          <div className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-            <span className="truncate max-w-[85px]">{row.owner}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'customerName',
-      header: 'Customer',
-      sortable: true,
-      render: (_, row) => (
-        <div className="max-w-[155px]">
-          <button
-            onClick={() => {
-              setSelectedClientEmail(row.customerEmail);
-              setClientModalTab('calls');
-            }}
-            className="text-left font-bold text-[#0B1F4D] hover:text-[#2563EB] hover:underline flex items-center gap-1 group cursor-pointer"
-            title="Click to view client profile, call history & complaints"
-          >
-            <span className="truncate">{row.customerName}</span>
-            <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover:opacity-100 transition-opacity shrink-0" />
-          </button>
-          <div className="text-[11px] text-slate-500 mt-0.5 truncate">{row.customerEmail}</div>
-          <div className="text-[10px] text-slate-400 font-mono">{row.customerPhone}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'enquiry',
-      header: 'Survey & Property',
-      sortable: true,
-      render: (_, row) => (
-        <div className="max-w-[210px]">
-          <div className="font-bold text-[#0B1F4D] text-xs truncate">{row.enquiry}</div>
-          <div className="text-[11px] text-slate-600 mt-0.5 flex items-start gap-1">
-            <MapPin className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
-            <span className="truncate">
-              {row.property}, {row.location}
-            </span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'source',
-      header: 'Source',
-      sortable: true,
-      render: (val) => {
-        if (val === 'Local Surveyors Direct') {
-          return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs whitespace-nowrap">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              LSD Direct
-            </span>
-          );
-        }
-        if (val === 'Email Inquiry') {
-          return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-300 whitespace-nowrap">
-              <Mail className="w-2.5 h-2.5 text-sky-600" />
-              Email Inquiry
-            </span>
-          );
-        }
+  // Table state & helpers
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
 
-        let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-        if (val === 'Website') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-        if (val === 'Referral') badgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
-        if (val === 'Google Ads') badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-        if (val === 'Partner') badgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-        if (val === 'Expert Witness form') badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+  // Reset page when filter/search/tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, sourceFilter, ownerFilter, searchTerm]);
 
-        return (
-          <span
-            className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ${badgeColor}`}
-          >
-            {val}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'estimatedValue',
-      header: 'Quote / Fee',
-      sortable: true,
-      className: 'whitespace-nowrap',
-      render: (val, row) => {
-        const isQuoted = row.status.toLowerCase() === 'quoted';
-        return (
-          <div>
-            <div className="font-mono font-bold text-xs text-slate-900">
-              {val || 'Pending'}
-            </div>
-            {isQuoted && (
-              <span className="text-[10px] text-amber-700 font-semibold block">
-                Proposal Out
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      sortable: true,
-      render: (val) => <StatusPill status={val} />,
-    },
-    {
-      key: 'actions',
-      header: 'Actions',
-      sortable: false,
-      className: 'text-right whitespace-nowrap w-16',
-      render: (_, row) => (
-        <LeadRowActions
-          lead={row}
-          onView={(lead) => setViewingLead(lead)}
-          onQuote={(lead) => setQuotingLead(lead)}
-          onConvert={handleConvertDeal}
-          onClientProfile={(email, tab) => {
-            setSelectedClientEmail(email);
-            setClientModalTab(tab);
-          }}
-          onStatusChange={handleStatusChange}
-          onDelete={handleDeleteLead}
-        />
-      ),
-    },
-  ];
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedLeads = useMemo(() => {
+    if (!sortKey) return filteredLeads;
+    return [...filteredLeads].sort((a, b) => {
+      const valA = a[sortKey];
+      const valB = b[sortKey];
+      if (valA === valB) return 0;
+      if (valA === undefined || valA === null) return 1;
+      if (valB === undefined || valB === null) return -1;
+      const compare = String(valA).localeCompare(String(valB), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+      return sortDir === 'asc' ? compare : -compare;
+    });
+  }, [filteredLeads, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedLeads.length / pageSize));
+  const effectivePage = Math.min(currentPage, totalPages);
+  const paginatedLeads = useMemo(() => {
+    const start = (effectivePage - 1) * pageSize;
+    return sortedLeads.slice(start, start + pageSize);
+  }, [sortedLeads, effectivePage, pageSize]);
+
+  const getSourceBadgeColor = (val) => {
+    if (val === 'Website') return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (val === 'Referral') return 'bg-purple-50 text-purple-700 border-purple-200';
+    if (val === 'Google Ads') return 'bg-slate-100 text-slate-700 border-slate-200';
+    if (val === 'Partner') return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (val === 'Expert Witness form') return 'bg-rose-50 text-rose-700 border-rose-200';
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -748,15 +654,292 @@ export const AdminLeadsPage = () => {
       </Modal>
 
       {/* Main Table Component */}
-      <Table
-        columns={columns}
-        data={filteredLeads}
-        pageSize={pageSize}
-        emptyTitle="No leads found"
-        emptyMessage="No survey enquiries match your selected tab, search terms or filters."
-        emptyActionLabel="Create New Lead"
-        onEmptyAction={() => setIsNewModalOpen(true)}
-      />
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+        {filteredLeads.length === 0 ? (
+          <div className="p-12 text-center">
+            <Filter className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-700">No leads found</p>
+            <p className="text-xs text-slate-500 mt-1">
+              No survey enquiries match your selected tab, search terms or filters.
+            </p>
+            <button
+              onClick={() => setIsNewModalOpen(true)}
+              className="mt-4 px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+            >
+              Create New Lead
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
+                  <tr>
+                    <th
+                      onClick={() => handleSort('id')}
+                      className="py-3 px-4 sm:px-5 whitespace-nowrap min-w-[130px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Lead / Date</span>
+                        {sortKey === 'id' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('customerName')}
+                      className="py-3 px-4 min-w-[210px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Customer</span>
+                        {sortKey === 'customerName' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('enquiry')}
+                      className="py-3 px-4 min-w-[240px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Survey &amp; Property</span>
+                        {sortKey === 'enquiry' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('source')}
+                      className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Source</span>
+                        {sortKey === 'source' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('estimatedValue')}
+                      className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Quote / Fee</span>
+                        {sortKey === 'estimatedValue' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th
+                      onClick={() => handleSort('status')}
+                      className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Status</span>
+                        {sortKey === 'status' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedLeads.map((row) => (
+                    <tr
+                      key={row.id}
+                      onClick={() => setViewingLead(row)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                    >
+                      {/* 1. Lead / Date */}
+                      <td className="py-3.5 px-4 sm:px-5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingLead(row);
+                          }}
+                          className="text-[#2563EB] hover:text-[#0B1F4D] font-mono font-bold hover:underline cursor-pointer block text-xs"
+                          title="Click to view full lead details"
+                        >
+                          {row.id}
+                        </button>
+                        <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.created}</div>
+                        <div className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                          <span className="truncate max-w-[110px]">{row.owner}</span>
+                        </div>
+                      </td>
+
+                      {/* 2. Customer */}
+                      <td className="py-3.5 px-4 min-w-[210px]" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedClientEmail(row.customerEmail);
+                            setClientModalTab('calls');
+                          }}
+                          className="text-left font-bold text-[#0B1F4D] hover:text-[#2563EB] hover:underline flex items-center gap-1.5 group/cust cursor-pointer text-xs"
+                          title="Click to view client profile, call history & complaints"
+                        >
+                          <span>{row.customerName}</span>
+                          <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover/cust:opacity-100 transition-opacity shrink-0" />
+                        </button>
+                        <div className="text-[11px] text-slate-500 mt-0.5 break-all sm:truncate max-w-[220px]">
+                          {row.customerEmail}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {row.customerPhone}
+                        </div>
+                      </td>
+
+                      {/* 3. Survey & Property */}
+                      <td className="py-3.5 px-4 min-w-[240px]">
+                        <div className="font-bold text-[#0B1F4D] text-xs leading-snug group-hover:text-[#2563EB] transition-colors">
+                          {row.enquiry}
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-1 flex items-start gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                          <span className="leading-tight text-slate-600 font-medium">
+                            {row.property}, {row.location}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 4. Source */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {row.source === 'Local Surveyors Direct' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            LSD Direct
+                          </span>
+                        ) : row.source === 'Email Inquiry' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-300">
+                            <Mail className="w-3 h-3 text-sky-600" />
+                            Email Inquiry
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${getSourceBadgeColor(
+                              row.source
+                            )}`}
+                          >
+                            {row.source}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 5. Quote / Fee */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="font-mono font-bold text-xs text-slate-900">
+                          {row.estimatedValue || 'Pending'}
+                        </div>
+                        {row.status.toLowerCase() === 'quoted' && (
+                          <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">
+                            Proposal Out
+                          </span>
+                        )}
+                      </td>
+
+                      {/* 6. Status */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <StatusPill status={row.status} />
+                      </td>
+
+                      {/* 7. Actions */}
+                      <td
+                        className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <LeadRowActions
+                          lead={row}
+                          onView={(l) => setViewingLead(l)}
+                          onQuote={(l) => setQuotingLead(l)}
+                          onConvert={handleConvertDeal}
+                          onClientProfile={(email, tab) => {
+                            setSelectedClientEmail(email);
+                            setClientModalTab(tab);
+                          }}
+                          onStatusChange={handleStatusChange}
+                          onDelete={handleDeleteLead}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Clean Pagination Footer */}
+            <div className="p-3.5 sm:p-4 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+              <div className="text-[11px] text-slate-500 font-medium">
+                Showing{' '}
+                <span className="font-bold text-slate-800">
+                  {filteredLeads.length === 0 ? 0 : (effectivePage - 1) * pageSize + 1}
+                </span>{' '}
+                to{' '}
+                <span className="font-bold text-slate-800">
+                  {Math.min(effectivePage * pageSize, filteredLeads.length)}
+                </span>{' '}
+                of <span className="font-bold text-slate-800">{filteredLeads.length}</span> leads
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5 self-center sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={effectivePage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-slate-700 font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Prev</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+                      <button
+                        key={pg}
+                        type="button"
+                        onClick={() => setCurrentPage(pg)}
+                        className={`w-7 h-7 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                          pg === effectivePage
+                            ? 'bg-[#0B1F4D] text-white shadow-xs'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pg}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={effectivePage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-slate-700 font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* New Lead Modal */}
       <NewLeadModal

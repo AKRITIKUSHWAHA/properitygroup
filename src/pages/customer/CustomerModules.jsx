@@ -41,25 +41,110 @@ import { PageHeader } from '../../components/PageHeader';
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
+import { useJobs, SURVEYORS } from '../../mock/jobs';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
+import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
 // ==========================================
+
+// Strict customer isolation helper
+const isJobForCustomer = (job, user) => {
+  if (!job || !user) return false;
+  const uEmail = (user.email || '').toLowerCase().trim();
+  const uName = (user.name || '').toLowerCase().trim();
+  const jEmail = (job.customerEmail || '').toLowerCase().trim();
+  const jAlt = (job.customerAltEmail || '').toLowerCase().trim();
+  const jDemo = (job.customerDemoEmail || '').toLowerCase().trim();
+  const jName = (job.customer || '').toLowerCase().trim();
+
+  if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
+    return jEmail === 'customer@demo.com' || jName.includes('emma');
+  }
+
+  if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
+    return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
+  }
+
+  return (
+    (jEmail && jEmail === uEmail) ||
+    (jAlt && jAlt === uEmail) ||
+    (jDemo && jDemo === uEmail) ||
+    (jName && uName && jName === uName)
+  );
+};
+
 export const CustomerTermsPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
+  const { jobs, updateJob } = useJobs();
+  const { agreements, setAgreements, markAgreementSigned } = useTerms();
+
+  // 1. Strict customer job isolation
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const currentJob = myJobs[0] || null;
+
+  // 2. Locate linked agreement in terms repository
+  const currentAgreement = agreements.find((a) => {
+    if (currentJob?.id && a.jobNo === currentJob.id) return true;
+    const uEmail = (user?.email || '').toLowerCase().trim();
+    const aEmail = (a.signerEmail || '').toLowerCase().trim();
+    if (uEmail && aEmail && uEmail === aEmail) return true;
+    if (uEmail.includes('harrison') && aEmail.includes('harrison')) return true;
+    return false;
+  });
+
+  const isAlreadySigned =
+    currentAgreement?.status === 'Signed' || currentJob?.termsStatus === 'Signed';
+
+  // 3. Dynamic property and fee values
+  const propertyAddress = currentJob?.property
+    ? `${currentJob.property}, ${currentJob.location || ''}`
+    : '14 Mayfair Gate, Mayfair, London W1K 2PB';
+  const surveyType = currentJob?.surveyType || 'RICS Level 2 Home Survey';
+  const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
+  const appointmentSlot = currentJob?.date
+    ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
+    : '27 Oct, 10:00 - 13:00';
+  const jobNo = currentJob?.id || 'JOB-2026-080';
+
+  const baseFee = currentJob?.quote?.baseFee || (surveyType.includes('Level 3') ? 1450 : 770);
+  const vatAmount = Math.round(baseFee * 0.2);
+  const grossTotal = baseFee + vatAmount;
+
+  // 4. Match service-specific clauses from TERMS_TEMPLATES
+  const activeTemplate = React.useMemo(() => {
+    const st = surveyType.toLowerCase();
+    if (st.includes('level 3') || st.includes('building')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3') || TERMS_TEMPLATES[1];
+    }
+    if (st.includes('valuation')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-valuation') || TERMS_TEMPLATES[3];
+    }
+    if (st.includes('snagging')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-snagging') || TERMS_TEMPLATES[2];
+    }
+    if (st.includes('damp')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-damp') || TERMS_TEMPLATES[4];
+    }
+    if (st.includes('expert')) {
+      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-expert-witness') || TERMS_TEMPLATES[5];
+    }
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l2') || TERMS_TEMPLATES[0];
+  }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
   const [stage, setStage] = useState('sign');
+  const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
   // Sign Form State
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
-  const [typedName, setTypedName] = useState(user?.name || 'Emma Watson');
+  const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || 'Emma Watson');
 
   // Canvas ref for drawn signature
   const canvasRef = useRef(null);
@@ -72,7 +157,7 @@ export const CustomerTermsPage = () => {
     number: '•••• •••• •••• 4242',
     expiry: '12/28',
     cvc: '892',
-    name: user?.name || 'Emma Watson',
+    name: user?.name || currentJob?.customer || 'Customer Account',
     postcode: 'W1K 2PB',
   });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -93,8 +178,8 @@ export const CustomerTermsPage = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const x = (e.clientX || (e.touches && e.touches[0]?.clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0]?.clientY)) - rect.top;
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
@@ -107,8 +192,8 @@ export const CustomerTermsPage = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    const x = (e.clientX || (e.touches && e.touches[0]?.clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0]?.clientY)) - rect.top;
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -157,7 +242,7 @@ export const CustomerTermsPage = () => {
     addToast({
       type: 'success',
       title: 'Agreement Digitally Executed',
-      message: 'Your Terms of Engagement have been cryptographically stamped and registered.',
+      message: 'Your Terms of Engagement have been cryptographically stamped. Proceeding to payment.',
     });
     setStage('payment');
   };
@@ -166,15 +251,81 @@ export const CustomerTermsPage = () => {
     e.preventDefault();
     setIsProcessingPayment(true);
 
+    let signatureVal = typedName;
+    if (signatureType === 'drawn' && canvasRef.current) {
+      try {
+        signatureVal = canvasRef.current.toDataURL('image/png');
+      } catch {
+        signatureVal = typedName;
+      }
+    }
+
     setTimeout(() => {
+      const nowString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
+
+      // 1. Update in useTerms store
+      if (currentAgreement?.id) {
+        markAgreementSigned(currentAgreement.id, {
+          signedDate: nowString,
+          signerIp: '86.142.19.42 (London, UK)',
+          auditCode: generatedAuditCode,
+          signatureType,
+          signatureValue: signatureVal,
+        });
+      } else if (currentJob?.id) {
+        // Create new executed agreement in store
+        setAgreements((prev) => [
+          {
+            id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+            refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+            jobNo: currentJob.id,
+            client: user?.name || currentJob.customer || 'Customer',
+            signerEmail: user?.email || currentJob.customerEmail,
+            property: propertyAddress,
+            location: currentJob.location || 'London, UK',
+            serviceKey: activeTemplate.serviceKey,
+            templateName: activeTemplate.name,
+            versionYear: `${activeTemplate.version} / ${activeTemplate.year}`,
+            status: 'Signed',
+            sentDate: new Date().toLocaleDateString('en-GB'),
+            signedDate: nowString,
+            signerIp: '86.142.19.42 (London, UK)',
+            auditCode: generatedAuditCode,
+            downloadUrl: '#download-signed-pdf',
+          },
+          ...prev,
+        ]);
+      }
+
+      // 2. Update in useJobs store
+      if (currentJob?.id) {
+        updateJob(currentJob.id, {
+          termsStatus: 'Signed',
+          paymentStatus: 'Paid',
+          canBook: true,
+          timelineStep: 4,
+          tasks: (currentJob.tasks || []).map((t) => ({ ...t, done: true })),
+          activityLog: [
+            {
+              id: Date.now(),
+              time: nowString,
+              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & settled invoice (£${grossTotal}).`,
+            },
+            ...(currentJob.activityLog || []),
+          ],
+        });
+      }
+
       setIsProcessingPayment(false);
       setStage('confirmed');
+
       addToast({
         type: 'success',
         title: 'Advance Payment Successful',
-        message: 'Stripe transaction authorized. Your inspection slot is officially locked.',
+        message: `Stripe transaction of £${grossTotal.toFixed(2)} authorized. Terms of engagement recorded.`,
       });
-    }, 1200);
+    }, 1000);
   };
 
   const handleDownloadSignedPDF = () => {
@@ -188,21 +339,185 @@ export const CustomerTermsPage = () => {
     }
 
     downloadTermsPDF({
-      jobNo: 'JOB-2026-080',
-      clientName: user?.name || typedName,
-      property: '14 Mayfair Gate, London W1K 2PB',
-      surveyType: 'RICS Level 2 Home Survey',
+      jobNo: jobNo,
+      clientName: user?.name || currentJob?.customer || typedName,
+      property: propertyAddress,
+      surveyType: surveyType,
+      agreedFee: `£${grossTotal.toFixed(2)} (inc. 20% VAT)`,
+      signedDate: currentAgreement?.signedDate || new Date().toLocaleDateString('en-GB'),
+      signedTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
       signatureType,
       signatureValue: signatureVal,
+      ipAddress: currentAgreement?.signerIp || '86.142.19.104',
     });
 
     addToast({
       type: 'success',
-      title: 'Downloading PDF',
-      message: 'Generating your signed Terms of Engagement agreement.',
+      title: 'Downloading Signed PDF',
+      message: 'Generating your executed Terms of Engagement with audit seal.',
     });
   };
 
+  // ==========================================
+  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
+  // ==========================================
+  if (isAlreadySigned && stage !== 'confirmed') {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        <PageHeader
+          title="Terms of Engagement & Digital Signature"
+          subtitle="Your legally binding RICS contractual agreement has been executed and securely registered in practice audit archives."
+          breadcrumb={['Customer Portal', 'Terms to Sign']}
+        />
+
+        {/* Executed Status Card */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+          {/* Top Verification Banner */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  RICS Mandated Contract • Digitally Executed
+                </div>
+                <h3 className="text-xl font-black tracking-tight">Terms of Engagement Signed</h3>
+              </div>
+            </div>
+
+            <div className="text-left sm:text-right text-xs text-white/90 space-y-0.5 font-mono">
+              <div>Ref: <strong>{currentAgreement?.refNo || 'AGR-2026-081'}</strong></div>
+              <div>Audit Code: <strong>{currentAgreement?.auditCode || 'DOC-ESIGN-VERIFIED'}</strong></div>
+              <div>Executed: <strong>{currentAgreement?.signedDate || '26/10/2026, 11:15'}</strong></div>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Instruction Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Instructing Client</span>
+                <strong className="text-slate-900 font-extrabold text-sm">{user?.name || currentJob?.customer}</strong>
+                <span className="text-[11px] text-slate-500 block truncate">{user?.email || currentJob?.customerEmail}</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Subject Property</span>
+                <strong className="text-slate-900 font-extrabold text-xs block truncate">{propertyAddress.split(',')[0]}</strong>
+                <span className="text-[11px] text-slate-500 block truncate">{propertyAddress}</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Agreed Fee Status</span>
+                <strong className="text-emerald-700 font-extrabold text-sm block">£{grossTotal.toFixed(2)}</strong>
+                <span className="text-[10px] font-semibold text-emerald-600 block">Advance Settlement Cleared ✓</span>
+              </div>
+
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Assigned Surveyor</span>
+                <strong className="text-slate-900 font-extrabold text-xs block truncate">{surveyorName}</strong>
+                <span className="text-[10px] font-semibold text-amber-700 block">Confirmed Appointment</span>
+              </div>
+            </div>
+
+            {/* Digital Signature Seal */}
+            <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-[#0B1F4D]">Digital Signature on Record:</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Legally Binding (ECA 2000)
+                  </span>
+                </div>
+                <div className="font-serif italic text-2xl text-[#0B1F4D] font-bold tracking-wide">
+                  {user?.name || currentJob?.customer}
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono">
+                  Signer IP: {currentAgreement?.signerIp || '86.142.19.42 (London, UK)'} • Cryptographic Checksum Verified
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadSignedPDF}
+                  className="px-5 py-3 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Signed PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Contract Clauses Accordion */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowClausesAccordion(!showClausesAccordion)}
+                className="w-full p-4 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between text-left cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-[#0B1F4D]" />
+                  <span className="text-xs font-bold text-slate-900">
+                    View Executed Agreement Terms ({activeTemplate.shortName})
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-[#0B1F4D]">
+                  {showClausesAccordion ? 'Hide Clauses' : 'Show Clauses'}
+                </span>
+              </button>
+
+              {showClausesAccordion && (
+                <div className="p-5 bg-white text-xs text-slate-600 space-y-3.5 border-t border-slate-200">
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    Template: {activeTemplate.name} • Version: {activeTemplate.version} ({activeTemplate.year})
+                  </div>
+                  {activeTemplate.keyClauses?.map((clause, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <strong className="text-slate-900 block font-bold">
+                        Clause {clause.num}: {clause.title}
+                      </strong>
+                      <p className="leading-relaxed">{clause.text}</p>
+                    </div>
+                  ))}
+                  <div className="pt-2 text-[10px] text-slate-400 border-t border-slate-100">
+                    Governing Body: {activeTemplate.governingBody} • Professional Indemnity Cap: {activeTemplate.piiCap}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Portal Action Navigation */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/customer/track-my-survey')}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Compass className="w-4 h-4 text-[#0B1F4D]" />
+                <span>Track Live Survey Progress</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate('/customer/invoices-and-payments')}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Receipt className="w-4 h-4 text-emerald-700" />
+                <span>View Invoices & Payments</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // CASE B: PENDING SIGNING & ADVANCE PAYMENT FLOW
+  // ==========================================
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
@@ -243,73 +558,77 @@ export const CustomerTermsPage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded-md">
-                  Private Client Instruction
+                  Private Client Instruction • Ref #{jobNo}
                 </span>
                 <h3 className="text-lg font-black text-[#0B1F4D] mt-1">
-                  14 Mayfair Gate, Mayfair, London W1K 2PB
+                  {propertyAddress}
                 </h3>
               </div>
               <div className="text-right sm:text-right">
                 <span className="text-xs text-slate-500 block">Agreed Survey Fee</span>
-                <span className="text-xl font-black text-[#0B1F4D]">£924.00</span>
-                <span className="text-[10px] text-slate-400 block">(£770.00 + 20% UK VAT)</span>
+                <span className="text-xl font-black text-[#0B1F4D]">£{grossTotal.toFixed(2)}</span>
+                <span className="text-[10px] text-slate-400 block">(£{baseFee.toFixed(2)} + 20% UK VAT)</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Service Level</span>
-                <strong className="text-slate-900">RICS Level 2 Survey</strong>
+                <strong className="text-slate-900 font-extrabold">{surveyType}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Lead Surveyor</span>
-                <strong className="text-slate-900">David Thorne MRICS</strong>
+                <strong className="text-slate-900 font-extrabold">{surveyorName}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Appointment Slot</span>
-                <strong className="text-slate-900">27 Oct, 10:00 - 13:00</strong>
+                <strong className="text-slate-900 font-extrabold">{appointmentSlot}</strong>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl">
                 <span className="text-slate-500 block text-[10px]">Turnaround Time</span>
-                <strong className="text-slate-900">48 Hours post-visit</strong>
+                <strong className="text-slate-900 font-extrabold">48 Hours post-visit</strong>
               </div>
             </div>
           </div>
 
-          {/* Legal Scrollable Contract Box */}
+          {/* Legal Scrollable Contract Box with Service-Specific Clauses */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-4">
-            <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#2563EB]" />
-              <span>RICS Standard Letter of Engagement (Professional Standard)</span>
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#2563EB]" />
+                <span>{activeTemplate.name}</span>
+              </h4>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                {activeTemplate.version} / {activeTemplate.year}
+              </span>
+            </div>
 
             <div className="h-64 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 space-y-3 leading-relaxed font-sans">
               <p className="font-bold text-slate-900">
-                1. Scope of the RICS Home Survey (Level 2)
+                1. Scope of the {surveyType}
               </p>
               <p>
-                NJS Property Group agrees to carry out a physical visual inspection of 14 Mayfair Gate, London W1K 2PB in accordance with the current RICS Home Survey Standard (Professional Standard, UK). The surveyor is a qualified Chartered Surveyor (MRICS) registered with the Royal Institution of Chartered Surveyors.
+                NJS Property Group agrees to carry out a physical visual inspection of {propertyAddress} in accordance with {activeTemplate.governingBody}. The surveyor is a qualified Chartered Surveyor (MRICS) registered with the Royal Institution of Chartered Surveyors.
+              </p>
+              {activeTemplate.keyClauses?.map((c, i) => (
+                <div key={i} className="space-y-1">
+                  <p className="font-bold text-slate-900">
+                    {c.num}. {c.title}
+                  </p>
+                  <p>{c.text}</p>
+                </div>
+              ))}
+              <p className="font-bold text-slate-900">
+                Fees, Cancellation & Refunds
               </p>
               <p>
-                The inspection examines accessible internal and external surfaces. We do not lift fitted carpets, remove floorboards, or force entry into sealed roof voids. Specialist services (gas, electrics, drainage) are inspected visually for observable signs of defects and appropriate testing will be recommended where warranted.
+                The total fixed fee of £{grossTotal.toFixed(2)} (inclusive of 20% VAT) is payable upon execution of these terms. Under the Consumer Contracts Regulations 2013, you hold a 14-day statutory right of cancellation.
               </p>
               <p className="font-bold text-slate-900">
-                2. Fees, Cancellation & Refunds
+                Professional Indemnity Cover
               </p>
               <p>
-                The total fixed fee of £924.00 (inclusive of VAT) is payable upon execution of these terms. Under the Consumer Contracts Regulations 2013, you hold a 14-day statutory right of cancellation. If the inspection takes place within this period with your agreement, cancellation within 24 hours of the booked slot will incur a 50% survey cancellation charge.
-              </p>
-              <p className="font-bold text-slate-900">
-                3. Liability & Professional Indemnity
-              </p>
-              <p>
-                NJS Property Group maintains comprehensive Professional Indemnity Insurance with an aggregate indemnity limit of £5,000,000. Our liability is restricted to the instructing client and cannot be relied upon by third parties or mortgage lenders without written consent.
-              </p>
-              <p className="font-bold text-slate-900">
-                4. Complaints Handling & RICS Regulation
-              </p>
-              <p>
-                We operate a formal Complaints Handling Procedure approved by the RICS. In the event of an unresolved dispute, clients are entitled to refer the matter to the Property Ombudsman.
+                NJS Property Group maintains comprehensive Professional Indemnity Insurance backed by RSA with indemnity cover up to {activeTemplate.piiCap}.
               </p>
             </div>
 
@@ -322,7 +641,7 @@ export const CustomerTermsPage = () => {
                 className="w-4 h-4 mt-0.5 rounded text-[#0B1F4D] focus:ring-[#0B1F4D]"
               />
               <span className="text-xs text-slate-700 leading-normal">
-                I confirm that I am the instructing client, have read the full RICS Letter of Engagement clauses above, and agree to be legally bound by these terms.
+                I confirm that I am the instructing client ({user?.name || currentJob?.customer}), have read the full RICS Letter of Engagement clauses above, and agree to be legally bound by these terms.
               </span>
             </label>
           </div>
@@ -370,7 +689,7 @@ export const CustomerTermsPage = () => {
                   type="text"
                   value={typedName}
                   onChange={(e) => setTypedName(e.target.value)}
-                  placeholder="e.g. Emma Watson"
+                  placeholder="e.g. Harrison Croft"
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 font-serif text-lg text-[#0B1F4D] focus:ring-2 focus:ring-[#0B1F4D] focus:border-transparent"
                 />
                 <span className="text-[11px] text-slate-400 block">
@@ -558,7 +877,7 @@ export const CustomerTermsPage = () => {
                     ) : (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>Pay £924.00 & Confirm Booking</span>
+                        <span>Pay £{grossTotal.toFixed(2)} & Confirm Booking</span>
                       </>
                     )}
                   </button>
@@ -576,39 +895,31 @@ export const CustomerTermsPage = () => {
 
               <div className="space-y-2">
                 <div className="flex justify-between text-slate-600">
-                  <span>RICS Level 2 Survey:</span>
-                  <span>£650.00</span>
+                  <span>{surveyType}:</span>
+                  <span>£{baseFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Drone Roof Inspection:</span>
-                  <span>+£120.00</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Same-Day Verbal Debrief:</span>
-                  <span>+£50.00</span>
-                </div>
-                <div className="flex justify-between text-emerald-700 font-bold">
-                  <span>Discount Applied:</span>
-                  <span>-£50.00</span>
+                  <span>Direct Telephone Debrief:</span>
+                  <span className="text-emerald-700 font-bold">Included</span>
                 </div>
                 <div className="flex justify-between font-bold text-slate-800 pt-1 border-t border-slate-200">
                   <span>Subtotal ex VAT:</span>
-                  <span>£770.00</span>
+                  <span>£{baseFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>UK VAT (20%):</span>
-                  <span>£154.00</span>
+                  <span>£{vatAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-black text-[#0B1F4D] pt-2 border-t border-slate-300">
                   <span>Gross Total Due:</span>
-                  <span className="text-emerald-700">£924.00</span>
+                  <span className="text-emerald-700">£{grossTotal.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-slate-200/80 text-[10px] text-slate-400 space-y-1">
                 <div>• Merchant: NJS Property Group Ltd</div>
                 <div>• 256-bit SSL Encrypted Payment</div>
-                <div>• Instant VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
+                <div>• Official VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
               </div>
             </div>
           </div>
@@ -627,18 +938,22 @@ export const CustomerTermsPage = () => {
               Inspection Confirmed & Locked!
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Your Terms of Engagement are executed and advance payment of £924.00 has been received in full.
+              Your Terms of Engagement are executed and advance payment of £{grossTotal.toFixed(2)} has been received in full.
             </p>
           </div>
 
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-w-md mx-auto text-xs text-left space-y-2">
             <div className="flex justify-between">
+              <span className="text-slate-500">Subject Property:</span>
+              <span className="font-bold text-slate-900">{propertyAddress}</span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-slate-500">Inspection Slot:</span>
-              <span className="font-bold text-slate-900">Tuesday, 27 October 2026 (10:00 - 13:00)</span>
+              <span className="font-bold text-slate-900">{appointmentSlot}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Assigned Surveyor:</span>
-              <span className="font-bold text-slate-900">David Thorne MRICS</span>
+              <span className="font-bold text-slate-900">{surveyorName}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Access Arrangement:</span>
@@ -673,33 +988,10 @@ export const CustomerTermsPage = () => {
 // ==========================================
 export const CustomerBookingsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
 
-  const bookings = [
-    {
-      id: 'JOB-2026-080',
-      property: '14 Mayfair Gate',
-      location: 'Mayfair, London W1K 2PB',
-      type: 'RICS Home Survey - Level 2 (with Valuation)',
-      surveyor: 'David Thorne MRICS',
-      date: '27/10/2026',
-      timeSlot: '10:00 - 13:00',
-      fee: '£924.00 (Paid)',
-      status: 'In Progress',
-      statusClass: 'bg-blue-50 text-[#2563EB] border-blue-200',
-    },
-    {
-      id: 'JOB-2026-082',
-      property: '12 Pembroke Square',
-      location: 'Kensington, London W8 6PA',
-      type: 'RICS Building Survey - Level 3',
-      surveyor: 'Oliver Hughes MRICS',
-      date: '29/10/2026',
-      timeSlot: '09:30 - 13:00',
-      fee: '£1,450.00 (Pending)',
-      status: 'Awaiting Signature & Payment',
-      statusClass: 'bg-amber-50 text-amber-800 border-amber-200',
-    },
-  ];
+  const myBookings = jobs.filter((j) => isJobForCustomer(j, user));
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -710,51 +1002,62 @@ export const CustomerBookingsPage = () => {
       />
 
       <div className="space-y-4">
-        {bookings.map((b) => (
+        {myBookings.map((b) => (
           <div
             key={b.id}
             className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5"
           >
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${b.statusClass}`}>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  b.status === 'Completed'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : b.termsStatus === 'Pending'
+                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : 'bg-blue-50 text-[#2563EB] border-blue-200'
+                }`}>
                   {b.status}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">Ref: {b.id}</span>
+                <span className="font-mono text-xs font-bold text-slate-400">
+                  {b.id}
+                </span>
               </div>
 
-              <h3 className="text-base font-bold text-slate-900">{b.property}</h3>
-              <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{b.location}</span>
-              </p>
-
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 pt-1">
-                <span>Service: <strong>{b.type}</strong></span>
-                <span>Surveyor: <strong>{b.surveyor}</strong></span>
-                <span>Date: <strong>{b.date} ({b.timeSlot})</strong></span>
-              </div>
+              <h4 className="text-base font-bold text-slate-900">{b.property}</h4>
+              <p className="text-xs text-slate-500">{b.location}</p>
+              <div className="text-xs text-[#2563EB] font-semibold">{b.surveyType}</div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
-              <button
-                onClick={() => navigate('/customer/appointment-details')}
-                className="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                Access Details
-              </button>
+            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+              <div className="text-left md:text-right">
+                <span className="text-xs text-slate-400 block font-mono">Date & Slot</span>
+                <span className="text-xs font-bold text-slate-800 block">{b.date} • {b.timeSlot}</span>
+                <span className="text-xs font-semibold text-slate-600">Surveyor: {b.surveyor || 'Pending Allocation'}</span>
+              </div>
 
-              {/* Fix for Point 7: View Status properly navigates to 10-Stage Tracker */}
-              <button
-                onClick={() => navigate('/customer/track-my-survey')}
-                className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] transition-colors cursor-pointer flex items-center gap-1.5 justify-center"
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>View Status (Tracker)</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/customer/track-my-survey')}
+                  className="px-3.5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Track Live Progress
+                </button>
+                <button
+                  onClick={() => navigate('/customer/appointment-details')}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+                >
+                  Appointment Details
+                </button>
+              </div>
             </div>
           </div>
         ))}
+
+        {myBookings.length === 0 && (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+            No survey bookings found under your client account.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -765,31 +1068,28 @@ export const CustomerBookingsPage = () => {
 // ==========================================
 export const CustomerQuotationsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
 
-  const quotes = [
-    {
-      id: 'QUO-802',
-      property: '12 Pembroke Square, Kensington W8',
-      surveyType: 'RICS Building Survey (Level 3)',
-      net: '£1,450.00',
-      vat: '£290.00',
-      total: '£1,740.00',
-      date: '28/10/2026',
-      status: 'Open Proposal',
-      validUntil: '14 Days Remaining',
-    },
-    {
-      id: 'QUO-791',
-      property: '14 Mayfair Gate, London W1K 2PB',
-      surveyType: 'RICS Home Survey (Level 2)',
-      net: '£770.00',
-      vat: '£154.00',
-      total: '£924.00',
-      date: '24/10/2026',
-      status: 'Accepted & Executed',
-      validUntil: 'Confirmed',
-    },
-  ];
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const quotes = myJobs.map((j) => {
+    const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
+    const vat = net * 0.2;
+    const total = net + vat;
+    return {
+      id: `QUO-${j.id.replace('JOB-2026-', '')}`,
+      jobId: j.id,
+      property: `${j.property}, ${j.location}`,
+      surveyType: j.surveyType,
+      net: `£${net.toFixed(2)}`,
+      vat: `£${vat.toFixed(2)}`,
+      total: `£${total.toFixed(2)}`,
+      date: j.date || '28/10/2026',
+      status: j.termsStatus === 'Signed' ? 'Accepted & Executed' : 'Open Proposal',
+      termsStatus: j.termsStatus,
+      validUntil: j.termsStatus === 'Signed' ? 'Confirmed' : '14 Days Remaining',
+    };
+  });
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -808,37 +1108,52 @@ export const CustomerQuotationsPage = () => {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  q.status === 'Accepted & Executed' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-[#2563EB]'
+                  q.termsStatus === 'Signed'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-blue-100 text-[#0B1F4D]'
                 }`}>
                   {q.status}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">Ref: {q.id}</span>
+                <span className="font-mono text-xs text-slate-400 font-bold">{q.id}</span>
               </div>
               <h4 className="text-base font-bold text-slate-900">{q.property}</h4>
-              <p className="text-xs text-slate-500">{q.surveyType} • Issued {q.date} • {q.validUntil}</p>
+              <p className="text-xs text-[#2563EB] font-semibold mt-0.5">{q.surveyType}</p>
+              <div className="text-xs text-slate-400 mt-2">
+                Valid: <strong>{q.validUntil}</strong> • Issued on {q.date}
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-xl font-black text-[#0B1F4D] block">{q.total}</span>
-                <span className="text-[10px] text-slate-400">Net {q.net} + VAT</span>
+            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+              <div className="text-left md:text-right">
+                <div className="text-xs text-slate-400 font-mono">Net: {q.net} + 20% VAT</div>
+                <div className="text-xl font-black text-[#0B1F4D] font-mono">{q.total}</div>
+                <span className="text-[11px] text-emerald-600 font-bold block">Fixed Fee Guaranteed</span>
               </div>
 
-              {q.status === 'Open Proposal' ? (
+              {q.termsStatus === 'Signed' ? (
                 <button
                   onClick={() => navigate('/customer/terms-to-sign')}
-                  className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
                 >
-                  Accept & Sign Terms
+                  View Signed Terms
                 </button>
               ) : (
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                  Accepted
-                </span>
+                <button
+                  onClick={() => navigate('/customer/terms-to-sign')}
+                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-all shadow-sm cursor-pointer"
+                >
+                  Review & Sign Terms
+                </button>
               )}
             </div>
           </div>
         ))}
+
+        {quotes.length === 0 && (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+            No quotations found under your account.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -850,27 +1165,32 @@ export const CustomerQuotationsPage = () => {
 export const CustomerInvoicesPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { jobs } = useJobs();
 
-  const invoices = [
-    {
-      invNo: 'INV-2026-9042',
-      jobRef: 'JOB-2026-080',
-      property: '14 Mayfair Gate, London W1K 2PB',
-      service: 'RICS Home Survey - Level 2',
-      date: '26/10/2026',
-      net: '£770.00',
-      vat: '£154.00',
-      total: '£924.00',
-      status: 'Paid',
-      method: 'Stripe Card (•••• 4242)',
-    },
-  ];
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const invoices = myJobs.map((j) => {
+    const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
+    const vat = net * 0.2;
+    const total = net + vat;
+    return {
+      invNo: `INV-2026-${j.id.replace('JOB-2026-', '90')}`,
+      jobRef: j.id,
+      property: `${j.property}, ${j.location}`,
+      service: j.surveyType,
+      date: j.date || '26/10/2026',
+      net: `£${net.toFixed(2)}`,
+      vat: `£${vat.toFixed(2)}`,
+      total: `£${total.toFixed(2)}`,
+      status: j.paymentStatus === 'Paid' ? 'Paid' : 'Unpaid',
+      method: j.paymentStatus === 'Paid' ? 'Stripe Card (•••• 4242)' : 'Pending Settlement',
+    };
+  });
 
   const handleDownloadInvoice = (inv) => {
     downloadInvoicePDF({
       invoiceNo: inv.invNo,
       jobNo: inv.jobRef,
-      clientName: user?.name || 'Emma Watson',
+      clientName: user?.name || 'Client',
       property: inv.property,
       paymentMethod: inv.method,
     });
@@ -893,39 +1213,48 @@ export const CustomerInvoicesPage = () => {
         {invoices.map((inv) => (
           <div
             key={inv.invNo}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5"
           >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Status: {inv.status}
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  inv.status === 'Paid'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {inv.status}
                 </span>
-                <span className="text-xs font-mono font-bold text-slate-800">{inv.invNo}</span>
+                <span className="font-mono text-xs font-bold text-slate-400">{inv.invNo}</span>
               </div>
-              <h4 className="text-sm font-bold text-slate-900">{inv.property}</h4>
-              <div className="text-xs text-slate-500">
-                {inv.service} • Method: {inv.method} • Date: {inv.date}
+              <h4 className="text-base font-bold text-slate-900">{inv.property}</h4>
+              <p className="text-xs text-slate-500">{inv.service}</p>
+              <div className="text-xs text-slate-400 mt-2">
+                Settled on {inv.date} via <strong>{inv.method}</strong>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="text-right font-mono">
-                <span className="text-lg font-black text-[#0B1F4D] block">{inv.total}</span>
-                <span className="text-[10px] text-slate-400">Net {inv.net} + VAT {inv.vat}</span>
+            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+              <div className="text-left md:text-right">
+                <div className="text-xs text-slate-400 font-mono">Net: {inv.net} (20% VAT: {inv.vat})</div>
+                <div className="text-xl font-black text-[#0B1F4D] font-mono">{inv.total}</div>
               </div>
 
-              {/* Real PDF Download trigger */}
               <button
                 onClick={() => handleDownloadInvoice(inv)}
-                className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs"
-                title="Download VAT Invoice PDF"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <Download className="w-4 h-4" />
-                <span>Download VAT Invoice</span>
+                <Download className="w-4 h-4 text-slate-600" />
+                <span>Download VAT Receipt</span>
               </button>
             </div>
           </div>
         ))}
+
+        {invoices.length === 0 && (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+            No invoices generated yet.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -937,23 +1266,26 @@ export const CustomerInvoicesPage = () => {
 export const CustomerReportsPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { jobs } = useJobs();
 
-  const reports = [
-    {
-      id: 'RPT-80',
-      title: 'RICS_Level_2_Home_Survey_14_Mayfair_Gate.pdf',
-      property: '14 Mayfair Gate, London W1K 2PB',
-      date: '27/10/2026',
-      size: '14.2 MB',
-      surveyor: 'David Thorne MRICS',
-      conditionRating: 'Condition 1 & 2 (Minor skirting dampness noted)',
-    },
-  ];
+  const myCompletedJobs = jobs.filter(
+    (j) => isJobForCustomer(j, user) && (j.status === 'Completed' || j.timelineStep >= 7)
+  );
+
+  const reports = myCompletedJobs.map((j) => ({
+    id: `RPT-${j.id.replace('JOB-2026-', '')}`,
+    title: `RICS_${j.surveyType?.replace(/[^a-zA-Z0-9]/g, '_')}_${j.property?.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+    property: `${j.property}, ${j.location}`,
+    date: j.date || '27/10/2026',
+    size: '14.2 MB',
+    surveyor: j.surveyor || 'David Thorne MRICS',
+    conditionRating: 'Condition 1 & 2 (Official RICS Traffic-Light Audit)',
+  }));
 
   const handleDownloadReport = (r) => {
     downloadReportPDF({
-      jobNo: 'JOB-2026-080',
-      clientName: user?.name || 'Emma Watson',
+      jobNo: r.id,
+      clientName: user?.name || 'Client',
       property: r.property,
       surveyorName: r.surveyor,
     });
@@ -982,85 +1314,80 @@ export const CustomerReportsPage = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
-        title="My Survey Reports"
-        subtitle="Access your finalized, peer-reviewed RICS home survey and valuation documents."
-        breadcrumb={['Customer Portal', 'My Reports']}
+        title="Completed Survey Reports"
+        subtitle="Download accredited RICS condition & building survey reports with cryptographic watermark."
+        breadcrumb={['Customer Portal', 'Reports']}
       />
 
       <div className="space-y-4">
         {reports.map((r) => (
           <div
             key={r.id}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5"
           >
             <div className="flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-700 shrink-0">
-                <FileSpreadsheet className="w-7 h-7" />
+              <div className="p-3 bg-emerald-50 text-emerald-700 rounded-2xl shrink-0">
+                <FileText className="w-6 h-6" />
               </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  Certified Final RICS Report
-                </span>
-                <h4 className="text-base font-bold text-slate-900 mt-1">{r.property}</h4>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  Lead Surveyor: <strong>{r.surveyor}</strong> • Inspected: {r.date}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-slate-400">{r.id}</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Certified Report
+                  </span>
                 </div>
-                <div className="text-[11px] text-slate-600 mt-1 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                  Rating Summary: <strong>{r.conditionRating}</strong>
+                <h4 className="text-base font-bold text-slate-900">{r.property}</h4>
+                <div className="text-xs text-slate-500 font-mono">
+                  {r.title} • {r.size} • Uploaded {r.date}
+                </div>
+                <div className="text-xs text-slate-700 font-medium pt-1">
+                  Surveyor: <strong>{r.surveyor}</strong> • {r.conditionRating}
                 </div>
               </div>
             </div>
 
-            {/* Real PDF Download trigger */}
             <button
               onClick={() => handleDownloadReport(r)}
-              className="px-5 py-3 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-md"
+              className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Download Official Report (PDF)</span>
+              <span>Download PDF Report</span>
             </button>
           </div>
         ))}
-      </div>
 
-      {/* Point 23 from Client PDF: Sample Survey Reports Section */}
-      <div className="mt-8 pt-6 border-t border-slate-200">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-bold text-[#0B1F4D] uppercase tracking-wider">
-            Sample RICS Reports for Reference
-          </h3>
-        </div>
-        <p className="text-xs text-slate-500 mb-4">
-          Want to see how our comprehensive condition ratings and defect descriptions look? Download anonymised sample reports below.
-        </p>
+        {reports.length === 0 && (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+            No completed reports released yet for your properties. Reports are uploaded within 48h-72h following inspection.
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <h4 className="text-xs font-bold text-slate-900">Sample Level 2 Home Survey</h4>
-              <p className="text-[11px] text-slate-500">Standard residential condition report with condition ratings</p>
-            </div>
+        {/* Specimen / Sample Reports */}
+        <div className="mt-8 pt-6 border-t border-slate-200">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+            Reference RICS Sample Reports
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <button
               onClick={() => handleDownloadSample(2)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between text-left cursor-pointer transition-all"
             >
-              <Download className="w-3.5 h-3.5 text-[#0B1F4D]" />
-              <span>PDF</span>
+              <div>
+                <div className="font-bold text-slate-800">Sample Level 2 Home Survey</div>
+                <div className="text-slate-400 text-[11px]">Specimen PDF with condition ratings</div>
+              </div>
+              <Download className="w-4 h-4 text-slate-600" />
             </button>
-          </div>
 
-          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <h4 className="text-xs font-bold text-slate-900">Sample Level 3 Building Survey</h4>
-              <p className="text-[11px] text-slate-500">In-depth structural appraisal for period or altered properties</p>
-            </div>
             <button
               onClick={() => handleDownloadSample(3)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between text-left cursor-pointer transition-all"
             >
-              <Download className="w-3.5 h-3.5 text-[#0B1F4D]" />
-              <span>PDF</span>
+              <div>
+                <div className="font-bold text-slate-800">Sample Level 3 Building Survey</div>
+                <div className="text-slate-400 text-[11px]">Full structural defect analysis template</div>
+              </div>
+              <Download className="w-4 h-4 text-slate-600" />
             </button>
           </div>
         </div>
@@ -1147,6 +1474,12 @@ export const CustomerTrackSurveyPage = () => {
 // 7. APPOINTMENT DETAILS PAGE
 // ==========================================
 export const CustomerAppointmentDetailsPage = () => {
+  const { user } = useAuth();
+  const { jobs } = useJobs();
+
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const currentJob = myJobs[0] || null;
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
@@ -1155,79 +1488,85 @@ export const CustomerAppointmentDetailsPage = () => {
         breadcrumb={['Customer Portal', 'Appointment Details']}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-5 h-5 text-[#2563EB]" />
-            <h3 className="text-sm font-bold text-[#0B1F4D]">Confirmed Time Slot</h3>
-          </div>
-
-          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-xs space-y-2">
-            <div className="text-lg font-black text-[#0B1F4D]">Tuesday, 27 October 2026</div>
-            <div className="text-slate-700 font-bold flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-[#2563EB]" />
-              <span>10:00 AM – 13:00 PM</span>
-            </div>
-            <p className="text-[11px] text-slate-500 pt-1">
-              The surveyor conducts a meticulous 2 to 3 hour inspection including loft voids, subfloors, and grounds.
-            </p>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Service:</span>
-              <span className="font-bold text-slate-900">RICS Level 2 Home Survey</span>
-            </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Surveyor:</span>
-              <span className="font-bold text-[#0B1F4D]">David Thorne MRICS</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-slate-500">Booking Status:</span>
-              <span className="font-bold text-emerald-700">Confirmed & Scheduled</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            <h3 className="text-sm font-bold text-[#0B1F4D]">Property Access Coordination</h3>
-          </div>
-
-          <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-xs space-y-2">
+      {currentJob ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-bold text-emerald-950">Arranged Directly with Selling Agent</span>
+              <CalendarDays className="w-5 h-5 text-[#2563EB]" />
+              <h3 className="text-sm font-bold text-[#0B1F4D]">Confirmed Time Slot</h3>
             </div>
-            <p className="text-[11.5px] text-slate-600 leading-relaxed pt-1">
-              Our chartered surveyor coordinates access logistics directly with the estate agency and keyholder prior to arrival.
-            </p>
+
+            <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-xs space-y-2">
+              <div className="text-lg font-black text-[#0B1F4D]">{currentJob.date || 'Confirmed Schedule'}</div>
+              <div className="text-slate-700 font-bold flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-[#2563EB]" />
+                <span>{currentJob.timeSlot || '10:00 AM – 13:00 PM'}</span>
+              </div>
+              <p className="text-[11px] text-slate-500 pt-1">
+                The surveyor conducts a meticulous 2 to 3 hour inspection including loft voids, subfloors, and grounds.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500">Service:</span>
+                <span className="font-bold text-slate-900">{currentJob.surveyType}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500">Surveyor:</span>
+                <span className="font-bold text-[#0B1F4D]">{currentJob.surveyor || 'Pending Allocation'}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">Booking Status:</span>
+                <span className="font-bold text-emerald-700">{currentJob.status}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Access Arrangement:</span>
-              <span className="font-bold text-slate-800">Direct Surveyor Coordination</span>
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-sm font-bold text-[#0B1F4D]">Property Access Coordination</h3>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Client Attendance:</span>
-              <span className="font-bold text-emerald-700">Not Required (Zero Hassle)</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-slate-500">Key & Entry Protocols:</span>
-              <span className="font-semibold text-slate-600 flex items-center gap-1">
-                <Lock className="w-3 h-3 text-slate-400" />
-                <span>Restricted to Surveyor & Selling Agent</span>
-              </span>
-            </div>
-          </div>
 
-          <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
-            <strong>Security Notice:</strong> In compliance with UK property vendor security standards, internal key tags and private building entry codes are restricted exclusively to the assigned RICS surveyor. You do not need to attend in person.
+            <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-xs space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-emerald-950">Arranged Directly with Selling Agent</span>
+              </div>
+              <p className="text-[11.5px] text-slate-600 leading-relaxed pt-1">
+                Our chartered surveyor coordinates access logistics directly with the estate agency and keyholder prior to arrival.
+              </p>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500">Access Arrangement:</span>
+                <span className="font-bold text-slate-800">Direct Surveyor Coordination</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-100">
+                <span className="text-slate-500">Client Attendance:</span>
+                <span className="font-bold text-emerald-700">Not Required (Zero Hassle)</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-500">Key & Entry Protocols:</span>
+                <span className="font-semibold text-slate-600 flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-slate-400" />
+                  <span>Restricted to Surveyor & Selling Agent</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 leading-relaxed">
+              <strong>Security Notice:</strong> In compliance with UK property vendor security standards, internal key tags and private building entry codes are restricted exclusively to the assigned RICS surveyor. You do not need to attend in person.
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+          No scheduled survey appointment found for your account.
+        </div>
+      )}
     </div>
   );
 };
@@ -1236,13 +1575,20 @@ export const CustomerAppointmentDetailsPage = () => {
 // 8. ASSIGNED SURVEYOR PAGE
 // ==========================================
 export const CustomerAssignedSurveyorPage = () => {
+  const { user } = useAuth();
+  const { jobs } = useJobs();
   const { addToast } = useToast();
+
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const currentJob = myJobs[0] || null;
+  const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
+  const surveyor = SURVEYORS.find((s) => s.name === surveyorName) || SURVEYORS[0];
 
   const handleRequestCall = () => {
     addToast({
       type: 'success',
       title: 'Call Request Logged',
-      message: 'David Thorne MRICS will contact you today between 16:00 and 17:30.',
+      message: `${surveyor.name} will contact you today regarding your inspection at ${currentJob?.property || 'your property'}.`,
     });
   };
 
@@ -1257,53 +1603,54 @@ export const CustomerAssignedSurveyorPage = () => {
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-slate-100">
           <img
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80"
-            alt="David Thorne MRICS"
+            src={surveyor.avatar}
+            alt={surveyor.name}
             className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
           />
 
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                RICS Regulated Member #089421
+                RICS Regulated Member
               </span>
               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                 Verified Credentials
               </span>
             </div>
 
-            <h3 className="text-xl font-black text-[#0B1F4D]">David Thorne MRICS</h3>
-            <p className="text-xs text-slate-500">Chartered Valuation & Residential Building Surveyor</p>
+            <h3 className="text-xl font-black text-[#0B1F4D]">{surveyor.name}</h3>
+            <p className="text-xs text-slate-500">{surveyor.credentials}</p>
             <p className="text-xs text-slate-600 pt-1">
-              18+ years experience in central London residential properties, Victorian conversions, and period defect diagnoses.
+              Experienced RICS specialist covering London postcodes ({surveyor.postcodes}) for period conversions, defect diagnosis, and Red Book valuation.
             </p>
           </div>
 
           <button
             onClick={handleRequestCall}
-            className="px-4 py-2.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold rounded-xl transition-colors shrink-0 cursor-pointer shadow-xs"
+            className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
           >
-            Request Surveyor Call
+            <Phone className="w-4 h-4" />
+            <span>Request Call-Back</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs">
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <span className="text-slate-400 block text-[10px] font-bold uppercase">Accreditation</span>
-            <strong className="text-slate-900 block mt-0.5">MRICS Chartered Surveyor</strong>
-            <span className="text-[11px] text-slate-500">Royal Institution of Chartered Surveyors</span>
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Assigned Inspection</span>
+            <div className="font-bold text-slate-900">{currentJob?.property || '14 Mayfair Gate'}</div>
+            <div className="text-slate-500 font-mono">{currentJob?.surveyType || 'RICS Level 2'}</div>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <span className="text-slate-400 block text-[10px] font-bold uppercase">Insurance Cover</span>
-            <strong className="text-slate-900 block mt-0.5">£5,000,000 PII Cover</strong>
-            <span className="text-[11px] text-slate-500">Full Professional Indemnity</span>
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Turnaround SLA</span>
+            <div className="font-bold text-slate-900">48h Delivery Window</div>
+            <div className="text-slate-500">Delivered directly to your portal</div>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <span className="text-slate-400 block text-[10px] font-bold uppercase">Territory Focus</span>
-            <strong className="text-slate-900 block mt-0.5">London (West End, Mayfair, SW)</strong>
-            <span className="text-[11px] text-slate-500">Local Area Specialist</span>
+          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
+            <span className="text-[10px] font-bold text-[#2563EB] uppercase">RICS Compliance</span>
+            <div className="font-bold text-[#0B1F4D]">VRS Regulated</div>
+            <div className="text-blue-900 text-[11px]">Strict valuation & safety standards</div>
           </div>
         </div>
       </div>
@@ -1317,14 +1664,43 @@ export const CustomerAssignedSurveyorPage = () => {
 export const CustomerMessagesPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { jobs } = useJobs();
   const { conversations, sendMessage, markAsRead } = useMessages();
 
-  // Find active conversation for current customer
-  const currentConv = conversations.find(
-    (c) => c.clientEmail === user?.email || c.id === 'conv-1'
-  ) || conversations[0];
+  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const currentJob = myJobs[0] || null;
 
-  const messages = currentConv?.messages || [];
+  // Strict customer conversation isolation:
+  const currentConv = conversations.find((c) => {
+    const uEmail = (user?.email || '').toLowerCase().trim();
+    const cEmail = (c.clientEmail || '').toLowerCase().trim();
+    if (uEmail === 'customer@demo.com') return cEmail === 'customer@demo.com';
+    if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com') {
+      return cEmail.includes('harrison') || c.id === 'conv-3';
+    }
+    return cEmail === uEmail;
+  });
+
+  // Effective conversation (isolated, never leaks another customer's thread)
+  const effectiveConv = currentConv || {
+    id: `conv-${user?.id || 'new'}`,
+    jobId: currentJob?.id || 'ENQ-2026',
+    clientEmail: user?.email,
+    clientName: user?.name,
+    property: currentJob?.property || 'Your Property',
+    surveyType: currentJob?.surveyType || 'RICS Survey',
+    messages: [
+      {
+        id: 1,
+        sender: 'NJS Operations Desk',
+        role: 'admin',
+        text: `Hello ${user?.name || 'Client'}, welcome to your dedicated communications channel with NJS Property Group. How can our surveying team assist you today?`,
+        time: 'Today',
+      },
+    ],
+  };
+
+  const messages = effectiveConv.messages || [];
   const [inputMessage, setInputMessage] = useState('');
 
   useEffect(() => {
@@ -1341,9 +1717,9 @@ export const CustomerMessagesPage = () => {
     setInputMessage('');
 
     sendMessage(
-      currentConv?.id || 'conv-1',
+      effectiveConv.id,
       textToSend,
-      user?.name || 'Emma Watson',
+      user?.name || 'Client',
       'client'
     );
 
@@ -1352,18 +1728,6 @@ export const CustomerMessagesPage = () => {
       title: 'Message Sent to NJS Desk',
       message: 'Your query has been dispatched to operations (info@njspropertygroup.com).',
     });
-
-    // Point 20 Messaging Automation: Simulated auto-acknowledgement if it was first customer response
-    if (messages.filter(m => m.role === 'client').length === 0) {
-      setTimeout(() => {
-        sendMessage(
-          currentConv?.id || 'conv-1',
-          'Thank you for your message. An NJS property coordinator has received your query and will respond shortly.',
-          'NJS Automated Coordinator',
-          'admin'
-        );
-      }, 1200);
-    }
   };
 
   const handleAttach = () => {
@@ -1378,62 +1742,66 @@ export const CustomerMessagesPage = () => {
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
         title="Direct Messages"
-        subtitle="Chat directly with the NJS Property Group administration desk regarding your instruction."
+        subtitle="Secure, direct communication with the NJS operations coordination desk."
         breadcrumb={['Customer Portal', 'Messages']}
       />
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col h-[520px] overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col h-[600px]">
         {/* Chat Header */}
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-xs">
+            <div className="w-10 h-10 rounded-2xl bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-sm">
               NJS
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-xs font-bold text-slate-900">NJS Operations Desk</h4>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] text-emerald-700 font-semibold">Online</span>
+                <h4 className="font-bold text-slate-900 text-sm">NJS Operations & Surveyor Desk</h4>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
               </div>
-              <p className="text-[10px] text-slate-500">Instruction: 14 Mayfair Gate (JOB-2026-080)</p>
+              <span className="text-[11px] text-slate-400">
+                Ref: {effectiveConv.jobId} • {effectiveConv.property}
+              </span>
             </div>
           </div>
 
-          <span className="text-[11px] text-slate-400">Replies within ~15 mins</span>
+          <span className="text-xs font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl">
+            Active Thread
+          </span>
         </div>
 
-        {/* Messages Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
+        {/* Message Thread */}
+        <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/40">
           {messages.map((m) => {
-            const isMe = m.role === 'client';
+            const isClient = m.role === 'client';
             return (
               <div
                 key={m.id}
-                className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                className={`flex flex-col ${isClient ? 'items-end' : 'items-start'}`}
               >
-                <span className="text-[10px] text-slate-400 mb-0.5 px-1">{m.sender}</span>
+                <div className="flex items-center gap-1.5 mb-1 px-1">
+                  <span className="text-[10px] font-bold text-slate-400">{m.sender}</span>
+                  <span className="text-[9px] text-slate-300 font-mono">• {m.time}</span>
+                </div>
                 <div
-                  className={`max-w-[78%] p-3 rounded-2xl text-xs leading-relaxed ${
-                    isMe
-                      ? 'bg-[#0B1F4D] text-white rounded-tr-xs'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-tl-xs shadow-xs'
+                  className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed shadow-xs ${
+                    isClient
+                      ? 'bg-[#0B1F4D] text-white rounded-tr-none'
+                      : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
                   }`}
                 >
                   {m.text}
                 </div>
-                <span className="text-[9px] text-slate-400 mt-0.5 px-1">{m.time}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Input Bar */}
-        <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+        {/* Chat Input */}
+        <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
           <button
             type="button"
             onClick={handleAttach}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 cursor-pointer"
-            title="Attach property photograph or document"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -1442,16 +1810,15 @@ export const CustomerMessagesPage = () => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message or special instruction for our team..."
-            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#0B1F4D] focus:outline-none"
+            placeholder="Type your message to NJS coordination team..."
+            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D]"
           />
 
           <button
             type="submit"
-            className="px-4 py-2 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white transition-all shadow-xs cursor-pointer"
           >
-            <span>Send</span>
-            <Send className="w-3.5 h-3.5" />
+            <Send className="w-4 h-4" />
           </button>
         </form>
       </div>

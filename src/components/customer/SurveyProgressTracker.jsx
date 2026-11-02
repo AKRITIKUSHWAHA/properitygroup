@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Send,
   Sparkles,
+  Download,
 } from 'lucide-react';
 
 /**
@@ -28,91 +29,100 @@ import {
  * 10. Report Delivered
  */
 
-export const SURVEY_STAGES = [
-  {
-    step: 1,
-    title: 'Enquiry Received',
-    shortName: 'Enquiry',
-    date: '24 Oct 2026, 14:15',
-    icon: Send,
-    desc: 'Survey enquiry logged for 14 Mayfair Gate via online portal.',
-  },
-  {
-    step: 2,
-    title: 'Quote Issued',
-    shortName: 'Quote',
-    date: '24 Oct 2026, 15:30',
-    icon: FileText,
-    desc: 'Fixed-price fee proposal £770.00 (+VAT) issued by NJS estimating team.',
-  },
-  {
-    step: 3,
-    title: 'Quote Accepted',
-    shortName: 'Accepted',
-    date: '25 Oct 2026, 09:40',
-    icon: CheckCircle2,
-    desc: 'Customer approved quotation terms and elected Level 2 Survey.',
-  },
-  {
-    step: 4,
-    title: 'Terms Signed',
-    shortName: 'Signed',
-    date: '26 Oct 2026, 11:15',
-    icon: FileCheck,
-    desc: 'RICS Letter of Engagement digitally executed with timestamp and IP stamp.',
-  },
-  {
-    step: 5,
-    title: 'Payment Confirmed',
-    shortName: 'Paid',
-    date: '26 Oct 2026, 11:20',
-    icon: CreditCard,
-    desc: 'Stripe transaction settled in full (£924.00 inc. VAT). Receipt generated.',
-  },
-  {
-    step: 6,
-    title: 'Appointment Booked',
-    shortName: 'Booked',
-    date: '26 Oct 2026, 16:30',
-    icon: CalendarCheck,
-    desc: 'Confirmed for 27 Oct, 10:00 - 13:00 with lead surveyor David Thorne MRICS.',
-  },
-  {
-    step: 7,
-    title: 'Inspection Completed',
-    shortName: 'Inspected',
-    date: '27 Oct 2026, 12:45',
-    icon: Eye,
-    desc: 'Physical on-site inspection concluded. Key returned to Foxtons Mayfair.',
-  },
-  {
-    step: 8,
-    title: 'Report Preparation',
-    shortName: 'Drafting',
-    date: '27 Oct 2026, 16:00',
-    icon: Sparkles,
-    desc: 'Surveyor drafting technical condition ratings and analyzing photographic evidence.',
-  },
-  {
-    step: 9,
-    title: 'Quality Check',
-    shortName: 'QA Review',
-    date: '28 Oct 2026, 10:30',
-    icon: ShieldCheck,
-    desc: 'Peer review and compliance sign-off by Lead Partner / Chartered Surveyor.',
-  },
-  {
-    step: 10,
-    title: 'Report Delivered',
-    shortName: 'Delivered',
-    date: '28 Oct 2026, 14:00',
-    icon: CheckCircle2,
-    desc: 'Final official RICS PDF report published to client portal & emailed.',
-  },
-];
+export const getSurveyStages = (job) => {
+  const property = job?.property || 'the property';
+  const surveyor = job?.surveyor || 'Assigned Surveyor';
+  const fee = job?.quote?.baseFee ? `£${job.quote.baseFee.toFixed(2)} (+VAT)` : 'agreed fee';
+
+  return [
+    {
+      step: 1,
+      title: 'Enquiry Received',
+      shortName: 'Enquiry',
+      date: job?.date ? `Logged: ${job.date}` : 'Recently',
+      icon: Send,
+      desc: `Survey instruction logged for ${property} via online portal.`,
+    },
+    {
+      step: 2,
+      title: 'Quote Issued',
+      shortName: 'Quote',
+      date: 'NJS Estimating',
+      icon: FileText,
+      desc: `Fixed-price fee proposal ${fee} issued by NJS estimating team.`,
+    },
+    {
+      step: 3,
+      title: 'Quote Accepted',
+      shortName: 'Accepted',
+      date: 'Client Instruction',
+      icon: CheckCircle2,
+      desc: `Customer confirmed instruction for ${job?.surveyType || 'RICS Survey'}.`,
+    },
+    {
+      step: 4,
+      title: 'Terms Signed',
+      shortName: 'Signed',
+      date: job?.termsStatus === 'Signed' ? 'Executed' : 'Pending',
+      icon: FileCheck,
+      desc: 'RICS Letter of Engagement digitally executed under RICS regulatory governance.',
+    },
+    {
+      step: 5,
+      title: 'Payment Confirmed',
+      shortName: 'Paid',
+      date: job?.paymentStatus === 'Paid' ? 'Settled' : 'Pending',
+      icon: CreditCard,
+      desc: job?.paymentStatus === 'Paid' ? 'Client account payment settled in full. VAT receipt available in portal.' : 'Deposit or full invoice pending payment settlement.',
+    },
+    {
+      step: 6,
+      title: 'Appointment Booked',
+      shortName: 'Booked',
+      date: job?.date ? `${job.date}, ${job.timeSlot || 'Confirmed slot'}` : 'Scheduled',
+      icon: CalendarCheck,
+      desc: `Inspection confirmed with ${surveyor}. Access arranged directly with selling agent.`,
+    },
+    {
+      step: 7,
+      title: 'Inspection Completed',
+      shortName: 'Inspected',
+      date: 'Field Inspection',
+      icon: Eye,
+      desc: `Physical on-site inspection concluded by ${surveyor}.`,
+    },
+    {
+      step: 8,
+      title: 'Report Preparation',
+      shortName: 'Drafting',
+      date: 'Drafting',
+      icon: Sparkles,
+      desc: 'Surveyor drafting technical condition ratings and analyzing photographic evidence.',
+    },
+    {
+      step: 9,
+      title: 'Quality Check',
+      shortName: 'QA Review',
+      date: 'Peer Review',
+      icon: ShieldCheck,
+      desc: 'Lead Surveyor auditing defect ratings against RICS Home Survey Standard.',
+    },
+    {
+      step: 10,
+      title: 'Report Delivered',
+      shortName: 'Delivered',
+      date: 'Available Now',
+      icon: Download,
+      desc: 'Final accredited survey report published to your customer portal for instant download.',
+    },
+  ];
+};
+
+export const SURVEY_STAGES = getSurveyStages(null);
 
 export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
   const [selectedStep, setSelectedStep] = useState(currentStep);
+  const stages = getSurveyStages(job);
 
   // Derive step status: 'completed' | 'current' | 'upcoming'
   const getStepStatus = (stepNumber) => {
@@ -121,7 +131,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
     return 'upcoming';
   };
 
-  const activeStageObj = SURVEY_STAGES.find((s) => s.step === selectedStep) || SURVEY_STAGES[currentStep - 1];
+  const activeStageObj = stages.find((s) => s.step === selectedStep) || stages[currentStep - 1];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-6 mb-6">
@@ -138,7 +148,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
             10-Stage RICS Survey Progress Tracker
           </h2>
           <p className="text-xs text-slate-500">
-            Real-time milestone tracking for {job?.property || '14 Mayfair Gate, London W1K 2PB'}
+            Real-time milestone tracking for {job?.property || 'Your Property'}
           </p>
         </div>
 
@@ -146,7 +156,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl self-start sm:self-auto">
           <span className="text-xs text-slate-600">Current Phase:</span>
           <span className="text-xs font-bold text-[#0B1F4D] bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-xs">
-            Stage {currentStep} of 10: {SURVEY_STAGES[currentStep - 1]?.title}
+            Stage {currentStep} of 10: {stages[currentStep - 1]?.title}
           </span>
         </div>
       </div>
@@ -175,7 +185,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
             style={{ width: `${((currentStep - 1) / 9) * 100}%` }}
           />
 
-          {SURVEY_STAGES.map((stage) => {
+          {stages.map((stage) => {
             const status = getStepStatus(stage.step);
             const isSelected = selectedStep === stage.step;
             const Icon = stage.icon;

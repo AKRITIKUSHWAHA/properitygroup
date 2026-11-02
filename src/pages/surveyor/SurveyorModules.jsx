@@ -27,18 +27,28 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
+import { useAuth } from '../../auth/AuthContext';
+import { useJobs } from '../../mock/jobs';
 
 // ==========================================
 // 1. SURVEYOR CALENDAR PAGE (Dynamic Date Fix for Point 8)
 // ==========================================
 export const SurveyorCalendarPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
 
-  // Dynamic date calculation so calendar NEVER displays incorrect "Today" (Fixes Client Point 8)
+  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
+  const surveyorName = user?.name;
+
+  const myJobs = jobs.filter((j) =>
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName)
+  );
+
   const today = new Date();
   const formatDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
-  // Generate 5 days starting from yesterday or today
   const dynamicDays = [-1, 0, 1, 2, 3].map((offset) => {
     const d = new Date(today);
     d.setDate(today.getDate() + offset);
@@ -46,38 +56,27 @@ export const SurveyorCalendarPage = () => {
     return {
       label: isToday ? `Today (${formatDay(d)})` : formatDay(d),
       isToday,
-      appointments: isToday ? 2 : offset === 1 ? 1 : 2,
+      appointments: isToday ? Math.min(2, myJobs.length) : offset === 1 ? 1 : 0,
     };
   });
 
   const [selectedDay, setSelectedDay] = useState(dynamicDays[1].label);
 
-  const appointments = [
-    {
-      id: 'JOB-2026-080',
-      time: '10:00 - 13:00',
-      property: '14 Mayfair Gate',
-      location: 'Mayfair, London W1K 2PB',
-      type: 'RICS Home Survey Level 2',
-      client: 'Emma Watson',
-      phone: '+44 7700 900147',
-      access: 'Keys with Foxtons Mayfair (Branch Ref #FX-402)',
-      status: 'In Progress (On-Site)',
-      countdown: '34h 22m remaining (48h SLA)',
-    },
-    {
-      id: 'JOB-2026-081',
-      time: '14:30 - 16:30',
-      property: '24 Kensington Palace Gardens',
-      location: 'London W8 4QQ',
-      type: 'RICS Building Survey Level 3',
-      client: 'Kensington Estates PLC',
-      phone: '+44 20 7946 0912',
-      access: 'Concierge front desk (Security code 8492#)',
-      status: 'Scheduled',
-      countdown: '72h SLA Target',
-    },
-  ];
+  const appointments = myJobs
+    .filter((j) => j.status !== 'Completed')
+    .slice(0, 3)
+    .map((j) => ({
+      id: j.id,
+      time: j.timeSlot || '10:00 - 13:00',
+      property: j.property,
+      location: j.location,
+      type: j.surveyType,
+      client: j.customer,
+      phone: j.customerPhone || '+44 7700 900147',
+      access: j.propertyDetails?.accessDetails || 'Keys with estate agent',
+      status: j.status,
+      countdown: j.countdown || '48h SLA Target',
+    }));
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -178,6 +177,12 @@ export const SurveyorCalendarPage = () => {
               </div>
             </div>
           ))}
+
+          {appointments.length === 0 && (
+            <div className="py-8 text-center text-xs text-slate-400">
+              No appointments scheduled for this date.
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -189,48 +194,23 @@ export const SurveyorCalendarPage = () => {
 // ==========================================
 export const SurveyorJobsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
   const [filter, setFilter] = useState('active'); // 'active' | 'completed'
 
-  const jobs = [
-    {
-      id: 'JOB-2026-080',
-      property: '14 Mayfair Gate, London W1K 2PB',
-      type: 'RICS Level 2 Home Survey',
-      client: 'Emma Watson',
-      targetSla: '48h Turnaround',
-      countdown: '34h 22m remaining',
-      deadlineUrgent: false,
-      status: 'On-Site / Drafting',
-      progress: 75,
-      isCompleted: false,
-    },
-    {
-      id: 'JOB-2026-081',
-      property: '24 Kensington Palace Gardens, W8 4QQ',
-      type: 'RICS Level 3 Building Survey',
-      client: 'Kensington Estates PLC',
-      targetSla: '72h Turnaround',
-      countdown: '68h 10m remaining',
-      deadlineUrgent: false,
-      status: 'Inspection Scheduled',
-      progress: 40,
-      isCompleted: false,
-    },
-    {
-      id: 'JOB-2026-079',
-      property: '8 Chichester Road, Richmond TW10',
-      type: 'Specific Structural Defect Survey',
-      client: 'Richmond Borough Properties',
-      targetSla: 'Delivered On Time',
-      countdown: 'Completed (QA Passed)',
-      deadlineUrgent: false,
-      status: 'Completed & Dispatched',
-      progress: 100,
-      isCompleted: true,
-    },
-  ];
+  // Isolate strictly by surveyor
+  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
+  const surveyorName = user?.name;
 
-  const filteredJobs = jobs.filter((j) => (filter === 'active' ? !j.isCompleted : j.isCompleted));
+  const myJobs = jobs.filter((j) =>
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName)
+  );
+
+  const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
+  const completedJobs = myJobs.filter((j) => j.status === 'Completed');
+
+  const filteredJobs = filter === 'active' ? activeJobs : completedJobs;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -249,7 +229,7 @@ export const SurveyorJobsPage = () => {
               : 'bg-white text-slate-600 border border-slate-200'
           }`}
         >
-          Active Jobs (2)
+          Active Jobs ({activeJobs.length})
         </button>
         <button
           onClick={() => setFilter('completed')}
@@ -259,7 +239,7 @@ export const SurveyorJobsPage = () => {
               : 'bg-white text-slate-600 border border-slate-200'
           }`}
         >
-          Completed Jobs (1)
+          Completed Jobs ({completedJobs.length})
         </button>
       </div>
 
@@ -275,17 +255,17 @@ export const SurveyorJobsPage = () => {
                   {j.id}
                 </span>
                 <h4 className="text-base font-bold text-slate-900 mt-1">{j.property}</h4>
-                <span className="text-xs text-[#2563EB] font-semibold">{j.type}</span>
+                <span className="text-xs text-[#2563EB] font-semibold">{j.surveyType || j.type}</span>
               </div>
 
               <div className="text-right">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-[#0B1F4D]">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${j.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-[#0B1F4D]'}`}>
                   {j.status}
                 </span>
                 {/* 48h Countdown Timer Badge */}
                 <div className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 mt-1 block sm:inline-block">
                   <Clock className="w-3 h-3 text-amber-600" />
-                  <span>{j.countdown}</span>
+                  <span>{j.countdown || '48h SLA Target'}</span>
                 </div>
               </div>
             </div>
@@ -294,20 +274,20 @@ export const SurveyorJobsPage = () => {
             <div className="space-y-1">
               <div className="flex justify-between text-xs font-semibold">
                 <span className="text-slate-500">Inspection & QA Lifecycle</span>
-                <span className="text-[#0B1F4D] font-mono">{j.progress}%</span>
+                <span className="text-[#0B1F4D] font-mono">{j.progress || (j.status === 'Completed' ? 100 : 50)}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    j.isCompleted ? 'bg-emerald-500' : 'bg-[#0B1F4D]'
+                    j.status === 'Completed' ? 'bg-emerald-500' : 'bg-[#0B1F4D]'
                   }`}
-                  style={{ width: `${j.progress}%` }}
+                  style={{ width: `${j.progress || (j.status === 'Completed' ? 100 : 50)}%` }}
                 />
               </div>
             </div>
 
             <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="text-slate-500">Client: <strong>{j.client}</strong></span>
+              <span className="text-slate-500">Client: <strong>{j.customer || j.client}</strong></span>
 
               <div className="flex items-center gap-2">
                 <button
@@ -326,6 +306,12 @@ export const SurveyorJobsPage = () => {
             </div>
           </div>
         ))}
+
+        {filteredJobs.length === 0 && (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
+            No {filter} survey jobs allocated to your diary.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -336,6 +322,29 @@ export const SurveyorJobsPage = () => {
 // ==========================================
 export const SurveyorSiteVisitsPage = () => {
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
+
+  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
+  const surveyorName = user?.name;
+
+  const myJobs = jobs.filter((j) =>
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName)
+  );
+
+  const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
+  const primaryJob = activeJobs[0] || myJobs[0] || {
+    id: 'JOB-2026-080',
+    property: '14 Mayfair Gate',
+    location: 'Mayfair, London W1K 2PB',
+    timeSlot: '10:00 - 13:00',
+    surveyType: 'RICS Level 2 Home Survey',
+    propertyDetails: {
+      accessDetails: 'Keys with Foxtons Mayfair (Branch Ref #FX-402)',
+    },
+  };
+
   const [hasArrived, setHasArrived] = useState(true);
   const [hasFinished, setHasFinished] = useState(false);
 
@@ -344,7 +353,7 @@ export const SurveyorSiteVisitsPage = () => {
     addToast({
       type: 'success',
       title: 'GPS Site Check-in Logged',
-      message: 'Arrival recorded at 14 Mayfair Gate. On-site inspection timer active.',
+      message: `Arrival recorded at ${primaryJob.property}. On-site inspection timer active.`,
     });
   };
 
@@ -353,7 +362,7 @@ export const SurveyorSiteVisitsPage = () => {
     addToast({
       type: 'success',
       title: 'Site Visit Concluded',
-      message: 'Physical survey finished. Please return property keys to Foxtons Mayfair.',
+      message: 'Physical survey finished. Please return property keys to agent/vendor.',
     });
   };
 
@@ -370,12 +379,12 @@ export const SurveyorSiteVisitsPage = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
               <span className="font-mono text-xs font-bold text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded">
-                JOB-2026-080
+                {primaryJob.id}
               </span>
               <h4 className="text-base font-bold text-slate-900 mt-1">
-                14 Mayfair Gate, Mayfair, London W1K 2PB
+                {primaryJob.property}, {primaryJob.location}
               </h4>
-              <span className="text-xs text-slate-500">Appointment Slot: 10:00 - 13:00 (Today)</span>
+              <span className="text-xs text-slate-500">Appointment Slot: {primaryJob.timeSlot || '10:00 - 13:00'} (Today)</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -407,21 +416,21 @@ export const SurveyorSiteVisitsPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Keyholder Contact</span>
-              <div className="font-bold text-slate-800">Foxtons Mayfair Branch</div>
-              <div className="text-slate-500">Ref: <strong>#FX-402</strong> • Tel: 020 7946 0888</div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Access Instructions</span>
+              <div className="font-bold text-slate-800 truncate">{primaryJob.propertyDetails?.accessDetails || 'Keys with estate agent'}</div>
+              <div className="text-slate-500">Survey Type: <strong>{primaryJob.surveyType}</strong></div>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Concierge Access</span>
-              <div className="font-bold text-slate-800 font-mono">Code: #8492</div>
-              <div className="text-slate-500">Mansion block concierge on front gate</div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Client Contact</span>
+              <div className="font-bold text-slate-800 font-mono">{primaryJob.customer}</div>
+              <div className="text-slate-500">Phone: {primaryJob.customerPhone || '+44 7700 900147'}</div>
             </div>
 
             <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
-              <span className="text-[10px] font-bold text-blue-700 uppercase">Critical Client Caveat</span>
-              <div className="font-bold text-blue-900">Skirting Board Moisture Check</div>
-              <div className="text-blue-800 text-[11px]">Protimeter reading taken in rear dining room</div>
+              <span className="text-[10px] font-bold text-blue-700 uppercase">Status & SLA</span>
+              <div className="font-bold text-blue-900">{primaryJob.status}</div>
+              <div className="text-blue-800 text-[11px]">{primaryJob.countdown || '48h SLA Target'}</div>
             </div>
           </div>
         </div>
@@ -435,24 +444,27 @@ export const SurveyorSiteVisitsPage = () => {
 // ==========================================
 export const SurveyorUploadReportsPage = () => {
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
 
-  const [selectedJob, setSelectedJob] = useState('JOB-2026-080');
+  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
+  const surveyorName = user?.name;
+
+  const myJobs = jobs.filter((j) =>
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName)
+  );
+
+  const [selectedJob, setSelectedJob] = useState(myJobs[0]?.id || 'JOB-2026-080');
   const [reportStandard, setReportStandard] = useState('RICS Level 2 Home Survey (Final)');
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([
     {
-      name: 'Draft_Level2_Report_14_Mayfair_Gate_v1.pdf',
+      name: `Draft_Report_${myJobs[0]?.id || 'JOB-2026-080'}_v1.pdf`,
       size: '14.2 MB',
       date: 'Today, 14:15',
-      jobId: 'JOB-2026-080',
+      jobId: myJobs[0]?.id || 'JOB-2026-080',
       status: 'Under Admin QA Review',
-    },
-    {
-      name: 'HighRes_Defect_Photographs_Richmond_Archive.zip',
-      size: '48.6 MB',
-      date: '25/10/2026, 17:30',
-      jobId: 'JOB-2026-079',
-      status: 'Approved & Dispatched',
     },
   ]);
 
@@ -498,7 +510,7 @@ export const SurveyorUploadReportsPage = () => {
     addToast({
       type: 'success',
       title: 'Dispatched for Quality Assurance',
-      message: 'All condition rating drafts for JOB-2026-080 submitted to Lead Surveyor for review.',
+      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review.`,
     });
   };
 
@@ -522,9 +534,11 @@ export const SurveyorUploadReportsPage = () => {
               onChange={(e) => setSelectedJob(e.target.value)}
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
             >
-              <option value="JOB-2026-080">JOB-2026-080 — 14 Mayfair Gate, London W1K</option>
-              <option value="JOB-2026-081">JOB-2026-081 — 24 Kensington Palace Gardens, W8</option>
-              <option value="JOB-2026-079">JOB-2026-079 — 8 Chichester Road, Richmond TW10</option>
+              {myJobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.id} — {j.property}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -545,91 +559,93 @@ export const SurveyorUploadReportsPage = () => {
           </div>
         </div>
 
-        {/* Drop Zone */}
+        {/* Dropzone */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all cursor-pointer ${
+          className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center transition-all cursor-pointer ${
             isDragging
-              ? 'border-[#2563EB] bg-blue-50/60 scale-[1.01]'
-              : 'border-slate-300 hover:border-[#2563EB] bg-slate-50/50 hover:bg-white'
+              ? 'border-[#2563EB] bg-blue-50/50'
+              : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
           }`}
+          onClick={() => document.getElementById('report-file-input')?.click()}
         >
           <input
-            type="file"
             id="report-file-input"
+            type="file"
             multiple
-            accept=".pdf,.docx,.doc,.zip,.jpg,.png"
-            onChange={handleFileInput}
             className="hidden"
+            onChange={handleFileInput}
           />
-          <label htmlFor="report-file-input" className="cursor-pointer block space-y-3">
-            <div className="w-14 h-14 rounded-full bg-blue-100 text-[#0B1F4D] flex items-center justify-center mx-auto">
+          <div className="max-w-md mx-auto space-y-3">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100/70 text-[#2563EB] flex items-center justify-center">
               <UploadCloud className="w-7 h-7" />
             </div>
-
             <div>
-              <p className="text-sm font-bold text-slate-900">
-                Drag and drop your report draft here, or{' '}
-                <span className="text-[#2563EB] hover:underline">browse files</span>
+              <p className="text-sm font-bold text-slate-800">
+                Drag and drop PDF report, Word templates, or photo archives
               </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Supports PDF, DOCX, and ZIP archives up to 100 MB.
+              <p className="text-xs text-slate-500 mt-1">
+                Supports PDF, DOCX, ZIP up to 50MB per file
               </p>
             </div>
-          </label>
+            <button
+              type="button"
+              className="px-4 py-2 bg-white text-[#0B1F4D] rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 shadow-xs pointer-events-none"
+            >
+              Browse Local Files
+            </button>
+          </div>
         </div>
 
-        {/* Submit to Admin QA Button */}
-        <div className="p-4 bg-purple-50 rounded-2xl border border-purple-200 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-purple-700" />
-            <div>
-              <h5 className="text-xs font-bold text-purple-950">Ready for QA Sign-Off?</h5>
-              <p className="text-[11px] text-purple-800">Admin team peer-reviews all condition ratings before client release.</p>
-            </div>
+        {/* Uploaded Documents Table */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-[#0B1F4D] uppercase tracking-wider">
+              Pending QA Documents ({uploadedFiles.length})
+            </h4>
+            <button
+              onClick={handleSubmitAllQA}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Submit Batch to Admin QA</span>
+            </button>
           </div>
 
-          <button
-            onClick={handleSubmitAllQA}
-            className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm shrink-0"
-          >
-            Submit for QA Review
-          </button>
-        </div>
-
-        {/* Uploaded Documents Register */}
-        <div className="space-y-3 pt-4 border-t border-slate-100">
-          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-            Uploaded Report Artifacts
-          </h4>
-
           <div className="space-y-2">
-            {uploadedFiles.map((doc, idx) => (
+            {uploadedFiles.map((f, idx) => (
               <div
                 key={idx}
-                className="p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50 flex items-center justify-between gap-3 text-xs"
+                className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <FileText className="w-5 h-5 text-[#0B1F4D] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="font-bold text-slate-900 block truncate">{doc.name}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {doc.jobId} • {doc.size} • {doc.date}
-                    </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900">{f.name}</div>
+                    <div className="text-[11px] text-slate-400">
+                      {f.size} • Uploaded {f.date} • Assigned to {f.jobId}
+                    </div>
                   </div>
                 </div>
 
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0 ${
-                    doc.status === 'Approved & Dispatched'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-purple-100 text-purple-800'
-                  }`}
-                >
-                  {doc.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    {f.status}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx));
+                      addToast({ type: 'info', title: 'File Removed', message: f.name });
+                    }}
+                    className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-white cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

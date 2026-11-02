@@ -385,7 +385,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>{isAddingCall ? 'Close Note Form' : '+ Log Call Note'}</span>
+                    <span>{isAddingCall ? 'Close Note Form' : 'Log Call Note'}</span>
                   </button>
                 </div>
               </div>
@@ -502,7 +502,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 
                   <PhoneCall className="w-10 h-10 text-slate-300 mx-auto mb-2.5" />
                   <p className="text-sm font-bold text-slate-800">No telephone call notes logged yet</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    Click &quot;+ Log Call Note&quot; above to record an inbound or outbound call with {client.name}.
+                    Click &quot;Log Call Note&quot; above to record an inbound or outbound call with {client.name}.
                   </p>
                 </div>
               ) : (
@@ -600,7 +600,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>{isAddingComplaint ? 'Close Form' : '+ Log New Complaint'}</span>
+                  <span>{isAddingComplaint ? 'Close Form' : 'Log New Complaint'}</span>
                 </button>
               </div>
 

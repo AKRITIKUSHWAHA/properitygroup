@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Building2,
   Users,
@@ -31,8 +31,11 @@ import {
 import { useToast } from '../../components/ToastContext';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 
-export function PartnerPortalPage() {
+export function PartnerPortalPage({ inAdminShell = false }) {
   const { addToast } = useToast();
+  const location = useLocation();
+  const isInsideAdmin = inAdminShell || location.pathname.startsWith('/admin');
+
   const [selectedAgencyId, setSelectedAgencyId] = useState('ptr-foxtons');
   const [referrals, setReferrals] = useState(() => getPartnerReferrals());
   const [filterStage, setFilterStage] = useState('all');
@@ -150,67 +153,88 @@ export function PartnerPortalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-16">
-      {/* Top Navigation Bar */}
-      <header className="bg-[#0B1F4D] text-white border-b border-blue-900 sticky top-0 z-30 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-extrabold text-sm tracking-tight text-white leading-none">
-                NJS PROPERTY GROUP
+    <div className={isInsideAdmin ? 'space-y-6 animate-in fade-in duration-200' : 'min-h-screen bg-slate-50 text-slate-800 pb-16'}>
+      {/* Top Navigation Bar (Only for standalone /partners external access) */}
+      {!isInsideAdmin && (
+        <header className="bg-[#0B1F4D] text-white border-b border-blue-900 sticky top-0 z-30 shadow-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm">
+                <Building2 className="w-5 h-5" />
               </div>
-              <div className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold mt-0.5">
-                Estate Agent &amp; Referral Partner Portal
+              <div>
+                <div className="font-extrabold text-sm tracking-tight text-white leading-none">
+                  NJS PROPERTY GROUP
+                </div>
+                <div className="text-[10px] text-blue-200 uppercase tracking-widest font-semibold mt-0.5">
+                  Estate Agent &amp; Referral Partner Portal
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            {/* Agency Selector Switcher */}
-            <div className="hidden sm:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 text-xs">
-              <span className="text-blue-200">Agency:</span>
-              <select
-                value={selectedAgencyId}
-                onChange={(e) => setSelectedAgencyId(e.target.value)}
-                className="bg-transparent font-bold text-white focus:outline-none cursor-pointer"
+            <div className="flex items-center gap-3">
+              {/* Agency Selector Switcher */}
+              <div className="hidden sm:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20 text-xs">
+                <span className="text-blue-200">Agency:</span>
+                <select
+                  value={selectedAgencyId}
+                  onChange={(e) => setSelectedAgencyId(e.target.value)}
+                  className="bg-transparent font-bold text-white focus:outline-none cursor-pointer"
+                >
+                  {PARTNER_AGENCIES.map((ag) => (
+                    <option key={ag.id} value={ag.id} className="text-slate-900">
+                      {ag.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Link
+                to="/login"
+                className="text-xs text-blue-200 hover:text-white font-semibold transition-colors px-2 py-1"
               >
-                {PARTNER_AGENCIES.map((ag) => (
-                  <option key={ag.id} value={ag.id} className="text-slate-900">
-                    {ag.name}
-                  </option>
-                ))}
-              </select>
+                Client Login
+              </Link>
+
+              <Link
+                to="/login/admin"
+                className="text-xs bg-white text-[#0B1F4D] hover:bg-blue-50 font-bold px-3 py-1.5 rounded-xl transition-all shadow-xs"
+              >
+                Staff Back-Office
+              </Link>
             </div>
-
-            <Link
-              to="/login"
-              className="text-xs text-blue-200 hover:text-white font-semibold transition-colors px-2 py-1"
-            >
-              Client Login
-            </Link>
-
-            <Link
-              to="/login/admin"
-              className="text-xs bg-white text-[#0B1F4D] hover:bg-blue-50 font-bold px-3 py-1.5 rounded-xl transition-all shadow-xs"
-            >
-              Staff Back-Office
-            </Link>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+      <div className={isInsideAdmin ? 'space-y-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6'}>
         {/* Welcome & Agency Profile Banner */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-800 text-xs font-bold">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              <span>Verified RICS Practice Partner • {agency.code}</span>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-800 text-xs font-bold">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Verified RICS Practice Partner • {agency.code}</span>
+              </div>
+
+              {/* Agency Branch Switcher Dropdown (Inside Banner) */}
+              <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-xl border border-slate-200 text-xs">
+                <span className="text-slate-500 font-medium">Agency Branch:</span>
+                <select
+                  value={selectedAgencyId}
+                  onChange={(e) => setSelectedAgencyId(e.target.value)}
+                  className="bg-transparent font-bold text-slate-900 focus:outline-none cursor-pointer"
+                >
+                  {PARTNER_AGENCIES.map((ag) => (
+                    <option key={ag.id} value={ag.id} className="text-slate-900">
+                      {ag.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
             <h1 className="text-2xl sm:text-3xl font-black text-[#0B1F4D] tracking-tight">
               {agency.name}
             </h1>

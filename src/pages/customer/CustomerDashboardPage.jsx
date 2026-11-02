@@ -30,13 +30,40 @@ import { useJobs } from '../../mock/jobs';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 
+// Strict customer isolation matcher
+const isJobForCustomer = (job, user) => {
+  if (!job || !user) return false;
+  const uEmail = (user.email || '').toLowerCase().trim();
+  const uName = (user.name || '').toLowerCase().trim();
+  const jEmail = (job.customerEmail || '').toLowerCase().trim();
+  const jAlt = (job.customerAltEmail || '').toLowerCase().trim();
+  const jDemo = (job.customerDemoEmail || '').toLowerCase().trim();
+  const jName = (job.customer || '').toLowerCase().trim();
+
+  if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
+    return jEmail === 'customer@demo.com' || jName.includes('emma');
+  }
+
+  if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
+    return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
+  }
+
+  return (
+    (jEmail && jEmail === uEmail) ||
+    (jAlt && jAlt === uEmail) ||
+    (jDemo && jDemo === uEmail) ||
+    (jName && uName && jName === uName)
+  );
+};
+
 export const CustomerDashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { jobs } = useJobs();
 
-  const customerJob = jobs.find((j) => j.customerEmail === user?.email || j.customer === user?.name) || jobs[0];
+  const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const customerJob = myCustomerJobs[0] || null;
   const customerEmails = customerJob?.emails || [];
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
 
@@ -59,10 +86,10 @@ export const CustomerDashboardPage = () => {
     setBookForm({ property: '', location: '', surveyType: 'RICS Level 2 Home Survey', preferredDate: '' });
   };
 
-  const handleDownloadReport = (reportName, property = '14 Mayfair Gate, London W1K 2PB', surveyor = 'David Thorne MRICS') => {
+  const handleDownloadReport = (reportName, property = customerJob?.property || '14 Mayfair Gate', surveyor = customerJob?.surveyor || 'David Thorne MRICS') => {
     downloadReportPDF({
-      jobNo: 'JOB-2026-080',
-      clientName: user?.name || 'Emma Watson',
+      jobNo: customerJob?.id || 'JOB-2026-080',
+      clientName: user?.name || customerJob?.customer || 'Client',
       property,
       surveyorName: surveyor,
     });
@@ -73,14 +100,17 @@ export const CustomerDashboardPage = () => {
     });
   };
 
-  // 4 Cards required by prompt:
-  // Active Bookings, Quotation, Payment Due, Reports Available
+  const activeBookings = myCustomerJobs.filter((j) => j.status !== 'Cancelled');
+  const pendingQuotes = myCustomerJobs.filter((j) => j.termsStatus === 'Pending' || j.status === 'Quoted');
+  const completedReports = myCustomerJobs.filter((j) => j.status === 'Completed' || j.timelineStep >= 7);
+
+  // Dynamic isolated stat cards
   const statCards = [
     {
       id: 'bookings',
       title: 'Active Bookings',
-      value: '1 Active',
-      subtext: '14 Mayfair Gate (Level 2)',
+      value: `${activeBookings.length} Active`,
+      subtext: customerJob ? `${customerJob.property} (${customerJob.surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})` : 'No active bookings',
       icon: CalendarCheck,
       color: 'bg-blue-50 text-[#2563EB]',
       path: '/customer/my-bookings',
@@ -88,81 +118,60 @@ export const CustomerDashboardPage = () => {
     {
       id: 'quotations',
       title: 'Quotations',
-      value: '1 New (£1,450)',
-      subtext: '12 Pembroke Sq (Level 3)',
+      value: pendingQuotes.length > 0 ? `${pendingQuotes.length} New` : customerJob ? '1 Confirmed' : '0 Quotes',
+      subtext: customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : '£924'})` : 'No open quotes',
       icon: Receipt,
       color: 'bg-indigo-50 text-indigo-600',
       path: '/customer/quotations',
     },
     {
       id: 'payment',
-      title: 'Payment Due',
-      value: '£924.00',
-      subtext: 'Terms & deposit pending',
+      title: 'Payment Status',
+      value: customerJob?.paymentStatus === 'Paid' ? '£0.00' : customerJob ? `£${((customerJob.quote?.baseFee || 650) * 1.2).toFixed(2)}` : '£0.00',
+      subtext: customerJob?.paymentStatus === 'Paid' ? 'All fees settled' : customerJob ? 'Invoice pending settlement' : 'No balance due',
       icon: CreditCard,
-      color: 'bg-amber-50 text-amber-600',
-      path: '/customer/terms-to-sign',
+      color: customerJob?.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600',
+      path: '/customer/invoices-and-payments',
     },
     {
       id: 'reports',
       title: 'Reports Available',
-      value: '2 Finalized',
-      subtext: 'Official RICS PDF copies',
+      value: `${completedReports.length} Finalized`,
+      subtext: completedReports.length > 0 ? 'Official RICS PDF copies' : 'Inspection in progress',
       icon: FileSpreadsheet,
       color: 'bg-emerald-50 text-emerald-600',
       path: '/customer/reports',
     },
   ];
 
-  // Upcoming Bookings data
-  const upcomingBookings = [
-    {
-      id: 'JOB-2026-080',
-      property: '14 Mayfair Gate',
-      location: 'Mayfair, London W1K 2PB',
-      surveyType: 'RICS Home Survey - Level 2 (with Valuation)',
-      surveyor: 'David Thorne MRICS',
-      surveyorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
-      date: '27/10/2026',
-      timeSlot: '10:00 - 13:00',
-      status: 'In Progress (Site Inspection)',
-      statusClass: 'bg-blue-50 text-[#2563EB] border-blue-200',
-    },
-    {
-      id: 'JOB-2026-082',
-      property: '12 Pembroke Square',
-      location: 'Kensington, London W8 6PA',
-      surveyType: 'RICS Building Survey - Level 3',
-      surveyor: 'Oliver Hughes MRICS',
-      surveyorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80',
-      date: '29/10/2026',
-      timeSlot: '09:30 - 13:00',
-      status: 'Awaiting Terms & Payment',
-      statusClass: 'bg-amber-50 text-amber-800 border-amber-200',
-    },
-  ];
+  // Dynamically isolated upcoming bookings for current customer
+  const upcomingBookings = activeBookings.map((b) => ({
+    id: b.id,
+    property: b.property,
+    location: b.location,
+    surveyType: b.surveyType,
+    surveyor: b.surveyor || 'Assigned Surveyor',
+    surveyorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
+    date: b.date || '27/10/2026',
+    timeSlot: b.timeSlot || '10:00 - 13:00',
+    status: b.status,
+    statusClass: b.status === 'Completed'
+      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      : b.termsStatus === 'Pending'
+      ? 'bg-amber-50 text-amber-800 border-amber-200'
+      : 'bg-blue-50 text-[#2563EB] border-blue-200',
+  }));
 
-  // Recent Reports data
-  const recentReports = [
-    {
-      id: 'RPT-80',
-      title: 'RICS_Level_2_Home_Survey_14_Mayfair_Gate.pdf',
-      property: '14 Mayfair Gate, London W1K',
-      date: '27/10/2026',
-      size: '14.2 MB',
-      surveyor: 'David Thorne MRICS',
-      status: 'Certified Copy',
-    },
-    {
-      id: 'RPT-79',
-      title: 'RICS_Level_2_Survey_22_Richmond_Green.pdf',
-      property: '22 Richmond Green, Richmond TW9',
-      date: '14/09/2025',
-      size: '12.8 MB',
-      surveyor: 'Claire Bennet AssocRICS',
-      status: 'Archived Final',
-    },
-  ];
+  // Dynamically isolated recent reports for current customer
+  const recentReports = completedReports.map((j) => ({
+    id: `RPT-${j.id.replace('JOB-2026-', '')}`,
+    title: `RICS_${j.surveyType?.replace(/[^a-zA-Z0-9]/g, '_')}_${j.property?.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+    property: `${j.property}, ${j.location}`,
+    date: j.date || '27/10/2026',
+    size: '14.2 MB',
+    surveyor: j.surveyor || 'David Thorne MRICS',
+    status: 'Certified Copy',
+  }));
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -339,7 +348,11 @@ export const CustomerDashboardPage = () => {
             </div>
 
             <div className="space-y-3">
-              {upcomingBookings.map((booking) => (
+              {upcomingBookings.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No upcoming inspections scheduled.
+                </div>
+              ) : upcomingBookings.map((booking) => (
                 <div
                   key={booking.id}
                   className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all space-y-3"
@@ -384,7 +397,7 @@ export const CustomerDashboardPage = () => {
                         <div className="text-[10px] text-slate-400">{booking.timeSlot}</div>
                       </div>
 
-                      {booking.id === 'JOB-2026-082' ? (
+                      {booking.statusClass.includes('amber') ? (
                         <button
                           onClick={() => navigate('/customer/terms-to-sign')}
                           className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs cursor-pointer"
@@ -420,7 +433,11 @@ export const CustomerDashboardPage = () => {
             </div>
 
             <div className="space-y-3">
-              {recentReports.map((report) => (
+              {recentReports.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  No survey reports released yet.
+                </div>
+              ) : recentReports.map((report) => (
                 <div
                   key={report.id}
                   className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 hover:bg-white hover:border-emerald-500 transition-all space-y-2 group"

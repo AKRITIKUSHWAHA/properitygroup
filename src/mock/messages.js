@@ -65,6 +65,34 @@ export const INITIAL_CONVERSATIONS = [
       },
     ],
   },
+  {
+    id: 'conv-3',
+    jobId: 'JOB-2026-082',
+    clientEmail: 'harrison@demo.com',
+    clientName: 'Harrison Croft',
+    clientPhone: '+44 7700 900512',
+    property: '12 Pembroke Square, Kensington, London W8 6PA',
+    surveyType: 'RICS Level 3 Building Survey',
+    surveyor: 'David Thorne MRICS',
+    unreadAdmin: 0,
+    unreadClient: 0,
+    messages: [
+      {
+        id: 1,
+        sender: 'NJS Admin Team (Alexander)',
+        role: 'admin',
+        text: 'Hello Harrison, your quotation for RICS Level 3 Building Survey at 12 Pembroke Square (£1,450 + VAT) has been approved. Please review and sign your digital terms of engagement.',
+        time: '28/10/2026, 11:00',
+      },
+      {
+        id: 2,
+        sender: 'Harrison Croft',
+        role: 'client',
+        text: 'Thank you Alexander. I will review the inclusions and sign the terms today.',
+        time: '28/10/2026, 11:30',
+      },
+    ],
+  },
 ];
 
 const STORAGE_KEY = 'propertygroup_conversations_v1';
@@ -78,6 +106,27 @@ export const useMessages = () => {
       return INITIAL_CONVERSATIONS;
     }
   });
+
+  // Cross-component and cross-tab reactive synchronization
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setConversations(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.warn('Unable to sync conversations', err);
+      }
+    };
+
+    window.addEventListener('propertygroup_conversations_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('propertygroup_conversations_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -98,8 +147,8 @@ export const useMessages = () => {
       time: timeString,
     };
 
-    setConversations((prev) =>
-      prev.map((c) => {
+    setConversations((prev) => {
+      const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
           return {
             ...c,
@@ -109,16 +158,25 @@ export const useMessages = () => {
           };
         }
         return c;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
+      } catch (err) {
+        console.warn(err);
+      }
+
+      return updated;
+    });
 
     return newMsg;
   };
 
   // Mark conversation as read
   const markAsRead = (conversationId, readerRole = 'admin') => {
-    setConversations((prev) =>
-      prev.map((c) => {
+    setConversations((prev) => {
+      const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
           return {
             ...c,
@@ -126,8 +184,17 @@ export const useMessages = () => {
           };
         }
         return c;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
+      } catch (err) {
+        console.warn(err);
+      }
+
+      return updated;
+    });
   };
 
   return {

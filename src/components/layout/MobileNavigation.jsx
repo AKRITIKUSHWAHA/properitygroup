@@ -269,7 +269,7 @@ export function MobileNavigation({ isOpen, onClose }) {
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
               <User size={15} />
-              <span>Client Portal</span>
+              <span>Customer Login</span>
             </span>
             <ChevronRight size={15} />
           </NavLink>

@@ -1,5 +1,5 @@
 // Role-to-menu navigation configuration for NJS Property Group
-// 4 roles: Admin (10), Admin/Staff (8), Surveyor (6), Customer (8)
+// Roles: Admin (11), Admin/Staff (8), Surveyor (6), Customer (14), Partner (4)
 
 const adminNavConfig = {
   defaultPath: '/admin/dashboard',
@@ -11,6 +11,7 @@ const adminNavConfig = {
     { id: 'surveyors', name: 'Surveyors', path: '/admin/surveyors', icon: 'UserCheck', badge: null },
     { id: 'crm-leads', name: 'CRM & Leads', path: '/admin/crm-and-leads', icon: 'Target', badge: '14' },
     { id: 'survey-jobs', name: 'Survey Jobs', path: '/admin/survey-jobs', icon: 'ClipboardCheck', badge: '84' },
+    { id: 'messages', name: 'Messages Inbox', path: '/admin/messages', icon: 'MessageSquare', badge: '1 New' },
     { id: 'quotations-payments', name: 'Quotations & Payments', path: '/admin/quotations-and-payments', icon: 'CreditCard', badge: null },
     { id: 'terms-documents', name: 'Terms & Documents', path: '/admin/terms-and-documents', icon: 'FileSignature', badge: null },
     { id: 'reports-analytics', name: 'Reports & Analytics', path: '/admin/reports-and-analytics', icon: 'BarChart3', badge: null },
@@ -30,6 +31,7 @@ export const ROLE_NAVIGATION = {
       { id: 'crm-leads', name: 'CRM & Leads', path: '/staff/crm-and-leads', icon: 'Target', badge: '14' },
       { id: 'booking-calendar', name: 'Booking Calendar', path: '/staff/booking-calendar', icon: 'CalendarDays', badge: 'Today' },
       { id: 'survey-jobs', name: 'Survey Jobs', path: '/staff/survey-jobs', icon: 'ClipboardCheck', badge: '36' },
+      { id: 'messages', name: 'Messages Inbox', path: '/admin/messages', icon: 'MessageSquare', badge: '1 New' },
       { id: 'quotations-payments', name: 'Quotations & Payments', path: '/staff/quotations-and-payments', icon: 'CreditCard', badge: null },
       { id: 'terms-documents', name: 'Terms & Documents', path: '/staff/terms-and-documents', icon: 'FileSignature', badge: null },
       { id: 'reports', name: 'Reports', path: '/staff/reports', icon: 'FileText', badge: null },
@@ -65,6 +67,16 @@ export const ROLE_NAVIGATION = {
       { id: 'support', name: 'Support', path: '/customer/support', icon: 'HelpCircle', badge: null },
       { id: 'my-details', name: 'My Details', path: '/customer/my-details', icon: 'User', badge: null },
       { id: 'previous-surveys', name: 'Previous Surveys', path: '/customer/previous-surveys', icon: 'History', badge: null },
+    ],
+  },
+  partner: {
+    defaultPath: '/partners',
+    label: 'Estate Agent / Partner',
+    items: [
+      { id: 'partner-portal', name: 'Referral & Commission Ledger', path: '/partners', icon: 'Handshake', badge: 'Active' },
+      { id: 'submit-referral', name: 'Submit Survey Referral', path: '/partners?action=submit', icon: 'Send', badge: '1-Click' },
+      { id: 'property-intel', name: 'Property Intelligence (EPC & Land Reg)', path: '/partners?tab=intel', icon: 'Search', badge: 'Point 26' },
+      { id: 'specimen-report', name: 'Buyer Specimen Report', path: '/partners?action=specimen', icon: 'FileDown', badge: 'PDF' },
     ],
   },
 };
