@@ -140,3 +140,11 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+export const logout = async (req, res, next) => {
+  try {
+    return ApiResponse.success(res, null, 'Logged out successfully');
+  } catch (error) {
+    next(error);
+  }
+};

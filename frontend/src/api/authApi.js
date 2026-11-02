@@ -12,5 +12,8 @@ export const authApi = {
   getMe: async () => {
     return api.get('/auth/me');
   },
-};
 
+  logout: async () => {
+    return api.post('/auth/logout');
+  },
+};

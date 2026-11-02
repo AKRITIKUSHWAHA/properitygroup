@@ -36,6 +36,7 @@ import { SURVEYORS, useJobs } from '../../mock/jobs';
 import { NewBookingModal } from '../../components/calendar/NewBookingModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useToast } from '../../components/ToastContext';
+import { adminSurveyJobsApi } from '../../api/adminApi';
 
 // 3-Dot Clean Action Dropdown Menu for each Survey Job
 const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
@@ -160,6 +161,12 @@ export const AdminJobsPage = () => {
   const baseJobsPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
   const { jobs, addJob } = useJobs();
+
+  // Fetch survey jobs + metrics from backend API
+  useEffect(() => {
+    adminSurveyJobsApi.getJobs().catch(() => {});
+    adminSurveyJobsApi.getMetrics().catch(() => {});
+  }, []);
 
   const queryFilter = useMemo(() => {
     return new URLSearchParams(location.search).get('filter') || 'All';

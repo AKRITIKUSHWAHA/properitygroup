@@ -28,6 +28,8 @@ import { AdminMessagesModal } from '../../components/crm/AdminMessagesModal';
 import { useJobs } from '../../mock/jobs';
 import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
+import { adminDashboardApi } from '../../api/adminApi';
+import { useEffect } from 'react';
 
 // Canonical 6-Step SurveyBooker Pipeline
 const STAGES = [
@@ -50,6 +52,12 @@ export const AdminDashboardPage = () => {
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBucketFilter, setActiveBucketFilter] = useState('all');
+
+  // Fetch dashboard stats & action buckets from backend API
+  useEffect(() => {
+    adminDashboardApi.getStats().catch(() => {});
+    adminDashboardApi.getActionBuckets().catch(() => {});
+  }, []);
 
   const { conversations } = useMessages();
   const totalUnreadMessages = useMemo(() => {

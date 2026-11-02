@@ -31,6 +31,7 @@ import { Tabs } from '../../components/common/Tabs';
 import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { adminTermsAndDocumentsApi } from '../../api/adminApi';
 import { TERMS_TEMPLATES, useTerms } from '../../mock/terms';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { downloadTermsPDF } from '../../utils/pdfGenerator';
@@ -194,6 +195,12 @@ export const AdminTermsPage = () => {
   const { agreements, addAgreement, markAgreementSigned } = useTerms();
 
   const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Signed' | 'Sent' | 'Pending'
+
+  // Fetch terms and documents + metrics from backend API
+  useEffect(() => {
+    adminTermsAndDocumentsApi.getTerms().catch(() => {});
+    adminTermsAndDocumentsApi.getMetrics().catch(() => {});
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilter, setServiceFilter] = useState('All');
   const [pageSize, setPageSize] = useState(10);

@@ -26,6 +26,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { adminReportsAndAnalyticsApi } from '../../api/adminApi';
 import { SURVEYORS } from '../../mock/jobs';
 
 // 3-Dot Dropdown Menu for Surveyor Performance Table
@@ -97,7 +98,13 @@ export const AdminReportsPage = () => {
   const { addToast } = useToast();
 
   // Reporting Period State
-  const [selectedPeriod, setSelectedPeriod] = useState('October 2026'); // 'October 2026' | 'September 2026' | 'Q3 2026' | 'YTD 2026'
+  const [selectedPeriod, setSelectedPeriod] = useState('October 2026');
+
+  // Fetch live reports and analytics + metrics from backend API
+  useEffect(() => {
+    adminReportsAndAnalyticsApi.getReports().catch(() => {});
+    adminReportsAndAnalyticsApi.getMetrics().catch(() => {});
+  }, [selectedPeriod]); // 'October 2026' | 'September 2026' | 'Q3 2026' | 'YTD 2026'
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingSurveyor, setViewingSurveyor] = useState(null);
 

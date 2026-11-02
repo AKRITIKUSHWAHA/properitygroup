@@ -35,6 +35,7 @@ import { Modal } from '../../components/common/Modal';
 import { NewLeadModal } from '../../components/crm/NewLeadModal';
 import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useToast } from '../../components/ToastContext';
+import { adminCrmAndLeadsApi } from '../../api/adminApi';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock/leads';
 
@@ -207,6 +208,12 @@ const LeadRowActions = ({
 export const AdminLeadsPage = () => {
   const { addToast } = useToast();
   const { leads, updateLeadStatus, addLead, deleteLead } = useLeads();
+
+  // Fetch CRM leads + metrics from backend API
+  useEffect(() => {
+    adminCrmAndLeadsApi.getLeads().catch(() => {});
+    adminCrmAndLeadsApi.getMetrics().catch(() => {});
+  }, []);
   const location = useLocation();
 
   const queryFilter = useMemo(() => {

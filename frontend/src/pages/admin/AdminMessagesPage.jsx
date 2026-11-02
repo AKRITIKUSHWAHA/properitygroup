@@ -26,6 +26,7 @@ import {
 import { useMessages } from '../../mock/messages';
 import { useJobs } from '../../mock/jobs';
 import { useToast } from '../../components/ToastContext';
+import { adminMessagesApi } from '../../api/adminApi';
 
 const QUICK_RESPONSES = [
   'Confirmed surveyor appointment for tomorrow morning.',
@@ -46,6 +47,12 @@ export const AdminMessagesPage = () => {
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
+
+  // Fetch threads & metrics from backend messages API on mount
+  useEffect(() => {
+    adminMessagesApi.getThreads().catch(() => {});
+    adminMessagesApi.getMetrics().catch(() => {});
+  }, []);
   const messagesEndRef = useRef(null);
 
   // Initialize selected conversation from URL param or first conversation

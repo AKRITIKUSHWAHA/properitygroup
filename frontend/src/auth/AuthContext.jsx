@@ -209,9 +209,14 @@ export const AuthProvider = ({ children }) => {
     return newCustomer;
   };
 
-  // Logout handler
-  const logout = () => {
+  // Logout handler with backend API notification
+  const logout = async () => {
     const previousRole = user?.role;
+    try {
+      await authApi.logout();
+    } catch (e) {
+      // ignore
+    }
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
