@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ROLE_NAVIGATION } from './navigation';
 
-const STORAGE_KEY = 'property_group_role_menu_permissions_v2';
+const STORAGE_KEY = 'property_group_role_menu_permissions_v3';
 const EVENT_NAME = 'property_group_permissions_changed';
 
 // Canonical default permissions (all menus active by default)
@@ -16,6 +16,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'surveyors': true,
     'crm-leads': true,
     'survey-jobs': true,
+    'messages': true,
     'quotations-payments': true,
     'terms-documents': true,
     'reports-analytics': true,
@@ -28,6 +29,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     'surveyors': true,
     'crm-leads': true,
     'survey-jobs': true,
+    'messages': true,
     'quotations-payments': true,
     'terms-documents': true,
     'reports-analytics': true,

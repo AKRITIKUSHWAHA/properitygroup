@@ -20,3 +20,4 @@ let mobileContent = fs.readFileSync(mobileNavPath, 'utf8');
 mobileContent = mobileContent.replace("<span>Client Portal</span>", "<span>Customer Login</span>");
 fs.writeFileSync(mobileNavPath, mobileContent, 'utf8');
 console.log('Successfully updated MobileNavigation.jsx');
+

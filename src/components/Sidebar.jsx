@@ -204,6 +204,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
               (item.id === 'users-roles' && (currentPath.startsWith('/admin/users') || currentPath.startsWith('/admin/users-and-roles'))) ||
               (item.id === 'quotations-payments' && (currentPath.startsWith('/admin/quotes') || currentPath.startsWith('/admin/quotations-and-payments'))) ||
               (item.id === 'terms-documents' && (currentPath.startsWith('/admin/terms') || currentPath.startsWith('/admin/terms-and-documents'))) ||
+              (item.id === 'messages' && (currentPath.startsWith('/admin/messages') || currentPath.startsWith('/admin/inbox'))) ||
               (item.id === 'dashboard' && (currentPath === '/admin' || currentPath === '/admin/dashboard'));
 
             return (

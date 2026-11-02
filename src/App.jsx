@@ -51,6 +51,7 @@ const AdminQuotesPage = lazyNamed(() => import('./pages/admin/AdminQuotesPage'),
 const AdminTermsPage = lazyNamed(() => import('./pages/admin/AdminTermsPage'), 'AdminTermsPage');
 const AdminReportsPage = lazyNamed(() => import('./pages/admin/AdminReportsPage'), 'AdminReportsPage');
 const AdminSettingsPage = lazyNamed(() => import('./pages/admin/AdminSettingsPage'), 'AdminSettingsPage');
+const AdminMessagesPage = lazyNamed(() => import('./pages/admin/AdminMessagesPage'), 'AdminMessagesPage');
 
 // Admin / Staff Pages (Lazy loaded)
 const StaffDashboardPage = lazyNamed(() => import('./pages/staff/StaffDashboardPage'), 'StaffDashboardPage');
@@ -216,6 +217,12 @@ function AppRoutes() {
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/user" element={<AdminUsersPage />} />
             <Route path="/admin/users-and-roles" element={<AdminUsersPage />} />
+
+            {/* Messages Inbox + Friendly Aliases */}
+            <Route path="/admin/messages" element={<AdminMessagesPage />} />
+            <Route path="/admin/message" element={<AdminMessagesPage />} />
+            <Route path="/admin/messages-inbox" element={<Navigate to="/admin/messages" replace />} />
+            <Route path="/admin/inbox" element={<Navigate to="/admin/messages" replace />} />
 
             {/* Companies & Partner Portal & Surveyors & Settings */}
             <Route path="/admin/companies" element={<AdminCompaniesPage />} />

@@ -95,8 +95,8 @@ const ROLES_LIST = [
   {
     id: 'customer',
     name: 'Customer',
-    badge: 'Client Self-Service Portal (14 Tabs)',
-    description: 'Homebuyer & property client portal for tracking inspections, reviewing quotations, e-signing terms of engagement, and downloading finalized reports.',
+    badge: 'Customer Self-Service Portal (14 Tabs)',
+    description: 'Homebuyer & property customer portal for tracking inspections, reviewing quotations, e-signing terms of engagement, and downloading finalized reports.',
     icon: User,
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   },

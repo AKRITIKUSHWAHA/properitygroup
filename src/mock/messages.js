@@ -107,6 +107,27 @@ export const useMessages = () => {
     }
   });
 
+  // Cross-component and cross-tab reactive synchronization
+  useEffect(() => {
+    const handleSync = () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setConversations(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.warn('Unable to sync conversations', err);
+      }
+    };
+
+    window.addEventListener('propertygroup_conversations_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('propertygroup_conversations_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
@@ -126,8 +147,8 @@ export const useMessages = () => {
       time: timeString,
     };
 
-    setConversations((prev) =>
-      prev.map((c) => {
+    setConversations((prev) => {
+      const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
           return {
             ...c,
@@ -137,16 +158,25 @@ export const useMessages = () => {
           };
         }
         return c;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
+      } catch (err) {
+        console.warn(err);
+      }
+
+      return updated;
+    });
 
     return newMsg;
   };
 
   // Mark conversation as read
   const markAsRead = (conversationId, readerRole = 'admin') => {
-    setConversations((prev) =>
-      prev.map((c) => {
+    setConversations((prev) => {
+      const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
           return {
             ...c,
@@ -154,8 +184,17 @@ export const useMessages = () => {
           };
         }
         return c;
-      })
-    );
+      });
+
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
+      } catch (err) {
+        console.warn(err);
+      }
+
+      return updated;
+    });
   };
 
   return {
