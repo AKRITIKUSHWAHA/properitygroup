@@ -14,12 +14,22 @@ export const AppLayout = () => {
     location.pathname.includes('/inbox');
 
   return (
-    <div className="min-h-screen bg-[#D5DAE2] flex flex-col antialiased">
+    <div
+      className={
+        isFullBleedPage
+          ? 'h-screen max-h-screen overflow-hidden bg-[#D5DAE2] flex flex-col antialiased'
+          : 'min-h-screen bg-[#D5DAE2] flex flex-col antialiased'
+      }
+    >
       {/* Sidebar: Mobile off-canvas drawer / Tablet icon rail (64px) / Desktop 240px */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col md:pl-16 xl:pl-[260px] min-w-0 transition-all duration-300">
+      <div
+        className={`flex-1 flex flex-col md:pl-16 xl:pl-[260px] min-w-0 transition-all duration-300 ${
+          isFullBleedPage ? 'h-full max-h-screen overflow-hidden' : ''
+        }`}
+      >
         {/* Sticky Top Bar */}
         <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
@@ -27,7 +37,7 @@ export const AppLayout = () => {
         <main
           className={
             isFullBleedPage
-              ? 'flex-1 w-full h-[calc(100vh-64px)] overflow-hidden p-0 m-0'
+              ? 'flex-1 min-h-0 w-full overflow-hidden p-0 m-0 flex flex-col'
               : 'flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8'
           }
         >
@@ -36,7 +46,7 @@ export const AppLayout = () => {
       </div>
 
       {/* Mobile Bottom Tab Bar (visible below md) */}
-      <BottomTabBar onOpenMore={() => setSidebarOpen(true)} />
+      {!isFullBleedPage && <BottomTabBar onOpenMore={() => setSidebarOpen(true)} />}
     </div>
   );
 };

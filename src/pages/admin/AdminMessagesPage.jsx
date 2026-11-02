@@ -139,6 +139,15 @@ export const AdminMessagesPage = () => {
     }
   };
 
+  // Lock body scroll while in full-bleed messages
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const handleApplyQuickResponse = (text) => {
     setReplyText(text);
   };
@@ -229,8 +238,8 @@ export const AdminMessagesPage = () => {
           </div>
         </div>
 
-        {/* Conversation List (Scrolls independently) */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0 bg-slate-50/40">
+        {/* Conversation List (Scrolls independently with isolated overscroll) */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0 bg-slate-50/40 overscroll-contain">
           {filteredConversations.length === 0 ? (
             <div className="p-8 text-center text-slate-400">
               <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -330,98 +339,101 @@ export const AdminMessagesPage = () => {
       >
         {activeConv ? (
           <>
-            {/* Real Chat Top Header Bar */}
-            <div className="px-4 py-3 border-b border-slate-200 bg-white shrink-0 shadow-2xs">
-              <div className="flex items-center justify-between gap-3 min-w-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Mobile Back Button */}
-                  <button
-                    type="button"
-                    onClick={() => setMobileView('list')}
-                    className="md:hidden p-2 -ml-1 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
-                    title="Back to conversation list"
+            {/* Clean Real Chat Top Header Bar (Fixed height, strictly 2 clean rows, no awkward wrapping) */}
+            <div className="h-16 px-4 sm:px-6 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between gap-3 min-w-0 shadow-2xs">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {/* Mobile Back Button */}
+                <button
+                  type="button"
+                  onClick={() => setMobileView('list')}
+                  className="md:hidden p-1.5 -ml-1 rounded-xl text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+                  title="Back to conversation list"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                {/* Customer Initials Badge */}
+                <div className="w-10 h-10 rounded-xl bg-[#0B1F4D] text-white flex items-center justify-center font-extrabold text-xs sm:text-sm shadow-xs shrink-0 tracking-wider">
+                  {activeConv.clientName
+                    ?.split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase() || 'CU'}
+                </div>
+
+                {/* Customer Information (Clean hierarchy, strictly non-wrapping) */}
+                <div className="min-w-0 flex-1">
+                  {/* Row 1: Name + Status */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h2 className="font-extrabold text-slate-900 text-sm sm:text-base truncate leading-tight">
+                      {activeConv.clientName}
+                    </h2>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold whitespace-nowrap shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Customer Portal
+                    </span>
+                  </div>
+
+                  {/* Row 2: Property Address • Survey Type • Assigned Surveyor (Single clean line with truncate) */}
+                  <div className="text-[11px] sm:text-xs text-slate-500 flex items-center gap-1.5 mt-0.5 min-w-0 font-medium">
+                    <span className="truncate text-slate-600 max-w-[180px] sm:max-w-[280px] lg:max-w-[360px]">
+                      {activeConv.property}
+                    </span>
+                    <span className="text-slate-300 shrink-0">•</span>
+                    <span className="text-[#0B1F4D] font-bold whitespace-nowrap shrink-0">
+                      {activeConv.surveyType}
+                    </span>
+                    {activeConv.surveyor && (
+                      <>
+                        <span className="text-slate-300 shrink-0 hidden sm:inline">•</span>
+                        <span className="text-slate-600 whitespace-nowrap shrink-0 hidden sm:inline">
+                          Surveyor: <strong className="text-slate-800 font-semibold">{activeConv.surveyor}</strong>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side Quick Actions (Strictly shrink-0, whitespace-nowrap) */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {activeConv.jobId && (
+                  <Link
+                    to={`/admin/jobs/${activeConv.jobId}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all whitespace-nowrap shrink-0 shadow-2xs cursor-pointer"
+                    title="Open full survey job in workspace"
                   >
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
+                    <FileText className="w-3.5 h-3.5 text-[#0B1F4D] shrink-0" />
+                    <span className="whitespace-nowrap font-mono text-[11px] sm:text-xs">Job #{activeConv.jobId}</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
+                  </Link>
+                )}
 
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#0B1F4D] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-xs shrink-0">
-                    {activeConv.clientName
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .substring(0, 2)
-                      .toUpperCase() || 'CU'}
-                  </div>
+                {activeConv.clientEmail && (
+                  <a
+                    href={`mailto:${activeConv.clientEmail}`}
+                    className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors shrink-0"
+                    title={`Email ${activeConv.clientEmail}`}
+                  >
+                    <Mail className="w-4 h-4" />
+                  </a>
+                )}
 
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-extrabold text-slate-900 text-sm sm:text-base truncate">
-                        {activeConv.clientName}
-                      </h2>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px] font-bold whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Customer Portal
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] sm:text-xs text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5 font-medium min-w-0">
-                      <span className="truncate max-w-[200px] sm:max-w-[320px] flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{activeConv.property}</span>
-                      </span>
-                      <span>•</span>
-                      <span className="text-[#0B1F4D] font-bold whitespace-nowrap">{activeConv.surveyType}</span>
-                      {activeConv.surveyor && (
-                        <>
-                          <span>•</span>
-                          <span className="text-amber-800 font-semibold whitespace-nowrap bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 text-[10.5px]">
-                            {activeConv.surveyor}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Side Quick Actions (Strict whitespace-nowrap) */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {activeConv.jobId && (
-                    <Link
-                      to={`/admin/jobs/${activeConv.jobId}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all whitespace-nowrap shadow-2xs cursor-pointer"
-                      title="Open full survey job in workspace"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#0B1F4D]" />
-                      <span>Job #{activeConv.jobId}</span>
-                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                    </Link>
-                  )}
-
-                  {activeConv.clientEmail && (
-                    <a
-                      href={`mailto:${activeConv.clientEmail}`}
-                      className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors"
-                      title={`Email ${activeConv.clientEmail}`}
-                    >
-                      <Mail className="w-4 h-4" />
-                    </a>
-                  )}
-
-                  {activeConv.clientPhone && (
-                    <a
-                      href={`tel:${activeConv.clientPhone}`}
-                      className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors"
-                      title={`Call ${activeConv.clientPhone}`}
-                    >
-                      <Phone className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
+                {activeConv.clientPhone && (
+                  <a
+                    href={`tel:${activeConv.clientPhone}`}
+                    className="p-2 rounded-xl text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors shrink-0"
+                    title={`Call ${activeConv.clientPhone}`}
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             </div>
 
-            {/* Message Thread Body (Real Chat Canvas - Scrolls cleanly) */}
-            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/70 min-h-0">
+            {/* Message Thread Body (Real Chat Canvas - ONLY this container scrolls) */}
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/70 min-h-0 overscroll-contain">
               {/* Channel Header Divider */}
               <div className="flex items-center justify-center my-1">
                 <div className="px-3.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider shadow-2xs flex items-center gap-2">

@@ -2304,9 +2304,9 @@ export const CustomerMessagesPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-105px)] md:h-[calc(100vh-125px)] max-w-4xl mx-auto overflow-hidden -my-2 sm:-my-4">
+    <div className="flex flex-col h-full max-w-4xl mx-auto overflow-hidden w-full p-2 sm:p-4">
       {/* Sleek Compact Header */}
-      <div className="bg-white px-3.5 py-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 mb-2 shrink-0">
+      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 mb-2 shrink-0">
         <div>
           <h2 className="text-sm font-extrabold text-[#0B1F4D] flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-[#2563EB]" />
@@ -2353,7 +2353,7 @@ export const CustomerMessagesPage = () => {
         </div>
 
         {/* Message Thread Body (flex-1 overflow-y-auto min-h-0 - THIS IS WHAT SCROLLS) */}
-        <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-slate-50/50">
+        <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-slate-50/50 overscroll-contain">
           {messages.map((m) => {
             const isClient = m.role === 'client';
             return (
