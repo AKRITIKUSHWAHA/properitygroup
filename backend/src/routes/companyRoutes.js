@@ -7,7 +7,7 @@ const router = Router();
 router.use(verifyJWT);
 
 router.get('/', getCompanies);
-router.post('/', authorizeRoles('ADMIN', 'STAFF'), createCompany);
+router.post('/', authorizeRoles('ADMIN'), createCompany);
 
 export default router;
 

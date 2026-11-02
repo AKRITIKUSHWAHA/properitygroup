@@ -15,8 +15,6 @@ enum Role {
   ADMIN
   SURVEYOR
   CUSTOMER
-  STAFF
-  PARTNER
 }
 
 enum UserStatus {

@@ -14,9 +14,9 @@ router.use(verifyJWT);
 
 router.get('/', getJobs);
 router.get('/:id', getJobById);
-router.post('/', authorizeRoles('ADMIN', 'STAFF'), createJob);
-router.patch('/:id/stage', authorizeRoles('ADMIN', 'STAFF'), updateJobStage);
-router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN', 'STAFF'), assignSurveyor);
+router.post('/', authorizeRoles('ADMIN'), createJob);
+router.patch('/:id/stage', authorizeRoles('ADMIN'), updateJobStage);
+router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN'), assignSurveyor);
 
 export default router;
 

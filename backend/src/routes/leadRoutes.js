@@ -6,10 +6,10 @@ const router = Router();
 
 router.use(verifyJWT);
 
-router.get('/', authorizeRoles('ADMIN', 'STAFF'), getLeads);
-router.post('/', authorizeRoles('ADMIN', 'STAFF'), createLead);
-router.post('/call-log', authorizeRoles('ADMIN', 'STAFF'), addCallLog);
-router.post('/complaint', authorizeRoles('ADMIN', 'STAFF'), addComplaint);
+router.get('/', authorizeRoles('ADMIN'), getLeads);
+router.post('/', authorizeRoles('ADMIN'), createLead);
+router.post('/call-log', authorizeRoles('ADMIN'), addCallLog);
+router.post('/complaint', authorizeRoles('ADMIN'), addComplaint);
 
 export default router;
 

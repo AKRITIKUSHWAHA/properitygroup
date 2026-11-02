@@ -7,7 +7,7 @@ const router = Router();
 router.use(verifyJWT);
 
 router.get('/', getQuotes);
-router.post('/', authorizeRoles('ADMIN', 'STAFF'), createQuote);
+router.post('/', authorizeRoles('ADMIN'), createQuote);
 router.patch('/:id/accept', acceptQuote);
 
 export default router;
