@@ -427,44 +427,69 @@ export const AdminLeadsPage = () => {
         onAction={() => setIsNewModalOpen(true)}
       />
 
-      {/* 3 Top Executive Metric Highlight Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Inbound Inquiries</span>
-            <Target className="w-4 h-4 text-blue-600" />
+      {/* 3 Compact Metric Highlight Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {/* Card 1: Inbound Inquiries */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Inbound Inquiries
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <Target className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-[#0B1F4D]">{leads.length} Active Leads</div>
-          <div className="text-xs text-slate-500">
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
+              {leads.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Active Leads</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
             Local Surveyors Direct, Website, and Direct Enquiries
-          </div>
+          </p>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Quoted Deals Value</span>
-            <TrendingUp className="w-4 h-4 text-amber-600" />
+        {/* Card 2: Quoted Deals Value */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Quoted Deals Value
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-amber-700 font-mono">
-            £{totalQuotedValue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-amber-700">
+              £{totalQuotedValue.toLocaleString('en-GB', { minimumFractionDigits: 2 })}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Quoted</span>
           </div>
-          <div className="text-xs text-slate-500">
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
             {quotedLeads.length} Fee proposals dispatched to clients
-          </div>
+          </p>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Won Conversions</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+        {/* Card 3: Won Conversions */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Won Conversions
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-emerald-700">
-            {convertedLeads.length} Converted Jobs
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-700">
+              {convertedLeads.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Converted Jobs</span>
           </div>
-          <div className="text-xs text-slate-500">
-            {((convertedLeads.length / (leads.length || 1)) * 100).toFixed(1)}% Conversion to live
-            survey instructions
-          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            {((convertedLeads.length / (leads.length || 1)) * 100).toFixed(1)}% Conversion to live instructions
+          </p>
         </div>
       </div>
 

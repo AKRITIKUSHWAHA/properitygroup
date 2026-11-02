@@ -42,22 +42,22 @@ export const StaffDashboardPage = () => {
       {/* SurveyBooker 6 Action Buckets Strip (Video 1 Benchmark) */}
       <SurveyBookerWorkflowBuckets />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards (Compact & Refined) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((s, idx) => {
           const Icon = s.icon;
           return (
-            <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div key={idx} className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">{s.label}</span>
-                <div className={`p-2 rounded-xl ${s.color}`}>
-                  <Icon className="w-4 h-4" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{s.label}</span>
+                <div className={`p-1.5 rounded-lg ${s.color}`}>
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-[#0B1F4D] mt-2 tracking-tight">
+              <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] mt-1.5 tracking-tight">
                 {s.value}
               </div>
-              <div className="text-[11px] text-slate-400 mt-1">{s.subtext}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{s.subtext}</div>
             </div>
           );
         })}

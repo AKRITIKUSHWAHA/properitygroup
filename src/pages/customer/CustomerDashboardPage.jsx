@@ -217,36 +217,35 @@ export const CustomerDashboardPage = () => {
         </div>
       </div>
 
-      {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Required by Prompt) */}
+      {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Compact & Refined) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.id}
               onClick={() => navigate(card.path)}
-              className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs hover:border-[#2563EB] hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-[#2563EB] hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate mr-1">
                   {card.title}
                 </span>
-                <div className={`p-2.5 rounded-2xl ${card.color} group-hover:scale-105 transition-transform`}>
-                  <Icon className="w-4 h-4" />
+                <div className={`p-2 rounded-xl ${card.color} group-hover:scale-105 transition-transform shrink-0`}>
+                  <Icon className="w-3.5 h-3.5" />
                 </div>
               </div>
 
-              <div className="my-3">
-                <div className="text-2xl font-black text-[#0B1F4D] tracking-tight font-mono">
+              <div className="my-2">
+                <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] tracking-tight">
                   {card.value}
                 </div>
-                <div className="text-xs text-slate-400 font-medium truncate mt-0.5">
+                <div className="text-[11.5px] text-slate-400 font-medium truncate mt-0.5">
                   {card.subtext}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#2563EB]">
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#2563EB]">
                 <span>Manage</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>

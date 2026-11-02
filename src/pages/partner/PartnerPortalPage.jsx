@@ -277,52 +277,71 @@ export function PartnerPortalPage({ inAdminShell = false }) {
           </div>
         </div>
 
-        {/* 4 KPI Metrics Strip */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Total Referrals</span>
-              <Users className="w-4 h-4 text-blue-600" />
+        {/* 4 KPI Metrics Strip (Compact & Refined) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Referrals</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+                <Users className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-[#0B1F4D]">
-              {totalReferrals}
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
+                {totalReferrals}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">Referrals</span>
             </div>
-            <div className="text-[11px] text-slate-500">Across London residential sales</div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Across London residential sales</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Active In Progress</span>
-              <Clock className="w-4 h-4 text-amber-600" />
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">In Progress</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Clock className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-600">
-              {inProgressReferrals}
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-amber-700">
+                {inProgressReferrals}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">Active</span>
             </div>
-            <div className="text-[11px] text-slate-500">Quotes &amp; Scheduled Inspections</div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Quotes &amp; Scheduled Visits</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Surveys Completed</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Completed</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700">
-              {completedReferrals}
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-700">
+                {completedReferrals}
+              </span>
+              <span className="text-xs font-semibold text-slate-500">Delivered</span>
             </div>
-            <div className="text-[11px] text-slate-500">Delivered &amp; reports released</div>
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">Delivered &amp; reports released</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-1">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="text-[11px] font-bold uppercase tracking-wider">Total Commission</span>
-              <PoundSterling className="w-4 h-4 text-emerald-600" />
+          <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Commission</span>
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <PoundSterling className="w-3.5 h-3.5" />
+              </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700">
-              £{totalEarnedCommission}.00
+            <div className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-700">
+                £{totalEarnedCommission}.00
+              </span>
             </div>
-            <div className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
               +£{pendingCommission}.00 pending completion
-            </div>
+            </p>
           </div>
         </div>
 
