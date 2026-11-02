@@ -66,17 +66,6 @@ export const getStoredJobs = () => {
   return [];
 };
 
-// legacy
-const _unused = () => {
-  try {
-    const raw = localStorage.getItem('propertygroup_jobs');
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
-  }
-  return INITIAL_JOBS;
-};
-
 export const saveStoredJobs = (jobs) => {
   try {
     localStorage.setItem('propertygroup_jobs', JSON.stringify(jobs));

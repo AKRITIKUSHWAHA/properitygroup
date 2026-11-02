@@ -119,3 +119,4 @@ fs.writeFileSync(compPagePath, compCode, 'utf8');
 console.log('✓ Wiped AdminCompaniesPage.jsx dummy companies');
 
 console.log('🏁 All mock and dummy data wiped successfully across frontend!');
+

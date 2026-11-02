@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 // Initial Mock Quotations, Invoices, and Payments
 export const INITIAL_QUOTES = [];
 
-// legacy
-const _legacyQuotes = () => {
+export const getStoredQuotes = () => {
   try {
     if (!localStorage.getItem('njs_fresh_quotes_clean_v1')) {
       localStorage.removeItem('propertygroup_quotes');
@@ -17,16 +16,6 @@ const _legacyQuotes = () => {
     console.error(e);
   }
   return [];
-};
-
-const _unusedQuotes = () => {
-  try {
-    const raw = localStorage.getItem('propertygroup_quotes');
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
-  }
-  return INITIAL_QUOTES;
 };
 
 export const saveStoredQuotes = (quotes) => {

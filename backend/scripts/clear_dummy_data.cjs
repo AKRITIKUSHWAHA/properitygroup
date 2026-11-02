@@ -57,3 +57,4 @@ clearDummyData().catch((err) => {
   prisma.$disconnect();
   process.exit(1);
 });
+

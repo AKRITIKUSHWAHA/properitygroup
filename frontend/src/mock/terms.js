@@ -106,8 +106,7 @@ export const TERMS_TEMPLATES = [
 // Initial Sent / Signed / Pending Agreements List
 export const INITIAL_AGREEMENTS = [];
 
-// legacy
-const _legacyTerms = () => {
+export const getStoredAgreements = () => {
   try {
     if (!localStorage.getItem('njs_fresh_agreements_clean_v1')) {
       localStorage.removeItem('propertygroup_agreements');
@@ -120,16 +119,6 @@ const _legacyTerms = () => {
     console.error(e);
   }
   return [];
-};
-
-const _unusedTerms = () => {
-  try {
-    const raw = localStorage.getItem('propertygroup_agreements');
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    console.error(e);
-  }
-  return INITIAL_AGREEMENTS;
 };
 
 export const saveStoredAgreements = (agreements) => {

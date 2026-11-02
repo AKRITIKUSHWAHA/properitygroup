@@ -27,8 +27,7 @@ export const INITIAL_LEADS = [];
 
 const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
 
-// legacy
-const _unusedLeads = () => {
+export const getStoredLeads = () => {
   try {
     if (!localStorage.getItem('njs_fresh_leads_clean_v1')) {
       localStorage.removeItem(LEADS_STORAGE_KEY);
@@ -44,21 +43,6 @@ const _unusedLeads = () => {
     console.error('Failed reading leads from storage', e);
   }
   return [];
-};
-
-const _legacyLeads = 'propertygroup_crm_leads_v1';
-
-export const getStoredLeads = () => {
-  try {
-    const raw = localStorage.getItem(LEADS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (e) {
-    console.error('Failed reading leads from storage', e);
-  }
-  return INITIAL_LEADS;
 };
 
 export const saveStoredLeads = (leads) => {
