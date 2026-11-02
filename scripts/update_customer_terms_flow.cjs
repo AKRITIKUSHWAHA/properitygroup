@@ -934,3 +934,4 @@ const newTermsComponent = `export const CustomerTermsPage = () => {
 content = content.substring(0, startIndex) + newTermsComponent + '\n' + content.substring(endIndex);
 fs.writeFileSync(modPath, content, 'utf8');
 console.log('Successfully updated CustomerTermsPage with dynamic customer binding, legal clauses, and complete signing & save flow!');
+
