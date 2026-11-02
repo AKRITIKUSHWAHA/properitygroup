@@ -260,37 +260,102 @@ export const CustomerDashboardPage = () => {
 
       {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Trustpilot Banner (Client Requirement Point 31) */}
-        <div className="p-5 rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
-              <Star className="w-6 h-6 fill-[#00B67A]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  Trustpilot 4.9 / 5.0
-                </span>
-                <span className="text-xs text-slate-500">★★★★★</span>
+        {/* Trustpilot Banner (Client Requirement Point 31 & Stage 6 Review Trigger) */}
+        {customerJob?.reviewSubmitted ? (
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
+                <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
-                Satisfied with your Level 2 Survey?
-              </h4>
-              <p className="text-xs text-slate-500">
-                Leave a quick review on our official NJS Trustpilot profile.
-              </p>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                    Verified Trustpilot Review ★★★★★
+                  </span>
+                  <span className="text-xs font-bold text-emerald-700">
+                    {customerJob.reviewRating || 5}.0 Stars
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                  Thank you for reviewing {customerJob.surveyor || 'David Thorne MRICS'}!
+                </h4>
+                <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
+                  "{customerJob.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
+                </p>
+              </div>
             </div>
-          </div>
 
-          <button
-            onClick={() => navigate('/customer/leave-review')}
-            className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
-          >
-            <Star className="w-3.5 h-3.5 fill-white" />
-            <span>Leave Us a Review</span>
-            <ExternalLink className="w-3 h-3" />
-          </button>
-        </div>
+            <button
+              onClick={() => navigate('/customer/leave-review')}
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+              <span>View Review</span>
+            </button>
+          </div>
+        ) : (customerJob?.status === 'Completed' || (customerJob?.timelineStep && customerJob.timelineStep >= 7)) ? (
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 border-2 border-emerald-400 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
+                <Star className="w-6 h-6 fill-white" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                    Stage 6 Complete • Trustpilot Trigger
+                  </span>
+                  <span className="text-xs text-amber-500 font-bold">★★★★★</span>
+                </div>
+                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                  How was your survey experience with {customerJob.surveyor || 'David Thorne MRICS'}?
+                </h4>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Your final RICS report for {customerJob.property || 'your property'} has been delivered. Share 30 seconds of verified feedback on Trustpilot.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/customer/leave-review')}
+              className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <Star className="w-3.5 h-3.5 fill-white" />
+              <span>Rate on Trustpilot</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
+                <Star className="w-6 h-6 fill-[#00B67A]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    Trustpilot 4.9 / 5.0
+                  </span>
+                  <span className="text-xs text-slate-500">★★★★★</span>
+                </div>
+                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                  Satisfied with your Level 2 Survey?
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Leave a quick review on our official NJS Trustpilot profile.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/customer/leave-review')}
+              className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <Star className="w-3.5 h-3.5 fill-white" />
+              <span>Leave Us a Review</span>
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+        )}
 
         {/* Direct Messages Card (Client Requirement Point 18) */}
         <div className="p-5 rounded-3xl bg-white border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

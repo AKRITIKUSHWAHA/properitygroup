@@ -36,6 +36,8 @@ import {
   ShieldCheck,
   MessageSquare,
   AlertTriangle,
+  Star,
+  ExternalLink,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
@@ -326,6 +328,20 @@ export const JobDetailsPage = () => {
       text: `Workflow milestone moved to "${stepName}" (Stage ${stepIndex + 1}/6)${emailActivityText}.`,
     };
 
+    let extraActivity = null;
+    let trustpilotData = {};
+    if (stepIndex === 5) {
+      trustpilotData = {
+        trustpilotInviteSent: true,
+        trustpilotInviteDate: new Date().toISOString(),
+      };
+      extraActivity = {
+        id: Date.now() + 1,
+        time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        text: `⭐ Automated Trustpilot review invitation triggered for ${job.customerEmail || 'customer@demo.com'} (Stage 6/6 Final Report Release).`,
+      };
+    }
+
     updateJob(job.id, {
       timelineStep: newTimelineStep,
       status: newStatus,
@@ -333,14 +349,19 @@ export const JobDetailsPage = () => {
       termsStatus: newTermsStatus,
       canBook: newCanBook,
       emails: updatedEmails,
-      activityLog: [newActivity, ...(job.activityLog || [])],
+      ...trustpilotData,
+      activityLog: extraActivity
+        ? [newActivity, extraActivity, ...(job.activityLog || [])]
+        : [newActivity, ...(job.activityLog || [])],
     });
 
     if (emailResult && emailResult.wasSent) {
       addToast({
         type: 'success',
-        title: 'Milestone Updated & Client Emailed',
-        message: `Dispatched automated notification to ${job.customerEmail || 'customer@demo.com'} for ${stepName}.`,
+        title: stepIndex === 5 ? 'Job Completed & Trustpilot Triggered' : 'Milestone Updated & Client Emailed',
+        message: stepIndex === 5
+          ? `Final report released & Trustpilot review invitation dispatched to ${job.customerEmail || 'customer@demo.com'}.`
+          : `Dispatched automated notification to ${job.customerEmail || 'customer@demo.com'} for ${stepName}.`,
       });
     } else {
       addToast({
@@ -991,13 +1012,91 @@ export const JobDetailsPage = () => {
           {/* Stage 5: Complete */}
           {currentStepIndex === 5 && (
             <div className="space-y-3">
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Job Completed &bull; Technical Report Delivered</span>
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Job Completed &bull; Technical Report Delivered</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Stage 6/6 Final
+                </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed m-0">
                 All inspection milestones have been completed and the indexed RICS survey PDF has been archived in the customer's portal and dispatched via email.
               </p>
+
+              {/* Trustpilot Review Trigger Status Indicator */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-teal-50/50 border border-emerald-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#00B67A] text-white flex items-center justify-center shrink-0">
+                    <Star className="w-4 h-4 fill-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Trustpilot Review Automation</span>
+                      {job.reviewSubmitted ? (
+                        <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                          Verified Review Received ★★★★★
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                          Invitation Dispatched
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {job.reviewSubmitted
+                        ? `Customer rated ${job.reviewRating || 5} stars on Trustpilot: "${job.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"`
+                        : `Automated Trustpilot review request linked to ${job.customerEmail || 'customer@demo.com'}. Verified review link: trustpilot.com/review/njspropertygroup.com`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const result = dispatchStepEmail(5, {
+                        ...job,
+                        quoteTotal: totalAmount.toFixed(2),
+                      });
+                      if (result && result.wasSent) {
+                        updateJob(job.id, {
+                          emails: [result.emailRecord, ...(job.emails || [])],
+                          activityLog: [
+                            {
+                              id: Date.now(),
+                              time: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+                              text: `⭐ Trustpilot review reminder email re-sent to ${job.customerEmail || 'customer@demo.com'}.`,
+                            },
+                            ...(job.activityLog || []),
+                          ],
+                        });
+                        addToast({
+                          type: 'success',
+                          title: 'Trustpilot Invite Dispatched',
+                          message: `Review invitation re-sent to ${job.customerEmail || 'customer@demo.com'}.`,
+                        });
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Resend Review Invite</span>
+                  </button>
+
+                  <a
+                    href="https://www.trustpilot.com/review/njspropertygroup.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <span>Trustpilot</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3 pt-2">
                 <button
                   type="button"
@@ -1019,6 +1118,38 @@ export const JobDetailsPage = () => {
                   Log Post-Survey Debrief Call
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* If customer submitted Trustpilot review while in prior stages, display verified status card */}
+          {job.reviewSubmitted && currentStepIndex !== 5 && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-teal-50/50 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#00B67A] text-white flex items-center justify-center shrink-0">
+                  <Star className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>Trustpilot Review Automation</span>
+                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      Verified Review Received ★★★★★
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    Customer rated {job.reviewRating || 5} stars on Trustpilot: "{job.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="https://www.trustpilot.com/review/njspropertygroup.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+              >
+                <span>Trustpilot</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           )}
         </div>
@@ -1697,6 +1828,38 @@ export const JobDetailsPage = () => {
                   </button>
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* If customer submitted Trustpilot review while in prior stages, display verified status card */}
+          {job.reviewSubmitted && currentStepIndex !== 5 && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-teal-50/50 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#00B67A] text-white flex items-center justify-center shrink-0">
+                  <Star className="w-4 h-4 fill-white" />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>Trustpilot Review Automation</span>
+                    <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      Verified Review Received ★★★★★
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    Customer rated {job.reviewRating || 5} stars on Trustpilot: "{job.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="https://www.trustpilot.com/review/njspropertygroup.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-lg bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+              >
+                <span>Trustpilot</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           )}
         </div>

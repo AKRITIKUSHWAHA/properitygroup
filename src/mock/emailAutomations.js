@@ -149,12 +149,12 @@ Surveyor Reporting Unit`,
     id: 'step-6',
     stepIndex: 5,
     stepName: 'Complete',
-    stageLabel: 'Stage 6: Report Released',
-    title: 'Final RICS Survey Report Ready for Download',
+    stageLabel: 'Stage 6: Report Released & Trustpilot Trigger',
+    title: 'Final RICS Survey Report Ready & Trustpilot Review Request',
     triggerEvent: 'When signed RICS PDF survey report is uploaded and released',
     active: true,
     subject: 'Your Official RICS Survey Report is Ready: {{property_address}}',
-    preview: 'Secure 1-click download link for official RICS PDF report and surveyor debrief hotline.',
+    preview: 'Download your official RICS survey report and share your feedback on Trustpilot.',
     templateBody: `Dear {{customer_name}},
 
 Your finalized, peer-reviewed RICS Survey Report for {{property_address}} is complete and ready for immediate download.
@@ -166,11 +166,15 @@ Please log in to your secure client portal below to download your full signed PD
 Post-Inspection Surveyor Consultation:
 Your surveyor {{surveyor_name}} is available to discuss any urgent Condition 3 defects or valuation notes with you over the phone.
 
+⭐ Share Your Experience on Trustpilot:
+As an independent RICS practice, honest feedback helps home buyers make confident decisions. Please take 30 seconds to rate your experience with {{surveyor_name}} on our verified Trustpilot profile:
+https://www.trustpilot.com/review/njspropertygroup.com
+
 Thank you for choosing NJS Property Group.
 
 Best regards,
 Director of Professional Services`,
-    tags: ['Final Report', 'PDF Download', 'Surveyor Debrief'],
+    tags: ['Final Report', 'PDF Download', 'Trustpilot Invite', 'Surveyor Debrief'],
   },
 ];
 
@@ -178,7 +182,18 @@ export const useEmailAutomations = () => {
   const [automations, setAutomations] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure step-6 has Trustpilot review section updated
+        return DEFAULT_EMAIL_AUTOMATIONS.map((def) => {
+          const match = parsed.find((p) => p.id === def.id);
+          if (!match) return def;
+          if (def.id === 'step-6' && !match.templateBody?.includes('Trustpilot')) {
+            return { ...match, templateBody: def.templateBody, tags: def.tags, title: def.title, stageLabel: def.stageLabel };
+          }
+          return match;
+        });
+      }
     } catch (e) {
       console.warn('Failed to parse email automations from storage', e);
     }

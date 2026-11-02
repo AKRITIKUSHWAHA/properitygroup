@@ -557,3 +557,4 @@ const newInvoicesComponent = `export const CustomerInvoicesPage = () => {
 content = content.substring(0, startIndex) + newInvoicesComponent + '\n' + content.substring(endIndex);
 fs.writeFileSync(modPath, content, 'utf8');
 console.log('Successfully updated CustomerInvoicesPage with Payment Settlement modal, VAT metrics, and real PDF download!');
+
