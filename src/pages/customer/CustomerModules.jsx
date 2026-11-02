@@ -2216,6 +2216,7 @@ export const CustomerMessagesPage = () => {
   const { addToast } = useToast();
   const { jobs } = useJobs();
   const { conversations, sendMessage, markAsRead } = useMessages();
+  const messagesEndRef = useRef(null);
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
   const currentJob = myJobs[0] || null;
@@ -2223,28 +2224,35 @@ export const CustomerMessagesPage = () => {
   // Strict customer conversation isolation:
   const currentConv = conversations.find((c) => {
     const uEmail = (user?.email || '').toLowerCase().trim();
+    const uName = (user?.name || '').toLowerCase().trim();
     const cEmail = (c.clientEmail || '').toLowerCase().trim();
-    if (uEmail === 'customer@demo.com') return cEmail === 'customer@demo.com';
-    if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com') {
-      return cEmail.includes('harrison') || c.id === 'conv-3';
+    const cName = (c.clientName || '').toLowerCase().trim();
+    const cJobId = (c.jobId || '').toLowerCase().trim();
+
+    if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
+      return cEmail === 'customer@demo.com' || c.id === 'conv-1' || cJobId === 'job-2026-080';
     }
-    return cEmail === uEmail;
+    if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
+      return cEmail.includes('harrison') || c.id === 'conv-3' || cJobId === 'job-2026-082';
+    }
+    return cEmail === uEmail || cName === uName;
   });
 
-  // Effective conversation (isolated, never leaks another customer's thread)
+  // Effective conversation (isolated, guaranteed to persist & render immediately)
   const effectiveConv = currentConv || {
-    id: `conv-${user?.id || 'new'}`,
-    jobId: currentJob?.id || 'ENQ-2026',
-    clientEmail: user?.email,
-    clientName: user?.name,
-    property: currentJob?.property || 'Your Property',
-    surveyType: currentJob?.surveyType || 'RICS Survey',
+    id: user?.name?.includes('Harrison') || user?.email?.includes('harrison') || user?.email === 'customer2@demo.com' ? 'conv-3' : `conv-${user?.id || 'new'}`,
+    jobId: currentJob?.id || (user?.name?.includes('Harrison') ? 'JOB-2026-082' : 'JOB-2026-080'),
+    clientEmail: user?.email || (user?.name?.includes('Harrison') ? 'harrison@demo.com' : 'customer@demo.com'),
+    clientName: user?.name || (user?.name?.includes('Harrison') ? 'Harrison Croft' : 'Emma Watson'),
+    property: currentJob?.property || (user?.name?.includes('Harrison') ? '12 Pembroke Square, Kensington, London W8 6PA' : '14 Mayfair Gate'),
+    surveyType: currentJob?.surveyType || (user?.name?.includes('Harrison') ? 'RICS Level 3 Building Survey' : 'RICS Level 2 Home Survey'),
+    surveyor: currentJob?.surveyor || 'David Thorne MRICS',
     messages: [
       {
         id: 1,
         sender: 'NJS Operations Desk',
         role: 'admin',
-        text: `Hello ${user?.name || 'Client'}, welcome to your dedicated communications channel with NJS Property Group. How can our surveying team assist you today?`,
+        text: `Hello ${user?.name || 'Customer'}, welcome to your dedicated communications channel with NJS Property Group. How can our surveying team assist you today?`,
         time: 'Today',
       },
     ],
@@ -2253,23 +2261,30 @@ export const CustomerMessagesPage = () => {
   const messages = effectiveConv.messages || [];
   const [inputMessage, setInputMessage] = useState('');
 
+  // Auto-scroll chat to bottom whenever messages change
   useEffect(() => {
-    if (currentConv?.id) {
-      markAsRead(currentConv.id, 'client');
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [currentConv?.id]);
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (effectiveConv?.id) {
+      markAsRead(effectiveConv.id, 'client');
+    }
+  }, [effectiveConv?.id]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputMessage.trim()) return;
 
-    const textToSend = inputMessage;
+    const textToSend = inputMessage.trim();
     setInputMessage('');
 
     sendMessage(
       effectiveConv.id,
       textToSend,
-      user?.name || 'Client',
+      user?.name || effectiveConv.clientName || 'Client',
       'client'
     );
 
@@ -2289,38 +2304,56 @@ export const CustomerMessagesPage = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      <PageHeader
-        title="Direct Messages"
-        subtitle="Secure, direct communication with the NJS operations coordination desk."
-        breadcrumb={['Customer Portal', 'Messages']}
-      />
+    <div className="flex flex-col h-[calc(100vh-105px)] md:h-[calc(100vh-125px)] max-w-4xl mx-auto overflow-hidden -my-2 sm:-my-4">
+      {/* Sleek Compact Header */}
+      <div className="bg-white px-3.5 py-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 mb-2 shrink-0">
+        <div>
+          <h2 className="text-sm font-extrabold text-[#0B1F4D] flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-[#2563EB]" />
+            <span>Direct Messages</span>
+            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              Live Gateway Active
+            </span>
+          </h2>
+          <p className="text-[11px] text-slate-500">
+            Secure two-way communication with NJS coordination desk &amp; surveyor {effectiveConv.surveyor || 'David Thorne MRICS'}.
+          </p>
+        </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col h-[600px]">
-        {/* Chat Header */}
-        <div className="p-4 sm:p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-sm">
+        <div className="hidden sm:flex items-center gap-2 text-xs">
+          <span className="font-mono text-slate-500 font-semibold">{effectiveConv.jobId}</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Main Chat Box Container (Fills exact viewport height, locked outer scroll) */}
+      <div className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+        {/* Chat Header (shrink-0) */}
+        <div className="p-3 sm:p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               NJS
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="font-bold text-slate-900 text-sm">NJS Operations & Surveyor Desk</h4>
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm truncate">
+                  NJS Operations &amp; Surveyor Desk
+                </h4>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               </div>
-              <span className="text-[11px] text-slate-400">
-                Ref: {effectiveConv.jobId} • {effectiveConv.property}
+              <span className="text-[11px] text-slate-500 truncate block">
+                Ref: <strong className="text-slate-700">{effectiveConv.jobId}</strong> • {effectiveConv.property}
               </span>
             </div>
           </div>
 
-          <span className="text-xs font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl">
+          <span className="text-[11px] font-bold text-[#2563EB] bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-xl shrink-0 whitespace-nowrap">
             Active Thread
           </span>
         </div>
 
-        {/* Message Thread */}
-        <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/40">
+        {/* Message Thread Body (flex-1 overflow-y-auto min-h-0 - THIS IS WHAT SCROLLS) */}
+        <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-slate-50/50">
           {messages.map((m) => {
             const isClient = m.role === 'client';
             return (
@@ -2329,29 +2362,34 @@ export const CustomerMessagesPage = () => {
                 className={`flex flex-col ${isClient ? 'items-end' : 'items-start'}`}
               >
                 <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <span className="text-[10px] font-bold text-slate-400">{m.sender}</span>
-                  <span className="text-[9px] text-slate-300 font-mono">• {m.time}</span>
+                  <span className="text-[10.5px] font-bold text-slate-600">{m.sender}</span>
+                  <span className="text-[9.5px] text-slate-400 font-mono">• {m.time}</span>
                 </div>
                 <div
-                  className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed shadow-xs ${
+                  className={`max-w-md p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-xs ${
                     isClient
                       ? 'bg-[#0B1F4D] text-white rounded-tr-none'
-                      : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none'
+                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
                   }`}
                 >
-                  {m.text}
+                  <p className="whitespace-pre-wrap">{m.text}</p>
                 </div>
               </div>
             );
           })}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Chat Input */}
-        <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+        {/* Chat Input Form (shrink-0 - ALWAYS 100% FULLY VISIBLE & DOCKED AT BOTTOM) */}
+        <form
+          onSubmit={handleSendMessage}
+          className="p-2.5 sm:p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0"
+        >
           <button
             type="button"
             onClick={handleAttach}
-            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+            title="Attach photo or document"
           >
             <Paperclip className="w-4 h-4" />
           </button>
@@ -2360,15 +2398,17 @@ export const CustomerMessagesPage = () => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message to NJS coordination team..."
-            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D]"
+            placeholder="Type your message to NJS coordination team... (Press Enter to send)"
+            className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
           />
 
           <button
             type="submit"
-            className="p-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white transition-all shadow-xs cursor-pointer"
+            disabled={!inputMessage.trim()}
+            className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
           >
-            <Send className="w-4 h-4" />
+            <span>Send</span>
+            <Send className="w-3.5 h-3.5" />
           </button>
         </form>
       </div>

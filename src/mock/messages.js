@@ -101,10 +101,21 @@ export const useMessages = () => {
   const [conversations, setConversations] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : INITIAL_CONVERSATIONS;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Ensure all default conversations (conv-1, conv-2, conv-3) exist even if localStorage was pre-seeded
+        const merged = [...parsed];
+        INITIAL_CONVERSATIONS.forEach((init) => {
+          if (!merged.some((m) => m.id === init.id || m.jobId === init.jobId || m.clientEmail === init.clientEmail)) {
+            merged.push(init);
+          }
+        });
+        return merged;
+      }
     } catch {
       return INITIAL_CONVERSATIONS;
     }
+    return INITIAL_CONVERSATIONS;
   });
 
   // Cross-component and cross-tab reactive synchronization
@@ -113,7 +124,14 @@ export const useMessages = () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          setConversations(JSON.parse(stored));
+          const parsed = JSON.parse(stored);
+          const merged = [...parsed];
+          INITIAL_CONVERSATIONS.forEach((init) => {
+            if (!merged.some((m) => m.id === init.id || m.jobId === init.jobId || m.clientEmail === init.clientEmail)) {
+              merged.push(init);
+            }
+          });
+          setConversations(merged);
         }
       } catch (err) {
         console.warn('Unable to sync conversations', err);
@@ -148,17 +166,38 @@ export const useMessages = () => {
     };
 
     setConversations((prev) => {
+      let matched = false;
       const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
+          matched = true;
           return {
             ...c,
             unreadAdmin: role === 'client' ? (c.unreadAdmin || 0) + 1 : 0,
             unreadClient: role === 'admin' ? (c.unreadClient || 0) + 1 : 0,
-            messages: [...c.messages, newMsg],
+            messages: [...(c.messages || []), newMsg],
           };
         }
         return c;
       });
+
+      // If conversationId did not match any existing conversation, create and add it
+      if (!matched) {
+        const isHarrison = (senderName || '').toLowerCase().includes('harrison') || conversationId.includes('harrison') || conversationId === 'conv-3';
+        const newConv = {
+          id: conversationId,
+          jobId: isHarrison ? 'JOB-2026-082' : (conversationId.startsWith('JOB-') ? conversationId : 'JOB-2026-080'),
+          clientEmail: isHarrison ? 'harrison@demo.com' : 'customer@demo.com',
+          clientName: senderName || (isHarrison ? 'Harrison Croft' : 'Customer'),
+          clientPhone: isHarrison ? '+44 7700 900512' : '+44 7700 900147',
+          property: isHarrison ? '12 Pembroke Square, Kensington, London W8 6PA' : '14 Mayfair Gate, Mayfair, London W1K 2PB',
+          surveyType: isHarrison ? 'RICS Level 3 Building Survey' : 'RICS Level 2 Home Survey',
+          surveyor: 'David Thorne MRICS',
+          unreadAdmin: role === 'client' ? 1 : 0,
+          unreadClient: role === 'admin' ? 1 : 0,
+          messages: [newMsg],
+        };
+        updated.push(newConv);
+      }
 
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
