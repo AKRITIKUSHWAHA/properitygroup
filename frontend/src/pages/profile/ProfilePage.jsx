@@ -1,14 +1,73 @@
-import React, { useState } from 'react';
-import { User, Mail, Phone, Building2, Shield, Calendar, Save, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Mail, Phone, Building2, Shield, Calendar, Save, Check, Camera, Trash2, UploadCloud } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
+import { useToast } from '../../components/ToastContext';
 
 export const ProfilePage = () => {
   const { user, updateProfile } = useAuth();
+  const { addToast } = useToast();
+  const fileInputRef = useRef(null);
 
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [company, setCompany] = useState(user?.company || '');
   const [department, setDepartment] = useState(user?.department || '');
+  const [avatar, setAvatar] = useState(user?.avatar || null);
+
+  const initials = (name || user?.name || 'U')
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast({
+        type: 'error',
+        title: 'Invalid File',
+        message: 'Please select an image file (PNG, JPG, WEBP).',
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({
+        type: 'error',
+        title: 'File Too Large',
+        message: 'Profile picture must be under 5MB.',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      setAvatar(dataUrl);
+      updateProfile({ avatar: dataUrl });
+      addToast({
+        type: 'success',
+        title: 'Profile Picture Updated',
+        message: 'Your new avatar has been applied successfully.',
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatar(null);
+    updateProfile({ avatar: null });
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    addToast({
+      type: 'info',
+      title: 'Profile Picture Removed',
+      message: 'Avatar reset to default initials.',
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,6 +76,7 @@ export const ProfilePage = () => {
       phone,
       company,
       department,
+      avatar,
     });
   };
 
@@ -35,13 +95,67 @@ export const ProfilePage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left card: User summary */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col items-center text-center">
-          <div className="relative mb-4">
-            <img
-              src={user?.avatar}
-              alt={user?.name}
-              className="w-24 h-24 rounded-full object-cover ring-4 ring-[#2563EB]/20 shadow-md"
-            />
+          {/* Avatar with Camera Trigger */}
+          <div className="relative mb-3 group">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-[#2563EB]/20 shadow-md cursor-pointer relative bg-slate-100 flex items-center justify-center transition-transform hover:scale-105"
+              title="Click to change profile picture"
+            >
+              {avatar ? (
+                <img
+                  src={avatar}
+                  alt={user?.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#0B1F4D] to-[#2563EB] text-white flex items-center justify-center text-2xl font-black tracking-wider">
+                  {initials}
+                </div>
+              )}
+
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/40 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full backdrop-blur-[2px]">
+                <Camera className="w-6 h-6 mb-0.5 text-white" />
+                <span className="text-[10px] font-bold">Change</span>
+              </div>
+            </div>
+
+            {/* Active status indicator */}
             <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white" />
+
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/png, image/jpeg, image/webp, image/gif"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
+
+          {/* DP Action Buttons */}
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 rounded-xl bg-blue-50 text-[#2563EB] hover:bg-blue-100 border border-blue-200 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>{avatar ? 'Change DP' : 'Upload DP'}</span>
+            </button>
+
+            {avatar && (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Delete profile picture"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Remove</span>
+              </button>
+            )}
           </div>
 
           <h2 className="text-lg font-bold text-[#0B1F4D]">{user?.name}</h2>

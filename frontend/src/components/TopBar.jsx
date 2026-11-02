@@ -127,11 +127,18 @@ export const TopBar = ({ onToggleSidebar }) => {
             aria-label="User profile and menu"
           >
             <div className="relative">
-              <img
-                src={user?.avatar}
-                alt={user?.name || 'User'}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-[#0B1F4D]/10 group-hover:ring-[#2563EB]/50 transition-all"
-              />
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user?.name || 'User'}
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover ring-2 ring-[#0B1F4D]/10 group-hover:ring-[#2563EB]/50 transition-all"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#2563EB] text-white font-bold text-xs flex items-center justify-center ring-2 ring-[#0B1F4D]/10">
+                  {(user?.name || 'U').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+              )}
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
 

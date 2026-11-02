@@ -265,11 +265,17 @@ export const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-3 border-t border-slate-200/90 bg-slate-50/90 shrink-0">
           <div className="flex items-center justify-between">
             <div className={`flex items-center gap-2.5 overflow-hidden ${isHovered ? 'md:flex' : 'md:hidden lg:flex'}`}>
-              <img
-                src={user?.avatar}
-                alt={user?.name || 'User'}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 shrink-0"
-              />
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user?.name || 'User'}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200 shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#2563EB] text-white font-bold text-xs flex items-center justify-center ring-2 ring-slate-200 shrink-0">
+                  {(user?.name || 'U').split(' ').filter(Boolean).map((n) => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+              )}
               <div className="overflow-hidden">
                 <div className="text-xs font-bold text-[#0B1F4D] truncate max-w-[130px]">
                   {user?.name}
