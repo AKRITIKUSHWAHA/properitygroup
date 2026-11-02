@@ -251,3 +251,4 @@ patchFile('frontend/src/mock/messages.js', (code) => {
 });
 
 console.log('🏁 All Menu APIs & Logout fully wired and verified!');
+

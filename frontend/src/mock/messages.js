@@ -140,14 +140,6 @@ export const useMessages = () => {
 
     window.addEventListener('propertygroup_conversations_updated', handleSync);
     window.addEventListener('storage', handleSync);
-
-    // Sync live threads from backend messages API
-    const token = localStorage.getItem('property_group_auth_token');
-    if (token) {
-      fetch('/api/v1/messages/threads', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
     return () => {
       window.removeEventListener('propertygroup_conversations_updated', handleSync);
       window.removeEventListener('storage', handleSync);

@@ -279,42 +279,6 @@ export const useTerms = () => {
     };
     window.addEventListener('propertygroup_agreements_updated', onUpdate);
     window.addEventListener('storage', onUpdate);
-
-    // Sync live terms & documents from backend API
-    const token = localStorage.getItem('property_group_auth_token');
-    if (token) {
-      fetch('/api/v1/terms-and-documents', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((json) => {
-          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-            const dbTerms = json.data.map((t) => ({
-              id: t.reference,
-              jobNo: t.job?.reference || `JOB-${t.jobId}`,
-              serviceKey: 'Homebuyer L2',
-              serviceName: t.documentTitle || 'RICS Level 2 Terms',
-              client: t.clientName,
-              signerEmail: t.clientEmail,
-              property: t.job?.propertyAddress || '14 Mayfair Gate',
-              postcode: t.job?.postcode || 'W1K 2PB',
-              surveyor: t.job?.surveyor?.name || 'David Thorne MRICS',
-              issueDate: new Date(t.createdAt).toLocaleDateString('en-GB'),
-              status: t.signed ? 'Signed' : 'Sent',
-              signedDate: t.signedAt ? new Date(t.signedAt).toLocaleDateString('en-GB') : null,
-              auditCode: t.tamperAuditHash || 'DOC-ESIGN-VERIFIED',
-              content: t.content,
-            }));
-            setAgreementsState((prev) => {
-              const liveIds = new Set(dbTerms.map((d) => d.id));
-              const retained = prev.filter((p) => !liveIds.has(p.id));
-              return [...dbTerms, ...retained];
-            });
-          }
-        })
-        .catch(() => {});
-    }
-
     return () => {
       window.removeEventListener('propertygroup_agreements_updated', onUpdate);
       window.removeEventListener('storage', onUpdate);

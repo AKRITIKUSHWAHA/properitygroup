@@ -831,75 +831,6 @@ export const useJobs = () => {
     };
     window.addEventListener('propertygroup_jobs_updated', onUpdate);
     window.addEventListener('storage', onUpdate);
-
-    // Sync live jobs from backend API
-    const token = localStorage.getItem('property_group_auth_token');
-    if (token) {
-      fetch('/api/v1/survey-jobs', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-            const dbJobs = json.data.map((j) => ({
-              id: j.reference || `JOB-2026-${String(j.id).padStart(3, '0')}`,
-              dbId: j.id,
-              jobNo: j.reference,
-              clientName: j.clientName,
-              customer: j.clientName,
-              customerEmail: j.clientEmail,
-              customerPhone: j.clientPhone || '+44 7700 900147',
-              property: j.propertyAddress,
-              location: `${j.propertyAddress}, ${j.postcode}`,
-              postcode: j.postcode,
-              surveyType: j.serviceType,
-              status:
-                j.stage === 'COMPLETE'
-                  ? 'Completed'
-                  : j.stage === 'BOOKED'
-                  ? 'Booked'
-                  : j.stage === 'PREPARING_REPORT'
-                  ? 'Preparing report'
-                  : j.stage === 'ACCEPTED'
-                  ? 'Accepted'
-                  : j.stage === 'PAID'
-                  ? 'Paid'
-                  : 'Quote requested',
-              timelineStep:
-                j.stage === 'QUOTE'
-                  ? 2
-                  : j.stage === 'PAID'
-                  ? 3
-                  : j.stage === 'ACCEPTED'
-                  ? 4
-                  : j.stage === 'BOOKED'
-                  ? 6
-                  : j.stage === 'PREPARING_REPORT'
-                  ? 8
-                  : 10,
-              surveyor: j.surveyor?.name || 'David Thorne MRICS',
-              date: j.inspectionDate
-                ? new Date(j.inspectionDate).toLocaleDateString('en-GB')
-                : 'Pending Schedule',
-              time: j.inspectionTime || '10:00 AM - 12:30 PM',
-              totalFee: j.quotes?.[0]?.totalAmount
-                ? `£${j.quotes[0].totalAmount.toFixed(2)}`
-                : '£780.00',
-              termsStatus: j.terms?.[0]?.signed ? 'Signed' : 'Not Sent',
-              paymentStatus: j.invoices?.[0]?.status === 'PAID' ? 'Paid' : 'Pending',
-              reportUrl: j.reportPdfUrl,
-            }));
-
-            setJobsState((prev) => {
-              const dbIds = new Set(dbJobs.map((d) => d.id));
-              const retained = prev.filter((p) => !dbIds.has(p.id));
-              return [...dbJobs, ...retained];
-            });
-          }
-        })
-        .catch(() => {});
-    }
-
     return () => {
       window.removeEventListener('propertygroup_jobs_updated', onUpdate);
       window.removeEventListener('storage', onUpdate);
@@ -959,4 +890,3 @@ export const useJobs = () => {
 
   return { jobs, setJobs, updateJob, addJob };
 };
-
