@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
 import { BottomTabBar } from '../components/BottomTabBar';
 
 export const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  // Full-bleed edge-to-edge layout for messaging inbox (no outer margins or padding)
+  const isFullBleedPage =
+    location.pathname.includes('/messages') ||
+    location.pathname.includes('/inbox');
 
   return (
     <div className="min-h-screen bg-[#D5DAE2] flex flex-col antialiased">
@@ -17,8 +23,14 @@ export const AppLayout = () => {
         {/* Sticky Top Bar */}
         <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
-        {/* Dynamic Page Content with bottom padding on mobile for the BottomTabBar */}
-        <main className="flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8">
+        {/* Dynamic Page Content */}
+        <main
+          className={
+            isFullBleedPage
+              ? 'flex-1 w-full h-[calc(100vh-64px)] overflow-hidden p-0 m-0'
+              : 'flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8'
+          }
+        >
           <Outlet />
         </main>
       </div>
