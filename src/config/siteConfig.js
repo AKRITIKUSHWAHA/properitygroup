@@ -22,12 +22,12 @@ export const siteConfig = {
 
   // Contact Information
   contact: {
-    telephone: "+44 (0)20 8947 8840",
+    telephone: "02089478840",
     telephoneDisplay: "020 8947 8840",
     isPhoneProvisional: false,
     email: "info@njspropertygroup.com",
     isEmailProvisional: false,
-    emergencyHotline: "+44 (0)20 8947 8840",
+    emergencyHotline: "02089478840",
     address: {
       line1: "124 City Road",
       line2: "Kemp House",

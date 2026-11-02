@@ -1079,7 +1079,7 @@ html {
 }
 
 body {
-  overflow-x: hidden !important;
+  overflow-x: clip !important;
   -webkit-overflow-scrolling: touch !important;
 }
 
@@ -1092,6 +1092,9 @@ body {
 
 /* Replace expensive transparent blurry filters with rich, crisp midnight navy luxury backgrounds */
 .site-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
   background-color: #070F1E !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
 }
@@ -1149,3 +1152,25 @@ body {
   visibility: visible !important;
   opacity: 1 !important;
 }
+
+/* ==========================================================================
+   Task 5: Mobile Input Zoom Prevention (iOS 16px Minimum Font Size)
+   ========================================================================== */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea,
+  .form-input,
+  .form-select,
+  .form-textarea,
+  .form-input-compact,
+  .quick-text-input,
+  .quick-select-input {
+    font-size: 16px !important;
+  }
+}
+
