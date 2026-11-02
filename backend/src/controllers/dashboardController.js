@@ -89,3 +89,4 @@ export const getRecentActivity = async (req, res, next) => {
     next(error);
   }
 };
+

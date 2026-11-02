@@ -25,3 +25,4 @@ router.post('/complaints', addComplaint);
 router.patch('/complaints/:id/resolve', resolveComplaint);
 
 export default router;
+

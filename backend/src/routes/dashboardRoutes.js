@@ -17,3 +17,4 @@ router.get('/action-buckets', getActionBuckets);
 router.get('/recent-activity', getRecentActivity);
 
 export default router;
+

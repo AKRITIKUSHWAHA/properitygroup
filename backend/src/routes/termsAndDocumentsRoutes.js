@@ -19,3 +19,4 @@ router.post('/', issueTermsAgreement);
 router.get('/:id/audit-certificate', getAuditCertificate);
 
 export default router;
+

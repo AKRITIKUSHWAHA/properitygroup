@@ -11,6 +11,7 @@ import quotationsAndPaymentsRoutes from './quotationsAndPaymentsRoutes.js';
 import termsAndDocumentsRoutes from './termsAndDocumentsRoutes.js';
 import reportsAndAnalyticsRoutes from './reportsAndAnalyticsRoutes.js';
 import settingsRoutes from './settingsRoutes.js';
+import customerRouter from './customer/index.js';
 
 const router = Router();
 
@@ -72,5 +73,8 @@ router.use('/reports-and-analytics', reportsAndAnalyticsRoutes);
 
 // Superadmin Menu 11: Settings
 router.use('/settings', settingsRoutes);
+
+// Customer Portal (All 14 Menus with Strict Data Isolation)
+router.use('/customer', customerRouter);
 
 export default router;

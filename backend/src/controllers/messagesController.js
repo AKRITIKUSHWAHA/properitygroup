@@ -145,3 +145,4 @@ export const markThreadRead = async (req, res, next) => {
     next(error);
   }
 };
+

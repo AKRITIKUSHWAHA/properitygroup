@@ -12,3 +12,4 @@ router.get('/', getSettings);
 router.patch('/', updateSettings);
 
 export default router;
+

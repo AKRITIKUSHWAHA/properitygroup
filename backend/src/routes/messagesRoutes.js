@@ -21,3 +21,4 @@ router.post('/', sendAdminMessage);
 router.patch('/read/:conversationId', markThreadRead);
 
 export default router;
+

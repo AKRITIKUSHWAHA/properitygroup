@@ -76,6 +76,8 @@ model User {
   clientJobs      Job[]            @relation("ClientJobs")
   messagesSent    Message[]
   auditLogs       AuditLog[]
+  reviews         CustomerReview[]
+  supportTickets  SupportTicket[]
 
   @@map("users")
 }
@@ -217,6 +219,8 @@ model Job {
   callLogs               CallLog[]
   complaints             ComplaintLog[]
   auditTimeline          AuditLog[]
+  reviews                CustomerReview[]
+  supportTickets         SupportTicket[]
 
   @@map("jobs")
 }
@@ -324,5 +328,39 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model CustomerReview {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId      Int?
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  rating     Int      @default(5)
+  title      String?
+  reviewText String   @db.Text
+  platform   String   @default("TRUSTPILOT")
+  verified   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@map("customer_reviews")
+}
+
+model SupportTicket {
+  id          Int      @id @default(autoincrement())
+  ticketNo    String   @unique
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId       Int?
+  job         Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  subject     String
+  message     String   @db.Text
+  category    String   @default("SURVEY_QUERY")
+  status      String   @default("OPEN")
+  priority    String   @default("NORMAL")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("support_tickets")
 }
 
