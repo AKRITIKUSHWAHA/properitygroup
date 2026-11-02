@@ -1174,3 +1174,22 @@ body {
   }
 }
 
+/* ==========================================================================
+   Mobile Visual Continuity: Eliminate awkward white gap & dividing line between
+   Pillar Cards (#expertise) and Expert Witness (#expert-witness-section)
+   ========================================================================== */
+@media (max-width: 768px) {
+  #expertise,
+  .luxury-dark-section {
+    padding-top: 2.75rem !important;
+    padding-bottom: 0.75rem !important;
+    border-bottom: none !important;
+  }
+  .expert-witness-banner-section,
+  #expert-witness-section {
+    padding-top: 0.75rem !important;
+    padding-bottom: 2.75rem !important;
+    border-top: none !important;
+  }
+}
+
