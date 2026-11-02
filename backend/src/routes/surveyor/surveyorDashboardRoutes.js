@@ -11,3 +11,4 @@ router.use(authorizeRoles('SURVEYOR'));
 router.get('/', getSurveyorDashboard);
 
 export default router;
+

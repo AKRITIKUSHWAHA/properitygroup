@@ -52,3 +52,4 @@ export const updateMyAvailability = async (req, res, next) => {
     next(error);
   }
 };
+

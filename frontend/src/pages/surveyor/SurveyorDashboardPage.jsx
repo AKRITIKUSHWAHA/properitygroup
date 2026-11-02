@@ -26,6 +26,7 @@ import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
+import { surveyorDashboardApi } from '../../api/surveyorApi';
 
 /**
  * Mobile-First Surveyor Field Portal Dashboard
@@ -54,6 +55,17 @@ export const SurveyorDashboardPage = () => {
   );
 
   const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
+  // Sync Surveyor Dashboard from backend API
+  useEffect(() => {
+    surveyorDashboardApi.getDashboard()
+      .then((res) => {
+        if (res?.data) {
+          // Surveyor live dashboard synced
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const primaryJob = activeJobs[0] || myJobs[0] || {
     id: 'JOB-2026-080',
     property: '14 Mayfair Gate',

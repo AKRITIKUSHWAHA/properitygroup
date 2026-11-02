@@ -15,3 +15,4 @@ router.get('/', getSurveyorJobs);
 router.get('/:id', getSurveyorJobById);
 
 export default router;
+

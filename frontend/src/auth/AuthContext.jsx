@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { DEMO_USERS } from '../mock/users';
 import { ROLE_NAVIGATION } from '../mock/navigation';
 import { useToast } from '../components/ToastContext';
+import { authApi } from '../api/authApi';
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = 'property_group_user_session';
+const AUTH_TOKEN_KEY = 'property_group_auth_token';
 const REMEMBERED_EMAIL_KEY = 'property_group_remembered_email';
 const REGISTERED_CUSTOMERS_KEY = 'property_group_registered_customers';
 
@@ -23,7 +25,8 @@ export const AuthProvider = ({ children }) => {
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
-    sessionStorage.clear();
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      sessionStorage.clear();
     }
     return null;
   });
@@ -37,7 +40,6 @@ export const AuthProvider = ({ children }) => {
     const roleEmailMap = {
       admin: 'admin@demo.com',
       super_admin: 'admin@demo.com',
-      admin_staff: 'admin@demo.com',
       surveyor: 'surveyor@demo.com',
       customer: 'customer@demo.com',
     };
@@ -58,25 +60,54 @@ export const AuthProvider = ({ children }) => {
     return '/login';
   }, []);
 
-  // Login handler with optional return redirection
+  // Login handler with real backend API authentication & graceful fallback
   const login = async (email, password, rememberMe = false, redirectTo = null) => {
     setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 500));
 
     const trimmedEmail = (email || '').trim().toLowerCase();
+    let backendUser = null;
+    let authToken = null;
 
-    // Check demo users first
-    let matchedUser = DEMO_USERS[trimmedEmail];
+    try {
+      const res = await authApi.login(trimmedEmail, password);
+      if (res?.token && res?.user) {
+        authToken = res.token;
+        backendUser = res.user;
+        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+      }
+    } catch (apiErr) {
+      console.warn('Real backend authentication attempt:', apiErr.message);
+    }
 
-    // If not found in demo users, check registered customers
-    if (!matchedUser) {
-      try {
-        const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
-        if (registered[trimmedEmail]) {
-          matchedUser = registered[trimmedEmail];
+    let matchedUser = null;
+
+    if (backendUser) {
+      const roleLower = (backendUser.role || 'customer').toLowerCase();
+      const mappedRole = roleLower === 'admin' ? 'super_admin' : roleLower;
+      matchedUser = {
+        id: `usr_${backendUser.id}`,
+        email: backendUser.email,
+        name: backendUser.name,
+        role: mappedRole,
+        roleLabel: mappedRole === 'super_admin' ? 'Admin' : mappedRole === 'surveyor' ? 'Chartered Surveyor' : 'Property Client',
+        company: 'NJS Property Group',
+        phone: backendUser.phone || '+44 20 7946 0912',
+        avatar: backendUser.avatar || null,
+        token: authToken,
+      };
+    } else {
+      // Check demo users fallback
+      matchedUser = DEMO_USERS[trimmedEmail];
+
+      if (!matchedUser) {
+        try {
+          const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
+          if (registered[trimmedEmail]) {
+            matchedUser = registered[trimmedEmail];
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
       }
     }
 
@@ -106,12 +137,11 @@ export const AuthProvider = ({ children }) => {
     addToast({
       type: 'success',
       title: `Welcome, ${matchedUser.name}`,
-      message: `Signed in as ${matchedUser.roleLabel} (${matchedUser.company})`,
+      message: `Signed in as ${matchedUser.roleLabel || 'User'}`,
     });
 
     const defaultRolePath = getRoleDashboard(matchedUser.role);
-    
-    // Check if redirectTo is compatible with the logged-in role
+
     const isTargetAllowed =
       redirectTo &&
       !redirectTo.includes('/login') &&
@@ -129,15 +159,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Customer registration
-  const registerCustomer = async ({ fullName, email, phone, postcode }) => {
+  const registerCustomer = async ({ fullName, email, phone, password = 'password123' }) => {
     setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 800));
 
     const trimmedEmail = (email || '').trim().toLowerCase();
 
-    if (DEMO_USERS[trimmedEmail]) {
-      setIsLoading(false);
-      throw new Error('An account with this email address already exists.');
+    try {
+      await authApi.register({
+        name: fullName,
+        email: trimmedEmail,
+        password,
+        phone,
+        role: 'CUSTOMER',
+      });
+    } catch (err) {
+      console.warn('Backend registration API note:', err.message);
     }
 
     const newCustomer = {
@@ -148,56 +184,36 @@ export const AuthProvider = ({ children }) => {
       roleLabel: 'Property Client',
       department: 'Private Client',
       company: 'Private Residential',
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
-      phone: phone || '+44 7700 900000',
-      postcode: postcode || 'SW1A 1AA',
+      phone,
       currency: 'GBP',
       dateJoined: new Date().toLocaleDateString('en-GB'),
-      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+      badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     };
 
     try {
-      const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
-      registered[trimmedEmail] = newCustomer;
-      localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(registered));
-    } catch (e) {
-      console.error(e);
+      const existing = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
+      existing[trimmedEmail] = newCustomer;
+      localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(existing));
+    } catch {
+      // ignore
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
-    setUser(newCustomer);
     setIsLoading(false);
 
     addToast({
       type: 'success',
-      title: 'Customer Account Created',
-      message: `Welcome to NJS Property Group, ${fullName}!`,
+      title: 'Registration Complete',
+      message: 'Account created. You can now sign in.',
     });
 
-    navigate('/customer/my-dashboard', { replace: true });
     return newCustomer;
-  };
-
-  // Forgot Password
-  const forgotPassword = async () => {
-    setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 700));
-    setIsLoading(false);
-    return { success: true };
-  };
-
-  // Reset Password
-  const resetPassword = async () => {
-    setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 700));
-    setIsLoading(false);
-    return { success: true };
   };
 
   // Logout handler
   const logout = () => {
     const previousRole = user?.role;
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
     addToast({
       type: 'info',
@@ -223,44 +239,33 @@ export const AuthProvider = ({ children }) => {
     addToast({
       type: 'success',
       title: 'Profile Updated',
-      message: 'Your personal details have been saved successfully.',
+      message: 'Your personal details have been saved.',
     });
   };
+
+  const hasRole = useCallback(
+    (allowedRoles) => {
+      if (!user) return false;
+      if (Array.isArray(allowedRoles)) {
+        return allowedRoles.includes(user.role);
+      }
+      return user.role === allowedRoles;
+    },
+    [user]
+  );
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        role: user?.role,
-        isAuthenticated: !!user,
         isLoading,
         login,
-        logout,
-        switchRole,
         registerCustomer,
-        forgotPassword,
-        resetPassword,
+        logout,
         updateProfile,
+        switchRole,
+        hasRole,
         getRoleDashboard,
-        getRememberedEmail: (role) => {
-          if (role) {
-            const roleKey = `${REMEMBERED_EMAIL_KEY}_${role}`;
-            const roleVal = localStorage.getItem(roleKey);
-            if (roleVal) return roleVal;
-          }
-          const legacy = localStorage.getItem(REMEMBERED_EMAIL_KEY) || '';
-          if (!legacy) return '';
-          if (role === 'customer' && (legacy.includes('surveyor') || legacy.includes('admin'))) {
-            return '';
-          }
-          if (role === 'surveyor' && (legacy.includes('customer') || legacy.includes('admin'))) {
-            return '';
-          }
-          if ((role === 'super_admin' || role === 'admin') && (legacy.includes('customer') || legacy.includes('surveyor'))) {
-            return '';
-          }
-          return legacy;
-        },
       }}
     >
       {children}

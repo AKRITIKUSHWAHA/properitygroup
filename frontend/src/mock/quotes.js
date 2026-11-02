@@ -245,6 +245,80 @@ export const useQuotes = () => {
     };
     window.addEventListener('propertygroup_quotes_updated', onUpdate);
     window.addEventListener('storage', onUpdate);
+
+    // Sync live quotations & invoices from backend API
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      Promise.all([
+        fetch('/api/v1/quotations-and-payments/quotes', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
+        fetch('/api/v1/quotations-and-payments/invoices', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : null)
+      ])
+        .then(([quotesJson, invoicesJson]) => {
+          const liveItems = [];
+          if (quotesJson?.data && Array.isArray(quotesJson.data)) {
+            quotesJson.data.forEach((q) => {
+              liveItems.push({
+                id: q.reference,
+                refNo: q.reference,
+                invoiceNo: `INV-${q.reference.split('-').slice(1).join('-')}`,
+                client: q.job?.clientName || 'Emma Watson',
+                clientEmail: q.job?.clientEmail || 'customer@demo.com',
+                clientPhone: q.job?.clientPhone || '+44 7700 900147',
+                property: q.job?.propertyAddress || '14 Mayfair Gate',
+                location: q.job?.postcode ? `${q.job.propertyAddress}, ${q.job.postcode}` : 'London W1K 2PB',
+                surveyType: q.job?.serviceType || 'RICS Level 2 Home Survey',
+                baseFee: q.baseFee,
+                extras: [],
+                discount: 0,
+                amountExVat: q.baseFee,
+                vatAmount: q.vatAmount,
+                totalAmount: q.totalAmount,
+                status: q.status === 'ACCEPTED' ? 'Accepted' : q.status === 'SENT' ? 'Sent' : 'Draft',
+                type: 'quotation',
+                date: new Date(q.createdAt).toLocaleDateString('en-GB'),
+                dueDate: new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-GB'),
+              });
+            });
+          }
+          if (invoicesJson?.data && Array.isArray(invoicesJson.data)) {
+            invoicesJson.data.forEach((inv) => {
+              liveItems.push({
+                id: inv.invoiceNumber,
+                refNo: `QUO-${inv.invoiceNumber.split('-').slice(1).join('-')}`,
+                invoiceNo: inv.invoiceNumber,
+                client: inv.clientName,
+                clientEmail: inv.clientEmail,
+                clientPhone: inv.job?.clientPhone || '+44 7700 900147',
+                property: inv.job?.propertyAddress || '14 Mayfair Gate',
+                location: inv.job?.postcode ? `${inv.job.propertyAddress}, ${inv.job.postcode}` : 'London W1K 2PB',
+                surveyType: inv.job?.serviceType || 'RICS Level 2 Home Survey',
+                baseFee: inv.subtotal,
+                extras: [],
+                discount: 0,
+                amountExVat: inv.subtotal,
+                vatAmount: inv.vatAmount,
+                totalAmount: inv.total,
+                status: inv.status === 'PAID' ? 'Paid' : 'Sent',
+                type: 'invoice',
+                date: new Date(inv.createdAt).toLocaleDateString('en-GB'),
+                dueDate: new Date(inv.createdAt).toLocaleDateString('en-GB'),
+                paidDate: inv.paidAt ? new Date(inv.paidAt).toLocaleDateString('en-GB') : null,
+                paymentMethod: inv.paymentMethod || 'Stripe UK Online Card Settlement',
+              });
+            });
+          }
+
+          if (liveItems.length > 0) {
+            setQuotesState((prev) => {
+              const liveIds = new Set(liveItems.map((i) => i.id));
+              const retained = prev.filter((p) => !liveIds.has(p.id));
+              return [...liveItems, ...retained];
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       window.removeEventListener('propertygroup_quotes_updated', onUpdate);
       window.removeEventListener('storage', onUpdate);
@@ -261,6 +335,20 @@ export const useQuotes = () => {
 
   const addQuote = (newQuote) => {
     setQuotes((prev) => [newQuote, ...prev]);
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      fetch('/api/v1/quotations-and-payments/quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          baseFee: newQuote.baseFee || 650.0,
+          vatRate: 20.0,
+        }),
+      }).catch(() => {});
+    }
   };
 
   const updateQuoteStatus = (id, newStatus) => {

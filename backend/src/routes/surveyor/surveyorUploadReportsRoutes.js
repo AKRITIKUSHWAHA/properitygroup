@@ -15,3 +15,4 @@ router.get('/', getPendingReportJobs);
 router.post('/:id', submitDraftReport);
 
 export default router;
+

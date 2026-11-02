@@ -284,6 +284,43 @@ export const useLeads = () => {
     };
     window.addEventListener('propertygroup_leads_updated', onUpdate);
     window.addEventListener('storage', onUpdate);
+
+    // Sync live CRM leads from backend API
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      fetch('/api/v1/crm-and-leads', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+            const dbLeads = json.data.map((l) => ({
+              id: l.reference || `LD-${l.id}`,
+              dbId: l.id,
+              customerName: l.clientName,
+              customerEmail: l.clientEmail,
+              customerPhone: l.clientPhone || '+44 7700 900512',
+              enquiry: l.serviceType,
+              property: l.propertyAddress,
+              location: `${l.propertyAddress}, ${l.postcode}`,
+              source: l.source === 'WEBSITE' ? 'Website' : l.source === 'PARTNER_AGENCY' ? 'Partner' : l.source,
+              status: l.status === 'CONVERTED' ? 'Converted' : l.status === 'QUOTE_SENT' ? 'Quoted' : l.status === 'NEW' ? 'New' : l.status,
+              created: new Date(l.createdAt).toLocaleDateString('en-GB'),
+              owner: 'Alexander Sterling',
+              estimatedValue: l.estimatedValue ? `£${l.estimatedValue.toLocaleString()}` : '£650.00',
+              notes: l.callLogs?.[0]?.summary || 'Enquiry recorded via live system',
+            }));
+
+            setLeadsState((prev) => {
+              const dbIds = new Set(dbLeads.map((d) => d.id));
+              const retained = prev.filter((p) => !dbIds.has(p.id));
+              return [...dbLeads, ...retained];
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
     return () => {
       window.removeEventListener('propertygroup_leads_updated', onUpdate);
       window.removeEventListener('storage', onUpdate);
@@ -309,10 +346,47 @@ export const useLeads = () => {
         };
       })
     );
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      const statusMap = {
+        New: 'NEW',
+        Contacted: 'CONTACTED',
+        Quoted: 'QUOTE_SENT',
+        Converted: 'CONVERTED',
+        Lost: 'LOST',
+      };
+      fetch(`/api/v1/crm-and-leads/${leadId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: statusMap[newStatus] || newStatus.toUpperCase() }),
+      }).catch(() => {});
+    }
   };
 
   const addLead = (newLead) => {
     setLeads((prev) => [newLead, ...prev]);
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      fetch('/api/v1/crm-and-leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          clientName: newLead.customerName || 'Private Client',
+          clientEmail: newLead.customerEmail || 'client@example.com',
+          clientPhone: newLead.customerPhone || '+44 7700 900000',
+          propertyAddress: newLead.property || newLead.location || 'London Property',
+          postcode: newLead.location?.split(',')?.pop()?.trim() || 'W1K 2PB',
+          serviceType: newLead.enquiry || 'RICS Level 2 Home Survey',
+          source: 'WEBSITE',
+        }),
+      }).catch(() => {});
+    }
   };
 
   const deleteLead = (leadId) => {

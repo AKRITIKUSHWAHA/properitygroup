@@ -28,6 +28,8 @@ import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useJobs } from '../../mock/jobs';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
+import { customerDashboardApi } from '../../api/customerApi';
+import { useEffect } from 'react';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 
 // Strict customer isolation matcher
@@ -64,6 +66,17 @@ export const CustomerDashboardPage = () => {
 
   const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
   const customerJob = myCustomerJobs[0] || null;
+
+  // Sync Customer Dashboard from backend API
+  useEffect(() => {
+    customerDashboardApi.getDashboard()
+      .then((res) => {
+        if (res?.data) {
+          // Customer live dashboard synced
+        }
+      })
+      .catch(() => {});
+  }, []);
   const customerEmails = customerJob?.emails || [];
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
 

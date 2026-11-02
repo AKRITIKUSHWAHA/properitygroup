@@ -16,8 +16,9 @@ import customerPreviousSurveysRoutes from './customerPreviousSurveysRoutes.js';
 
 const router = Router();
 
-// 1. Dashboard
+// 1. Dashboard (both /my-dashboard and /dashboard supported)
 router.use('/my-dashboard', customerDashboardRoutes);
+router.use('/dashboard', customerDashboardRoutes);
 
 // 2. My Quotations
 router.use('/quotations', customerQuotationsRoutes);
@@ -59,4 +60,3 @@ router.use('/my-details', customerDetailsRoutes);
 router.use('/previous-surveys', customerPreviousSurveysRoutes);
 
 export default router;
-

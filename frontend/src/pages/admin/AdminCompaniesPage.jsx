@@ -22,9 +22,36 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { adminCompaniesApi } from '../../api/adminApi';
+import { useEffect } from 'react';
 
 export const AdminCompaniesPage = () => {
   const { addToast } = useToast();
+
+  // Sync companies from backend API
+  useEffect(() => {
+    adminCompaniesApi.getCompanies()
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          setCompanies(res.data.map((c) => ({
+            id: `CMP-${String(c.id).padStart(2, '0')}`,
+            dbId: c.id,
+            name: c.name,
+            code: c.name.slice(0, 2).toUpperCase(),
+            branch: c.branchName || 'London HQ',
+            address: c.address || 'London, UK',
+            contact: c.contactName || 'Branch Contact',
+            role: 'Partner Contact & Keyholder',
+            phone: c.contactPhone || '+44 20 7946 0888',
+            email: c.contactEmail || 'office@partner.com',
+            leads: c.totalInstructions || 20,
+            status: c.status === 'ACTIVE' ? 'Active Partner' : c.status,
+            keyHolding: c.keyCollectionProtocol || 'Key protocol on file',
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [companies, setCompanies] = useState([
     {

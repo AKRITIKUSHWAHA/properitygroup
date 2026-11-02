@@ -17,3 +17,4 @@ router.post('/:id/check-in', checkInSiteVisit);
 router.post('/:id/complete', completeSiteVisit);
 
 export default router;
+

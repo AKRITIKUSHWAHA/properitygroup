@@ -15,3 +15,4 @@ router.get('/', getMyAvailability);
 router.patch('/', updateMyAvailability);
 
 export default router;
+

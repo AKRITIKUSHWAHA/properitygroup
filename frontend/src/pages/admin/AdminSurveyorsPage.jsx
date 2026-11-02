@@ -25,9 +25,36 @@ import { PageHeader } from '../../components/PageHeader';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { SURVEYORS } from '../../mock/jobs';
+import { adminSurveyorsApi } from '../../api/adminApi';
+import { useEffect } from 'react';
 
 export const AdminSurveyorsPage = () => {
   const { addToast } = useToast();
+
+  // Sync surveyors from backend API
+  useEffect(() => {
+    adminSurveyorsApi.getSurveyors()
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          setSurveyorsList(res.data.map((s, idx) => ({
+            id: `srv-${s.id}`,
+            name: s.name,
+            credentials: s.surveyorProfile?.accreditation ? `${s.surveyorProfile.accreditation} Chartered Surveyor` : 'MRICS Chartered Surveyor',
+            postcodes: s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W'],
+            activeJobs: s.surveyorProfile?.activeLoad || 4,
+            maxJobs: s.surveyorProfile?.maxLoad || 8,
+            piiExpiry: '31/12/2027',
+            assignedJobs: s.surveyorProfile?.activeLoad || 12,
+            status: s.status === 'ACTIVE' ? 'Active Field' : s.status,
+            phone: s.phone || `+44 7700 900${idx + 1}84`,
+            email: s.email,
+            specialism: 'RICS Valuation, Level 2 & Level 3',
+            color: '#2563EB',
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [surveyorsList, setSurveyorsList] = useState([
     ...SURVEYORS.map((s, idx) => ({

@@ -29,6 +29,7 @@ import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { RolePermissionsManager } from '../../components/admin/RolePermissionsManager';
+import { adminUsersAndRolesApi } from '../../api/adminApi';
 
 // 3-Dot Action Menu Component for Table Rows
 const UserRowActions = ({ row, onSelectClientModal, onDeleteUser }) => {
@@ -122,6 +123,29 @@ export const AdminUsersPage = () => {
   const { profiles } = useClientProfiles();
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
+
+  // Sync users with backend API
+  useEffect(() => {
+    adminUsersAndRolesApi.getUsers()
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Surveyor', CUSTOMER: 'Customer' };
+          const mapped = res.data.map((u) => ({
+            id: `USR-${String(u.id).padStart(2, '0')}`,
+            dbId: u.id,
+            name: u.name,
+            email: u.email,
+            role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
+            roleLabel: roleLabelMap[u.role] || u.role,
+            org: u.role === 'ADMIN' ? 'NJS Property Group HQ' : u.role === 'SURVEYOR' ? 'Thorne Chartered Surveyors' : 'Private Client',
+            status: u.status === 'ACTIVE' ? 'Active' : 'Inactive',
+            phone: u.phone || '',
+          }));
+          setUsers(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [users, setUsers] = useState([
     {

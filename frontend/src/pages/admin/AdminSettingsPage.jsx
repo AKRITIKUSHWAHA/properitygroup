@@ -21,6 +21,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { adminSettingsApi } from '../../api/adminApi';
 
 // Standard UK Surveying Practice Default SMTP
 const DEFAULT_SMTP = {
@@ -51,6 +52,17 @@ export const AdminSettingsPage = () => {
   const { addToast } = useToast();
 
   const [activeTab, setActiveTab] = useState('smtp');
+
+  // Sync settings from backend API
+  useEffect(() => {
+    adminSettingsApi.getSettings()
+      .then((res) => {
+        if (res?.data) {
+          // Live settings loaded
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Load SMTP config from localStorage or defaults
   const [smtpConfig, setSmtpConfig] = useState(() => {

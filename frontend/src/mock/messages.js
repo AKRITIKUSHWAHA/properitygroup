@@ -206,6 +206,23 @@ export const useMessages = () => {
         console.warn(err);
       }
 
+      // Sync to backend messages API
+      const token = localStorage.getItem('property_group_auth_token');
+      if (token) {
+        fetch('/api/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            conversationId,
+            content: text,
+            senderName: senderName || (role === 'admin' ? 'Alexander Sterling (Admin)' : 'Customer'),
+          }),
+        }).catch(() => {});
+      }
+
       return updated;
     });
 
