@@ -53,3 +53,4 @@ export const handleMultipleUploads = (subfolder) => (req, res, next) => {
     next(error);
   }
 };
+

@@ -24,3 +24,4 @@ router.post('/document', uploadDocument.single('file'), handleSingleUpload('docu
 router.post('/site-photos', uploadSitePhotos.array('photos', 20), handleMultipleUploads('site-photos'));
 
 export default router;
+

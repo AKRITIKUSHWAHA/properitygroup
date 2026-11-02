@@ -84,3 +84,4 @@ export const uploadDocument = multer({
   fileFilter: documentFileFilter,
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
 });
+

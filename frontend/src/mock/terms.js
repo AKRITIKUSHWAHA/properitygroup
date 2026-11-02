@@ -104,154 +104,25 @@ export const TERMS_TEMPLATES = [
 ];
 
 // Initial Sent / Signed / Pending Agreements List
-export const INITIAL_AGREEMENTS = [
-  {
-    id: 'AGR-2026-081',
-    refNo: 'AGR-2026-081',
-    jobNo: 'JOB-2026-080',
-    client: 'Emma Watson',
-    signerEmail: 'customer@demo.com',
-    property: '14 Mayfair Gate',
-    location: 'Mayfair, London W1K 2PB',
-    serviceKey: 'Homebuyer L2',
-    templateName: 'RICS Home Survey Standard (Level 2) Terms',
-    versionYear: 'v2026.2 / 2026',
-    status: 'Signed', // 'Signed' | 'Sent' | 'Pending'
-    sentDate: '26/10/2026',
-    signedDate: '26/10/2026, 11:15',
-    signerIp: '86.142.19.42 (London, UK)',
-    auditCode: 'DOC-ESIGN-84029-EMMAW',
-    downloadUrl: '#download-signed-pdf',
-  },
-  {
-    id: 'AGR-2026-082',
-    refNo: 'AGR-2026-082',
-    jobNo: 'JOB-2026-081',
-    client: 'Kensington Estates PLC',
-    signerEmail: 'acquisitions@kensingtonestates.co.uk',
-    property: '24 Kensington Palace Gardens',
-    location: 'Kensington, London W8 4QQ',
-    serviceKey: 'Building L3',
-    templateName: 'Comprehensive Building Survey (Level 3) Structural Terms',
-    versionYear: 'v2026.1 / 2026',
-    status: 'Signed',
-    sentDate: '25/10/2026',
-    signedDate: '25/10/2026, 16:40',
-    signerIp: '194.73.104.12 (Westminster, UK)',
-    auditCode: 'DOC-ESIGN-79102-KENEST',
-    downloadUrl: '#download-signed-pdf',
-  },
-  {
-    id: 'AGR-2026-083',
-    refNo: 'AGR-2026-083',
-    jobNo: 'JOB-2026-082',
-    client: 'Harrison Croft',
-    signerEmail: 'harrison.croft@example.co.uk',
-    property: '12 Pembroke Square',
-    location: 'Kensington, London W8 6PA',
-    serviceKey: 'Building L3',
-    templateName: 'Comprehensive Building Survey (Level 3) Structural Terms',
-    versionYear: 'v2026.1 / 2026',
-    status: 'Pending',
-    sentDate: '26/10/2026',
-    signedDate: null,
-    signerIp: null,
-    auditCode: 'DOC-PENDING-44910-HCROFT',
-    downloadUrl: null,
-  },
-  {
-    id: 'AGR-2026-084',
-    refNo: 'AGR-2026-084',
-    jobNo: 'JOB-2026-084',
-    client: 'Apex Asset Holdings Ltd',
-    signerEmail: 'investments@apexasset.com',
-    property: '42 Belgrave Square',
-    location: 'Belgravia, London SW1X 8NT',
-    serviceKey: 'Valuation',
-    templateName: 'RICS Red Book Global Valuation Engagement Terms',
-    versionYear: 'v2026.2 / 2026',
-    status: 'Signed',
-    sentDate: '23/10/2026',
-    signedDate: '24/10/2026, 09:20',
-    signerIp: '82.35.191.10 (City of London, UK)',
-    auditCode: 'DOC-ESIGN-51829-APEX',
-    downloadUrl: '#download-signed-pdf',
-  },
-  {
-    id: 'AGR-2026-085',
-    refNo: 'AGR-2026-085',
-    jobNo: 'JOB-2026-083',
-    client: 'Richmond Borough Properties',
-    signerEmail: 'estates@richmondborough.org.uk',
-    property: '8 Chichester Road',
-    location: 'Richmond, Surrey TW10 6RF',
-    serviceKey: 'Damp',
-    templateName: 'Specialist Moisture, Timber & Structural Dampness Terms',
-    versionYear: 'v2026.1 / 2026',
-    status: 'Signed',
-    sentDate: '22/10/2026',
-    signedDate: '22/10/2026, 14:10',
-    signerIp: '158.43.12.8 (Richmond, UK)',
-    auditCode: 'DOC-ESIGN-39184-RBC',
-    downloadUrl: '#download-signed-pdf',
-  },
-  {
-    id: 'AGR-2026-086',
-    refNo: 'AGR-2026-086',
-    jobNo: 'JOB-2026-085',
-    client: 'Priya Sharma',
-    signerEmail: 'priya.s@sharmainvest.com',
-    property: '45 Park Mansions',
-    location: 'Battersea, London SW11 4HG',
-    serviceKey: 'Homebuyer L2',
-    templateName: 'RICS Home Survey Standard (Level 2) Terms of Engagement',
-    versionYear: 'v2026.2 / 2026',
-    status: 'Sent',
-    sentDate: '27/10/2026',
-    signedDate: null,
-    signerIp: null,
-    auditCode: 'DOC-SENT-90184-PRIYA',
-    downloadUrl: null,
-  },
-  {
-    id: 'AGR-2026-087',
-    refNo: 'AGR-2026-087',
-    jobNo: null,
-    client: 'Charlotte Montgomery',
-    signerEmail: 'charlotte.m@montgomery.co.uk',
-    property: '5 Elm Bank Gardens',
-    location: 'Barnes, London SW13 0NT',
-    serviceKey: 'Snagging',
-    templateName: 'New Build Snagging & Quality Defect Inspection Mandate',
-    versionYear: 'v2026.3 / 2026',
-    status: 'Sent',
-    sentDate: '27/10/2026',
-    signedDate: null,
-    signerIp: null,
-    auditCode: 'DOC-SENT-28194-MONT',
-    downloadUrl: null,
-  },
-  {
-    id: 'AGR-2026-088',
-    refNo: 'AGR-2026-088',
-    jobNo: null,
-    client: 'Lord Gregory Cavendish',
-    signerEmail: 'cavendish.holdings@uknet.co.uk',
-    property: '38 Eaton Place',
-    location: 'Belgravia, London SW1X 8AL',
-    serviceKey: 'Expert Witness',
-    templateName: 'Civil Procedure Rules (CPR Part 35) Expert Witness Mandate',
-    versionYear: 'v2026.1 / 2026',
-    status: 'Pending',
-    sentDate: '27/10/2026',
-    signedDate: null,
-    signerIp: null,
-    auditCode: 'DOC-PENDING-19284-CAV',
-    downloadUrl: null,
-  },
-];
+export const INITIAL_AGREEMENTS = [];
 
-export const getStoredAgreements = () => {
+// legacy
+const _legacyTerms = () => {
+  try {
+    if (!localStorage.getItem('njs_fresh_agreements_clean_v1')) {
+      localStorage.removeItem('propertygroup_agreements');
+      localStorage.setItem('njs_fresh_agreements_clean_v1', 'true');
+      return [];
+    }
+    const raw = localStorage.getItem('propertygroup_agreements');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error(e);
+  }
+  return [];
+};
+
+const _unusedTerms = () => {
   try {
     const raw = localStorage.getItem('propertygroup_agreements');
     if (raw) return JSON.parse(raw);
