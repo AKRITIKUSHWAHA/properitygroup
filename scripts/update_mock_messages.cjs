@@ -48,3 +48,4 @@ jobsContent = jobsContent.replace(
 );
 fs.writeFileSync(jobsPath, jobsContent, 'utf8');
 console.log('Successfully updated JOB-2026-082 emails in src/mock/jobs.js');
+

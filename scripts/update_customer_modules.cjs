@@ -844,3 +844,4 @@ content = content.replace(oldMsgRegex, newMsg);
 
 fs.writeFileSync(modPath, content, 'utf8');
 console.log('Successfully updated CustomerModules.jsx with strict customer isolation!');
+

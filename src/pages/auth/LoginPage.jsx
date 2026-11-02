@@ -23,13 +23,13 @@ export const ROLES_CONFIG = {
     roleKey: 'customer',
     defaultEmail: 'customer@demo.com',
     label: 'Customer',
-    badge: 'Client Self-Service',
+    badge: 'Customer Self-Service',
     badgeIcon: User,
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
-    title: 'Client Portal Sign In',
+    title: 'Customer Login',
     subtitle: 'Access your fee proposals, e-sign terms & download survey reports',
-    demoName: 'Demo Client Account',
-    buttonText: 'Sign In to Client Portal',
+    demoName: 'Demo Customer Account',
+    buttonText: 'Customer Login',
     rightBadge: 'Independent RICS Practice Portal',
     rightHeading: 'Fast, Objective Property Surveys & Red Book Valuations',
     rightDescription:
@@ -325,7 +325,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
             {/* Optional Customer Registration Link (only shown for Customer portal) */}
             {activeRoleKey === 'customer' && (
               <div className="mt-3 text-center">
-                <span className="text-xs text-slate-500 font-medium">Need a client survey account? </span>
+                <span className="text-xs text-slate-500 font-medium">Need a customer survey account? </span>
                 <Link to="/register" className="text-xs font-bold text-[#0B1F4D] hover:underline">
                   Register online
                 </Link>

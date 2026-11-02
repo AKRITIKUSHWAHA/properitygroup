@@ -225,3 +225,4 @@ dashContent = dashContent.replace(
 
 fs.writeFileSync(dashPath, dashContent, 'utf8');
 console.log('Successfully updated CustomerDashboardPage.jsx with strict customer isolation!');
+

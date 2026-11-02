@@ -129,3 +129,4 @@ content = content.replace(
 
 fs.writeFileSync(trackerPath, content, 'utf8');
 console.log('Successfully updated SurveyProgressTracker.jsx with dynamic stages and privacy protection!');
+

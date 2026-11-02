@@ -50,3 +50,4 @@ const customerBlock = `  'customer@demo.com': {
 content = content.replace(/\s+'customer@demo\.com':\s*\{[\s\S]*?badgeColor:[^\n]+\n\s*\},/, '\n' + customerBlock);
 fs.writeFileSync(usersPath, content, 'utf8');
 console.log('Successfully updated src/mock/users.js with Customer B (Harrison Croft)');
+
