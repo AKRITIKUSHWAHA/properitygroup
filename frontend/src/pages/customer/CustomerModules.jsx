@@ -2456,6 +2456,11 @@ export const CustomerReviewPage = () => {
   const [isSubmitted, setIsSubmitted] = useState(!!completedJob?.reviewSubmitted);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Fetch customer review API
+  useEffect(() => {
+    customerReviewApi.getReviews().catch(() => {});
+  }, []);
+
   // Sync state if job updates
   useEffect(() => {
     if (completedJob) {

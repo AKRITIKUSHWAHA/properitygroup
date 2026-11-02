@@ -29,11 +29,13 @@ export const customerTrackSurveyApi = {
 // Menu 5: Appointment Details
 export const customerAppointmentDetailsApi = {
   getDetails: () => api.get('/customer/appointment-details'),
+  getAppointment: () => api.get('/customer/appointment-details'),
 };
 
 // Menu 6: Assigned Surveyor
 export const customerAssignedSurveyorApi = {
   getSurveyor: () => api.get('/customer/assigned-surveyor'),
+  getAssignedSurveyor: () => api.get('/customer/assigned-surveyor'),
 };
 
 // Menu 7: Terms to Sign
@@ -62,12 +64,14 @@ export const customerMessagesApi = {
 // Menu 11: Leave a Review
 export const customerReviewApi = {
   getReviews: () => api.get('/customer/leave-review'),
+  getReview: () => api.get('/customer/leave-review'),
   submitReview: (reviewData) => api.post('/customer/leave-review', reviewData),
 };
 
 // Menu 12: Support
 export const customerSupportApi = {
   getTickets: () => api.get('/customer/support/tickets'),
+  getSupport: () => api.get('/customer/support/tickets'),
   createTicket: (ticketData) => api.post('/customer/support/tickets', ticketData),
 };
 
@@ -80,5 +84,6 @@ export const customerDetailsApi = {
 // Menu 14: Previous Surveys
 export const customerPreviousSurveysApi = {
   getSurveys: () => api.get('/customer/previous-surveys'),
+  getPreviousSurveys: () => api.get('/customer/previous-surveys'),
 };
 

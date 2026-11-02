@@ -180,3 +180,4 @@ import {
   fs.writeFileSync(customerFile, cCode, 'utf8');
   console.log('✅ Connected all Customer modules to customerApi');
 }
+
