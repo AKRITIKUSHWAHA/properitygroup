@@ -316,3 +316,13 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  category  String   @default("GENERAL") // GENERAL, FINANCIAL, NOTIFICATION, RICS
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
