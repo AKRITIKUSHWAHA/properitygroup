@@ -15,3 +15,4 @@ router.get('/', getCustomerInvoices);
 router.post('/:id/pay', payInvoiceWithCard);
 
 export default router;
+

@@ -11,3 +11,4 @@ router.use(authorizeRoles('CUSTOMER'));
 router.get('/', getAppointmentDetails);
 
 export default router;
+

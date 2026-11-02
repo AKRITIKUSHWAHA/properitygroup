@@ -66,3 +66,4 @@ export const getAppointmentDetails = async (req, res, next) => {
     next(error);
   }
 };
+

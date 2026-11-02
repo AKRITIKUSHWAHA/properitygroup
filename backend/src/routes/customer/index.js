@@ -59,3 +59,4 @@ router.use('/my-details', customerDetailsRoutes);
 router.use('/previous-surveys', customerPreviousSurveysRoutes);
 
 export default router;
+

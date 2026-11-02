@@ -15,3 +15,4 @@ router.get('/', getCustomerDetails);
 router.patch('/', updateCustomerDetails);
 
 export default router;
+

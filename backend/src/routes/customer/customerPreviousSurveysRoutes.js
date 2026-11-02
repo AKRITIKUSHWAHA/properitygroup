@@ -11,3 +11,4 @@ router.use(authorizeRoles('CUSTOMER'));
 router.get('/', getPreviousSurveys);
 
 export default router;
+

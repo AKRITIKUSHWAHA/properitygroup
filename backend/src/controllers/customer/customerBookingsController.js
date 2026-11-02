@@ -35,3 +35,4 @@ export const getCustomerBookings = async (req, res, next) => {
     next(error);
   }
 };
+

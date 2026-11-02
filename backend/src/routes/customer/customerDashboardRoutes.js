@@ -11,3 +11,4 @@ router.use(authorizeRoles('CUSTOMER'));
 router.get('/', getCustomerDashboard);
 
 export default router;
+

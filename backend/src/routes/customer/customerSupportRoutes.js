@@ -15,3 +15,4 @@ router.get('/tickets', getSupportTickets);
 router.post('/tickets', createSupportTicket);
 
 export default router;
+

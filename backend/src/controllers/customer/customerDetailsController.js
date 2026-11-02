@@ -50,3 +50,4 @@ export const updateCustomerDetails = async (req, res, next) => {
     next(error);
   }
 };
+
