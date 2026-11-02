@@ -116,7 +116,15 @@
 
 ---
 
-## 4. SurveyBooker & e.surv Video Features (From Videos 1 & 2)
+## 4. Client Video Archives & Features (`client_requirements/videos/`)
+
+### Video Inventory in `client_requirements/videos/`:
+* **Video 1:** `WhatsApp Video 2026-10-28 at 12.44.50.mp4` (Duration: 02:44) — SurveyBooker dashboard, 6 action buckets, and quote dispatch workflow.
+* **Video 2:** `WhatsApp Video 2026-10-28 at 12.58.37.mp4` (Duration: 00:34) — e.surv quotation email template with Trustpilot 5-Star banner and pricing table.
+* **Video 3:** `WhatsApp Video 2026-10-31 at 18.14.09.mp4` (Duration: 00:31) — Mobile quote submission page walkthrough and input zoom behavior.
+* **Video 4:** `WhatsApp Video 2026-10-31 at 18.14.10.mp4` (Duration: 00:21) — Mobile form input fields and screen layout walkthrough.
+
+### Implementation of Video Features:
 
 - [x] **Feature 1: SurveyBooker 6 Action Buckets Dashboard**
   - Added `SurveyBookerWorkflowBuckets.jsx` with dynamic live counts:
@@ -445,3 +453,51 @@
 
 ### Client Message 3 (Security & Privacy on Booking Access Details)
 > Please also see that currently the Client on the booking can see the axis details. These need to be private as that is only for the Surveyor to see the client should not be able to see how the Surveyor is accessing the property because that includes things like key numbers and codes to enter the property which the public are not allowed to know it’s only between the estate agent and the Surveyor
+
+---
+
+### Client Message 4 (Data Separation, Mobile Zoom Bug, e.surv Trustpilot Header & 12-Point Verification Checklist)
+
+> Estate Agent Partner Portal - please remove
+>
+> Separate Customer Information From Internal Information
+>
+> Please review the entire booking system and clearly separate customer-facing information from internal operational information.
+>
+> For example, customers should not see:
+>
+> * Internal administration notes.
+> * Surveyor-only instructions.
+> * Access arrangements and security codes.
+> * Internal discussions between staff.
+> * Estate agent commission arrangements.
+> * Internal business costs or margins.
+> * Surveyor availability calendars or unrelated appointments.
+> * Draft reports or reports awaiting quality checks.
+> * Other customers’ bookings or information.
+> * Confidential contact details that are unnecessary for their booking.
+>
+> Customers should only see the details relevant to their own survey, including their quotation, booking status, payment, signed terms, messages and completed report.
+>
+> It should Look like this
+>
+> When you tried to type in information on the page to submit a quote, the page in enlarges, and then you cannot zoom out of it again on the mobile phone
+>
+> Please make more like this https://www.esurv.co.uk/
+>
+> **Reference Images Attached by Client (Saved in `client_requirements/images/`):**
+> * `client_requirements/images/trustpilot_stars.png` (Trustpilot Excellent 5-star green badge)
+> * `client_requirements/images/trustpilot_header_banner.png` (Top bar with Trustpilot widget + phone number 0800 169 9661)
+>
+> NOT YET VERIFIED — Customer A cannot see Customer B's bookings, messages or reports
+> NOT YET VERIFIED — Clients cannot see key codes, staff notes or surveyor-only instructions
+> NOT YET VERIFIED — Surveyors can only access their assigned jobs
+> NOT YET VERIFIED — Each estate agency can only view its own referrals
+> NOT YET VERIFIED — Quotes are saved and appear correctly in the admin dashboard
+> NOT YET VERIFIED — Digital Terms of Engagement can be signed and saved
+> NOT YET VERIFIED — Payments produce the correct booking and invoice status
+> NOT YET VERIFIED — Actual invoices and survey reports download correctly
+> NOT YET VERIFIED — Customer messages reach the admin team and trigger Gmail notifications
+> NOT YET VERIFIED — Admin replies are visible in the correct customer's conversation
+> NOT YET VERIFIED — Password reset, logout and session expiry operate securely
+> NOT YET VERIFIED — Completed jobs trigger the intended Trustpilot invitation
