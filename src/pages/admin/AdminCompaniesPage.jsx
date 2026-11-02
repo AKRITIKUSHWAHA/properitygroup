@@ -202,33 +202,69 @@ export const AdminCompaniesPage = () => {
         onAction={() => setIsAddModalOpen(true)}
       />
 
-      {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Partner Agencies</span>
-            <Building2 className="w-4 h-4 text-blue-600" />
+      {/* 3 Compact Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {/* Card 1: Partner Agencies */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Partner Agencies
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <Building2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-[#0B1F4D]">{companies.length} Branches</div>
-          <div className="text-xs text-slate-500">London &amp; Home Counties Network</div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
+              {companies.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Branches</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            London &amp; Home Counties Network
+          </p>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Referred Survey Instructions</span>
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
+        {/* Card 2: Referred Survey Instructions */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Referred Instructions
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-emerald-700 font-mono">{totalLeads} Instructions</div>
-          <div className="text-xs text-slate-500">B2B Agency Referral Inbound</div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-700">
+              {totalLeads}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Instructions</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            B2B Agency Referral Inbound
+          </p>
         </div>
 
-        <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Key Access Protocol</span>
-            <Key className="w-4 h-4 text-amber-500" />
+        {/* Card 3: Key Access Protocol */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Key Access Protocol
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+              <Key className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <div className="text-2xl font-black text-slate-900">100% Verified</div>
-          <div className="text-xs text-slate-500">Surveyor RICS Photo ID Mandated</div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+              100%
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Verified</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            Surveyor RICS Photo ID Mandated
+          </p>
         </div>
       </div>
 
