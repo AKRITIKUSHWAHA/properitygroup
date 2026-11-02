@@ -13,6 +13,7 @@ import reportsAndAnalyticsRoutes from './reportsAndAnalyticsRoutes.js';
 import settingsRoutes from './settingsRoutes.js';
 import customerRouter from './customer/index.js';
 import surveyorRouter from './surveyor/index.js';
+import uploadRoutes from './uploadRoutes.js';
 
 const router = Router();
 
@@ -80,5 +81,8 @@ router.use('/customer', customerRouter);
 
 // Surveyor Portal (All 6 Menus with Strict Workload & Assignment Isolation)
 router.use('/surveyor', surveyorRouter);
+
+// Local File Uploads (Server Disk Storage)
+router.use('/uploads', uploadRoutes);
 
 export default router;

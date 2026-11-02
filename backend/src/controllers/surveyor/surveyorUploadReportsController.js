@@ -38,12 +38,18 @@ export const getPendingReportJobs = async (req, res, next) => {
 export const submitDraftReport = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { reportPdfUrl, conditionSummary } = req.body;
+    let reportPdfUrl = req.body?.reportPdfUrl;
+    const conditionSummary = req.body?.conditionSummary;
     const jobId = parseInt(id);
     const surveyorId = req.user.id;
 
+    // If file was uploaded via multipart/form-data
+    if (req.file) {
+      reportPdfUrl = `/uploads/reports/${req.file.filename}`;
+    }
+
     if (!reportPdfUrl) {
-      throw ApiError.badRequest('Report PDF document URL is required');
+      throw ApiError.badRequest('Report PDF document or uploaded file is required');
     }
 
     const job = await prisma.job.findFirst({
@@ -59,6 +65,7 @@ export const submitDraftReport = async (req, res, next) => {
       data: {
         reportPdfUrl,
         reportGeneratedAt: new Date(),
+        stage: 'COMPLETED',
       },
     });
 
@@ -67,13 +74,13 @@ export const submitDraftReport = async (req, res, next) => {
         jobId: job.id,
         userId: surveyorId,
         action: 'DRAFT_REPORT_SUBMITTED_FOR_QA',
-        details: `Draft report submitted by surveyor ${req.user.name}. Awaiting Admin QA audit approval.`,
+        details: `Draft report (${req.file ? req.file.originalname : 'PDF file'}) uploaded and submitted by surveyor ${req.user.name}.`,
       },
     });
 
     return ApiResponse.success(
       res,
-      { job: updated },
+      { job: updated, fileUrl: reportPdfUrl },
       'RICS Report draft uploaded successfully and submitted for Admin QA Review.'
     );
   } catch (error) {

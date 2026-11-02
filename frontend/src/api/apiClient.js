@@ -16,11 +16,12 @@ export class ApiError extends Error {
 
 export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token } = {}) {
   const authToken = token || localStorage.getItem('property_group_auth_token');
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const config = {
     method,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...headers,
@@ -28,7 +29,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = isFormData ? body : JSON.stringify(body);
   }
 
   const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;

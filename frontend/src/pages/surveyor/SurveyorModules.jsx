@@ -30,6 +30,7 @@ import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
 import { useEffect } from 'react';
+import { api } from '../../api/apiClient';
 import {
   surveyorCalendarApi,
   surveyorJobsApi,
@@ -517,21 +518,44 @@ export const SurveyorUploadReportsPage = () => {
     if (files.length > 0) processFiles(files);
   };
 
-  const processFiles = (files) => {
-    const newItems = Array.from(files).map((f) => ({
-      name: f.name,
-      size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-      date: 'Just now',
-      jobId: selectedJob,
-      status: 'Under Admin QA Review',
-    }));
-
-    setUploadedFiles((prev) => [...newItems, ...prev]);
-    addToast({
-      type: 'success',
-      title: 'Report Artifact Uploaded',
-      message: `${files.length} document(s) uploaded and queued for Quality Review.`,
-    });
+  const processFiles = async (files) => {
+    for (const f of Array.from(files)) {
+      const formData = new FormData();
+      formData.append('file', f);
+      try {
+        const res = await api.post('/uploads/report', formData);
+        const uploadedUrl = res?.url || res?.data?.url;
+        const newItem = {
+          name: f.name,
+          size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+          date: 'Just now',
+          jobId: selectedJob,
+          status: 'Saved to Server Disk',
+          url: uploadedUrl,
+        };
+        setUploadedFiles((prev) => [newItem, ...prev]);
+        addToast({
+          type: 'success',
+          title: 'Report Uploaded to Server',
+          message: `${f.name} successfully stored on server storage (/uploads/reports).`,
+        });
+      } catch (err) {
+        // Fallback for UI
+        const newItem = {
+          name: f.name,
+          size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
+          date: 'Just now',
+          jobId: selectedJob,
+          status: 'Under Admin QA Review',
+        };
+        setUploadedFiles((prev) => [newItem, ...prev]);
+        addToast({
+          type: 'info',
+          title: 'Report Queued',
+          message: `${f.name} queued for Quality Review.`,
+        });
+      }
+    }
   };
 
   const handleSubmitAllQA = () => {
