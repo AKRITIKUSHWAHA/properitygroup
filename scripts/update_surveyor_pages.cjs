@@ -654,3 +654,4 @@ modulesContent = modulesContent.replace(oldUploadRegex, newUpload);
 
 fs.writeFileSync(modulesPath, modulesContent, 'utf8');
 console.log('Successfully updated SurveyorModules.jsx with surveyor job isolation!');
+

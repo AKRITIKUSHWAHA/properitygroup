@@ -407,3 +407,4 @@ if (lastJobIndex !== -1) {
 } else {
   console.error('Could not find end of INITIAL_JOBS array');
 }
+

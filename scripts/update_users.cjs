@@ -120,3 +120,4 @@ const surveyorBlock = `  'surveyor@demo.com': {
 content = content.replace(/\s+'surveyor@demo\.com':\s*\{[\s\S]*?badgeColor:[^\n]+\n\s*\},/, '\n' + surveyorBlock);
 fs.writeFileSync(usersPath, content, 'utf8');
 console.log('Successfully updated src/mock/users.js with all surveyors');
+
