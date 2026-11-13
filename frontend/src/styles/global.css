@@ -4,13 +4,16 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: clip;
+  overflow-x: hidden !important;
+  max-width: 100vw;
 }
 
 body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  overflow-x: clip;
+  overflow-x: hidden !important;
+  max-width: 100vw;
+  position: relative;
 }
 
 /* Box sizing and base reset scoped to public website */
@@ -31,8 +34,9 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-normal);
   color: var(--color-main-text);
-  overflow-x: clip;
+  overflow-x: hidden !important;
   width: 100%;
+  max-width: 100vw;
 }
 
 /* Default Headings in public website */

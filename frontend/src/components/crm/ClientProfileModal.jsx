@@ -31,7 +31,7 @@ import {
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { useToast } from '../ToastContext';
 
-export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 'calls' }) => {
+export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initialTab = 'calls' }) => {
   const { addToast } = useToast();
   const { profiles, addCallLog, addComplaint, updateComplaint } = useClientProfiles();
 
@@ -69,17 +69,19 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, initialTab = 
 
   if (!isOpen) return null;
 
-  // Retrieve client profile or fallback
-  const client = (clientEmail && profiles[clientEmail]) || {
-    id: 'CLT-1001',
-    name: 'Emma Watson',
-    email: clientEmail || 'customer@demo.com',
-    phone: '+44 7700 900147',
-    address: '14 Mayfair Gate, Mayfair, London W1K 2PB',
+  // Retrieve client profile or fallback to lead's real information
+  const existingProfile = clientEmail ? profiles[clientEmail] : null;
+
+  const client = existingProfile || {
+    id: lead?.ref || lead?.id ? `CLT-${String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '1001'}` : 'CLT-1001',
+    name: lead?.customerName || lead?.name || 'Test Customer',
+    email: clientEmail || lead?.customerEmail || 'test@example.com',
+    phone: lead?.customerPhone || lead?.phone || '+44 7700 900147',
+    address: lead?.property ? `${lead.property}${lead.location ? ', ' + lead.location : ''}` : '24 Victoria Road, Richmond pune, TW9 1AB',
     clientType: 'First-Time Residential Buyer',
     status: 'Active Client',
-    totalSpent: '£650.00',
-    activeJobs: ['JOB-2026-084'],
+    totalSpent: lead?.estimatedValue && !lead.estimatedValue.toLowerCase().includes('pending') ? lead.estimatedValue : '£0.00',
+    activeJobs: lead?.id ? [lead.id] : [],
     calls: [],
     complaints: [],
   };

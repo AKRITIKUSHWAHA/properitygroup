@@ -185,34 +185,34 @@ export const SurveyorDashboardPage = () => {
       />
 
       {/* 1. URGENT 48-HOUR SLA COUNTDOWN BANNER (Client Point 14) */}
-      <div className="bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] text-white p-5 sm:p-6 rounded-3xl shadow-md border border-blue-400/20 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] text-white p-4 sm:p-5 rounded-2xl shadow-sm border border-blue-400/20 relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-blue-200 border border-white/15">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-semibold text-blue-200 border border-white/15">
               <Clock className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
               <span>Report Delivery SLA Tracker</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black">
+            <h2 className="text-base sm:text-lg font-bold">
               {primaryJob.property} — {primaryJob.surveyType}
             </h2>
-            <p className="text-xs text-blue-100">
+            <p className="text-xs text-blue-100/90">
               Target turnaround: 48 hours post-inspection • Instructing Client: {primaryJob.customer}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 self-start md:self-auto shrink-0">
+          <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20 self-start md:self-auto shrink-0">
             <div className="text-center">
-              <span className="text-2xl sm:text-3xl font-black font-mono text-amber-300">
+              <span className="text-base sm:text-lg font-bold font-mono text-amber-300 tracking-tight">
                 {timeRemaining.hours}h {timeRemaining.minutes}m
               </span>
-              <span className="block text-[10px] uppercase font-bold text-blue-200 tracking-wider">
+              <span className="block text-[9px] uppercase font-semibold text-blue-200 tracking-wider mt-0.5">
                 Deadline Remaining
               </span>
             </div>
-            <div className="h-8 w-px bg-white/20" />
+            <div className="h-6 w-px bg-white/20" />
             <button
               onClick={() => navigate('/surveyor/upload-reports')}
-              className="px-4 py-2 bg-white text-[#0B1F4D] rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 bg-white text-[#0B1F4D] rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors shadow-xs cursor-pointer"
             >
               Upload Draft
             </button>

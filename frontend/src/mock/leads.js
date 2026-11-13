@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Mock data for CRM & Leads
 // Lead sources: Website, Referral, Local Surveyors Direct, Email Inquiry, Google Ads, Partner, Expert Witness form
@@ -69,13 +69,13 @@ export const useLeads = () => {
     };
   }, []);
 
-  const setLeads = (updater) => {
+  const setLeads = useCallback((updater) => {
     setLeadsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       saveStoredLeads(next);
       return next;
     });
-  };
+  }, []);
 
   const updateLeadStatus = (leadId, newStatus, extraData = {}) => {
     setLeads((prev) =>

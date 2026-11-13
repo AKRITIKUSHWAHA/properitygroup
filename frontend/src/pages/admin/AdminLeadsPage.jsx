@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Search,
@@ -207,12 +207,76 @@ const LeadRowActions = ({
 
 export const AdminLeadsPage = () => {
   const { addToast } = useToast();
-  const { leads, updateLeadStatus, addLead, deleteLead } = useLeads();
+  const { leads, updateLeadStatus, addLead, deleteLead, setLeads } = useLeads();
+  const [isLoadingLeads, setIsLoadingLeads] = useState(false);
 
-  // Fetch CRM leads + metrics from backend API
+  // Fetch CRM leads from MySQL backend API and sync with UI
+  const refreshLeadsFromBackend = useCallback(async () => {
+    try {
+      setIsLoadingLeads(true);
+      const res = await adminCrmAndLeadsApi.getLeads();
+      const rawLeads = res?.leads || res?.data?.leads || (Array.isArray(res) ? res : []);
+      if (Array.isArray(rawLeads) && rawLeads.length > 0) {
+        const statusMap = {
+          NEW: 'New',
+          CONTACTED: 'Contacted',
+          QUALIFIED: 'Qualified',
+          QUOTE_SENT: 'Quoted',
+          CONVERTED: 'Converted',
+          LOST: 'Lost',
+        };
+        const sourceMap = {
+          WEBSITE: 'Website',
+          LSD: 'Local Surveyors Direct',
+          REFERRAL: 'Referral',
+          PHONE: 'Email Inquiry',
+          PARTNER_AGENCY: 'Partner',
+          EXPERT_WITNESS: 'Expert Witness form',
+        };
+
+        const mapped = rawLeads.map((l) => {
+          const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
+          return {
+            id: l.reference || `LEAD-${l.id}`,
+            dbId: l.id,
+            created: dateObj.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            }),
+            date: l.createdAt,
+            customerName: l.clientName || 'Private Client',
+            customerEmail: l.clientEmail || '',
+            customerPhone: l.clientPhone || '—',
+            enquiry: l.serviceType || 'RICS Level 2 Home Survey',
+            property: l.propertyAddress || 'UK Property',
+            location: l.postcode || '',
+            source: sourceMap[l.source?.toUpperCase()] || l.source || 'Website',
+            status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
+            estimatedValue: l.estimatedValue ? `£${l.estimatedValue}` : 'Pending Quote',
+            owner: 'Unassigned',
+            company: l.company?.name || null,
+            callLogs: l.callLogs || [],
+            complaints: l.complaints || [],
+            notes: l.propertyType || '',
+          };
+        });
+
+        if (setLeads) {
+          setLeads(mapped);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend CRM leads fetch skipped or unavailable:', err);
+    } finally {
+      setIsLoadingLeads(false);
+    }
+  }, [setLeads]);
+
   useEffect(() => {
-    adminCrmAndLeadsApi.getLeads().catch(() => {});
+    refreshLeadsFromBackend();
     adminCrmAndLeadsApi.getMetrics().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const location = useLocation();
 
@@ -722,11 +786,30 @@ export const AdminLeadsPage = () => {
                     </th>
                     <th
                       onClick={() => handleSort('customerName')}
-                      className="py-3 px-4 min-w-[210px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                      className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>Customer</span>
+                        <span>Customer Name</span>
                         {sortKey === 'customerName' ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                        ) : (
+                          <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        )}
+                      </div>
+                    </th>
+                    <th className="py-3 px-4 whitespace-nowrap">
+                      <span>Phone</span>
+                    </th>
+                    <th className="py-3 px-4 whitespace-nowrap">
+                      <span>Email</span>
+                    </th>
+                    <th
+                      onClick={() => handleSort('property')}
+                      className="py-3 px-4 min-w-[200px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Property Address</span>
+                        {sortKey === 'property' ? (
                           sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
                         ) : (
                           <ChevronsUpDown className="w-3 h-3 opacity-40" />
@@ -735,10 +818,10 @@ export const AdminLeadsPage = () => {
                     </th>
                     <th
                       onClick={() => handleSort('enquiry')}
-                      className="py-3 px-4 min-w-[240px] cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
+                      className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100/60 transition-colors select-none"
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>Survey &amp; Property</span>
+                        <span>Survey Service</span>
                         {sortKey === 'enquiry' ? (
                           sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-[#2563EB]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#2563EB]" />
                         ) : (
@@ -809,48 +892,63 @@ export const AdminLeadsPage = () => {
                           {row.id}
                         </button>
                         <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.created}</div>
-                        <div className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                          <span className="truncate max-w-[110px]">{row.owner}</span>
-                        </div>
                       </td>
 
-                      {/* 2. Customer */}
-                      <td className="py-3.5 px-4 min-w-[210px]" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedClientEmail(row.customerEmail);
-                            setClientModalTab('calls');
-                          }}
-                          className="text-left font-bold text-[#0B1F4D] hover:text-[#2563EB] hover:underline flex items-center gap-1.5 group/cust cursor-pointer text-xs"
-                          title="Click to view client profile, call history & complaints"
-                        >
-                          <span>{row.customerName}</span>
-                          <PhoneCall className="w-3 h-3 text-[#2563EB] opacity-60 group-hover/cust:opacity-100 transition-opacity shrink-0" />
-                        </button>
-                        <div className="text-[11px] text-slate-500 mt-0.5 break-all sm:truncate max-w-[220px]">
-                          {row.customerEmail}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                          {row.customerPhone}
-                        </div>
+                      {/* 2. Customer Name (Clean, No Phone Icon) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-bold text-[#0B1F4D] text-xs block">
+                          {row.customerName}
+                        </span>
                       </td>
 
-                      {/* 3. Survey & Property */}
-                      <td className="py-3.5 px-4 min-w-[240px]">
-                        <div className="font-bold text-[#0B1F4D] text-xs leading-snug group-hover:text-[#2563EB] transition-colors">
+                      {/* 3. Phone (Separate Column) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {row.customerPhone && row.customerPhone !== '—' && row.customerPhone !== 'N/A' ? (
+                          <a
+                            href={`tel:${row.customerPhone}`}
+                            className="font-mono text-xs text-slate-700 hover:text-[#2563EB] hover:underline"
+                          >
+                            {row.customerPhone}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* 4. Email (Separate Column) */}
+                      <td className="py-3.5 px-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        {row.customerEmail ? (
+                          <a
+                            href={`mailto:${row.customerEmail}`}
+                            className="text-xs text-slate-600 hover:text-[#2563EB] hover:underline"
+                          >
+                            {row.customerEmail}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* 5. Property Address (Separate Column) */}
+                      <td className="py-3.5 px-4 min-w-[200px] max-w-[280px]">
+                        <div className="text-xs text-slate-800 font-medium leading-snug">
+                          {row.property}
+                        </div>
+                        {row.location && (
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            {row.location}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 6. Survey Service */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold">
                           {row.enquiry}
-                        </div>
-                        <div className="text-[11px] text-slate-600 mt-1 flex items-start gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                          <span className="leading-tight text-slate-600 font-medium">
-                            {row.property}, {row.location}
-                          </span>
-                        </div>
+                        </span>
                       </td>
 
-                      {/* 4. Source */}
+                      {/* 7. Source */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {row.source === 'Local Surveyors Direct' ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs">
@@ -873,11 +971,17 @@ export const AdminLeadsPage = () => {
                         )}
                       </td>
 
-                      {/* 5. Quote / Fee */}
+                      {/* 8. Quote / Fee */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="font-mono font-bold text-xs text-slate-900">
-                          {row.estimatedValue || 'Pending'}
-                        </div>
+                        <span
+                          className={`font-mono text-xs font-bold ${
+                            row.estimatedValue && row.estimatedValue !== 'Pending Quote'
+                              ? 'text-slate-900'
+                              : 'text-amber-600 italic'
+                          }`}
+                        >
+                          {row.estimatedValue || 'Pending Quote'}
+                        </span>
                         {row.status.toLowerCase() === 'quoted' && (
                           <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">
                             Proposal Out
@@ -885,12 +989,12 @@ export const AdminLeadsPage = () => {
                         )}
                       </td>
 
-                      {/* 6. Status */}
+                      {/* 9. Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <StatusPill status={row.status} />
                       </td>
 
-                      {/* 7. Actions */}
+                      {/* 10. Actions */}
                       <td
                         className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
@@ -1150,6 +1254,7 @@ export const AdminLeadsPage = () => {
         isOpen={!!selectedClientEmail}
         onClose={() => setSelectedClientEmail(null)}
         clientEmail={selectedClientEmail}
+        lead={viewingLead}
         initialTab={clientModalTab}
       />
     </div>

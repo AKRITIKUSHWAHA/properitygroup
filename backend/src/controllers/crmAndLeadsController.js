@@ -109,10 +109,12 @@ export const updateLeadStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const leadId = parseInt(id);
+    const numId = Number(id);
+
+    const where = !isNaN(numId) && String(numId) === String(id) ? { id: numId } : { reference: String(id) };
 
     const lead = await prisma.lead.update({
-      where: { id: leadId },
+      where,
       data: { status: status.toUpperCase() },
     });
 

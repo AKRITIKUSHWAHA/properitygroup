@@ -151,37 +151,37 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
     return (
       <div 
         className={`hero-card ${className} compact-quote-form quote-success-card`} 
-        style={{ maxWidth: '580px', width: '100%', margin: '0 auto', backgroundColor: '#FFFFFF', color: '#0F172A' }}
+        style={{ maxWidth: '580px', width: '100%', margin: '0 auto', backgroundColor: '#FFFFFF', color: '#0F172A', boxSizing: 'border-box' }}
       >
-        {/* Success Header Strip */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid #E2E8F0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#ECFDF5', border: '1.5px solid #10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CheckCircle2 size={24} style={{ color: '#059669' }} />
+        {/* Success Header Strip - Responsive & Never Cut Off */}
+        <div className="quote-success-header-strip">
+          <div className="quote-success-header-left">
+            <div className="quote-success-check-badge">
+              <CheckCircle2 size={22} style={{ color: '#059669' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.01em', fontFamily: 'var(--font-serif)' }}>
+              <h3 className="quote-success-title">
                 Quotation Request Received
               </h3>
-              <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>
+              <p className="quote-success-subtitle">
                 Logged with RICS Survey Dispatch Desk
               </p>
             </div>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', display: 'block', fontWeight: 700 }}>Reference</span>
-            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#032954', letterSpacing: '0.02em', background: '#EFF6FF', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid #BFDBFE', display: 'inline-block' }}>
+          <div className="quote-success-ref-badge">
+            <span className="quote-success-ref-label">Reference</span>
+            <span className="quote-success-ref-id">
               {submissionReceipt.referenceId}
             </span>
           </div>
         </div>
 
         {/* Client Confirmation Message */}
-        <div style={{ backgroundColor: '#F8FAFC', borderRadius: '14px', padding: '1rem', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
-          <p style={{ fontSize: '0.88rem', color: '#0F172A', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+        <div className="quote-success-msg-box">
+          <p style={{ fontSize: '0.88rem', color: '#0F172A', lineHeight: 1.5, margin: 0, fontWeight: 500, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             Thank you, <strong style={{ color: '#032954' }}>{data.customerName || 'Valued Client'}</strong>. We have received your survey instruction enquiry.
           </p>
-          <p style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.5, margin: '0.45rem 0 0 0' }}>
+          <p style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.5, margin: '0.45rem 0 0 0', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
             {submissionReceipt.emailNotification?.emailSent ? (
               <>
                 Notification dispatched to <strong style={{ color: '#032954' }}>{submissionReceipt.emailNotification.recipient}</strong>. Our surveying team will email your formal fixed-fee quotation to <strong style={{ color: '#032954' }}>{data.customerEmail}</strong> within <strong style={{ color: '#0F172A' }}>24 business hours</strong>.
@@ -195,52 +195,36 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         </div>
 
         {/* Clean Property & Instruction Summary Table */}
-        <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', marginBottom: '1.25rem' }}>
+        <div className="quote-success-summary-box">
           <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#475569', display: 'block', marginBottom: '0.6rem' }}>
             Instruction Overview
           </span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.65rem', fontSize: '0.8rem' }}>
+          <div className="quote-success-summary-grid">
             <div>
               <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Survey Service:</span>
-              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.serviceName || 'Home Survey'}</span>
+              <span style={{ color: '#0F172A', fontWeight: 700, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{data.serviceName || 'Home Survey'}</span>
             </div>
             <div>
               <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Property Location:</span>
-              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.propertyAddress ? `${data.propertyAddress}, ${data.propertyPostcode}` : (data.propertyPostcode || 'Specified Region')}</span>
+              <span style={{ color: '#0F172A', fontWeight: 700, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{data.propertyAddress ? `${data.propertyAddress}, ${data.propertyPostcode}` : (data.propertyPostcode || 'Specified Region')}</span>
             </div>
             <div>
               <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Target Timescale:</span>
-              <span style={{ color: '#0F172A', fontWeight: 700, textTransform: 'capitalize' }}>{selectedTimescale}</span>
+              <span style={{ color: '#0F172A', fontWeight: 700, textTransform: 'capitalize', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{selectedTimescale}</span>
             </div>
             <div>
               <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Direct Contact Phone:</span>
-              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.customerPhone || 'Not provided'}</span>
+              <span style={{ color: '#0F172A', fontWeight: 700, overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{data.customerPhone || 'Not provided'}</span>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="quote-success-actions">
           <button
             type="button"
             onClick={handleReset}
-            className="compact-submit-btn"
-            style={{
-              flex: '1 1 auto',
-              background: '#032954',
-              color: '#FFFFFF',
-              padding: '0.65rem 1.25rem',
-              borderRadius: '9999px',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.45rem',
-              cursor: 'pointer',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(3, 41, 84, 0.2)'
-            }}
+            className="compact-submit-btn quote-success-action-btn"
           >
             <RefreshCw size={14} />
             <span>Submit Another Quote</span>
@@ -248,22 +232,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
 
           <a
             href={`tel:${siteConfig.contact.telephone}`}
-            style={{
-              flex: '1 1 auto',
-              background: '#F8FAFC',
-              border: '1px solid #CBD5E1',
-              color: '#032954',
-              padding: '0.65rem 1.25rem',
-              borderRadius: '9999px',
-              fontSize: '0.84rem',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.45rem',
-              textDecoration: 'none',
-              transition: 'all 0.2s ease'
-            }}
+            className="quote-success-action-btn quote-success-call-btn"
           >
             <span>Call Hotline: {siteConfig.contact.telephoneDisplay}</span>
           </a>
@@ -271,7 +240,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
 
         {/* Assurance Note */}
         <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #E2E8F0', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500 }}>
+          <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500, display: 'block', lineHeight: 1.4 }}>
             Strictly Confidential &bull; Independent RICS Aligned Practice &bull; Zero Contractor Bias
           </span>
         </div>
