@@ -12,14 +12,7 @@ import {
   MoreVertical,
   Search,
   Eye,
-  Mail,
-  Phone,
-  MapPin,
   Award,
-  User,
-  ArrowUpRight,
-  Filter,
-  Check,
   Copy,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
@@ -27,33 +20,61 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { adminReportsAndAnalyticsApi } from '../../api/adminApi';
-import { SURVEYORS } from '../../mock/jobs';
 
 // 3-Dot Dropdown Menu for Surveyor Performance Table
 const SurveyorRowActions = ({ surveyor, onView, onCopyEmail }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
+    const handleScrollOrResize = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [isOpen]);
 
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const openUpwards = rect.bottom + 140 > window.innerHeight;
+      setCoords({
+        top: openUpwards ? null : Math.round(rect.bottom + 6),
+        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
+      });
+    }
+    setIsOpen((prev) => !prev);
+  };
+
   return (
-    <div className="relative inline-block text-right" ref={menuRef}>
+    <div className="relative inline-block text-right">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
         title="Surveyor actions"
         aria-label="Surveyor actions"
@@ -62,7 +83,17 @@ const SurveyorRowActions = ({ surveyor, onView, onCopyEmail }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: coords.top !== null ? `${coords.top}px` : 'auto',
+            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+            right: `${coords.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-52 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+        >
           <button
             type="button"
             onClick={(e) => {
@@ -99,11 +130,35 @@ export const AdminReportsPage = () => {
 
   // Reporting Period State
   const [selectedPeriod, setSelectedPeriod] = useState('October 2026');
+  const [backendMetrics, setBackendMetrics] = useState(null);
+  const [_backendReports, setBackendReports] = useState([]);
 
   // Fetch live reports and analytics + metrics from backend API
   useEffect(() => {
-    adminReportsAndAnalyticsApi.getReports().catch(() => {});
-    adminReportsAndAnalyticsApi.getMetrics().catch(() => {});
+    let isMounted = true;
+    const fetchAnalytics = async () => {
+      try {
+        const [repRes, metRes] = await Promise.allSettled([
+          adminReportsAndAnalyticsApi.getReports(),
+          adminReportsAndAnalyticsApi.getMetrics(),
+        ]);
+
+        if (repRes.status === 'fulfilled' && repRes.value?.data?.data?.reports && isMounted) {
+          setBackendReports(repRes.value.data.data.reports);
+        }
+
+        if (metRes.status === 'fulfilled' && metRes.value?.data?.data && isMounted) {
+          setBackendMetrics(metRes.value.data.data);
+        }
+      } catch (err) {
+        console.warn('Analytics fetch error:', err);
+      }
+    };
+
+    fetchAnalytics();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedPeriod]); // 'October 2026' | 'September 2026' | 'Q3 2026' | 'YTD 2026'
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingSurveyor, setViewingSurveyor] = useState(null);
@@ -116,7 +171,7 @@ export const AdminReportsPage = () => {
     { id: 'YTD 2026', label: 'YTD (2026)' },
   ];
 
-  // Dynamic KPI Metrics based on selected period
+  // Dynamic KPI Metrics based on selected period and live backend metrics
   const kpiData = useMemo(() => {
     switch (selectedPeriod) {
       case 'September 2026':
@@ -161,19 +216,19 @@ export const AdminReportsPage = () => {
       case 'October 2026':
       default:
         return {
-          revenue: '£421,860',
+          revenue: backendMetrics?.settledRevenue || '£421,860',
           revChange: '+18.4% vs Sep',
-          surveysCount: '176',
+          surveysCount: backendMetrics?.completedReports ? String(backendMetrics.completedReports) : '176',
           surveysUnit: 'Jobs',
           survChange: '+12.5% volume',
-          conversion: '71.2%',
+          conversion: backendMetrics?.conversionRate || '71.2%',
           convChange: '+4.1% vs Sep',
-          slaCount: '38.4',
+          slaCount: backendMetrics?.turnaroundTime ? String(backendMetrics.turnaroundTime).replace(/[^\d.]/g, '') || '38.4' : '38.4',
           slaUnit: 'Hours',
-          slaNote: '97.4% within 48h SLA',
+          slaNote: `${backendMetrics?.qaAuditPassRate || '97.4%'} within 48h SLA`,
         };
     }
-  }, [selectedPeriod]);
+  }, [selectedPeriod, backendMetrics]);
 
   // Survey Revenue Breakdown by Service
   const revenueDistribution = useMemo(() => {
@@ -296,11 +351,54 @@ export const AdminReportsPage = () => {
   }, [searchTerm]);
 
   const handleExportCSV = () => {
-    addToast({
-      type: 'success',
-      title: 'Export Generated',
-      message: `Downloaded Property_Group_Analytics_${selectedPeriod.replace(/\s+/g, '_')}.csv with full operational ledger.`,
-    });
+    try {
+      const headers = [
+        'Chartered Surveyor',
+        'Credentials',
+        'Postcodes Covered',
+        'Completed Surveys',
+        '48h SLA On-Time',
+        'Settled Fee Revenue',
+        'Email',
+        'Phone',
+        'Specialism',
+      ];
+      const rows = surveyorPerformance.map((s) => [
+        `"${s.name}"`,
+        `"${s.credentials}"`,
+        `"${s.postcodes}"`,
+        `"${s.surveys} Inspections"`,
+        `"${s.onTimeRate}"`,
+        `"${s.revenue}"`,
+        `"${s.email}"`,
+        `"${s.phone}"`,
+        `"${s.specialism}"`,
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const fileName = `Property_Group_Analytics_${selectedPeriod.replace(/\s+/g, '_')}.csv`;
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      addToast({
+        type: 'success',
+        title: 'Export Downloaded',
+        message: `Downloaded ${fileName} with full operational ledger.`,
+      });
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Export Failed',
+        message: 'Could not generate CSV export file.',
+      });
+    }
   };
 
   const handleCopyEmail = (email) => {
