@@ -324,8 +324,9 @@ export const RolePermissionsManager = () => {
                           {item.name}
                         </h4>
                         {isCore ? (
-                          <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-slate-100 text-slate-600">
-                            Core Home
+                          <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                            <Check className="w-2.5 h-2.5" />
+                            <span>Active • Core</span>
                           </span>
                         ) : (
                           <span
@@ -351,19 +352,19 @@ export const RolePermissionsManager = () => {
                     <button
                       type="button"
                       role="switch"
-                      aria-checked={isPermitted}
+                      aria-checked={isCore ? true : isPermitted}
                       disabled={isCore}
                       onClick={() => handleToggle(item)}
-                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      className={`relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                         isCore
-                          ? 'bg-slate-300 opacity-60 cursor-not-allowed'
+                          ? 'bg-[#0B1F4D] opacity-80 cursor-not-allowed'
                           : isPermitted
-                          ? 'bg-[#0B1F4D]'
-                          : 'bg-slate-300 hover:bg-slate-400'
+                          ? 'bg-[#0B1F4D] cursor-pointer'
+                          : 'bg-slate-300 hover:bg-slate-400 cursor-pointer'
                       }`}
                       title={
                         isCore
-                          ? 'Core Dashboard is always active'
+                          ? 'Core Dashboard is always active and protected'
                           : isPermitted
                           ? 'Click to deactivate / hide from sidebar'
                           : 'Click to activate / show in sidebar'
@@ -371,7 +372,7 @@ export const RolePermissionsManager = () => {
                     >
                       <span
                         className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                          isPermitted ? 'translate-x-5' : 'translate-x-0'
+                          (isCore || isPermitted) ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>

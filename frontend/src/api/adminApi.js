@@ -18,6 +18,8 @@ export const adminUsersAndRolesApi = {
   createUser: (userData) => api.post('/users-and-roles', userData),
   updateUser: (id, data) => api.patch(`/users-and-roles/${id}`, data),
   deleteUser: (id) => api.delete(`/users-and-roles/${id}`),
+  getPermissions: () => api.get('/users-and-roles/permissions'),
+  updatePermissions: (permissions) => api.put('/users-and-roles/permissions', { permissions }),
 };
 
 // Menu 3: Companies

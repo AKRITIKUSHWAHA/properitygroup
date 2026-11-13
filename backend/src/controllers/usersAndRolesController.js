@@ -183,3 +183,46 @@ export const deleteUser = async (req, res, next) => {
   }
 };
 
+export const getRolePermissions = async (req, res, next) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'role_menu_permissions' },
+    });
+
+    let permissions = null;
+    if (setting?.value) {
+      try {
+        permissions = JSON.parse(setting.value);
+      } catch {
+        permissions = null;
+      }
+    }
+
+    return ApiResponse.success(res, { permissions });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateRolePermissions = async (req, res, next) => {
+  try {
+    const { permissions } = req.body;
+    if (!permissions || typeof permissions !== 'object') {
+      throw ApiError.badRequest('Valid permissions object is required');
+    }
+
+    const value = JSON.stringify(permissions);
+
+    const setting = await prisma.systemSetting.upsert({
+      where: { key: 'role_menu_permissions' },
+      update: { value, category: 'GENERAL' },
+      create: { key: 'role_menu_permissions', value, category: 'GENERAL' },
+    });
+
+    return ApiResponse.success(res, { permissions: JSON.parse(setting.value) }, 'Role permissions updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+

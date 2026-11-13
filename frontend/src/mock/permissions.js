@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ROLE_NAVIGATION } from './navigation';
+import { adminUsersAndRolesApi } from '../api/adminApi';
 
 const STORAGE_KEY = 'property_group_role_menu_permissions_v3';
 const EVENT_NAME = 'property_group_permissions_changed';
@@ -129,11 +130,14 @@ export const getStoredPermissions = () => {
   return DEFAULT_ROLE_PERMISSIONS;
 };
 
-// Save permissions to localStorage and trigger global sync
-export const persistPermissions = (newPermissions) => {
+// Save permissions to localStorage and trigger global sync + backend DB persistence
+export const persistPermissions = (newPermissions, syncBackend = true) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPermissions));
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: newPermissions }));
+    if (syncBackend) {
+      adminUsersAndRolesApi.updatePermissions(newPermissions).catch(() => {});
+    }
   } catch (err) {
     console.error('Failed to persist permissions', err);
   }
@@ -144,12 +148,38 @@ export const useRolePermissions = () => {
   const [permissions, setPermissions] = useState(getStoredPermissions);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Fetch persisted permissions from backend MySQL database
+    adminUsersAndRolesApi
+      .getPermissions()
+      .then((res) => {
+        const serverPerms = res?.permissions || res?.data?.permissions;
+        if (isMounted && serverPerms && typeof serverPerms === 'object') {
+          const merged = {
+            ...DEFAULT_ROLE_PERMISSIONS,
+            ...serverPerms,
+            super_admin: { ...DEFAULT_ROLE_PERMISSIONS.super_admin, ...(serverPerms.super_admin || serverPerms.admin || {}) },
+            admin: { ...DEFAULT_ROLE_PERMISSIONS.admin, ...(serverPerms.admin || serverPerms.super_admin || {}) },
+            surveyor: { ...DEFAULT_ROLE_PERMISSIONS.surveyor, ...(serverPerms.surveyor || {}) },
+            customer: { ...DEFAULT_ROLE_PERMISSIONS.customer, ...(serverPerms.customer || {}) },
+            partner: { ...DEFAULT_ROLE_PERMISSIONS.partner, ...(serverPerms.partner || {}) },
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          setPermissions(merged);
+        }
+      })
+      .catch(() => {
+        // Silently fallback to localStorage on network issue or guest mode
+      });
+
     const handleUpdate = () => {
       setPermissions(getStoredPermissions());
     };
     window.addEventListener(EVENT_NAME, handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
+      isMounted = false;
       window.removeEventListener(EVENT_NAME, handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
