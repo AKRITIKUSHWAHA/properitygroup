@@ -38,20 +38,51 @@ const QuoteRowActions = ({
   onOpenClientProfile,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
   const { addToast } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
+    const handleScrollOrResize = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [isOpen]);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const openUpwards = rect.bottom + 290 > window.innerHeight;
+      setCoords({
+        top: openUpwards ? null : Math.round(rect.bottom + 6),
+        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
+      });
+    }
+    setIsOpen((prev) => !prev);
+  };
 
   const handleCopy = (e, text, label) => {
     e.stopPropagation();
@@ -67,13 +98,11 @@ const QuoteRowActions = ({
   const isPaid = quote.status === 'Paid';
 
   return (
-    <div className="relative inline-block text-right" ref={menuRef}>
+    <div className="relative inline-block text-right">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
         title="Quotation actions"
         aria-label="Quotation actions"
@@ -82,7 +111,17 @@ const QuoteRowActions = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-52 sm:w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: coords.top !== null ? `${coords.top}px` : 'auto',
+            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+            right: `${coords.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-52 sm:w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+        >
           {/* Primary View Action */}
           <button
             type="button"
