@@ -160,10 +160,10 @@ export const createQuote = async (req, res, next) => {
     }
 
     // Dispatch formal RICS quote proposal email via Resend
-    let recipientEmail = req.body.clientEmail;
-    let recipientName = req.body.clientName;
-    let propertyAddress = req.body.propertyAddress;
-    let surveyType = req.body.surveyType;
+    let recipientEmail = clientEmail || req.body.clientEmail;
+    let recipientName = client || req.body.clientName;
+    let targetProperty = property || req.body.propertyAddress;
+    let targetSurveyType = surveyType || req.body.surveyType;
 
     if (parsedLeadId && (!recipientEmail || !recipientName)) {
       try {
@@ -171,8 +171,8 @@ export const createQuote = async (req, res, next) => {
         if (lead) {
           recipientEmail = recipientEmail || lead.clientEmail;
           recipientName = recipientName || lead.clientName;
-          propertyAddress = propertyAddress || lead.propertyAddress;
-          surveyType = surveyType || lead.serviceType;
+          targetProperty = targetProperty || lead.propertyAddress;
+          targetSurveyType = targetSurveyType || lead.serviceType;
         }
       } catch (err) {}
     }
@@ -184,8 +184,8 @@ export const createQuote = async (req, res, next) => {
           to: recipientEmail,
           clientName: recipientName || 'Valued Client',
           quoteAmount: totalAmount.toFixed(2),
-          surveyType: surveyType || 'RICS Level 2 Home Survey',
-          propertyAddress: propertyAddress || 'Subject Property',
+          surveyType: targetSurveyType || 'RICS Level 2 Home Survey',
+          propertyAddress: targetProperty || 'Subject Property',
           quoteLink: req.body.quoteLink || `${process.env.CLIENT_URL?.split(',')[0] || 'https://property-group.netlify.app'}/contact#quote`,
         });
         emailSent = Boolean(emailRes?.success);
