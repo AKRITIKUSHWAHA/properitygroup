@@ -229,7 +229,11 @@ export const sendQuoteProposalEmail = async ({
         subject,
         html,
       });
-      return { success: true, messageId: response.id, provider: 'resend_live' };
+      if (response?.error) {
+        console.warn('Resend quote proposal error:', response.error.message || response.error);
+        return { success: false, error: response.error.message, provider: 'resend_error' };
+      }
+      return { success: true, messageId: response?.data?.id || response?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend live email error:', err.message);
     }
