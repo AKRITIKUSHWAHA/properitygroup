@@ -2,27 +2,19 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Search,
   Plus,
-  CreditCard,
   PoundSterling,
-  Receipt,
   Clock,
   CheckCircle2,
   Send,
   Download,
-  ExternalLink,
   SlidersHorizontal,
-  Building,
-  User,
   MapPin,
   Eye,
   FileText,
-  AlertCircle,
   TrendingUp,
   MoreVertical,
   PhoneCall,
   Copy,
-  DollarSign,
-  FileCheck,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -207,6 +199,108 @@ export const AdminQuotesPage = () => {
   const { addToast } = useToast();
   const { quotes, addQuote, updateQuoteStatus } = useQuotes();
 
+  const [apiQuotes, setApiQuotes] = useState([]);
+
+  // Sync quotations & invoices from backend API (MySQL)
+  const fetchBackendData = async () => {
+    try {
+      const [quotesRes, invoicesRes] = await Promise.allSettled([
+        adminQuotationsAndPaymentsApi.getQuotes(),
+        adminQuotationsAndPaymentsApi.getInvoices(),
+      ]);
+
+      const rawQuotes =
+        quotesRes.status === 'fulfilled'
+          ? quotesRes.value?.quotes || quotesRes.value?.data?.quotes || []
+          : [];
+      const rawInvoices =
+        invoicesRes.status === 'fulfilled'
+          ? invoicesRes.value?.invoices || invoicesRes.value?.data?.invoices || []
+          : [];
+
+      adminQuotationsAndPaymentsApi.getMetrics().catch(() => {});
+
+      if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
+        const invoiceMap = new Map();
+        rawInvoices.forEach((inv) => {
+          if (inv.jobId) invoiceMap.set(inv.jobId, inv);
+          if (inv.invoiceNumber) invoiceMap.set(inv.invoiceNumber, inv);
+        });
+
+        const mapped = rawQuotes.map((q) => {
+          const inv = (q.jobId && invoiceMap.get(q.jobId)) || null;
+          let parsedInclusions = {};
+          try {
+            if (q.inclusions) parsedInclusions = JSON.parse(q.inclusions);
+          } catch {
+            // ignore
+          }
+
+          const clientName =
+            q.job?.clientName || q.lead?.clientName || parsedInclusions.client || 'Customer';
+          const clientEmail =
+            q.job?.clientEmail || parsedInclusions.clientEmail || 'customer@demo.com';
+          const propertyAddress =
+            q.job?.propertyAddress || parsedInclusions.property || 'London, UK';
+          const surveyType =
+            q.job?.serviceType || parsedInclusions.surveyType || 'RICS Level 2 Home Survey';
+
+          const isPaid = inv?.status === 'PAID';
+          const status = isPaid
+            ? 'Paid'
+            : q.status === 'ACCEPTED'
+            ? 'Accepted'
+            : q.status === 'SENT'
+            ? 'Sent'
+            : 'Draft';
+
+          const createdDate = q.createdAt ? new Date(q.createdAt) : new Date();
+
+          return {
+            id: q.reference || `QUO-${q.id}`,
+            dbId: q.id,
+            refNo: q.reference || `QTE-2026-${String(q.id + 100).padStart(3, '0')}`,
+            invoiceNo: inv?.invoiceNumber || `INV-2026-${String(q.id + 100).padStart(3, '0')}`,
+            client: clientName,
+            clientEmail: clientEmail,
+            clientPhone: parsedInclusions.clientPhone || '+44 7911 123456',
+            property: propertyAddress,
+            location: propertyAddress.split(',').slice(-1)[0]?.trim() || 'London, UK',
+            surveyType: surveyType,
+            baseFee: q.baseFee || 650.0,
+            extras: Array.isArray(parsedInclusions.extras) ? parsedInclusions.extras : [],
+            discount: parsedInclusions.discount || 0,
+            amountExVat: q.baseFee || 650.0,
+            vatAmount: q.vatAmount || 130.0,
+            totalAmount: q.totalAmount || 780.0,
+            status: status,
+            type: isPaid ? 'invoice' : 'quotation',
+            date: createdDate.toLocaleDateString('en-GB'),
+            dueDate: new Date(createdDate.getTime() + 7 * 86400000).toLocaleDateString('en-GB'),
+            paidDate: inv?.paidAt ? new Date(inv.paidAt).toLocaleDateString('en-GB') : null,
+            paymentMethod:
+              inv?.paymentMethod === 'STRIPE_CARD'
+                ? 'Stripe UK Online Card Settlement'
+                : inv?.paymentMethod === 'BACS_TRANSFER'
+                ? `BACS (${inv.bacsReference || 'Bank Transfer'})`
+                : null,
+            invoiceDbId: inv?.id,
+          };
+        });
+
+        setApiQuotes(mapped);
+      }
+    } catch (err) {
+      console.warn('Unable to load quotations from backend API:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBackendData();
+  }, []);
+
+  const displayQuotes = apiQuotes.length > 0 ? apiQuotes : quotes;
+
   // Tabs: Quotations, Invoices, Payments, Outstanding
   const [activeTab, setActiveTab] = useState('Quotations');
   const [searchTerm, setSearchTerm] = useState('');
@@ -263,9 +357,23 @@ export const AdminQuotesPage = () => {
     setIsBacsModalOpen(true);
   };
 
-  const handleBacsPaymentConfirmed = (bacsData) => {
+  const handleBacsPaymentConfirmed = async (bacsData) => {
     if (!selectedBacsQuote) return;
     updateQuoteStatus(selectedBacsQuote.id, 'Paid');
+
+    setApiQuotes((prev) =>
+      prev.map((q) =>
+        q.id === selectedBacsQuote.id || q.dbId === selectedBacsQuote.dbId
+          ? {
+              ...q,
+              status: 'Paid',
+              paymentMethod: `BACS (${bacsData.reference})`,
+              paidDate: bacsData.date,
+            }
+          : q
+      )
+    );
+
     if (selectedQuoteDetail && selectedQuoteDetail.id === selectedBacsQuote.id) {
       setSelectedQuoteDetail((prev) => ({
         ...prev,
@@ -273,6 +381,19 @@ export const AdminQuotesPage = () => {
         paymentMethod: `BACS (${bacsData.reference})`,
         paidDate: bacsData.date,
       }));
+    }
+
+    try {
+      const invoiceId = selectedBacsQuote.invoiceDbId || selectedBacsQuote.dbId;
+      if (invoiceId) {
+        await adminQuotationsAndPaymentsApi.settleBacs(invoiceId, {
+          bacsReference: bacsData.reference,
+          amountPaid: selectedBacsQuote.totalAmount,
+        });
+        fetchBackendData();
+      }
+    } catch (err) {
+      console.warn('Failed to settle BACS on server:', err);
     }
   };
 
@@ -372,7 +493,25 @@ export const AdminQuotesPage = () => {
     };
 
     addQuote(newQuote);
+    setApiQuotes((prev) => [newQuote, ...prev]);
     setIsNewQuoteModalOpen(false);
+
+    // Persist to backend database via API
+    adminQuotationsAndPaymentsApi
+      .createQuote({
+        client: newQuote.client,
+        clientEmail: newQuote.clientEmail,
+        clientPhone: newQuote.clientPhone,
+        property: newQuote.property,
+        surveyType: newQuote.surveyType,
+        baseFee: newQuote.baseFee,
+        discount: newQuote.discount,
+        inclusions: { extras: newQuote.extras, discount: newQuote.discount },
+      })
+      .then(() => fetchBackendData())
+      .catch((err) => {
+        console.warn('Failed to persist quote to backend:', err);
+      });
 
     // Reset form
     setFormData({
@@ -400,10 +539,10 @@ export const AdminQuotesPage = () => {
 
   // Tabs computation: Quotations, Invoices, Payments, Outstanding
   const tabs = useMemo(() => {
-    const quotationsCount = quotes.length;
-    const invoicesCount = quotes.filter((q) => q.status === 'Sent' || q.status === 'Paid' || q.status === 'Accepted').length;
-    const paymentsCount = quotes.filter((q) => q.status === 'Paid').length;
-    const outstandingCount = quotes.filter((q) => q.status !== 'Paid').length;
+    const quotationsCount = displayQuotes.length;
+    const invoicesCount = displayQuotes.filter((q) => q.status === 'Sent' || q.status === 'Paid' || q.status === 'Accepted').length;
+    const paymentsCount = displayQuotes.filter((q) => q.status === 'Paid').length;
+    const outstandingCount = displayQuotes.filter((q) => q.status !== 'Paid').length;
 
     return [
       { id: 'Quotations', label: 'All Quotations', count: quotationsCount },
@@ -411,11 +550,11 @@ export const AdminQuotesPage = () => {
       { id: 'Payments', label: 'Paid & Settled', count: paymentsCount },
       { id: 'Outstanding', label: 'Awaiting Payment', count: outstandingCount },
     ];
-  }, [quotes]);
+  }, [displayQuotes]);
 
   // Filtered dataset
   const filteredData = useMemo(() => {
-    return quotes.filter((item) => {
+    return displayQuotes.filter((item) => {
       // Tab filter
       if (activeTab === 'Invoices') {
         if (item.status === 'Draft') return false;
@@ -445,11 +584,18 @@ export const AdminQuotesPage = () => {
 
       return true;
     });
-  }, [quotes, activeTab, statusFilter, searchTerm]);
+  }, [displayQuotes, activeTab, statusFilter, searchTerm]);
 
   // Quick action: Mark as paid
   const handleMarkPaid = (id) => {
     updateQuoteStatus(id, 'Paid');
+    setApiQuotes((prev) =>
+      prev.map((q) => (q.id === id || q.dbId === id ? { ...q, status: 'Paid', paidDate: new Date().toLocaleDateString('en-GB') } : q))
+    );
+    const targetQuote = displayQuotes.find((q) => q.id === id || q.dbId === id);
+    if (targetQuote?.dbId || targetQuote?.refNo) {
+      adminQuotationsAndPaymentsApi.updateQuoteStatus(targetQuote.dbId || targetQuote.refNo, 'PAID').catch(() => {});
+    }
     addToast({
       type: 'success',
       title: 'Payment Cleared',
@@ -460,6 +606,13 @@ export const AdminQuotesPage = () => {
   // Quick action: Send Quote
   const handleSendQuote = (id, clientEmail) => {
     updateQuoteStatus(id, 'Sent');
+    setApiQuotes((prev) =>
+      prev.map((q) => (q.id === id || q.dbId === id ? { ...q, status: 'Sent' } : q))
+    );
+    const targetQuote = displayQuotes.find((q) => q.id === id || q.dbId === id);
+    if (targetQuote?.dbId || targetQuote?.refNo) {
+      adminQuotationsAndPaymentsApi.updateQuoteStatus(targetQuote.dbId || targetQuote.refNo, 'SENT').catch(() => {});
+    }
     addToast({
       type: 'info',
       title: 'Quotation Dispatched',
@@ -640,18 +793,18 @@ export const AdminQuotesPage = () => {
 
   // Financial KPI Summaries
   const totalSettledRevenue = useMemo(() => {
-    return quotes.filter((q) => q.status === 'Paid').reduce((acc, q) => acc + q.totalAmount, 0);
-  }, [quotes]);
+    return displayQuotes.filter((q) => q.status === 'Paid').reduce((acc, q) => acc + q.totalAmount, 0);
+  }, [displayQuotes]);
 
   const totalOutstanding = useMemo(() => {
-    return quotes.filter((q) => q.status !== 'Paid').reduce((acc, q) => acc + q.totalAmount, 0);
-  }, [quotes]);
+    return displayQuotes.filter((q) => q.status !== 'Paid').reduce((acc, q) => acc + q.totalAmount, 0);
+  }, [displayQuotes]);
 
   const averageQuoteFee = useMemo(() => {
-    if (quotes.length === 0) return 0;
-    const total = quotes.reduce((acc, q) => acc + q.totalAmount, 0);
-    return total / quotes.length;
-  }, [quotes]);
+    if (displayQuotes.length === 0) return 0;
+    const total = displayQuotes.reduce((acc, q) => acc + q.totalAmount, 0);
+    return total / displayQuotes.length;
+  }, [displayQuotes]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -723,7 +876,7 @@ export const AdminQuotesPage = () => {
             </span>
           </div>
           <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-            {quotes.length} Total Issued Proposals (inc. 20% UK VAT)
+            {displayQuotes.length} Total Issued Proposals (inc. 20% UK VAT)
           </p>
         </div>
       </div>

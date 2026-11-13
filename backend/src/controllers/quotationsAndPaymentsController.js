@@ -79,16 +79,30 @@ export const getQuotationsAndPaymentsMetrics = async (req, res, next) => {
 
 export const createQuote = async (req, res, next) => {
   try {
-    const { jobId, leadId, baseFee, inclusions, validDays = 30 } = req.body;
+    const {
+      jobId,
+      leadId,
+      client,
+      clientEmail,
+      clientPhone,
+      property,
+      surveyType,
+      baseFee,
+      discount = 0,
+      inclusions,
+      validDays = 30,
+    } = req.body;
 
     if (!baseFee || parseFloat(baseFee) <= 0) {
       throw ApiError.badRequest('Valid base inspection fee is required');
     }
 
     const fee = parseFloat(baseFee);
+    const disc = parseFloat(discount) || 0;
+    const subtotal = Math.max(0, fee - disc);
     const vatRate = 20.0; // Statutory UK 20% VAT
-    const vatAmount = parseFloat(((fee * vatRate) / 100).toFixed(2));
-    const totalAmount = parseFloat((fee + vatAmount).toFixed(2));
+    const vatAmount = parseFloat(((subtotal * vatRate) / 100).toFixed(2));
+    const totalAmount = parseFloat((subtotal + vatAmount).toFixed(2));
 
     const count = await prisma.quote.count();
     const reference = `QTE-2026-${String(count + 101).padStart(3, '0')}`;
@@ -102,18 +116,36 @@ export const createQuote = async (req, res, next) => {
       if (!isNaN(numLead)) parsedLeadId = numLead;
     }
 
+    let numericJobId = jobId ? parseInt(jobId, 10) : null;
+
+    if (!numericJobId && property) {
+      const existingJob = await prisma.job.findFirst({
+        where: { propertyAddress: { contains: property.slice(0, 15) } },
+        select: { id: true },
+      });
+      if (existingJob) numericJobId = existingJob.id;
+    }
+
+    const inclusionsData = inclusions
+      ? (typeof inclusions === 'string' ? inclusions : JSON.stringify(inclusions))
+      : JSON.stringify({ client, clientEmail, clientPhone, property, surveyType, discount: disc });
+
     const quote = await prisma.quote.create({
       data: {
         reference,
-        jobId: jobId ? parseInt(jobId) : null,
+        jobId: numericJobId,
         leadId: parsedLeadId,
         baseFee: fee,
         vatRate,
         vatAmount,
         totalAmount,
-        inclusions: inclusions ? JSON.stringify(inclusions) : null,
+        inclusions: inclusionsData,
         status: 'SENT',
         validUntil,
+      },
+      include: {
+        job: { select: { id: true, reference: true, propertyAddress: true, clientName: true, clientEmail: true } },
+        lead: { select: { id: true, reference: true, clientName: true } },
       },
     });
 
@@ -169,6 +201,41 @@ export const createQuote = async (req, res, next) => {
         ? `Quote issued and formal proposal emailed to ${recipientEmail}` 
         : 'Quote issued with 20% UK VAT calculated'
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateQuoteStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    let quoteId = parseInt(id, 10);
+    let quote = null;
+
+    if (!isNaN(quoteId)) {
+      quote = await prisma.quote.findUnique({ where: { id: quoteId } });
+    }
+
+    if (!quote) {
+      quote = await prisma.quote.findFirst({ where: { reference: String(id) } });
+    }
+
+    if (!quote) {
+      throw ApiError.notFound('Quotation record not found');
+    }
+
+    const normalizedStatus = (status || 'ACCEPTED').toUpperCase();
+    const updated = await prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        status: normalizedStatus === 'PAID' ? 'ACCEPTED' : normalizedStatus,
+        acceptedAt: normalizedStatus === 'ACCEPTED' || normalizedStatus === 'PAID' ? new Date() : quote.acceptedAt,
+      },
+    });
+
+    return ApiResponse.success(res, { quote: updated }, 'Quotation status updated');
   } catch (error) {
     next(error);
   }
