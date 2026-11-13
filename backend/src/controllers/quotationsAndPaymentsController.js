@@ -111,9 +111,19 @@ export const createQuote = async (req, res, next) => {
     validUntil.setDate(validUntil.getDate() + validDays);
 
     let parsedLeadId = null;
+    let leadRecord = null;
     if (leadId) {
       const numLead = Number(leadId);
-      if (!isNaN(numLead)) parsedLeadId = numLead;
+      try {
+        if (!isNaN(numLead) && String(numLead) === String(leadId)) {
+          leadRecord = await prisma.lead.findUnique({ where: { id: numLead } });
+        } else {
+          leadRecord = await prisma.lead.findFirst({ where: { reference: String(leadId) } });
+        }
+      } catch (fErr) {}
+      if (leadRecord) {
+        parsedLeadId = leadRecord.id;
+      }
     }
 
     let numericJobId = jobId ? parseInt(jobId, 10) : null;
@@ -160,10 +170,10 @@ export const createQuote = async (req, res, next) => {
     }
 
     // Dispatch formal RICS quote proposal email via Resend
-    let recipientEmail = clientEmail || req.body.clientEmail;
-    let recipientName = client || req.body.clientName;
-    let targetProperty = property || req.body.propertyAddress;
-    let targetSurveyType = surveyType || req.body.surveyType;
+    let recipientEmail = clientEmail || req.body.clientEmail || leadRecord?.clientEmail;
+    let recipientName = client || req.body.clientName || leadRecord?.clientName || 'Valued Client';
+    let targetProperty = property || req.body.propertyAddress || leadRecord?.propertyAddress || 'Subject Property';
+    let targetSurveyType = surveyType || req.body.surveyType || leadRecord?.serviceType || 'RICS Level 2 Home Survey';
 
     if (parsedLeadId && (!recipientEmail || !recipientName)) {
       try {

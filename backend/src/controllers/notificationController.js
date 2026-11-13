@@ -6,6 +6,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
  * Seed initial role-based notifications if none exist for this role/user
  */
 async function seedDefaultNotificationsForRole(user) {
+  if (!prisma?.notification) return;
   const existingCount = await prisma.notification.count({
     where: {
       OR: [
@@ -147,6 +148,14 @@ async function seedDefaultNotificationsForRole(user) {
 export const getNotifications = async (req, res, next) => {
   try {
     const user = req.user;
+
+    if (!prisma?.notification) {
+      return ApiResponse.success(res, {
+        notifications: [],
+        unreadCount: 0,
+        total: 0,
+      });
+    }
 
     // Ensure role-based notifications exist
     await seedDefaultNotificationsForRole(user);
