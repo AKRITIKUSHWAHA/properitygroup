@@ -89,3 +89,4 @@ export const validateUKPostcode = async (postcode) => {
   const result = await lookupPostcode(postcode);
   return result.success;
 };
+

@@ -10,9 +10,7 @@ import {
   Clock,
   Phone,
   Building,
-  FileCheck2,
-  FileText,
-  Download
+  FileCheck2
 } from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
@@ -23,7 +21,6 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { CoverageMap } from '../../components/common/CoverageMap';
-import { downloadReportPDF } from '../../utils/pdfGenerator';
 
 export function BuildingSurveyPage() {
   const service = approvedServices.find(s => s.id === 'building-survey-level-3');
@@ -163,33 +160,6 @@ export function BuildingSurveyPage() {
                     </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Sample Level 3 Report Download Card */}
-              <div className="sample-report-download-card">
-                <div className="sample-report-left">
-                  <div className="sample-report-icon-box">
-                    <FileText size={22} style={{ color: '#0284C7' }} />
-                  </div>
-                  <div>
-                    <h4 className="sample-report-title">Sample Level 3 Building Survey Report</h4>
-                    <p className="sample-report-subtitle">Review an anonymised comprehensive structural survey report with prioritized defects &amp; repairs.</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => downloadReportPDF({
-                    jobNo: 'SAMPLE-LVL3-2026',
-                    clientName: 'Sample Client',
-                    property: '42 Clarendon Road, Holland Park, London W11 2HR',
-                    surveyType: 'RICS Level 3 Building Survey',
-                    propertyType: 'Victorian Terraced Townhouse (c. 1885)',
-                  })}
-                  className="btn btn-primary btn-sm sample-report-btn"
-                >
-                  <Download size={15} />
-                  <span>Download Sample PDF</span>
-                </button>
               </div>
 
               {/* Regional Structural Context */}

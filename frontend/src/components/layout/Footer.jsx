@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building, MapPin, Phone, Mail, ShieldCheck, ShieldAlert, ArrowUpRight, Lock } from 'lucide-react';
+import { Building, MapPin, Phone, Mail, ShieldCheck, ShieldAlert, ArrowUpRight } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
 import { approvedServices } from '../../config/services';
 import { footerCoverageLinks } from '../../config/navigation';
@@ -15,23 +15,7 @@ export function Footer() {
           {/* Brand & Purpose Column */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: 'var(--space-4)' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  backgroundColor: 'var(--color-primary-navy)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-              >
-                <Building size={20} style={{ color: 'var(--color-white)' }} />
-              </div>
-              <span style={{ fontSize: 'var(--font-size-md)', fontWeight: 'bold', color: 'var(--color-white)' }}>
-                {siteConfig.companyName}
-              </span>
+              <img src="/images/njs-logo-white.png" alt="NJS Property Group" style={{ height: "62px", width: "auto", objectFit: "contain" }} />
             </div>
 
             <p style={{ fontSize: 'var(--font-size-sm)', color: '#FFFFFF', marginBottom: 'var(--space-4)' }}>
@@ -51,7 +35,11 @@ export function Footer() {
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
                 <MapPin size={15} style={{ color: '#FFFFFF', flexShrink: 0, marginTop: '2px' }} />
-                <span>Registered Office: 124 City Road, London EC1V 2NX</span>
+                <span>Registered Office: Belmont House, Uxbridge, UB8 1QS</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#CBD5E1' }}>
+                <Building size={15} style={{ color: '#FFFFFF', flexShrink: 0 }} />
+                <span>{siteConfig.legalName} &bull; Company No. {siteConfig.companyNumber} ({siteConfig.registeredIn})</span>
               </div>
             </div>
           </div>
@@ -68,6 +56,11 @@ export function Footer() {
               <li>
                 <Link to="/expert-witness" style={{ color: '#FFFFFF', fontWeight: 600 }}>
                   Expert Witness &amp; Disputes &rarr;
+                </Link>
+              </li>
+              <li>
+                <Link to="/what-survey-do-i-need" style={{ color: '#34D399', fontWeight: 600 }}>
+                  What Survey Do I Need? &rarr;
                 </Link>
               </li>
             </ul>
@@ -123,21 +116,14 @@ export function Footer() {
         {/* Footer Bottom Bar */}
         <div className="footer-bottom">
           <div className="footer-copyright">
-            &copy; {currentYear} {siteConfig.companyName}. All rights reserved. RICS Home Survey Standard Aligned.
+            &copy; {currentYear} {siteConfig.legalName} (Company No. {siteConfig.companyNumber}). All rights reserved. RICS Home Survey Standard Aligned.
           </div>
           <div className="footer-bottom-links">
+            <Link to="/request-quote">Request a Quote</Link>
+            <Link to="/professional-standards-notice">Professional Standards Notice</Link>
             <Link to="/contact">Client Enquiry Form</Link>
-            <Link to="/contact#privacy">Privacy Notice</Link>
-            <Link to="/contact#complaints">Complaints Procedure</Link>
-            {/* Discreet Back-Office link for Practice Personnel only */}
-            <Link
-              to="/backoffice"
-              className="text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-              title="Restricted entrance for chartered surveyors and practice administrators"
-            >
-              <Lock size={11} className="inline opacity-70" />
-              <span>Staff &amp; Surveyor Back-Office</span>
-            </Link>
+            <Link to="/contact#privacy">Privacy Notice &amp; Data Protection</Link>
+            <Link to="/contact#complaints">Complaints Procedure (CHP)</Link>
           </div>
         </div>
       </div>

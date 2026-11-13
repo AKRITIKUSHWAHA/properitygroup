@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert, ArrowLeft, LogOut } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
+import { siteConfig } from '../../config/siteConfig';
 
 export const Forbidden403Page = () => {
   const { user, getRoleDashboard, logout } = useAuth();
@@ -11,7 +12,7 @@ export const Forbidden403Page = () => {
     if (user) {
       navigate(getRoleDashboard(user.role));
     } else {
-      navigate('/login');
+      navigate(siteConfig.features?.showPublicPortalLogin ? '/login' : '/');
     }
   };
 

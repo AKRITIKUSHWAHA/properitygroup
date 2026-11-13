@@ -6,12 +6,10 @@ import {
   ShieldCheck,
   MapPin,
   Check,
-  FileText,
   Clock,
   Phone,
   Building,
-  HelpCircle,
-  Download
+  HelpCircle
 } from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
@@ -22,7 +20,6 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { QuoteRequestForm } from '../../components/forms/QuoteRequestForm';
 import { CoverageMap } from '../../components/common/CoverageMap';
-import { downloadReportPDF } from '../../utils/pdfGenerator';
 
 export function HomebuyerSurveyPage() {
   const service = approvedServices.find(s => s.id === 'homebuyer-survey-level-2');
@@ -165,33 +162,6 @@ export function HomebuyerSurveyPage() {
                     <span style={{ fontSize: '0.82rem', color: '#F8FAFC' }}>Critical defects requiring urgent repair, further specialist investigation, or immediate safety remedy.</span>
                   </div>
                 </div>
-              </div>
-
-              {/* Sample Report Download Card */}
-              <div className="sample-report-download-card">
-                <div className="sample-report-left">
-                  <div className="sample-report-icon-box">
-                    <FileText size={22} style={{ color: '#0284C7' }} />
-                  </div>
-                  <div>
-                    <h4 className="sample-report-title">Sample Level 2 Survey Report</h4>
-                    <p className="sample-report-subtitle">Review an anonymised sample report showing full RICS condition ratings &amp; diagnostic findings.</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => downloadReportPDF({
-                    jobNo: 'SAMPLE-LVL2-2026',
-                    clientName: 'Sample Client',
-                    property: '18 Richmond Hill, Richmond TW10 6QX',
-                    surveyType: 'RICS Level 2 Home Survey',
-                    propertyType: 'Semi-Detached House (c. 1934)',
-                  })}
-                  className="btn btn-primary btn-sm sample-report-btn"
-                >
-                  <Download size={15} />
-                  <span>Download Sample PDF</span>
-                </button>
               </div>
 
               {/* Local Regional Context */}

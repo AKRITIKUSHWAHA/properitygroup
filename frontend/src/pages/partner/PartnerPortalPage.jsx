@@ -13,7 +13,6 @@ import {
   FileText,
   MapPin,
   ExternalLink,
-  Download,
   AlertCircle,
   HelpCircle,
   Zap,
@@ -29,7 +28,7 @@ import {
   PROPERTY_INTELLIGENCE_DATA,
 } from '../../mock/partners';
 import { useToast } from '../../components/ToastContext';
-import { downloadReportPDF } from '../../utils/pdfGenerator';
+import { siteConfig } from '../../config/siteConfig';
 
 export function PartnerPortalPage({ inAdminShell = false }) {
   const { addToast } = useToast();
@@ -189,12 +188,14 @@ export function PartnerPortalPage({ inAdminShell = false }) {
                 </select>
               </div>
 
-              <Link
-                to="/login"
-                className="text-xs text-blue-200 hover:text-white font-semibold transition-colors px-2 py-1"
-              >
-                Client Login
-              </Link>
+              {siteConfig.features?.showPublicPortalLogin && (
+                <Link
+                  to="/login"
+                  className="text-xs text-blue-200 hover:text-white font-semibold transition-colors px-2 py-1"
+                >
+                  Client Login
+                </Link>
+              )}
 
               <Link
                 to="/login/admin"
@@ -264,15 +265,6 @@ export function PartnerPortalPage({ inAdminShell = false }) {
             >
               <Plus className="w-4 h-4" />
               <span>Submit Survey Referral</span>
-            </button>
-
-            <button
-              onClick={() => downloadReportPDF('SAMPLE-SPECIMEN-2026', 'Level 2 Homebuyer Survey')}
-              className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-              title="Download specimen RICS report for buyers"
-            >
-              <Download className="w-4 h-4 text-blue-600" />
-              <span>Buyer Specimen (PDF)</span>
             </button>
           </div>
         </div>

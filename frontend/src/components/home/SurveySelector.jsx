@@ -14,6 +14,7 @@ export function SurveySelector() {
     if (propertyAge === 'new-build') {
       return {
         level: 'Snagging Report',
+        serviceSlug: 'snagging-report',
         badge: 'New-Build Handover',
         tagline: 'Best for brand-new houses and off-plan apartments',
         summary: 'Prior to moving in, a comprehensive snagging inspection identifies developer cosmetic defects, compliance breaches, and finish oversights for rectification under NHBC / Premier guarantee.',
@@ -36,6 +37,7 @@ export function SurveySelector() {
     ) {
       return {
         level: 'RICS Level 3 Building Survey',
+        serviceSlug: 'building-survey-level-3',
         badge: 'Maximum Structural Depth',
         tagline: 'Recommended for your older, altered, or complex property',
         summary: 'Because of your property’s age, construction fabric, or alterations, an exhaustive Level 3 structural survey is essential to uncover hidden defects, timber decay, historic movement, and projected repair costs.',
@@ -52,6 +54,7 @@ export function SurveySelector() {
 
     return {
       level: 'RICS Level 2 Homebuyer Survey',
+      serviceSlug: 'homebuyer-survey-level-2',
       badge: 'Most Popular Choice',
       tagline: 'Recommended for your conventional, modern property',
       summary: 'For conventional properties built after 1930 in reasonable condition, a Level 2 survey provides thorough visual reassurance with traffic-light defect ratings without unnecessary structural over-engineering.',
@@ -180,7 +183,7 @@ export function SurveySelector() {
                 </div>
 
                 <div className="rec-actions">
-                  <Button to="/contact#quote" size="md" variant="gold" icon={ArrowRight} iconPosition="right">
+                  <Button to={`/request-quote?service=${rec.serviceSlug}`} size="md" variant="gold" icon={ArrowRight} iconPosition="right">
                     Get Fixed Quote for {rec.level}
                   </Button>
                   <Button to={rec.path} size="md" variant="secondary">

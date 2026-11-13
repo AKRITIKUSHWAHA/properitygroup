@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Scale, CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, FileText } from 'lucide-react';
 import { expertWitnessService } from '../../config/services';
 import { validateExpertWitnessForm } from '../../utils/validation';
+import { publicApi } from '../../api/publicApi';
 import { FormField } from './FormField';
 import { Button } from '../common/Button';
 
@@ -69,18 +70,27 @@ export function ExpertWitnessForm({ className = '' }) {
     setIsSubmitting(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const res = await publicApi.submitQuoteEnquiry({
+        ...formData,
+        enquiryCategory: 'EXPERT_WITNESS',
+        serviceName: `Expert Witness (${formData.disputeType})`,
+        sourcePage: typeof window !== 'undefined' ? window.location.pathname : '/expert-witness',
+      });
 
       setReceipt({
-        timestamp: new Date().toISOString(),
-        instructionRef: `CPR-${Math.floor(200000 + Math.random() * 800000)}`,
+        timestamp: res?.timestamp || new Date().toISOString(),
+        instructionRef: res?.referenceId || `CPR-${Math.floor(200000 + Math.random() * 800000)}`,
+        emailNotification: res?.emailNotification,
         data: formData,
-        notice: "Demonstration Build Notice: Your Expert Witness instruction enquiry has been validated according to CPR Part 35 preliminary requirements. This is a frontend prototype; no live database entry has been generated."
       });
       setIsSubmitting(false);
     } catch (err) {
       setIsSubmitting(false);
-      setSubmitError("Failed to process instruction enquiry. Please try again.");
+      setSubmitError(
+        err?.status === 0 || err?.status === 502 || err?.status === 503
+          ? 'Unable to reach our enquiry server right now. Please email info@njspropertygroup.com directly.'
+          : err?.message || 'Failed to process instruction enquiry. Please try again.'
+      );
     }
   };
 
@@ -109,7 +119,7 @@ export function ExpertWitnessForm({ className = '' }) {
           <Scale size={32} style={{ color: 'var(--color-accent-gold)' }} />
           <div>
             <h3 style={{ fontSize: 'var(--font-size-xl)', color: 'var(--color-primary-navy)' }}>
-              Litigation Enquiry Logged (Demonstration)
+              Instruction Enquiry Received
             </h3>
             <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-muted-text)' }}>
               Instruction Reference: <strong>{receipt.instructionRef}</strong>
@@ -120,16 +130,12 @@ export function ExpertWitnessForm({ className = '' }) {
         <div className="alert-box alert-info">
           <div>
             <strong style={{ display: 'block', marginBottom: '0.25rem' }}>
-              Civil Procedure Rules (CPR) Part 35 Prototype Notice:
+              Civil Procedure Rules (CPR) Part 35 Enquiry Logged
             </strong>
-            {receipt.notice}
+            {receipt.emailNotification?.emailSent
+              ? `Dispatched to ${receipt.emailNotification.recipient}. Our senior expert witness team will conduct a conflict check and respond within 24 hours.`
+              : `Logged against reference ${receipt.instructionRef}. Our team will complete a conflict check and respond to ${receipt.data.contactEmail} within 24 hours.`}
           </div>
-        </div>
-
-        <div className="prototype-receipt">
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-            {JSON.stringify(receipt.data, null, 2)}
-          </pre>
         </div>
 
         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
@@ -151,11 +157,12 @@ export function ExpertWitnessForm({ className = '' }) {
       noValidate
       aria-label="Expert Witness Instruction Form"
     >
-      <div className="hero-card-header">
-        <h3 className="hero-card-title" style={{ color: '#0F172A', fontWeight: 700 }}>
+      <div className="hero-card-header" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem', marginBottom: '1.15rem' }}>
+        <span className="expert-form-kicker">CPR Part 35 Instruction</span>
+        <h3 className="hero-card-title" style={{ color: '#0F172A', fontWeight: 700, marginBottom: '0.35rem' }}>
           Confidential Legal Instruction Enquiry
         </h3>
-        <p className="hero-card-desc" style={{ color: '#334155', fontWeight: 500 }}>
+        <p className="hero-card-desc" style={{ color: '#475569', fontWeight: 500, margin: 0 }}>
           Submit dispute details for preliminary conflict checks, letter of instruction review, and CPR Part 35 readiness.
         </p>
       </div>
@@ -167,11 +174,11 @@ export function ExpertWitnessForm({ className = '' }) {
         </div>
       )}
 
-      {/* Instructing Role */}
+      {/* Instructing Role & Practice */}
       <div className="grid-2">
         <FormField
           id="instructingRole"
-          label="Instructing Party Capacity"
+          label="Instructing Party"
           required
           error={errors.instructingRole}
         >
@@ -191,7 +198,7 @@ export function ExpertWitnessForm({ className = '' }) {
 
         <FormField
           id="lawFirmName"
-          label="Law Firm / Practice Name"
+          label="Law Firm / Practice"
         >
           <input
             type="text"
@@ -201,8 +208,7 @@ export function ExpertWitnessForm({ className = '' }) {
             value={formData.lawFirmName}
             onChange={handleChange}
             className="form-input"
-          >
-          </input>
+          />
         </FormField>
       </div>
 
@@ -230,7 +236,7 @@ export function ExpertWitnessForm({ className = '' }) {
 
         <FormField
           id="isSingleJointExpert"
-          label="Single Joint Expert (SJE)?"
+          label="Appointment Type"
         >
           <select
             id="isSingleJointExpert"
@@ -269,7 +275,7 @@ export function ExpertWitnessForm({ className = '' }) {
       <div className="grid-2">
         <FormField
           id="courtDeadline"
-          label="Court Directions / Target Report Date"
+          label="Court / Report Deadline"
           required
           error={errors.courtDeadline}
         >
@@ -277,7 +283,7 @@ export function ExpertWitnessForm({ className = '' }) {
             type="text"
             id="courtDeadline"
             name="courtDeadline"
-            placeholder="e.g. Directions deadline: 4 weeks"
+            placeholder="e.g. 4 weeks"
             value={formData.courtDeadline}
             onChange={handleChange}
             className={`form-input ${errors.courtDeadline ? 'is-invalid' : ''}`}
@@ -287,13 +293,13 @@ export function ExpertWitnessForm({ className = '' }) {
 
         <FormField
           id="propertyLocation"
-          label="Subject Property Location / Postcode"
+          label="Property Location"
         >
           <input
             type="text"
             id="propertyLocation"
             name="propertyLocation"
-            placeholder="e.g. Oxford, Oxfordshire (OX2)"
+            placeholder="e.g. Oxford (OX2)"
             value={formData.propertyLocation}
             onChange={handleChange}
             className="form-input"
@@ -302,25 +308,25 @@ export function ExpertWitnessForm({ className = '' }) {
       </div>
 
       {/* Contact Details */}
-      <div className="grid-3">
-        <FormField
+      <FormField
+        id="contactName"
+        label="Practitioner / Contact Name"
+        required
+        error={errors.contactName}
+      >
+        <input
+          type="text"
           id="contactName"
-          label="Practitioner / Contact Name"
-          required
-          error={errors.contactName}
-        >
-          <input
-            type="text"
-            id="contactName"
-            name="contactName"
-            placeholder="e.g. Julian Wright"
-            value={formData.contactName}
-            onChange={handleChange}
-            className={`form-input ${errors.contactName ? 'is-invalid' : ''}`}
-            aria-invalid={!!errors.contactName}
-          />
-        </FormField>
+          name="contactName"
+          placeholder="e.g. Julian Wright"
+          value={formData.contactName}
+          onChange={handleChange}
+          className={`form-input ${errors.contactName ? 'is-invalid' : ''}`}
+          aria-invalid={!!errors.contactName}
+        />
+      </FormField>
 
+      <div className="grid-2">
         <FormField
           id="contactEmail"
           label="Professional Email"
@@ -341,7 +347,7 @@ export function ExpertWitnessForm({ className = '' }) {
 
         <FormField
           id="contactPhone"
-          label="Direct Phone Number"
+          label="Direct Phone"
           required
           error={errors.contactPhone}
         >

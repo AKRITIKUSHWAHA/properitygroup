@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthLayout } from '../../layouts/AuthLayout';
+import { siteConfig } from '../../config/siteConfig';
 
 export const ForgotPasswordPage = () => {
   const { forgotPassword } = useAuth();
+  const location = useLocation();
+  const backTarget =
+    location.state?.loginPath ||
+    (siteConfig.features?.showPublicPortalLogin ? '/login' : '/');
+  const backLabel = backTarget === '/' ? 'Return to Website' : 'Back to Sign In';
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -39,15 +45,16 @@ export const ForgotPasswordPage = () => {
           <div className="pt-2 flex flex-col gap-2">
             <Link
               to="/reset-password"
+              state={{ loginPath: location.state?.loginPath }}
               className="py-2.5 px-4 rounded-xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-xs transition-colors"
             >
               Simulate: Proceed to Set New Password
             </Link>
             <Link
-              to="/login"
+              to={backTarget}
               className="py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
+              <ArrowLeft className="w-3.5 h-3.5" /> {backLabel}
             </Link>
           </div>
         </div>
@@ -90,11 +97,11 @@ export const ForgotPasswordPage = () => {
 
           <div className="pt-3 text-center">
             <Link
-              to="/login"
+              to={backTarget}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to Sign In
+              {backLabel}
             </Link>
           </div>
         </form>

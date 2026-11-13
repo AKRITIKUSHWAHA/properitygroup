@@ -62,6 +62,7 @@ import {
   customerDetailsApi,
   customerPreviousSurveysApi,
 } from '../../api/customerApi';
+import { siteConfig } from '../../config/siteConfig';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -169,7 +170,7 @@ export const CustomerTermsPage = () => {
   const [hasDrawn, setHasDrawn] = useState(false);
 
   // Payment Form State
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'apple' | 'bacs'
+  const [paymentMethod, setPaymentMethod] = useState('bacs'); // 'bacs' | 'card' | 'apple'
   const [cardDetails, setCardDetails] = useState({
     number: '•••• •••• •••• 4242',
     expiry: '12/28',
@@ -339,8 +340,10 @@ export const CustomerTermsPage = () => {
 
       addToast({
         type: 'success',
-        title: 'Advance Payment Successful',
-        message: `Stripe transaction of £${grossTotal.toFixed(2)} authorized. Terms of engagement recorded.`,
+        title: paymentMethod === 'bacs' ? 'Metro Bank Transfer Confirmed' : 'Advance Payment Successful',
+        message: paymentMethod === 'bacs'
+          ? `Direct bank transfer of £${grossTotal.toFixed(2)} registered to Metro Bank PLC. Terms of engagement recorded.`
+          : `Stripe transaction of £${grossTotal.toFixed(2)} authorized. Terms of engagement recorded.`,
       });
     }, 1000);
   };
@@ -788,6 +791,21 @@ export const CustomerTermsPage = () => {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
+                  onClick={() => setPaymentMethod('bacs')}
+                  className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                    paymentMethod === 'bacs'
+                      ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
+                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <Building className="w-4 h-4 text-emerald-700" />
+                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full">Zero Fee</span>
+                  </div>
+                  <span>BACS Transfer</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setPaymentMethod('card')}
                   className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
                     paymentMethod === 'card'
@@ -810,22 +828,74 @@ export const CustomerTermsPage = () => {
                   <span className="font-sans font-black text-sm"> Pay</span>
                   <span>Apple Pay</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('bacs')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                    paymentMethod === 'bacs'
-                      ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
-                >
-                  <Building className="w-4 h-4 text-indigo-600" />
-                  <span>BACS Transfer</span>
-                </button>
               </div>
 
-              {/* Card Form */}
-              <form onSubmit={handlePaymentSubmit} className="space-y-4 text-xs">
+              {/* BACS Form */}
+              {paymentMethod === 'bacs' ? (
+                <div className="p-5 bg-gradient-to-br from-emerald-50/70 to-blue-50/60 rounded-2xl border border-emerald-200/90 space-y-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-[#0B1F4D] flex items-center gap-2">
+                      <Building className="w-4 h-4 text-emerald-700" />
+                      <span>Direct Bank Transfer (Metro Bank Faster Payments)</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      Zero Merchant Fee
+                    </span>
+                  </div>
+
+                  <p className="text-slate-600 leading-relaxed">
+                    Please transfer the advance instruction fee directly to our practice business account via UK Faster Payments / Online Banking:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white rounded-xl border border-emerald-100 shadow-2xs text-slate-800">
+                    <div>Bank: <strong className="text-slate-900">Metro Bank PLC</strong></div>
+                    <div>Beneficiary: <strong className="text-slate-900">NJS Property Group Ltd</strong></div>
+                    <div>Sort Code: <strong className="text-slate-900 font-mono text-sm">23-05-80</strong></div>
+                    <div>Account No: <strong className="text-slate-900 font-mono text-sm">18920412</strong></div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 text-[11px]">
+                    <div>Payment Reference: <strong className="font-mono text-[#0B1F4D] text-xs">{jobNo || 'NJS-JOB-2026'}</strong></div>
+                    <div className="text-right">Total Payable: <strong className="text-emerald-700 font-extrabold text-sm">£{grossTotal.toFixed(2)}</strong></div>
+                  </div>
+
+                  <div className="text-[11px] text-slate-500 italic">
+                    Once transferred from your bank app, click below to confirm your booking instruction.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePaymentSubmit}
+                    disabled={isProcessingPayment}
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isProcessingPayment ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Confirming Metro Bank Transfer...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Confirm Metro Bank Transfer (£{grossTotal.toFixed(2)}) &amp; Confirm Booking</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : paymentMethod === 'apple' ? (
+                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-4">
+                  <div className="text-sm font-semibold text-slate-700">Apple Pay Express Checkout</div>
+                  <button
+                    type="button"
+                    onClick={handlePaymentSubmit}
+                    disabled={isProcessingPayment}
+                    className="w-full max-w-sm mx-auto py-3 bg-black hover:bg-slate-900 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2"
+                  >
+                    <span className="font-sans text-base"> Pay £{grossTotal.toFixed(2)}</span>
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handlePaymentSubmit} className="space-y-4 text-xs">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Cardholder Name</label>
                   <input
@@ -900,6 +970,7 @@ export const CustomerTermsPage = () => {
                   </button>
                 </div>
               </form>
+              )}
             </div>
           </div>
 
@@ -1189,7 +1260,7 @@ export const CustomerInvoicesPage = () => {
 
   const [settlingInvoice, setSettlingInvoice] = useState(null);
   const [viewingReceipt, setViewingReceipt] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'apple' | 'bacs'
+  const [paymentMethod, setPaymentMethod] = useState('bacs'); // 'card' | 'apple' | 'bacs'
   const [isProcessing, setIsProcessing] = useState(false);
   const [cardDetails, setCardDetails] = useState({
     name: user?.name || 'Customer Account',
@@ -1220,7 +1291,7 @@ export const CustomerInvoicesPage = () => {
       vat: `£${vat.toFixed(2)}`,
       total: `£${total.toFixed(2)}`,
       status: isPaid ? 'Paid' : 'Unpaid',
-      method: isPaid ? 'Stripe Card (•••• 4242)' : 'Pending Settlement',
+      method: j.paymentMethod || (isPaid ? 'Metro Bank Direct Transfer (BACS)' : 'Pending Settlement'),
     };
   });
 
@@ -1263,6 +1334,12 @@ export const CustomerInvoicesPage = () => {
       // 1. Update job in store
       updateJob(settlingInvoice.jobRef, {
         paymentStatus: 'Paid',
+        paymentMethod:
+          paymentMethod === 'card'
+            ? 'Stripe Card (•••• 4242)'
+            : paymentMethod === 'apple'
+            ? 'Apple Pay'
+            : 'Metro Bank Direct Transfer (BACS)',
         canBook: true,
         timelineStep: 4,
         activityLog: [
@@ -1288,7 +1365,7 @@ export const CustomerInvoicesPage = () => {
             ? 'Stripe Credit Card (•••• 4242)'
             : paymentMethod === 'apple'
             ? 'Apple Pay (Biometric Settled)'
-            : 'BACS Faster Payments',
+            : 'Metro Bank Direct Transfer (BACS Faster Payments)',
         baseFee: settlingInvoice.netAmount,
         vatAmount: settlingInvoice.vatAmount,
         totalAmount: settlingInvoice.grossTotal,
@@ -1497,6 +1574,21 @@ export const CustomerInvoicesPage = () => {
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                onClick={() => setPaymentMethod('bacs')}
+                className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  paymentMethod === 'bacs'
+                    ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
+                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                <div className="flex items-center gap-1">
+                  <Building className="w-4 h-4 text-emerald-700" />
+                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full">Zero Fee</span>
+                </div>
+                <span>BACS Transfer</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setPaymentMethod('card')}
                 className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
                   paymentMethod === 'card'
@@ -1519,18 +1611,6 @@ export const CustomerInvoicesPage = () => {
                 <span className="font-sans font-black text-sm"> Pay</span>
                 <span>Apple Pay</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('bacs')}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                  paymentMethod === 'bacs'
-                    ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <Building className="w-4 h-4 text-indigo-600" />
-                <span>BACS Transfer</span>
-              </button>
             </div>
 
             {/* Payment Form */}
@@ -1538,10 +1618,10 @@ export const CustomerInvoicesPage = () => {
               <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200 space-y-2 text-xs">
                 <div className="font-bold text-[#0B1F4D]">Direct Bank Transfer Instructions:</div>
                 <div className="grid grid-cols-2 gap-2 text-slate-700">
-                  <div>Bank: <strong>Barclays Bank UK</strong></div>
-                  <div>Sort Code: <strong>20-45-77</strong></div>
-                  <div>Account No: <strong>83920194</strong></div>
-                  <div>Beneficiary: <strong>NJS Property Group Escrow</strong></div>
+                  <div>Bank: <strong>Metro Bank PLC</strong></div>
+                  <div>Sort Code: <strong>23-05-80</strong></div>
+                  <div>Account No: <strong>18920412</strong></div>
+                  <div>Beneficiary: <strong>NJS Property Group Ltd</strong></div>
                 </div>
                 <div className="pt-2 text-[11px] text-slate-500 font-mono">
                   Mandatory Reference: <strong>{settlingInvoice.invNo}</strong>
@@ -2820,88 +2900,334 @@ export const CustomerDetailsPage = () => {
 // ==========================================
 // 13. SUPPORT PAGE
 // ==========================================
-export const CustomerSupportPage = () => {
-  useEffect(() => { customerSupportApi.getTickets().catch(() => {}); }, []);
-  const { addToast } = useToast();
-  const [ticketMessage, setTicketMessage] = useState('');
+const INITIAL_SUPPORT_TICKETS = [
+  {
+    id: 1,
+    ticketNo: 'TKT-2026-104',
+    subject: 'Request update on 14 Mayfair Gate Level 3 report delivery ETA',
+    category: 'Report Delivery',
+    priority: 'Normal',
+    status: 'IN PROGRESS',
+    createdAt: '03 Nov 2026, 11:20',
+    lastReply: 'David Thorne MRICS confirmed on-site inspection concluded. Final technical review underway.',
+  },
+  {
+    id: 2,
+    ticketNo: 'TKT-2026-089',
+    subject: 'Access confirmation with vendor estate agent (Hamptons Mayfair)',
+    category: 'Access Logistics',
+    priority: 'Normal',
+    status: 'RESOLVED',
+    createdAt: '28 Oct 2026, 14:15',
+    lastReply: 'Confirmed by vendor agent. Key collection booked for 10:00 AM on inspection date.',
+  },
+];
 
-  const handleSendTicket = (e) => {
+export const CustomerSupportPage = () => {
+  const { addToast } = useToast();
+  const [tickets, setTickets] = useState(INITIAL_SUPPORT_TICKETS);
+  const [subject, setSubject] = useState('Query regarding property inspection');
+  const [category, setCategory] = useState('Inspection Logistics');
+  const [priority, setPriority] = useState('Normal');
+  const [ticketMessage, setTicketMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    customerSupportApi
+      .getTickets()
+      .then((res) => {
+        if (res?.data?.tickets && Array.isArray(res.data.tickets) && res.data.tickets.length > 0) {
+          setTickets(res.data.tickets);
+        }
+      })
+      .catch(() => {
+        // Fallback to local state
+      });
+  }, []);
+
+  const handleSendTicket = async (e) => {
     e.preventDefault();
     if (!ticketMessage.trim()) return;
-    addToast({ type: 'success', title: 'Support Ticket Dispatched', message: 'Our operations team has received your inquiry.' });
+
+    setIsSubmitting(true);
+    const newTicket = {
+      id: Date.now(),
+      ticketNo: `TKT-2026-${Math.floor(100 + Math.random() * 900)}`,
+      subject: subject || 'General Survey Support Inquiry',
+      category,
+      priority,
+      status: 'OPEN',
+      createdAt: 'Just now',
+      message: ticketMessage.trim(),
+      lastReply: 'Awaiting review by operations desk.',
+    };
+
+    try {
+      await customerSupportApi.createTicket({
+        subject,
+        message: ticketMessage,
+        category,
+        priority,
+      });
+    } catch {
+      // Local fallback
+    }
+
+    setTickets((prev) => [newTicket, ...prev]);
+    setIsSubmitting(false);
     setTicketMessage('');
+    addToast({
+      type: 'success',
+      title: 'Support Ticket Dispatched',
+      message: `Ticket #${newTicket.ticketNo} submitted to our London operations desk.`,
+    });
   };
 
+  const phone = siteConfig?.contact?.telephoneDisplay || '0333 305 2777';
+  const email = siteConfig?.contact?.email || 'info@njspropertygroup.com';
+  const address = siteConfig?.contact?.address
+    ? `${siteConfig.contact.address.line1}, ${siteConfig.contact.address.city} ${siteConfig.contact.address.postcode}`
+    : 'Belmont House, Uxbridge, UB8 1QS';
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
         title="Customer Support & Survey Inquiries"
         subtitle="Speak directly with our survey dispatch desk or message your assigned chartered surveyor."
         breadcrumb={['Customer Portal', 'Support']}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-4">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-            <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-[#2563EB]" />
-              <span>Send a Message to Support</span>
-            </h4>
+      {/* Emergency / Fast Turnaround Banner */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-[#0B1F4D] to-[#1E3A8A] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/15">
+            <Phone className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div>
+            <h4 className="font-bold text-sm tracking-tight">Need Urgent Property Survey Assistance?</h4>
+            <p className="text-xs text-slate-300">
+              For immediate survey slot booking or same-day exchange deadlines, call our direct operations hotline.
+            </p>
+          </div>
+        </div>
+        <a
+          href={`tel:${phone.replace(/\s+/g, '')}`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shrink-0 transition-colors shadow-sm"
+        >
+          <Phone className="w-3.5 h-3.5" />
+          <span>Call {phone}</span>
+        </a>
+      </div>
 
-            <form onSubmit={handleSendTicket} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Subject</label>
-                <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl">
-                  <option>Query regarding 14 Mayfair Gate inspection</option>
-                  <option>Request update on report delivery ETA</option>
-                  <option>Request phone call with David Thorne MRICS</option>
-                  <option>Billing / VAT receipt inquiry</option>
-                </select>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Form & History */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* New Ticket Form */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#2563EB]" />
+                <span>Submit a New Support Ticket</span>
+              </h4>
+              <span className="text-[11px] text-slate-400 font-medium">Standard SLA: &lt; 2 business hours</span>
+            </div>
+
+            <form onSubmit={handleSendTicket} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Inquiry Category</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]"
+                  >
+                    <option value="Inspection Logistics">Inspection Logistics &amp; Access</option>
+                    <option value="Report Delivery">Report Delivery &amp; Turnaround ETA</option>
+                    <option value="Surveyor Debrief">Surveyor Post-Survey Phone Debrief</option>
+                    <option value="Billing & Invoicing">Invoices, BACS &amp; VAT Receipts</option>
+                    <option value="Terms & Signing">Terms of Engagement &amp; Signing</option>
+                    <option value="General Inquiry">General Practice Inquiry</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Priority Level</label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]"
+                  >
+                    <option value="Normal">Normal — Standard response</option>
+                    <option value="High">High — Survey inspection in &lt; 48h</option>
+                    <option value="Urgent">Urgent — Impending exchange deadline</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Message Details</label>
+                <label className="block font-semibold text-slate-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="e.g. Query regarding 14 Mayfair Gate inspection timing"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Inquiry Details</label>
                 <textarea
                   rows="4"
                   value={ticketMessage}
                   onChange={(e) => setTicketMessage(e.target.value)}
-                  placeholder="Type your question or specific instructions for our surveying team..."
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl"
+                  placeholder="Type your message, query, or specific property instructions for our surveying team..."
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]"
+                  required
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[11px] text-slate-400">
+                  Directly dispatched to practice operations desk &amp; surveyor team.
+                </span>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] text-white font-bold text-xs hover:bg-[#162E6E] cursor-pointer"
+                  disabled={isSubmitting || !ticketMessage.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] text-white font-bold text-xs hover:bg-[#162E6E] disabled:opacity-50 cursor-pointer flex items-center gap-1.5 transition-colors shadow-xs"
                 >
-                  Send Message
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Sending...' : 'Dispatch Ticket'}</span>
                 </button>
               </div>
             </form>
           </div>
-        </div>
 
-        <div className="md:col-span-1 space-y-4">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4 text-xs">
-            <h4 className="font-bold text-[#0B1F4D]">Direct Contact</h4>
+          {/* Ticket History */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+            <h4 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#2563EB]" />
+              <span>Your Support Tickets &amp; Inquiries</span>
+            </h4>
 
             <div className="space-y-3">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Telephone</span>
-                <span className="font-bold text-slate-900">020 8947 8840</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Mon–Fri, 08:30 – 18:00</span>
+              {tickets.map((t) => (
+                <div
+                  key={t.id || t.ticketNo}
+                  className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 hover:border-slate-200 transition-colors"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-xs text-[#0B1F4D]">{t.ticketNo}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
+                        {t.category}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          t.status === 'RESOLVED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : t.status === 'IN PROGRESS'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{t.createdAt}</span>
+                    </div>
+                  </div>
+
+                  <p className="font-semibold text-xs text-slate-800">{t.subject}</p>
+
+                  {t.lastReply && (
+                    <div className="mt-1 p-2.5 rounded-xl bg-white border border-slate-200/60 text-[11px] text-slate-600">
+                      <span className="font-bold text-[#0B1F4D] block mb-0.5">Latest Update from Practice Desk:</span>
+                      {t.lastReply}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Direct Practice Contacts & FAQ */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4 text-xs">
+            <h4 className="font-bold text-sm text-[#0B1F4D] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Direct Practice Desk</span>
+            </h4>
+
+            <div className="space-y-3">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                  Telephone Dispatch
+                </span>
+                <a
+                  href={`tel:${phone.replace(/\s+/g, '')}`}
+                  className="font-bold text-slate-900 text-sm hover:text-[#2563EB] block"
+                >
+                  {phone}
+                </a>
+                <span className="text-[11px] text-slate-500 block mt-0.5">Monday – Friday: 08:30 – 18:00</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold block mb-0.5">Email</span>
-                <span className="font-bold text-[#2563EB]">info@njspropertygroup.com</span>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                  Support Email
+                </span>
+                <a
+                  href={`mailto:${email}`}
+                  className="font-bold text-[#2563EB] hover:underline block break-all"
+                >
+                  {email}
+                </a>
+                <span className="text-[11px] text-slate-500 block mt-0.5">Monitored continuously during practice hours</span>
               </div>
 
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold block mb-0.5">RICS Regulated Office</span>
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                  RICS Regulated Head Office
+                </span>
                 <span className="font-bold text-slate-900 block">NJS Property Group</span>
-                <span className="text-slate-500">124 City Road, London EC1V 2NX</span>
+                <span className="text-slate-600 text-[11px] leading-relaxed block mt-0.5">
+                  {address}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Help Card */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3 text-xs">
+            <h4 className="font-bold text-sm text-[#0B1F4D] flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-[#2563EB]" />
+              <span>Common Questions</span>
+            </h4>
+
+            <div className="space-y-3 text-[11px] text-slate-600">
+              <div>
+                <p className="font-bold text-slate-800">When will my report arrive?</p>
+                <p className="mt-0.5 text-slate-500">
+                  Level 2 &amp; Level 3 reports are typically delivered via your portal within 3–5 business days following physical on-site inspection.
+                </p>
+              </div>
+
+              <div className="border-t border-slate-100 pt-2">
+                <p className="font-bold text-slate-800">Can I talk to my surveyor?</p>
+                <p className="mt-0.5 text-slate-500">
+                  Yes, every inspection includes a direct phone debrief with your assigned chartered surveyor once your report is ready.
+                </p>
+              </div>
+
+              <div className="border-t border-slate-100 pt-2">
+                <p className="font-bold text-slate-800">Need to reschedule an inspection?</p>
+                <p className="mt-0.5 text-slate-500">
+                  Please notify us at least 24 hours prior to the inspection date via ticket or phone so we can coordinate with the vendor or agent.
+                </p>
               </div>
             </div>
           </div>

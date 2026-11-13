@@ -121,7 +121,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
   };
 
   return (
@@ -164,20 +163,16 @@ export const Sidebar = ({ isOpen, onClose }) => {
         `}
       >
         {/* Brand Header matching Login Page */}
-        <div className="flex items-center justify-between min-h-[66px] px-3.5 py-2.5 border-b border-slate-200/90 bg-white shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 shrink-0">
-              <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
-            </div>
-            {/* Brand text visible on desktop, mobile, and tablet when hovered */}
-            <div className={`min-w-0 flex-1 transition-opacity duration-200 ${isHovered ? 'md:block' : 'md:hidden xl:block'}`}>
-              <div className="text-[11px] font-black text-[#0B1F4D] tracking-tight leading-[1.25] uppercase">
-                NJS Property Group
-              </div>
-              <div className="text-[7.5px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 leading-tight">
-                INDEPENDENT RICS-ALIGNED SURVEYORS
-              </div>
-            </div>
+        <div className="flex items-center justify-between min-h-[76px] px-4 py-2.5 border-b border-slate-200/90 bg-white shrink-0">
+          <div className={`flex items-center min-w-0 flex-1 ${isHovered ? 'justify-start' : 'md:justify-center xl:justify-start'}`}>
+            <img
+              src="/images/njs-logo.png"
+              alt="NJS Property Group"
+              className={`object-contain transition-all duration-200 shrink-0 ${
+                isHovered ? 'h-14 w-auto' : 'h-10 md:w-11 xl:h-14 xl:w-auto'
+              }`}
+              style={{ maxHeight: isHovered ? '56px' : undefined }}
+            />
           </div>
 
           {/* Close button for mobile drawer */}

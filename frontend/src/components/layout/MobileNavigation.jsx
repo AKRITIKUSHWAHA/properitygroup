@@ -68,9 +68,7 @@ export function MobileNavigation({ isOpen, onClose }) {
         {/* Header */}
         <div className="mobile-drawer-header">
           <div className="mobile-drawer-brand">
-            <div className="logo-badge" aria-hidden="true" style={{ width: '32px', height: '32px' }}>
-              <Building size={16} />
-            </div>
+            <img src="/images/njs-logo-white.png" alt="NJS Property Group" className="site-logo-img-mobile" style={{ height: "52px", width: "auto", objectFit: "contain" }} />
             <div>
               <span className="logo-title font-serif" style={{ fontSize: '1rem', color: '#FFFFFF', display: 'block' }}>
                 {siteConfig.companyName}
@@ -155,13 +153,13 @@ export function MobileNavigation({ isOpen, onClose }) {
                 ))}
 
                 <NavLink
-                  to="/#which-survey"
+                  to="/what-survey-do-i-need"
                   className="mobile-sublink mobile-sublink-all"
                   onClick={onClose}
                   style={{ marginTop: '0.35rem' }}
                 >
                   <HelpCircle size={13} style={{ marginRight: '6px', color: '#FFFFFF' }} />
-                  <span>Which Survey Do I Need? Guide</span>
+                  <span>What Survey Do I Need? Guide</span>
                 </NavLink>
               </div>
             )}
@@ -261,36 +259,32 @@ export function MobileNavigation({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* 5. Client Portal Login */}
-          <NavLink
-            to="/login"
-            className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
-            onClick={onClose}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-              <User size={15} />
-              <span>Customer Login</span>
-            </span>
-            <ChevronRight size={15} />
-          </NavLink>
+          {/* 5. Client Portal Login (Hidden until Phase 2 CRM activation) */}
+          {siteConfig.features?.showPublicPortalLogin && (
+            <NavLink
+              to="/login"
+              className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
+              onClick={onClose}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                <User size={15} />
+                <span>Customer Login</span>
+              </span>
+              <ChevronRight size={15} />
+            </NavLink>
+          )}
         </nav>
 
         {/* Mobile Action Callouts */}
         <div className="mobile-drawer-bottom">
           <Button
-            to="/#quote-section"
+            to="/request-quote"
             variant="gold"
             isBlock
-            onClick={(e) => {
-              onClose();
-              if (window.location.pathname === '/') {
-                const target = document.getElementById('quote-section');
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
-              }
-            }}
+            onClick={onClose}
             style={{ marginBottom: 'var(--space-3)' }}
           >
-            Request Instant Quote
+            Request a Quote
           </Button>
 
           <div className="mobile-drawer-contact-info">

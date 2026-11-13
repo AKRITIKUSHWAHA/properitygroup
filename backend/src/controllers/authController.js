@@ -9,6 +9,10 @@ export const register = async (req, res, next) => {
   try {
     const { name, email, password, role = 'CUSTOMER', phone } = req.body;
 
+    if (!env.ENABLE_CLIENT_PORTAL_LOGIN && (!role || String(role).toUpperCase() === 'CUSTOMER')) {
+      throw ApiError.forbidden('Client portal registration is currently deactivated.');
+    }
+
     if (!name || !email || !password) {
       throw ApiError.badRequest('Name, email, and password are required');
     }
@@ -86,6 +90,10 @@ export const login = async (req, res, next) => {
 
     if (!isMatch) {
       throw ApiError.unauthorized('Invalid email or password');
+    }
+
+    if (user.role === 'CUSTOMER' && !env.ENABLE_CLIENT_PORTAL_LOGIN) {
+      throw ApiError.forbidden('Client portal login is currently deactivated. Please contact our team directly.');
     }
 
     if (user.status !== 'ACTIVE') {

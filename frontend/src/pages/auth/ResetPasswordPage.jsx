@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Eye, EyeOff, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthLayout } from '../../layouts/AuthLayout';
 import { useToast } from '../../components/ToastContext';
+import { siteConfig } from '../../config/siteConfig';
 
 export const ResetPasswordPage = () => {
   const { resetPassword } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget =
+    location.state?.loginPath ||
+    (siteConfig.features?.showPublicPortalLogin ? '/login' : '/');
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -52,7 +57,7 @@ export const ResetPasswordPage = () => {
         message: 'Your password has been changed. You can now sign in.',
       });
       setTimeout(() => {
-        navigate('/login', { replace: true });
+        navigate(redirectTarget, { replace: true });
       }, 1500);
     } catch (err) {
       setError('Failed to update password. Please try again.');
@@ -74,14 +79,14 @@ export const ResetPasswordPage = () => {
           <div>
             <h3 className="text-sm font-bold text-slate-800">Password reset successful</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Redirecting you to the sign in page...
+              {redirectTarget === '/' ? 'Redirecting you back to the website...' : 'Redirecting you to the sign in page...'}
             </p>
           </div>
           <Link
-            to="/login"
+            to={redirectTarget}
             className="inline-flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-[#0B1F4D] text-white text-xs font-semibold"
           >
-            Go to Sign In <ArrowRight className="w-3.5 h-3.5" />
+            {redirectTarget === '/' ? 'Return to Website' : 'Go to Sign In'} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       ) : (

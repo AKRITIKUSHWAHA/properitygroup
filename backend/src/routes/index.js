@@ -16,6 +16,7 @@ import surveyorRouter from './surveyor/index.js';
 import uploadRoutes from './uploadRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import postcodeRoutes from './postcodeRoutes.js';
+import publicRoutes from './publicRoutes.js';
 
 const router = Router();
 
@@ -92,5 +93,8 @@ router.use('/payments', paymentRoutes);
 
 // UK Postcode & Address Lookup
 router.use('/postcodes', postcodeRoutes);
+
+// Public Website Quote & Contact Enquiries (Notifications to info@njspropertygroup.com)
+router.use('/public', publicRoutes);
 
 export default router;

@@ -16,6 +16,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[#060C16] text-slate-100 antialiased font-sans selection:bg-[#1E3E63] selection:text-white overflow-x-hidden min-h-screen">
+    <!-- Hidden form schema so Netlify Forms captures quote/instruction submissions on static deploys -->
+    <form name="survey-quote-enquiry" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="text" name="bot-field" />
+      <input type="text" name="referenceId" />
+      <input type="text" name="enquiryCategory" />
+      <input type="text" name="serviceName" />
+      <input type="text" name="propertyType" />
+      <input type="text" name="approxBedrooms" />
+      <input type="text" name="propertyAddress" />
+      <input type="text" name="propertyPostcode" />
+      <input type="text" name="timescale" />
+      <input type="text" name="customerName" />
+      <input type="email" name="customerEmail" />
+      <input type="tel" name="customerPhone" />
+      <textarea name="additionalNotes"></textarea>
+      <input type="text" name="instructingRole" />
+      <input type="text" name="lawFirmName" />
+      <input type="text" name="disputeType" />
+      <input type="text" name="isSingleJointExpert" />
+      <textarea name="caseSummary"></textarea>
+      <input type="text" name="courtDeadline" />
+      <input type="text" name="propertyLocation" />
+      <input type="text" name="sourcePage" />
+    </form>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

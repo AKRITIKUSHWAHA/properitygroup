@@ -25,7 +25,7 @@ export function ContactPage() {
   const faqs = [
     {
       q: "How quickly can a survey be booked and carried out?",
-      a: "Once terms are agreed, on-site physical inspections are typically scheduled within 3 to 7 working days, subject to property access granted by the estate agent or vendor. Urgent timescales can be accommodated upon request."
+      a: "Once terms are agreed, on-site physical inspections are typically scheduled within 1 to 3 working days, subject to property access granted by the estate agent or vendor. Urgent timescales can be accommodated upon request."
     },
     {
       q: "When will I receive my written survey report?",
@@ -156,6 +156,7 @@ export function ContactPage() {
                       Registered Office Address
                     </span>
                     <p style={{ fontSize: '0.88rem', color: '#1E293B', fontWeight: '500', margin: 0, lineHeight: '1.55' }}>
+                      <strong style={{ color: '#0F172A' }}>{siteConfig.legalName}</strong> (Company No. {siteConfig.companyNumber})<br />
                       {siteConfig.contact.address.line1}<br />
                       {siteConfig.contact.address.city} {siteConfig.contact.address.postcode}
                     </p>
@@ -197,46 +198,7 @@ export function ContactPage() {
         </Container>
       </section>
 
-      {/* Complaints Handling Procedure Section (RICS Rule 7 Compliant) */}
-      <section id="complaints" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-        <Container isNarrow>
-          <div className="complaints-procedure-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: '40px', height: '40px', backgroundColor: '#0B1F4D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em', display: 'block' }}>RICS Regulatory Governance</span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Complaints Handling Procedure (CHP)</h2>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, marginBottom: '1.25rem', fontWeight: 500 }}>
-              NJS Property Group is committed to delivering surveying services of the highest professional standard. In compliance with RICS Rule 7 of the Rules of Conduct for Firms, we operate a transparent, two-stage Complaints Handling Procedure.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 1: Internal Review</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  Submit written details to our Nominated Complaints Officer at <a href={`mailto:${siteConfig.contact.email}`} style={{ color: '#2563EB', textDecoration: 'underline' }}>{siteConfig.contact.email}</a>. We acknowledge receipt within 3 working days and issue a formal written investigation outcome within 15 working days.
-                </p>
-              </div>
-
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  If a dispute cannot be resolved internally, domestic clients may refer their complaint to an independent RICS-approved Alternative Dispute Resolution (ADR) mechanism, such as the Property Redress Scheme (PRS) or CEDR Ombudsman.
-                </p>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>
-              Operated in accordance with RICS Rules of Conduct for Firms. Free of charge to domestic consumers.
-            </p>
-          </div>
-        </Container>
-      </section>
+      
 
       {/* Target Regional Coverage Subsection */}
       <section id="coverage" className="section section-alt">
@@ -245,46 +207,7 @@ export function ContactPage() {
         </Container>
       </section>
 
-      {/* Complaints Handling Procedure Section (RICS Rule 7 Compliant) */}
-      <section id="complaints" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-        <Container isNarrow>
-          <div className="complaints-procedure-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: '40px', height: '40px', backgroundColor: '#0B1F4D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em', display: 'block' }}>RICS Regulatory Governance</span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Complaints Handling Procedure (CHP)</h2>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, marginBottom: '1.25rem', fontWeight: 500 }}>
-              NJS Property Group is committed to delivering surveying services of the highest professional standard. In compliance with RICS Rule 7 of the Rules of Conduct for Firms, we operate a transparent, two-stage Complaints Handling Procedure.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 1: Internal Review</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  Submit written details to our Nominated Complaints Officer at <a href={`mailto:${siteConfig.contact.email}`} style={{ color: '#2563EB', textDecoration: 'underline' }}>{siteConfig.contact.email}</a>. We acknowledge receipt within 3 working days and issue a formal written investigation outcome within 15 working days.
-                </p>
-              </div>
-
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  If a dispute cannot be resolved internally, domestic clients may refer their complaint to an independent RICS-approved Alternative Dispute Resolution (ADR) mechanism, such as the Property Redress Scheme (PRS) or CEDR Ombudsman.
-                </p>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>
-              Operated in accordance with RICS Rules of Conduct for Firms. Free of charge to domestic consumers.
-            </p>
-          </div>
-        </Container>
-      </section>
+      
 
       {/* Privacy Notice Section (UK GDPR & RICS Compliant) */}
       <section id="privacy" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
@@ -308,7 +231,7 @@ export function ContactPage() {
               <div className="privacy-subcard" style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>1. Data Controller</h4>
                 <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  NJS Property Group Ltd, 124 City Road, London EC1V 2NX. Contact: <a href="mailto:info@njspropertygroup.com" style={{ color: '#2563EB', textDecoration: 'underline' }}>info@njspropertygroup.com</a>.
+                  {siteConfig.legalName} (Company No. {siteConfig.companyNumber}), Belmont House, Uxbridge, UB8 1QS. Contact: <a href="mailto:info@njspropertygroup.com" style={{ color: '#2563EB', textDecoration: 'underline' }}>info@njspropertygroup.com</a>.
                 </p>
               </div>
 
@@ -368,50 +291,9 @@ export function ContactPage() {
               </div>
 
               <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress</h4>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress (CEDR)</h4>
                 <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  If a dispute cannot be resolved internally, domestic clients may refer their complaint to an independent RICS-approved Alternative Dispute Resolution (ADR) mechanism, such as the Property Redress Scheme (PRS) or CEDR Ombudsman.
-                </p>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>
-              Operated in accordance with RICS Rules of Conduct for Firms. Free of charge to domestic consumers.
-            </p>
-          </div>
-        </Container>
-      </section>
-
-      {/* Complaints Handling Procedure Section (RICS Rule 7 Compliant) */}
-      <section id="complaints" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-        <Container isNarrow>
-          <div className="complaints-procedure-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: '40px', height: '40px', backgroundColor: '#0B1F4D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em', display: 'block' }}>RICS Regulatory Governance</span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Complaints Handling Procedure (CHP)</h2>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, marginBottom: '1.25rem', fontWeight: 500 }}>
-              NJS Property Group is committed to delivering surveying services of the highest professional standard. In compliance with RICS Rule 7 of the Rules of Conduct for Firms, we operate a transparent, two-stage Complaints Handling Procedure.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 1: Internal Review</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  Submit written details to our Nominated Complaints Officer at <a href={`mailto:${siteConfig.contact.email}`} style={{ color: '#2563EB', textDecoration: 'underline' }}>{siteConfig.contact.email}</a>. We acknowledge receipt within 3 working days and issue a formal written investigation outcome within 15 working days.
-                </p>
-              </div>
-
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  If a dispute cannot be resolved internally, domestic clients may refer their complaint to an independent RICS-approved Alternative Dispute Resolution (ADR) mechanism, such as the Property Redress Scheme (PRS) or CEDR Ombudsman.
+                  If a dispute cannot be resolved internally, clients may refer their complaint to the Centre for Effective Dispute Resolution (CEDR), our appointed independent Stage 2 complaint redress option.
                 </p>
               </div>
             </div>
@@ -486,46 +368,7 @@ export function ContactPage() {
         </Container>
       </section>
 
-      {/* Complaints Handling Procedure Section (RICS Rule 7 Compliant) */}
-      <section id="complaints" className="section section-alt" style={{ backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', paddingTop: '1.5rem' }}>
-        <Container isNarrow>
-          <div className="complaints-procedure-card" style={{ backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '2rem', boxShadow: '0 4px 14px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: '40px', height: '40px', backgroundColor: '#0B1F4D', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#64748B', fontWeight: 800, letterSpacing: '0.05em', display: 'block' }}>RICS Regulatory Governance</span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>Complaints Handling Procedure (CHP)</h2>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, marginBottom: '1.25rem', fontWeight: 500 }}>
-              NJS Property Group is committed to delivering surveying services of the highest professional standard. In compliance with RICS Rule 7 of the Rules of Conduct for Firms, we operate a transparent, two-stage Complaints Handling Procedure.
-            </p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 1: Internal Review</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  Submit written details to our Nominated Complaints Officer at <a href={`mailto:${siteConfig.contact.email}`} style={{ color: '#2563EB', textDecoration: 'underline' }}>{siteConfig.contact.email}</a>. We acknowledge receipt within 3 working days and issue a formal written investigation outcome within 15 working days.
-                </p>
-              </div>
-
-              <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', marginBottom: '0.35rem' }}>Stage 2: Independent Redress</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-                  If a dispute cannot be resolved internally, domestic clients may refer their complaint to an independent RICS-approved Alternative Dispute Resolution (ADR) mechanism, such as the Property Redress Scheme (PRS) or CEDR Ombudsman.
-                </p>
-              </div>
-            </div>
-
-            <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontStyle: 'italic', fontWeight: 500 }}>
-              Operated in accordance with RICS Rules of Conduct for Firms. Free of charge to domestic consumers.
-            </p>
-          </div>
-        </Container>
-      </section>
+      
     </div>
   );
 }

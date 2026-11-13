@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FileQuestion, Home, LogIn, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
+import { siteConfig } from '../../config/siteConfig';
 
 export const NotFound404Page = () => {
   const { user, getRoleDashboard } = useAuth();
@@ -43,7 +44,7 @@ export const NotFound404Page = () => {
               <LayoutDashboard className="w-4 h-4" />
               Go to Dashboard
             </button>
-          ) : (
+          ) : siteConfig.features?.showPublicPortalLogin ? (
             <button
               onClick={() => navigate('/login')}
               className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#142A43] text-sm font-semibold transition-all flex items-center justify-center gap-2 border border-slate-200"
@@ -51,7 +52,7 @@ export const NotFound404Page = () => {
               <LogIn className="w-4 h-4" />
               Portal Sign In
             </button>
-          )}
+          ) : null}
         </div>
 
         <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-center gap-4 text-xs text-slate-500">

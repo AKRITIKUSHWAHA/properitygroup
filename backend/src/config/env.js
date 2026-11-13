@@ -10,5 +10,7 @@ export const env = {
   CLIENT_URL: (process.env.CLIENT_URL || 'http://localhost:5175,http://localhost:5173')
     .split(',')
     .map((url) => url.trim()),
+  ENABLE_CLIENT_PORTAL_LOGIN: process.env.ENABLE_CLIENT_PORTAL_LOGIN === 'true',
+  ENQUIRY_NOTIFICATION_EMAIL: process.env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com',
 };
 

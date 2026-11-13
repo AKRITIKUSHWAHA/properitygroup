@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react';
 import { ArrowRight, ShieldCheck, Clock, CheckCircle2, Scale } from 'lucide-react';
 import { siteConfig } from '../../config/siteConfig';
@@ -24,7 +25,7 @@ export function ArchitecturalHero({ onQuoteClick }) {
       {/* Cinematic Architectural Canvas */}
       <div className="luxury-hero-canvas">
         {/* Estate Manor Background Image with Left Masked Fade */}
-        <div 
+        <div
           className="luxury-hero-manor-bg"
           style={{
             backgroundImage: `url('https://images.unsplash.com/photo-1505843513577-22bb7d21e455?auto=format&fit=crop&w=1100&q=75')`
@@ -57,17 +58,16 @@ export function ArchitecturalHero({ onQuoteClick }) {
 
             {/* Two Frosted Glass Pill CTAs */}
             <div className="luxury-cta-group">
-              <a 
-                href="#quote-section" 
-                onClick={scrollToQuote} 
+              <Link
+                to="/request-quote"
                 className="luxury-pill-btn primary-glass"
               >
                 <span>Request Your Survey Quote</span>
                 <ArrowRight size={15} aria-hidden="true" />
-              </a>
-              <a 
-                href="#services-overview" 
-                onClick={scrollToServices} 
+              </Link>
+              <a
+                href="#services-overview"
+                onClick={scrollToServices}
                 className="luxury-pill-btn secondary-glass"
               >
                 <span>Explore Survey Services</span>
@@ -76,10 +76,6 @@ export function ArchitecturalHero({ onQuoteClick }) {
 
             {/* Fast Confidence Badges Strip */}
             <div className="hero-confidence-strip">
-              <div className="confidence-chip">
-                <CheckCircle2 size={13} style={{ color: '#FFFFFF' }} aria-hidden="true" />
-                <span>Zero Contractor Bias</span>
-              </div>
               <div className="confidence-chip">
                 <Clock size={13} style={{ color: '#FFFFFF' }} aria-hidden="true" />
                 <span>3–5 Days Turnaround</span>

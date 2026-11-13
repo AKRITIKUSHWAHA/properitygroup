@@ -76,7 +76,6 @@ export const ROLE_NAVIGATION = {
       { id: 'partner-portal', name: 'Referral & Commission Ledger', path: '/partners', icon: 'Handshake', badge: 'Active' },
       { id: 'submit-referral', name: 'Submit Survey Referral', path: '/partners?action=submit', icon: 'Send', badge: '1-Click' },
       { id: 'property-intel', name: 'Property Intelligence (EPC & Land Reg)', path: '/partners?tab=intel', icon: 'Search', badge: 'Point 26' },
-      { id: 'specimen-report', name: 'Buyer Specimen Report', path: '/partners?action=specimen', icon: 'FileDown', badge: 'PDF' },
     ],
   },
 };

@@ -334,7 +334,7 @@ export function InstantQuoteCalculator({ onComplete }) {
 
           {/* Quick Contact Form to Lock In Quote */}
           <div className="contact-capture-box">
-            <h4 className="capture-title">Lock in this fixed price &amp; receive report sample:</h4>
+            <h4 className="capture-title">Lock in this fixed price &amp; receive your written quote:</h4>
             <div className="capture-grid">
               <input
                 type="text"

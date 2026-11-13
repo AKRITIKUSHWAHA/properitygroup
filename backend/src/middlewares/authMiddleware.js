@@ -29,6 +29,10 @@ export const verifyJWT = async (req, res, next) => {
       throw ApiError.unauthorized('User not found or account is deactivated');
     }
 
+    if (user.role === 'CUSTOMER' && !env.ENABLE_CLIENT_PORTAL_LOGIN) {
+      throw ApiError.forbidden('Client portal access is currently deactivated');
+    }
+
     req.user = user;
     next();
   } catch (error) {

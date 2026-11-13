@@ -19,3 +19,4 @@ export const lookupAddressByPostcode = async (req, res, next) => {
     next(error);
   }
 };
+

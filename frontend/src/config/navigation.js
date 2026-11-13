@@ -90,9 +90,10 @@ export const navigationCategories = {
         items: [
           {
             id: "which-survey",
-            name: "Which Survey Do I Need?",
+            name: "What Survey Do I Need?",
             shortName: "Survey Guidance",
-            path: "/#which-survey",
+            path: "/what-survey-do-i-need",
+            badge: "Interactive Tool",
             description: "Compare survey levels and property suitability."
           },
           {
@@ -106,7 +107,7 @@ export const navigationCategories = {
             id: "practice-standards",
             name: "Professional Standards Notice",
             shortName: "Accreditations",
-            path: "/#credentials",
+            path: "/professional-standards-notice",
             description: "100% independent RICS-aligned survey practice."
           }
         ],
@@ -114,7 +115,7 @@ export const navigationCategories = {
           title: "Need a Survey Quote?",
           subtitle: "Fixed-fee written quotation within 24 hours.",
           buttonText: "Request a Quote",
-          path: "/#quote-section"
+          path: "/request-quote"
         }
       }
     ],
@@ -228,6 +229,14 @@ export const navigationCategories = {
     isDropdown: true,
     children: [
       {
+        id: "about-us-link",
+        name: "About Us",
+        shortName: "About Us",
+        badge: "Director Profile",
+        path: "/about-us",
+        description: "Director Natasha Shergill, company profile & practice ethics."
+      },
+      {
         id: "contact-hub",
         name: "Contact & Enquiries",
         shortName: "Contact Us",
@@ -245,7 +254,7 @@ export const navigationCategories = {
         id: "contact-standards",
         name: "Professional Standards Notice",
         shortName: "Accreditations",
-        path: "/#credentials",
+        path: "/professional-standards-notice",
         description: "RICS Home Survey alignment & surveyor code of conduct."
       }
     ],
@@ -267,8 +276,10 @@ export const navigationLinks = [
 
 export const footerQuickLinks = [
   { name: "Home", path: "/" },
+  { name: "What Survey Do I Need?", path: "/what-survey-do-i-need" },
+  { name: "Request a Quote", path: "/request-quote" },
   { name: "Expert Witness Services", path: "/expert-witness" },
-  { name: "Regional Service Coverage", path: "/contact#coverage" },
+  { name: "Professional Standards Notice", path: "/professional-standards-notice" },
   { name: "Direct Contact & Enquiries", path: "/contact" },
   { name: "Frequently Asked Questions", path: "/contact#faqs" }
 ];

@@ -13,8 +13,18 @@ import customerReviewRoutes from './customerReviewRoutes.js';
 import customerSupportRoutes from './customerSupportRoutes.js';
 import customerDetailsRoutes from './customerDetailsRoutes.js';
 import customerPreviousSurveysRoutes from './customerPreviousSurveysRoutes.js';
+import { env } from '../../config/env.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 const router = Router();
+
+// Gate all customer portal endpoints behind ENABLE_CLIENT_PORTAL_LOGIN toggle
+router.use((req, res, next) => {
+  if (!env.ENABLE_CLIENT_PORTAL_LOGIN) {
+    return next(ApiError.forbidden('Client portal endpoints are currently deactivated.'));
+  }
+  next();
+});
 
 // 1. Dashboard (both /my-dashboard and /dashboard supported)
 router.use('/my-dashboard', customerDashboardRoutes);

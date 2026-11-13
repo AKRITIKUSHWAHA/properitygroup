@@ -2,10 +2,15 @@ import React, { useState } from 'react';
 import { FileText, Download, CheckCircle, ArrowRight, Eye, Shield, Camera, Layers } from 'lucide-react';
 import { Container } from '../common/Container';
 import { Button } from '../common/Button';
+import { siteConfig } from '../../config/siteConfig';
 
 export function SampleReportSection() {
   const [activeReportTab, setActiveReportTab] = useState('level-2');
   const [showSampleModal, setShowSampleModal] = useState(false);
+
+  if (!siteConfig.features?.showSampleReports) {
+    return null;
+  }
 
   return (
     <section className="section sample-report-section" aria-label="Sample RICS Survey Report Preview">

@@ -4,8 +4,12 @@ import { DEMO_USERS } from '../mock/users';
 import { ROLE_NAVIGATION } from '../mock/navigation';
 import { useToast } from '../components/ToastContext';
 import { authApi } from '../api/authApi';
+import { siteConfig } from '../config/siteConfig';
 
 const AuthContext = createContext(null);
+
+const isClientPortalEnabled = () => Boolean(siteConfig.features?.showPublicPortalLogin);
+const getFallbackPublicRoute = () => (isClientPortalEnabled() ? '/login' : '/');
 
 const STORAGE_KEY = 'property_group_user_session';
 const AUTH_TOKEN_KEY = 'property_group_auth_token';
@@ -20,6 +24,12 @@ export const AuthProvider = ({ children }) => {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && parsed.email && parsed.role) {
+          // Clear any cached customer session while public client login is deactivated
+          if (parsed.role === 'customer' && !isClientPortalEnabled()) {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            return null;
+          }
           return parsed;
         }
       }
@@ -37,6 +47,9 @@ export const AuthProvider = ({ children }) => {
 
   // Fast role switcher for development/testing if needed
   const switchRole = useCallback((newRole) => {
+    if (newRole === 'customer' && !isClientPortalEnabled()) {
+      return null;
+    }
     const roleEmailMap = {
       admin: 'admin@demo.com',
       super_admin: 'admin@demo.com',
@@ -54,10 +67,13 @@ export const AuthProvider = ({ children }) => {
 
   // Helper to determine the role default redirect path
   const getRoleDashboard = useCallback((role) => {
+    if (role === 'customer' && !isClientPortalEnabled()) {
+      return '/';
+    }
     if (ROLE_NAVIGATION[role]?.defaultPath) {
       return ROLE_NAVIGATION[role].defaultPath;
     }
-    return '/login';
+    return getFallbackPublicRoute();
   }, []);
 
   // Login handler with real backend API authentication & graceful fallback
@@ -113,7 +129,13 @@ export const AuthProvider = ({ children }) => {
 
     if (!matchedUser) {
       setIsLoading(false);
-      throw new Error('Invalid email or password. Please verify your credentials or register.');
+      throw new Error('Invalid email or password. Please verify your credentials.');
+    }
+
+    if (matchedUser.role === 'customer' && !isClientPortalEnabled()) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      setIsLoading(false);
+      throw new Error('Client portal login is currently deactivated. Please submit a quote enquiry or contact our office directly.');
     }
 
     if (!password || password.trim().length < 4) {
@@ -160,6 +182,10 @@ export const AuthProvider = ({ children }) => {
 
   // Customer registration
   const registerCustomer = async ({ fullName, email, phone, password = 'password123' }) => {
+    if (!isClientPortalEnabled()) {
+      setIsLoading(false);
+      throw new Error('Client portal registration is currently deactivated. Please submit an enquiry instead.');
+    }
     setIsLoading(true);
 
     const trimmedEmail = (email || '').trim().toLowerCase();
@@ -231,7 +257,7 @@ export const AuthProvider = ({ children }) => {
     } else if (previousRole === 'surveyor') {
       navigate('/login/surveyor', { replace: true });
     } else {
-      navigate('/login', { replace: true });
+      navigate(getFallbackPublicRoute(), { replace: true });
     }
   };
 

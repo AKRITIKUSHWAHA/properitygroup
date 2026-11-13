@@ -36,9 +36,14 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
 
   try {
     const response = await fetch(url, config);
-    const contentType = response.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
     const data = isJson ? await response.json() : await response.text();
+
+    // Guard against static SPA hosts returning index.html for unmounted /api routes
+    if (!isJson && (contentType.includes('text/html') || (typeof data === 'string' && /^\s*<!doctype|^\s*<html/i.test(data)))) {
+      throw new ApiError('API endpoint unavailable on static host', 404);
+    }
 
     if (!response.ok) {
       const errorMessage = data?.message || data || `Request failed with status ${response.status}`;

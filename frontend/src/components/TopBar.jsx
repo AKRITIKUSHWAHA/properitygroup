@@ -53,7 +53,6 @@ export const TopBar = ({ onToggleSidebar }) => {
   const handleLogout = () => {
     setUserDropdownOpen(false);
     logout();
-    navigate('/login');
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   Eye,
   EyeOff,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { DEFAULT_DEMO_PASSWORD } from '../../mock/users';
+import { siteConfig } from '../../config/siteConfig';
 
 // Dedicated, executive portal configurations for Customer, Surveyor, and Admin
 export const ROLES_CONFIG = {
@@ -115,12 +116,19 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const [searchParams] = useSearchParams();
   const { login, getRememberedEmail } = useAuth();
 
+  const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
+
   const activeRoleKey = resolveRole(
     params.role || params.portalRole,
     searchParams.get('role') || searchParams.get('portal'),
     roleProp || (initialMode === 'backoffice' ? 'super_admin' : null),
     location.pathname
   );
+
+  // Deactivate client login portal while keeping Admin (/login/admin) and Surveyor (/login/surveyor) active
+  if (!isClientLoginEnabled && activeRoleKey === 'customer') {
+    return <Navigate to="/" replace />;
+  }
 
   const currentRoleConfig = ROLES_CONFIG[activeRoleKey] || ROLES_CONFIG.customer;
   const BadgeIcon = currentRoleConfig.badgeIcon;
@@ -187,18 +195,13 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
           <div>
             {/* Top Bar with Brand & Back Button */}
             <div className="flex items-center justify-between mb-5">
-              <Link to="/" className="flex items-center gap-2.5 text-slate-800 group">
-                <div className="w-8 h-8 rounded-xl bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                  <Building2 className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <span className="font-extrabold text-[11px] tracking-tight block text-[#0B1F4D] leading-none">
-                    NJS PROPERTY GROUP
-                  </span>
-                  <span className="text-[9px] font-semibold tracking-wider text-slate-400 block mt-1 uppercase">
-                    RICS REGULATED PRACTICE
-                  </span>
-                </div>
+              <Link to="/" className="flex items-center gap-2 group" title="Return to NJS Property Group Homepage">
+                <img
+                  src="/images/njs-logo.png"
+                  alt="NJS Property Group"
+                  className="h-16 w-auto object-contain transition-transform group-hover:scale-105"
+                  style={{ maxHeight: '64px', width: 'auto', objectFit: 'contain' }}
+                />
               </Link>
 
               <Link
@@ -296,6 +299,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
 
                 <Link
                   to="/forgot-password"
+                  state={{ loginPath: location.pathname }}
                   className="text-xs font-bold text-[#0B1F4D] hover:underline transition-colors"
                 >
                   Forgot password?
@@ -322,8 +326,8 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
               </button>
             </form>
 
-            {/* Optional Customer Registration Link (only shown for Customer portal) */}
-            {activeRoleKey === 'customer' && (
+            {/* Optional Customer Registration Link (only shown when public client login is active) */}
+            {isClientLoginEnabled && activeRoleKey === 'customer' && (
               <div className="mt-3 text-center">
                 <span className="text-xs text-slate-500 font-medium">Need a customer survey account? </span>
                 <Link to="/register" className="text-xs font-bold text-[#0B1F4D] hover:underline">
@@ -333,61 +337,9 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
             )}
           </div>
 
-          {/* Footer note with discreet links between portals */}
-          <div className="pt-4 mt-3 text-center border-t border-slate-100 text-[11px] text-slate-400 space-y-1">
+          {/* Footer note */}
+          <div className="pt-4 mt-3 text-center border-t border-slate-100 text-[11px] text-slate-400">
             <div className="font-medium">{currentRoleConfig.footerNote}</div>
-            {activeRoleKey === 'customer' ? (
-              <div className="text-[10.5px] text-slate-400 font-medium">
-                Practice surveyor or administrator?{' '}
-                <Link
-                  to="/login/surveyor"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Surveyor Sign In
-                </Link>
-                {' · '}
-                <Link
-                  to="/login/admin"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Admin Sign In
-                </Link>
-              </div>
-            ) : activeRoleKey === 'surveyor' ? (
-              <div className="text-[10.5px] text-slate-400 font-medium">
-                Switch portal:{' '}
-                <Link
-                  to="/login"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Customer Portal
-                </Link>
-                {' · '}
-                <Link
-                  to="/login/admin"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Admin Sign In
-                </Link>
-              </div>
-            ) : (
-              <div className="text-[10.5px] text-slate-400 font-medium">
-                Switch portal:{' '}
-                <Link
-                  to="/login"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Customer Portal
-                </Link>
-                {' · '}
-                <Link
-                  to="/login/surveyor"
-                  className="text-slate-600 hover:text-[#0B1F4D] font-semibold underline"
-                >
-                  Surveyor Sign In
-                </Link>
-              </div>
-            )}
           </div>
         </div>
 

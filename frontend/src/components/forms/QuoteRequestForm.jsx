@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, ChevronDown, Chevro
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
 import { validateQuoteForm } from '../../utils/validation';
+import { publicApi } from '../../api/publicApi';
 import { FormField } from './FormField';
 import { Button } from '../common/Button';
 
@@ -91,25 +92,35 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
     setIsSubmitting(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-
       const selectedService = approvedServices.find(s => s.id === formData.serviceId);
+      const serviceName = selectedService ? selectedService.name : formData.serviceId;
+
+      const res = await publicApi.submitQuoteEnquiry({
+        ...formData,
+        serviceName,
+        enquiryCategory: 'SURVEY_QUOTE',
+        sourcePage: typeof window !== 'undefined' ? window.location.pathname : '/contact',
+      });
 
       const receipt = {
-        timestamp: new Date().toISOString(),
-        referenceId: `REF-${Math.floor(100000 + Math.random() * 900000)}`,
+        timestamp: res?.timestamp || new Date().toISOString(),
+        referenceId: res?.referenceId || `ENQ-${Math.floor(100000 + Math.random() * 900000)}`,
+        emailNotification: res?.emailNotification || { recipient: siteConfig.contact.email, emailSent: false },
         data: {
           ...formData,
-          serviceName: selectedService ? selectedService.name : formData.serviceId
+          serviceName,
         },
-        notice: "Frontend Demonstration Build: This form validated successfully according to all RICS quotation criteria. Because this project is the standalone React frontend, no real email or database insertion has occurred. To connect to the live CRM / SurveyBooker backend, configure the POST endpoint in src/components/forms/QuoteRequestForm.jsx."
       };
 
       setSubmissionReceipt(receipt);
       setIsSubmitting(false);
     } catch (err) {
       setIsSubmitting(false);
-      setSubmitError("An unexpected error occurred while processing the request. Please try again.");
+      setSubmitError(
+        err?.status === 0 || err?.status === 502 || err?.status === 503
+          ? `Unable to reach our quotation server right now. Please email ${siteConfig.contact.email} or call ${siteConfig.contact.telephoneDisplay}.`
+          : err?.message || `Unable to submit your enquiry right now. Please call ${siteConfig.contact.telephoneDisplay} or email ${siteConfig.contact.email}.`
+      );
     }
   };
 
@@ -140,62 +151,70 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
     return (
       <div 
         className={`hero-card ${className} compact-quote-form quote-success-card`} 
-        style={{ maxWidth: '580px', width: '100%', margin: '0 auto' }}
+        style={{ maxWidth: '580px', width: '100%', margin: '0 auto', backgroundColor: '#FFFFFF', color: '#0F172A' }}
       >
         {/* Success Header Strip */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.12)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.25rem', paddingBottom: '1rem', borderBottom: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.18)', border: '1.5px solid #10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CheckCircle2 size={24} style={{ color: '#10B981' }} />
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#ECFDF5', border: '1.5px solid #10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <CheckCircle2 size={24} style={{ color: '#059669' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: 0, letterSpacing: '-0.01em', fontFamily: 'var(--font-serif)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F172A', margin: 0, letterSpacing: '-0.01em', fontFamily: 'var(--font-serif)' }}>
                 Quotation Request Received
               </h3>
-              <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0 }}>
+              <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>
                 Logged with RICS Survey Dispatch Desk
               </p>
             </div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94A3B8', display: 'block' }}>Reference</span>
-            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.02em', background: 'rgba(255, 255, 255, 0.08)', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.15)', display: 'inline-block' }}>
+            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', display: 'block', fontWeight: 700 }}>Reference</span>
+            <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#032954', letterSpacing: '0.02em', background: '#EFF6FF', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid #BFDBFE', display: 'inline-block' }}>
               {submissionReceipt.referenceId}
             </span>
           </div>
         </div>
 
         {/* Client Confirmation Message */}
-        <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '14px', padding: '1rem', border: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '1.25rem' }}>
-          <p style={{ fontSize: '0.88rem', color: '#F1F5F9', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-            Thank you, <strong style={{ color: '#FFFFFF' }}>{data.customerName || 'Valued Client'}</strong>. We have received your survey instruction enquiry.
+        <div style={{ backgroundColor: '#F8FAFC', borderRadius: '14px', padding: '1rem', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: '0.88rem', color: '#0F172A', lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+            Thank you, <strong style={{ color: '#032954' }}>{data.customerName || 'Valued Client'}</strong>. We have received your survey instruction enquiry.
           </p>
-          <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: 1.5, margin: '0.45rem 0 0 0' }}>
-            A member of our surveying team will review the property details and email your formal fixed-fee quotation to <strong style={{ color: '#E2E8F0' }}>{data.customerEmail}</strong> within <strong style={{ color: '#FFFFFF' }}>24 business hours</strong>.
+          <p style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.5, margin: '0.45rem 0 0 0' }}>
+            {submissionReceipt.emailNotification?.emailSent ? (
+              <>
+                Notification dispatched to <strong style={{ color: '#032954' }}>{submissionReceipt.emailNotification.recipient}</strong>. Our surveying team will email your formal fixed-fee quotation to <strong style={{ color: '#032954' }}>{data.customerEmail}</strong> within <strong style={{ color: '#0F172A' }}>24 business hours</strong>.
+              </>
+            ) : (
+              <>
+                Your enquiry has been logged against reference <strong style={{ color: '#032954' }}>{submissionReceipt.referenceId}</strong>. For urgent instructions you can also email <strong style={{ color: '#032954' }}>{siteConfig.contact.email}</strong> or call <strong style={{ color: '#0F172A' }}>{siteConfig.contact.telephoneDisplay}</strong>.
+              </>
+            )}
           </p>
         </div>
 
-        {/* Clean Property & Instruction Summary Table (Zero Code/JSON!) */}
-        <div style={{ backgroundColor: 'rgba(10, 18, 30, 0.55)', borderRadius: '12px', padding: '0.85rem 1rem', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '1.25rem' }}>
-          <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#94A3B8', display: 'block', marginBottom: '0.6rem' }}>
+        {/* Clean Property & Instruction Summary Table */}
+        <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.9rem 1rem', border: '1px solid #CBD5E1', marginBottom: '1.25rem' }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#475569', display: 'block', marginBottom: '0.6rem' }}>
             Instruction Overview
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.65rem', fontSize: '0.8rem' }}>
             <div>
-              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Survey Service:</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.serviceName || 'Home Survey'}</span>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Survey Service:</span>
+              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.serviceName || 'Home Survey'}</span>
             </div>
             <div>
-              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Property Location:</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.propertyAddress ? `${data.propertyAddress}, ${data.propertyPostcode}` : (data.propertyPostcode || 'Specified Region')}</span>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Property Location:</span>
+              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.propertyAddress ? `${data.propertyAddress}, ${data.propertyPostcode}` : (data.propertyPostcode || 'Specified Region')}</span>
             </div>
             <div>
-              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Target Timescale:</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 600, textTransform: 'capitalize' }}>{selectedTimescale}</span>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Target Timescale:</span>
+              <span style={{ color: '#0F172A', fontWeight: 700, textTransform: 'capitalize' }}>{selectedTimescale}</span>
             </div>
             <div>
-              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem' }}>Direct Contact Phone:</span>
-              <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{data.customerPhone || 'Not provided'}</span>
+              <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: 600 }}>Direct Contact Phone:</span>
+              <span style={{ color: '#0F172A', fontWeight: 700 }}>{data.customerPhone || 'Not provided'}</span>
             </div>
           </div>
         </div>
@@ -208,8 +227,8 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
             className="compact-submit-btn"
             style={{
               flex: '1 1 auto',
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 100%)',
-              color: '#060B13',
+              background: '#032954',
+              color: '#FFFFFF',
               padding: '0.65rem 1.25rem',
               borderRadius: '9999px',
               fontSize: '0.84rem',
@@ -220,7 +239,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
               gap: '0.45rem',
               cursor: 'pointer',
               border: 'none',
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)'
+              boxShadow: '0 4px 12px rgba(3, 41, 84, 0.2)'
             }}
           >
             <RefreshCw size={14} />
@@ -231,13 +250,13 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
             href={`tel:${siteConfig.contact.telephone}`}
             style={{
               flex: '1 1 auto',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              color: '#FFFFFF',
+              background: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              color: '#032954',
               padding: '0.65rem 1.25rem',
               borderRadius: '9999px',
               fontSize: '0.84rem',
-              fontWeight: 600,
+              fontWeight: 700,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -251,8 +270,8 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         </div>
 
         {/* Assurance Note */}
-        <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>
+        <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #E2E8F0', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500 }}>
             Strictly Confidential &bull; Independent RICS Aligned Practice &bull; Zero Contractor Bias
           </span>
         </div>
@@ -300,7 +319,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           className={`form-select form-input-compact ${errors.serviceId ? 'is-invalid' : ''}`}
           aria-invalid={!!errors.serviceId}
         >
-          <option value="">Select Survey Discipline...</option>
+          <option value="">Select Survey Discipline</option>
           {approvedServices.map(service => (
             <option key={service.id} value={service.id}>
               {service.name}
@@ -324,7 +343,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
             className={`form-select form-input-compact ${errors.propertyType ? 'is-invalid' : ''}`}
             aria-invalid={!!errors.propertyType}
           >
-            <option value="">Select Property Type...</option>
+            <option value="">Select Property Type</option>
             {propertyTypes.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
@@ -500,6 +519,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         <label className="compact-privacy-label">
           <input
             type="checkbox"
+            id="privacyConsent"
             name="privacyConsent"
             checked={formData.privacyConsent}
             onChange={handleChange}
@@ -527,7 +547,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         iconPosition="right"
         className="compact-submit-btn"
       >
-        {isSubmitting ? 'Validating Quote...' : 'Request Survey Quotation'}
+        {isSubmitting ? 'Sending Request...' : 'Request Survey Quotation'}
       </Button>
 
       <div style={{ textAlign: 'center', marginTop: '0.35rem', fontSize: '0.68rem', color: 'var(--color-muted-text)' }}>

@@ -10,7 +10,10 @@
 export const siteConfig = {
   // Brand & Entity Identification
   companyName: "NJS Property Group",
-  tradingName: "Chartered Building Surveyors & Registered Valuers [Trading Name Pending Confirmation]",
+  legalName: "NJS Property Group Ltd",
+  companyNumber: "14367377",
+  registeredIn: "England & Wales",
+  tradingName: "NJS Property Group Ltd (Company Reg. No: 14367377)",
   isNameProvisional: false,
 
   // Technical Scope Notice
@@ -20,19 +23,25 @@ export const siteConfig = {
     clientApprovalRequired: true
   },
 
+  // Feature Toggles (Phase 1 Public Website Launch vs Phase 2 CRM Activation)
+  features: {
+    showPublicPortalLogin: false,
+    showSampleReports: false
+  },
+
   // Contact Information
   contact: {
-    telephone: "02089478840",
-    telephoneDisplay: "020 8947 8840",
+    telephone: "03333052777",
+    telephoneDisplay: "0333 305 2777",
     isPhoneProvisional: false,
     email: "info@njspropertygroup.com",
     isEmailProvisional: false,
-    emergencyHotline: "02089478840",
+    emergencyHotline: "0333 305 2777",
     address: {
-      line1: "124 City Road",
-      line2: "Kemp House",
-      city: "London",
-      postcode: "EC1V 2NX",
+      line1: "Belmont House",
+      line2: "",
+      city: "Uxbridge",
+      postcode: "UB8 1QS",
       isAddressProvisional: false
     },
     openingHours: "Monday – Friday: 08:30 – 18:00 | Saturday: By Appointment",
@@ -46,7 +55,7 @@ export const siteConfig = {
       name: "London",
       label: "Greater London & Boroughs",
       description: "Comprehensive surveying across Central, North, South, East, and West London boroughs.",
-      principalTowns: ["Westminster", "Kensington & Chelsea", "Camden", "Richmond", "Wandsworth", "Islington", "Greenwich", "Hammersmith & Fulham"],
+      principalTowns: ["Westminster", "Kensington & Chelsea", "Camden", "Richmond", "Wandsworth", "Islington", "Greenwich", "Hammersmith & Fulham", "Ealing", "Hillingdon", "Barnet", "Ilford"],
       hubNote: "Fast coverage via central and borough-based survey surveyors."
     },
     {
@@ -70,7 +79,7 @@ export const siteConfig = {
       name: "Buckinghamshire",
       label: "Buckinghamshire & Chilterns",
       description: "Thorough structural and snagging reports across Chiltern towns and new development corridors.",
-      principalTowns: ["Milton Keynes", "Aylesbury", "High Wycombe", "Marlow", "Beaconsfield", "Amersham", "Gerrards Cross"],
+      principalTowns: ["Milton Keynes", "Aylesbury", "High Wycombe", "Marlow", "Beaconsfield", "Amersham", "Gerrards Cross", "Iver"],
       hubNote: "Covering both historic market towns and expansive new-build communities."
     },
     {
@@ -78,7 +87,7 @@ export const siteConfig = {
       name: "Berkshire",
       label: "Royal Berkshire & Kennet Valley",
       description: "Expert level 2, level 3, and valuation reporting throughout Berkshire commercial and residential hubs.",
-      principalTowns: ["Reading", "Windsor", "Maidenhead", "Slough", "Bracknell", "Newbury", "Ascot", "Wokingham"],
+      principalTowns: ["Reading", "Windsor", "Maidenhead", "Slough", "Bracknell", "Newbury", "Ascot", "Wokingham", "Langley"],
       hubNote: "Thames Valley corridor specialist with rapid site access."
     }
   ],

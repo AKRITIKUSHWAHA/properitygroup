@@ -22,7 +22,7 @@ export const RecordBacsPaymentModal = ({
   const [reference, setReference] = useState(
     `BACS-${Math.floor(10000 + Math.random() * 90000)}-${clientName.split(' ')[0].toUpperCase()}`
   );
-  const [bankAccount, setBankAccount] = useState('Barclays NJS Client Escrow (20-45-77 / 83920194)');
+  const [bankAccount, setBankAccount] = useState('Metro Bank PLC - NJS Property Group Ltd (23-05-80 / 18920412)');
   const [date, setDate] = useState(new Date().toLocaleDateString('en-GB'));
   const [notes, setNotes] = useState('Direct bank transfer verified on online banking. Cleared in full.');
 
@@ -117,8 +117,8 @@ export const RecordBacsPaymentModal = ({
             onChange={(e) => setBankAccount(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
           >
-            <option value="Barclays NJS Client Escrow (20-45-77 / 83920194)">
-              Barclays NJS Client Escrow (20-45-77 / 83920194)
+            <option value="Metro Bank PLC - NJS Property Group Ltd (23-05-80 / 18920412)">
+              Metro Bank PLC - NJS Property Group Ltd (23-05-80 / 18920412)
             </option>
             <option value="NatWest Operations (60-12-34 / 19482012)">
               NatWest Operations (60-12-34 / 19482012)

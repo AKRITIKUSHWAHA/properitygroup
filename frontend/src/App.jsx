@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastProvider } from './components/ToastContext';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
+import { siteConfig } from './config/siteConfig';
 
 // Layouts
 import { AppLayout } from './layouts/AppLayout';
@@ -21,7 +22,11 @@ const SnaggingReportPage = lazyNamed(() => import('./pages/public/SnaggingReport
 const ValuationReportPage = lazyNamed(() => import('./pages/public/ValuationReportPage'), 'ValuationReportPage');
 const DampSurveyPage = lazyNamed(() => import('./pages/public/DampSurveyPage'), 'DampSurveyPage');
 const ExpertWitnessPage = lazyNamed(() => import('./pages/public/ExpertWitnessPage'), 'ExpertWitnessPage');
+const WhichSurveyPage = lazyNamed(() => import('./pages/public/WhichSurveyPage'), 'WhichSurveyPage');
+const AboutPage = lazyNamed(() => import('./pages/public/AboutPage'), 'AboutPage');
 const ContactPage = lazyNamed(() => import('./pages/public/ContactPage'), 'ContactPage');
+const RequestQuotePage = lazyNamed(() => import('./pages/public/RequestQuotePage'), 'RequestQuotePage');
+const ProfessionalStandardsPage = lazyNamed(() => import('./pages/public/ProfessionalStandardsPage'), 'ProfessionalStandardsPage');
 const RedirectsPage = lazyNamed(() => import('./pages/public/RedirectsPage'), 'RedirectsPage');
 const NotFoundPage = lazyNamed(() => import('./pages/public/NotFoundPage'), 'NotFoundPage');
 
@@ -106,14 +111,20 @@ const PageLoader = () => (
 // Helper component for logged in user redirect to their portal role dashboard
 const PortalRedirect = () => {
   const { user, isAuthenticated, isLoading, getRoleDashboard } = useAuth();
+  const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
   if (isLoading) return null;
   if (isAuthenticated && user) {
+    if (user.role === 'customer' && !isClientLoginEnabled) {
+      return <Navigate to="/" replace />;
+    }
     return <Navigate to={getRoleDashboard(user.role)} replace />;
   }
-  return <Navigate to="/login" replace />;
+  return <Navigate to={isClientLoginEnabled ? '/login' : '/'} replace />;
 };
 
 function AppRoutes() {
+  const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
@@ -127,6 +138,16 @@ function AppRoutes() {
           <Route path="/services/valuation-report" element={<ValuationReportPage />} />
           <Route path="/services/damp-survey" element={<DampSurveyPage />} />
           <Route path="/expert-witness" element={<ExpertWitnessPage />} />
+          <Route path="/what-survey-do-i-need" element={<WhichSurveyPage />} />
+          <Route path="/which-survey-do-i-need" element={<WhichSurveyPage />} />
+          <Route path="/what-survey" element={<Navigate to="/what-survey-do-i-need" replace />} />
+          <Route path="/which-survey" element={<Navigate to="/what-survey-do-i-need" replace />} />
+          <Route path="/about-us" element={<AboutPage />} />
+          <Route path="/about" element={<Navigate to="/about-us" replace />} />
+          <Route path="/professional-standards-notice" element={<ProfessionalStandardsPage />} />
+          <Route path="/professional-standards" element={<Navigate to="/professional-standards-notice" replace />} />
+          <Route path="/request-quote" element={<RequestQuotePage />} />
+          <Route path="/quote" element={<Navigate to="/request-quote" replace />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/redirects" element={<RedirectsPage />} />
           <Route path="/REDIRECTS.md" element={<RedirectsPage />} />
@@ -146,26 +167,38 @@ function AppRoutes() {
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
         <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
-        <Route path="/customer" element={<Navigate to="/customer/my-dashboard" replace />} />
+        <Route
+          path="/customer"
+          element={isClientLoginEnabled ? <Navigate to="/customer/my-dashboard" replace /> : <Navigate to="/" replace />}
+        />
         
         {/* Point 29: Estate Agent & Referral Partner Portal */}
         <Route path="/partners" element={<PartnerPortalPage />} />
         <Route path="/partner" element={<Navigate to="/partners" replace />} />
         <Route path="/partner/dashboard" element={<Navigate to="/partners" replace />} />
 
-        {/* 3. Public Auth Routes - Dedicated role-based entrances */}
-        <Route path="/login" element={<LoginPage roleProp="customer" />} />
+        {/* 3. Public Auth Routes - Client login gated by siteConfig.features.showPublicPortalLogin */}
+        <Route
+          path="/login"
+          element={isClientLoginEnabled ? <LoginPage roleProp="customer" /> : <Navigate to="/" replace />}
+        />
         <Route path="/login/:role" element={<LoginPage />} />
         <Route path="/admin/login" element={<LoginPage roleProp="super_admin" />} />
         <Route path="/surveyor/login" element={<LoginPage roleProp="surveyor" />} />
-        <Route path="/customer/login" element={<LoginPage roleProp="customer" />} />
+        <Route
+          path="/customer/login"
+          element={isClientLoginEnabled ? <LoginPage roleProp="customer" /> : <Navigate to="/" replace />}
+        />
         <Route path="/backoffice" element={<Navigate to="/login/admin" replace />} />
         <Route path="/admin-login" element={<Navigate to="/login/admin" replace />} />
         <Route path="/surveyor-login" element={<Navigate to="/login/surveyor" replace />} />
         <Route path="/staff-login" element={<Navigate to="/login/admin" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/register"
+          element={isClientLoginEnabled ? <RegisterPage /> : <Navigate to="/" replace />}
+        />
 
         {/* 4. Error Routes */}
         <Route path="/403" element={<Forbidden403Page />} />
@@ -294,8 +327,14 @@ function AppRoutes() {
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />
           </Route>
 
-          {/* Customer Routes (14 menus per Client Requirement Point 12) */}
-          <Route element={<ProtectedRoute allowedRoles={['customer', 'super_admin']} />}>
+          {/* Customer Routes (14 menus per Client Requirement Point 12 - deactivated when showPublicPortalLogin is false) */}
+          <Route
+            element={
+              isClientLoginEnabled
+                ? <ProtectedRoute allowedRoles={['customer', 'super_admin']} />
+                : <Navigate to="/" replace />
+            }
+          >
             <Route path="/customer/my-dashboard" element={<CustomerDashboardPage />} />
             <Route path="/customer/quotations" element={<CustomerQuotationsPage />} />
             <Route path="/customer/my-bookings" element={<CustomerBookingsPage />} />

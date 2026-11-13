@@ -1,10 +1,155 @@
 import { Resend } from 'resend';
+import { env } from '../config/env.js';
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const isResendConfigured = Boolean(resendApiKey && resendApiKey.startsWith('re_'));
+const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+const isResendConfigured = Boolean(resendApiKey && resendApiKey.startsWith('re_') && resendApiKey.length >= 12);
 
 const resend = isResendConfigured ? new Resend(resendApiKey) : null;
 const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <operations@njspropertygroup.co.uk>';
+const ENQUIRY_INBOX = env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+/**
+ * Send instant website enquiry / quotation notification to info@njspropertygroup.com
+ */
+export const sendWebsiteEnquiryNotificationEmail = async ({
+  referenceId,
+  enquiryCategory = 'SURVEY_QUOTE',
+  customerName,
+  customerEmail,
+  customerPhone,
+  serviceName,
+  propertyType,
+  propertyAddress,
+  propertyPostcode,
+  approxBedrooms,
+  timescale,
+  additionalNotes,
+  lawFirmName,
+  disputeType,
+  courtDeadline,
+  isSingleJointExpert,
+  sourcePage,
+}) => {
+  const isExpertWitness = enquiryCategory === 'EXPERT_WITNESS';
+  const subjectTag = isExpertWitness ? 'Expert Witness Enquiry' : 'New Survey Quote Request';
+  const subject = `[${subjectTag}] ${serviceName || disputeType || 'Property Enquiry'} — ${propertyPostcode || propertyAddress || customerName} (${referenceId})`;
+
+  const detailRows = [
+    ['Reference ID', referenceId],
+    ['Client Name', customerName],
+    ['Client Email', customerEmail],
+    ['Phone Number', customerPhone || 'Not provided'],
+    ['Service Requested', serviceName || disputeType || 'Property Survey'],
+    ['Property Location / Postcode', [propertyAddress, propertyPostcode].filter(Boolean).join(', ') || 'Not specified'],
+  ];
+
+  if (!isExpertWitness) {
+    detailRows.push(
+      ['Property Type', propertyType || 'Not specified'],
+      ['Bedrooms', approxBedrooms || 'Not specified'],
+      ['Target Timescale', timescale || 'Standard']
+    );
+  } else {
+    detailRows.push(
+      ['Law Firm / Instructing Party', lawFirmName || 'Direct / Litigant'],
+      ['Court / Pre-Action Deadline', courtDeadline || 'Not specified'],
+      ['Single Joint Expert (SJE)', isSingleJointExpert === 'yes' ? 'Yes' : 'No / Party-Appointed']
+    );
+  }
+
+  const rowsHtml = detailRows
+    .map(
+      ([label, val]) => `
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; border-bottom: 1px solid #f1f5f9; width: 42%;">${escapeHtml(label)}:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0f172a; border-bottom: 1px solid #f1f5f9; text-align: right;">${escapeHtml(val)}</td>
+        </tr>`
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 19px; font-weight: 800; letter-spacing: 0.4px;">NJS PROPERTY GROUP — NEW WEBSITE ENQUIRY</h1>
+        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Submitted via ${escapeHtml(sourcePage || 'Website Contact / Quote Form')}</p>
+      </div>
+      <div style="padding: 26px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <p style="margin-top: 0;">A visitor has submitted an enquiry requesting a formal survey quotation or consultation. Details below:</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            ${rowsHtml}
+          </table>
+        </div>
+        ${
+          additionalNotes
+            ? `<div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 12px 14px; margin: 14px 0;">
+                <strong style="display: block; font-size: 12px; color: #92400e; margin-bottom: 4px;">Client Notes / Case Summary:</strong>
+                <p style="margin: 0; font-size: 13px; color: #451a03; white-space: pre-wrap;">${escapeHtml(additionalNotes)}</p>
+              </div>`
+            : ''
+        }
+        <p style="font-size: 12px; color: #64748b; margin: 18px 0 0 0;">Reply directly to this email to respond to <strong>${escapeHtml(customerName)}</strong> (${escapeHtml(customerEmail)}).</p>
+      </div>
+    </div>
+  `;
+
+  if (resend) {
+    try {
+      const response = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [ENQUIRY_INBOX],
+        replyTo: customerEmail,
+        subject,
+        html,
+      });
+
+      if (response?.error) {
+        console.warn('Resend enquiry notification error:', response.error.message || response.error);
+        return {
+          success: true,
+          emailSent: false,
+          notifiedEmail: ENQUIRY_INBOX,
+          provider: 'resend_error',
+          message: response.error.message || 'Email provider returned an error.',
+        };
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        notifiedEmail: ENQUIRY_INBOX,
+        messageId: response?.data?.id || response?.id,
+        provider: 'resend_live',
+      };
+    } catch (err) {
+      console.warn('Resend enquiry notification exception:', err.message);
+      return {
+        success: true,
+        emailSent: false,
+        notifiedEmail: ENQUIRY_INBOX,
+        provider: 'resend_error',
+        message: err.message,
+      };
+    }
+  }
+
+  console.log(`[ENQUIRY EMAIL PENDING PROVIDER CONFIG] Target: ${ENQUIRY_INBOX} | Ref: ${referenceId} | From: ${customerEmail}`);
+  return {
+    success: true,
+    emailSent: false,
+    notifiedEmail: ENQUIRY_INBOX,
+    provider: 'not_configured',
+    message: `Set valid RESEND_API_KEY in backend/.env to dispatch live emails to ${ENQUIRY_INBOX}.`,
+  };
+};
 
 /**
  * Resend Email Notification Service
@@ -51,7 +196,7 @@ export const sendQuoteProposalEmail = async ({
         <p>To view full terms, confirm surveyor allocation, and e-sign your engagement agreement, click the secure portal link below:</p>
         
         <div style="text-align: center; margin: 28px 0;">
-          <a href="${quoteLink || 'http://localhost:5175/login'}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review & Accept Proposal &rarr;</a>
+          <a href="${quoteLink || `${process.env.FRONTEND_URL || 'http://localhost:5175'}/contact#quote`}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review &amp; Enquiry Details &rarr;</a>
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">

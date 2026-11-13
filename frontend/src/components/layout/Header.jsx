@@ -30,9 +30,15 @@ export function Header() {
   const location = useLocation();
 
   const isHomePage = location.pathname === '/';
-  const isServicesActive = location.pathname.startsWith('/services');
+  const isServicesActive =
+    location.pathname.startsWith('/services') ||
+    location.pathname.startsWith('/what-survey') ||
+    location.pathname.startsWith('/which-survey');
   const isCoverageActive = location.pathname === '/contact' && (location.search.includes('area=') || location.hash === '#coverage');
-  const isAboutActive = location.pathname === '/contact' && !isCoverageActive;
+  const isAboutActive =
+    location.pathname.startsWith('/about') ||
+    location.pathname.startsWith('/professional-standards') ||
+    (location.pathname === '/contact' && !isCoverageActive);
 
   // Clear hover debounce timeout
   const clearHoverTimeout = () => {
@@ -92,17 +98,6 @@ export function Header() {
     setActiveDropdown(null);
   }, [location.pathname, location.search, location.hash]);
 
-  // Smooth scroll to quote section if already on homepage
-  const handleQuoteClick = (e) => {
-    if (isHomePage) {
-      e.preventDefault();
-      const target = document.getElementById('quote-section') || document.getElementById('quote');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
   return (
     <header className="site-header" role="banner">
       {/* 1. Top Announcement Bar (matching client's reference with Customer Login) */}
@@ -117,10 +112,12 @@ export function Header() {
                 </span>
               </div>
               <div className="announcement-right">
-                <Link to="/login" className="announcement-login-btn">
-                  <span>Customer Login</span>
-                  <ChevronRight size={13} aria-hidden="true" />
-                </Link>
+                {siteConfig.features?.showPublicPortalLogin && (
+                  <Link to="/login" className="announcement-login-btn">
+                    <span>Customer Login</span>
+                    <ChevronRight size={13} aria-hidden="true" />
+                  </Link>
+                )}
                 <button
                   type="button"
                   className="announcement-dismiss-btn"
@@ -186,15 +183,14 @@ export function Header() {
       <div className="header-main">
         <div className="header-container">
           <div className="header-main-inner" ref={headerNavRef}>
-            {/* Site Logo Emblem matching Luxury Mockup */}
+            {/* Site Logo Emblem */}
             <Link to="/" className="site-logo" aria-label="NJS Property Group - Home">
-              <div className="logo-badge" aria-hidden="true">
-                <Building size={20} />
-              </div>
-              <div className="logo-text-group">
-                <span className="logo-title font-serif">NJS Property Group</span>
-                <span className="logo-subtitle">RICS Regulated Surveyors</span>
-              </div>
+              <img
+                src="/images/njs-logo.png"
+                alt="NJS Property Group - Surveying, Expert Witness & Disrepair"
+                className="site-logo-img"
+                style={{ height: "76px", width: "auto", maxHeight: "76px", objectFit: "contain" }}
+              />
             </Link>
 
             {/* Desktop Navigation */}
@@ -302,7 +298,14 @@ export function Header() {
                               role="menuitem"
                               onClick={() => setActiveDropdown(null)}
                             >
-                              <div className="dropdown-item-title">{item.name}</div>
+                              <div className="dropdown-item-title flex items-center justify-between">
+                                <span>{item.name}</span>
+                                {item.badge && (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {item.badge}
+                                  </span>
+                                )}
+                              </div>
                               <span className="dropdown-item-desc">{item.description}</span>
                             </Link>
                           ))}
@@ -312,20 +315,17 @@ export function Header() {
                         <div className="mega-action-card">
                           <div className="mega-action-card-inner">
                             <span className="mega-action-title">Need a Survey Quote?</span>
-                            <p className="mega-action-sub" style={{ color: '#CBD5E1', margin: '0 0 0.65rem 0' }}>
+                            <p className="mega-action-sub" style={{ color: '#475569', margin: '0 0 0.65rem 0' }}>
                               Receive your fixed-fee written quote within 24 business hours.
                             </p>
-                            <a
-                              href={isHomePage ? '#quote-section' : '/contact#quote'}
-                              onClick={(e) => {
-                                setActiveDropdown(null);
-                                handleQuoteClick(e);
-                              }}
+                            <Link
+                              to="/request-quote"
+                              onClick={() => setActiveDropdown(null)}
                               className="mega-action-btn"
                             >
                               <span>Request a Quote</span>
                               <ArrowRight size={13} aria-hidden="true" />
-                            </a>
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -486,13 +486,12 @@ export function Header() {
 
             {/* Header Actions */}
             <div className="header-actions">
-              <a
-                href={isHomePage ? '#quote-section' : '/contact#quote'}
-                onClick={handleQuoteClick}
+              <Link
+                to="/request-quote"
                 className="header-quote-glass-btn"
               >
                 <span>Request a Quote</span>
-              </a>
+              </Link>
 
               <button
                 type="button"

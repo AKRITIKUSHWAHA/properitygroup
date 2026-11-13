@@ -1,0 +1,40 @@
+[build]
+  command = "npm --prefix frontend run build"
+  publish = "frontend/dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/v1/public/enquiries"
+  to = "/.netlify/functions/enquiries"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/construction/*"
+  to = "/services/building-survey-level-3"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/construction"
+  to = "/services/building-survey-level-3"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/real-estate/*"
+  to = "/services/valuation-report"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/real-estate"
+  to = "/services/valuation-report"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+

@@ -35,7 +35,7 @@ const drawNJSHeader = (doc, title, subtitle) => {
   doc.text('njspropertygroup.com', 195, 13, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Tel: 020 8947 8840', 195, 19, { align: 'right' });
+  doc.text('Tel: 0333 305 2777', 195, 19, { align: 'right' });
 
   // Document Title
   doc.setTextColor(11, 31, 77);
@@ -66,7 +66,7 @@ const drawNJSFooter = (doc, pageNum = 1, totalPages = 1) => {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
-  doc.text('NJS Property Group Ltd • Registered in England & Wales • Reg Office: 124 City Road, London EC1V 2NX', 15, y + 5);
+  doc.text('NJS Property Group Ltd • Registered in England & Wales • Reg Office: Belmont House, Uxbridge, UB8 1QS', 15, y + 5);
   doc.text(`Page ${pageNum} of ${totalPages}`, 195, y + 5, { align: 'right' });
 };
 
@@ -190,7 +190,7 @@ export const downloadTermsPDF = ({
   doc.setTextColor(51, 65, 85);
   const clause3 = [
     '3.1 In the unlikely event of dissatisfaction, NJS Property Group operates a formal Complaints Handling Procedure approved',
-    'by the RICS. A full written copy is provided upon request and disputes are eligible for referral to the Property Ombudsman.',
+    'by the RICS. A full written copy is provided upon request and Stage 2 disputes may be referred to CEDR.',
   ];
   clause3.forEach((line) => {
     doc.text(line, 15, curY);
@@ -449,7 +449,7 @@ export const downloadInvoicePDF = ({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(154, 52, 18);
-    doc.text('Barclays Client Escrow: Sort Code 20-45-77 • Account 83920194', 20, curY + 14);
+    doc.text('Metro Bank PLC: Sort Code 23-05-80 • Account 18920412 • Beneficiary: NJS Property Group Ltd', 20, curY + 14);
     doc.text(`Payment Reference: ${invoiceNo} • Settlement due upon terms execution`, 20, curY + 18);
   }
 
