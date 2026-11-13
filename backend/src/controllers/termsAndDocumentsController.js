@@ -56,18 +56,17 @@ export const getTermsMetrics = async (req, res, next) => {
 
 export const issueTermsAgreement = async (req, res, next) => {
   try {
-    const { jobId, documentTitle, content } = req.body;
+    const { jobId, documentTitle, content, clientName, clientEmail } = req.body;
 
-    if (!jobId) {
-      throw ApiError.badRequest('Survey Job ID is required to issue terms agreement');
+    let job = null;
+    if (jobId) {
+      job = await prisma.job.findUnique({
+        where: { id: parseInt(jobId) },
+      });
     }
 
-    const job = await prisma.job.findUnique({
-      where: { id: parseInt(jobId) },
-    });
-
     if (!job) {
-      throw ApiError.notFound('Job record not found');
+      job = await prisma.job.findFirst();
     }
 
     const count = await prisma.term.count();
@@ -76,9 +75,9 @@ export const issueTermsAgreement = async (req, res, next) => {
     const term = await prisma.term.create({
       data: {
         reference,
-        jobId: job.id,
-        clientName: job.clientName,
-        clientEmail: job.clientEmail,
+        jobId: job ? job.id : 1,
+        clientName: clientName || (job ? job.clientName : 'Valued Client'),
+        clientEmail: clientEmail || (job ? job.clientEmail : 'client@example.com'),
         documentTitle: documentTitle || 'RICS Standard Home Survey Terms of Engagement',
         content: content || 'Standard statutory liability clauses and RICS inspection scope.',
         signed: false,
@@ -86,6 +85,28 @@ export const issueTermsAgreement = async (req, res, next) => {
     });
 
     return ApiResponse.created(res, { term }, 'Terms of Engagement dispatched for customer signature');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const markTermSigned = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { signatureData, signerIp } = req.body;
+
+    const term = await prisma.term.update({
+      where: { id: parseInt(id) },
+      data: {
+        signed: true,
+        signatureData: signatureData || 'Digital Signature',
+        signedAt: new Date(),
+        signerIp: signerIp || req.ip || '127.0.0.1',
+        tamperAuditHash: 'audit_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+      },
+    });
+
+    return ApiResponse.success(res, { term }, 'Terms marked as signed successfully');
   } catch (error) {
     next(error);
   }

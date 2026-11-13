@@ -4,6 +4,7 @@ import {
   getTermsMetrics,
   issueTermsAgreement,
   getAuditCertificate,
+  markTermSigned,
 } from '../controllers/termsAndDocumentsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
@@ -16,6 +17,7 @@ router.use(authorizeRoles('ADMIN'));
 router.get('/', getTermsAndDocuments);
 router.get('/metrics', getTermsMetrics);
 router.post('/', issueTermsAgreement);
+router.patch('/:id/sign', markTermSigned);
 router.get('/:id/audit-certificate', getAuditCertificate);
 
 export default router;

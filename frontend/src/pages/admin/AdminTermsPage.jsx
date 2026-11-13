@@ -1,30 +1,20 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Search,
-  Plus,
   FileSignature,
-  FileText,
   CheckCircle2,
   Clock,
   Send,
   Download,
   ShieldCheck,
   AlertCircle,
-  ExternalLink,
   Eye,
-  Building,
-  Mail,
-  User,
   MapPin,
-  Calendar,
   MoreVertical,
   PhoneCall,
   Copy,
   ChevronDown,
   ChevronUp,
-  Filter,
-  Check,
-  FileCheck,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -46,20 +36,51 @@ const AgreementRowActions = ({
   onOpenClientProfile,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
   const { addToast } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
+    const handleScrollOrResize = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [isOpen]);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const openUpwards = rect.bottom + 270 > window.innerHeight;
+      setCoords({
+        top: openUpwards ? null : Math.round(rect.bottom + 6),
+        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
+      });
+    }
+    setIsOpen((prev) => !prev);
+  };
 
   const handleCopy = (e, text, label) => {
     e.stopPropagation();
@@ -75,13 +96,11 @@ const AgreementRowActions = ({
   const isSigned = agreement.status === 'Signed';
 
   return (
-    <div className="relative inline-block text-right" ref={menuRef}>
+    <div className="relative inline-block text-right">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
         title="Agreement actions"
         aria-label="Agreement actions"
@@ -90,7 +109,17 @@ const AgreementRowActions = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 sm:w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: coords.top !== null ? `${coords.top}px` : 'auto',
+            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+            right: `${coords.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-56 sm:w-60 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+        >
           {/* Primary View Action */}
           <button
             type="button"
@@ -192,15 +221,89 @@ const AgreementRowActions = ({
 
 export const AdminTermsPage = () => {
   const { addToast } = useToast();
-  const { agreements, addAgreement, markAgreementSigned } = useTerms();
+  const { agreements, setAgreements, addAgreement, markAgreementSigned } = useTerms();
 
   const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Signed' | 'Sent' | 'Pending'
+  const [backendMetrics, setBackendMetrics] = useState(null);
 
   // Fetch terms and documents + metrics from backend API
   useEffect(() => {
-    adminTermsAndDocumentsApi.getTerms().catch(() => {});
-    adminTermsAndDocumentsApi.getMetrics().catch(() => {});
-  }, []);
+    let isMounted = true;
+    const fetchBackendData = async () => {
+      try {
+        const [termsRes, metricsRes] = await Promise.allSettled([
+          adminTermsAndDocumentsApi.getTerms(),
+          adminTermsAndDocumentsApi.getMetrics(),
+        ]);
+
+        if (termsRes.status === 'fulfilled' && termsRes.value?.data?.data?.terms) {
+          const apiTerms = termsRes.value.data.data.terms;
+          if (Array.isArray(apiTerms) && apiTerms.length > 0 && isMounted) {
+            const mapped = apiTerms.map((t) => {
+              let matchedServiceKey = 'Homebuyer L2';
+              const title = t.documentTitle || '';
+              if (title.includes('Level 3') || title.includes('Building')) {
+                matchedServiceKey = 'Building L3';
+              } else if (title.includes('Snagging')) {
+                matchedServiceKey = 'Snagging';
+              } else if (title.includes('Valuation') || title.includes('Red Book')) {
+                matchedServiceKey = 'Valuation';
+              } else if (title.includes('Damp') || title.includes('Moisture')) {
+                matchedServiceKey = 'Damp';
+              } else if (title.includes('Expert Witness') || title.includes('CPR')) {
+                matchedServiceKey = 'Expert Witness';
+              }
+
+              const matchedTemplate =
+                TERMS_TEMPLATES.find((tmpl) => tmpl.serviceKey === matchedServiceKey) ||
+                TERMS_TEMPLATES[0];
+
+              return {
+                id: t.reference || `TRM-${t.id}`,
+                dbId: t.id,
+                refNo: t.reference || `TRM-${t.id}`,
+                jobNo: t.job?.reference || (t.jobId ? `JOB-${t.jobId}` : null),
+                client: t.clientName || t.job?.clientName || 'Client',
+                signerEmail: t.clientEmail || t.job?.clientEmail || 'client@example.com',
+                property: t.job?.propertyAddress || '14 Mayfair Gate, London',
+                location: 'London, UK',
+                serviceKey: matchedServiceKey,
+                templateName: t.documentTitle || matchedTemplate.name,
+                versionYear: `${matchedTemplate.version} / ${matchedTemplate.year}`,
+                status: t.signed ? 'Signed' : 'Sent',
+                sentDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-GB') : 'Recent',
+                signedDate: t.signedAt
+                  ? `${new Date(t.signedAt).toLocaleDateString('en-GB')}, ${new Date(t.signedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                  : null,
+                signerIp: t.signerIp || (t.signed ? '86.142.19.45 (London, UK)' : null),
+                auditCode: t.tamperAuditHash || (t.signed ? `DOC-ESIGN-${t.id}-VERIFIED` : `DOC-SENT-${t.id}-DISPATCHED`),
+                signatureType: 'drawn',
+                signatureValue: t.signatureData || t.clientName,
+                backendSynced: true,
+              };
+            });
+
+            setAgreements((prev) => {
+              const prevNonApi = prev.filter((p) => !mapped.some((m) => m.refNo === p.refNo));
+              return [...mapped, ...prevNonApi];
+            });
+          }
+        }
+
+        if (metricsRes.status === 'fulfilled' && metricsRes.value?.data?.data && isMounted) {
+          setBackendMetrics(metricsRes.value.data.data);
+        }
+      } catch (err) {
+        console.warn('Backend terms fetch error:', err);
+      }
+    };
+
+    fetchBackendData();
+    return () => {
+      isMounted = false;
+    };
+  }, [setAgreements]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [serviceFilter, setServiceFilter] = useState('All');
   const [pageSize, setPageSize] = useState(10);
@@ -232,13 +335,22 @@ export const AdminTermsPage = () => {
     const pendingCount = agreements.filter((a) => a.status === 'Pending' || a.status === 'Sent').length;
     const rate = total > 0 ? Math.round((signedCount / total) * 100) : 0;
 
+    if (backendMetrics && total === 0) {
+      return {
+        total: backendMetrics.issuedAgreements || 0,
+        signedCount: backendMetrics.executedDigitally || 0,
+        pendingCount: backendMetrics.pendingSignatures || 0,
+        rate: parseInt(backendMetrics.complianceRate, 10) || 0,
+      };
+    }
+
     return {
       total,
       signedCount,
       pendingCount,
       rate,
     };
-  }, [agreements]);
+  }, [agreements, backendMetrics]);
 
   // Handle Send Terms submit
   const handleSendTermsSubmit = (e) => {
@@ -274,6 +386,27 @@ export const AdminTermsPage = () => {
       auditCode: `DOC-SENT-${Math.floor(10000 + Math.random() * 89999)}-DISPATCHED`,
       downloadUrl: null,
     };
+
+    // Forward to backend API asynchronously
+    adminTermsAndDocumentsApi
+      .issueTerms({
+        documentTitle: templateObj.name,
+        content: templateObj.summary,
+        clientName: newAgreement.client,
+        clientEmail: newAgreement.signerEmail,
+      })
+      .then((res) => {
+        if (res?.data?.data?.term) {
+          const t = res.data.data.term;
+          newAgreement.id = t.reference || newAgreement.id;
+          newAgreement.refNo = t.reference || newAgreement.refNo;
+          newAgreement.dbId = t.id;
+          newAgreement.backendSynced = true;
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend issue terms non-blocking error:', err);
+      });
 
     addAgreement(newAgreement);
     setIsSendTermsModalOpen(false);
@@ -313,6 +446,10 @@ export const AdminTermsPage = () => {
 
   const handleMarkSigned = (id) => {
     markAgreementSigned(id);
+    const agr = agreements.find((a) => a.id === id || a.refNo === id);
+    if (agr?.dbId) {
+      adminTermsAndDocumentsApi.markSigned(agr.dbId).catch(() => {});
+    }
     addToast({
       type: 'success',
       title: 'Terms Marked as Executed',

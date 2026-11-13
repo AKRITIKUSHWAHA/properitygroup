@@ -104,21 +104,127 @@ export const TERMS_TEMPLATES = [
 ];
 
 // Initial Sent / Signed / Pending Agreements List
-export const INITIAL_AGREEMENTS = [];
+export const INITIAL_AGREEMENTS = [
+  {
+    id: 'TRM-2026-080',
+    refNo: 'TRM-2026-080',
+    jobNo: 'JOB-2026-080',
+    client: 'Emma Watson',
+    signerEmail: 'customer@demo.com',
+    property: '14 Mayfair Gate, Mayfair, London',
+    location: 'Mayfair, London W1K 2PB',
+    serviceKey: 'Homebuyer L2',
+    templateName: 'RICS Home Survey Standard (Level 2) Terms of Engagement',
+    versionYear: 'v2026.2 / 2026',
+    status: 'Signed',
+    sentDate: '02/11/2026',
+    signedDate: '04/11/2026, 14:22',
+    signerIp: '86.142.19.45 (London, UK)',
+    auditCode: 'DOC-ESIGN-9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b',
+    signatureType: 'drawn',
+    signatureValue: 'Emma Watson',
+    downloadUrl: null,
+  },
+  {
+    id: 'TRM-2026-081',
+    refNo: 'TRM-2026-081',
+    jobNo: 'JOB-2026-081',
+    client: 'Emma Watson',
+    signerEmail: 'customer@demo.com',
+    property: '88 Belgrave Square, London',
+    location: 'Belgravia, London SW1X 8PH',
+    serviceKey: 'Building L3',
+    templateName: 'Comprehensive Building Survey (Level 3) Structural Terms',
+    versionYear: 'v2026.1 / 2026',
+    status: 'Signed',
+    sentDate: '12/10/2026',
+    signedDate: '14/10/2026, 11:05',
+    signerIp: '86.142.19.45 (London, UK)',
+    auditCode: 'DOC-ESIGN-8f7e6d5c4b3a210987654321fedcba0987654321',
+    signatureType: 'typed',
+    signatureValue: 'Emma Watson',
+    downloadUrl: null,
+  },
+  {
+    id: 'TRM-2026-082',
+    refNo: 'TRM-2026-082',
+    jobNo: 'JOB-2026-082',
+    client: 'Harrison Sterling',
+    signerEmail: 'customer2@demo.com',
+    property: '27 Kensington Church St, London',
+    location: 'Kensington, London W8 4LL',
+    serviceKey: 'Building L3',
+    templateName: 'Comprehensive Building Survey (Level 3) Structural Terms',
+    versionYear: 'v2026.1 / 2026',
+    status: 'Sent',
+    sentDate: '10/11/2026',
+    signedDate: null,
+    signerIp: null,
+    auditCode: 'DOC-SENT-84920-DISPATCHED',
+    signatureType: 'pending',
+    signatureValue: null,
+    downloadUrl: null,
+  },
+  {
+    id: 'TRM-2026-083',
+    refNo: 'TRM-2026-083',
+    jobNo: 'JOB-2026-083',
+    client: 'Oliver Vance',
+    signerEmail: 'oliver.vance@example.com',
+    property: '12 Richmond Hill, Richmond',
+    location: 'Richmond, London TW10 6QX',
+    serviceKey: 'Valuation',
+    templateName: 'RICS Red Book Global Residential & Commercial Valuation Terms',
+    versionYear: 'v2026.2 / 2026',
+    status: 'Pending',
+    sentDate: '11/11/2026',
+    signedDate: null,
+    signerIp: null,
+    auditCode: 'DOC-PENDING-33291-AWAITING-AUTH',
+    signatureType: 'pending',
+    signatureValue: null,
+    downloadUrl: null,
+  },
+  {
+    id: 'TRM-2026-084',
+    refNo: 'TRM-2026-084',
+    jobNo: 'JOB-2026-084',
+    client: 'Charlotte Bronte',
+    signerEmail: 'charlotte.b@outlook.com',
+    property: '5 The Courtyard, Highgate',
+    location: 'Highgate, London N6 4BA',
+    serviceKey: 'Snagging',
+    templateName: 'New Build Snagging & Quality Defect Inspection Mandate',
+    versionYear: 'v2026.3 / 2026',
+    status: 'Signed',
+    sentDate: '08/11/2026',
+    signedDate: '09/11/2026, 09:45',
+    signerIp: '82.34.112.98 (London, UK)',
+    auditCode: 'DOC-ESIGN-33821-VERIFIED',
+    signatureType: 'drawn',
+    signatureValue: 'Charlotte Bronte',
+    downloadUrl: null,
+  },
+];
 
 export const getStoredAgreements = () => {
   try {
-    if (!localStorage.getItem('njs_fresh_agreements_clean_v1')) {
-      localStorage.removeItem('propertygroup_agreements');
-      localStorage.setItem('njs_fresh_agreements_clean_v1', 'true');
-      return [];
+    if (!localStorage.getItem('njs_fresh_agreements_v2')) {
+      localStorage.setItem('njs_fresh_agreements_v2', 'true');
+      localStorage.setItem('propertygroup_agreements', JSON.stringify(INITIAL_AGREEMENTS));
+      return INITIAL_AGREEMENTS;
     }
     const raw = localStorage.getItem('propertygroup_agreements');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
   } catch (e) {
     console.error(e);
   }
-  return [];
+  return INITIAL_AGREEMENTS;
 };
 
 export const saveStoredAgreements = (agreements) => {

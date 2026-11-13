@@ -84,6 +84,7 @@ export const adminTermsAndDocumentsApi = {
   getTerms: (params = '') => api.get(`/terms-and-documents${params ? `?${params}` : ''}`),
   getMetrics: () => api.get('/terms-and-documents/metrics'),
   issueTerms: (termsData) => api.post('/terms-and-documents', termsData),
+  markSigned: (id, signData = {}) => api.patch(`/terms-and-documents/${id}/sign`, signData),
   getAuditCertificate: (id) => api.get(`/terms-and-documents/${id}/audit-certificate`),
 };
 
