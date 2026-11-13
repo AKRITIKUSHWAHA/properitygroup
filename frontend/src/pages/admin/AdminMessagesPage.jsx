@@ -12,7 +12,6 @@ import {
   Sparkles,
   ArrowLeft,
   X,
-  Clock,
 } from 'lucide-react';
 import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
@@ -289,47 +288,19 @@ export const AdminMessagesPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0 space-y-2.5 max-w-7xl mx-auto w-full overflow-hidden">
-      {/* Sleek Header Bar (Breadcrumbs + Title + Compact Live Stat Pills) */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 px-0.5 pt-0.5">
-        <div>
-          <nav className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium whitespace-nowrap mb-0.5">
-            <span>NJS Property Group</span>
-            <span className="text-slate-400">/</span>
-            <span>Admin</span>
-            <span className="text-slate-400">/</span>
-            <span className="text-[#2563EB] font-bold">Messages</span>
-          </nav>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg sm:text-xl font-extrabold text-[#0B1F4D] tracking-tight">
-              Messages Inbox &amp; Client Communications
-            </h1>
-          </div>
-        </div>
-
-        {/* 3 Sleek Compact Stat Pills */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
-            <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
-            <span className="text-xs font-semibold text-slate-700">
-              <strong className="text-[#0B1F4D]">{displayConversations.length}</strong> Chats
-            </span>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
-            <Clock className="w-3.5 h-3.5 text-rose-500" />
-            <span className="text-xs font-semibold text-slate-700">
-              <strong className="text-rose-600">{totalUnreadAdmin}</strong> Unread
-            </span>
-          </div>
-
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-semibold text-emerald-800">
-              Portal Gateway 100% Active
-            </span>
-          </div>
-        </div>
+    <div className="h-full flex flex-col min-h-0 space-y-2 max-w-7xl mx-auto w-full overflow-hidden">
+      {/* Clean Header (Breadcrumbs + Page Title) */}
+      <div className="shrink-0 px-0.5 pt-0.5">
+        <nav className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium whitespace-nowrap mb-0.5">
+          <span>NJS Property Group</span>
+          <span className="text-slate-400">/</span>
+          <span>Admin</span>
+          <span className="text-slate-400">/</span>
+          <span className="text-[#2563EB] font-bold">Messages</span>
+        </nav>
+        <h1 className="text-lg sm:text-xl font-extrabold text-[#0B1F4D] tracking-tight">
+          Messages Inbox &amp; Client Communications
+        </h1>
       </div>
 
       {/* Main Chat Application Card (Separated from sidebar with rounded borders & soft shadow) */}
