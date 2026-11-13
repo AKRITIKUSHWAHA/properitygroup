@@ -13,9 +13,7 @@ import {
   ArrowLeft,
   X,
   Clock,
-  ShieldCheck,
 } from 'lucide-react';
-import { PageHeader } from '../../components/PageHeader';
 import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
 import { adminMessagesApi } from '../../api/adminApi';
@@ -26,6 +24,14 @@ const QUICK_RESPONSES = [
   'Surveyor has noted your specific inspection request.',
   'RICS draft report is currently in final quality assurance review.',
 ];
+
+const getMessageTime = (timeStr) => {
+  if (!timeStr) return '';
+  if (timeStr.includes(',')) {
+    return timeStr.split(',')[1].trim();
+  }
+  return timeStr;
+};
 
 export const AdminMessagesPage = () => {
   const [searchParams] = useSearchParams();
@@ -283,79 +289,46 @@ export const AdminMessagesPage = () => {
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0 space-y-2.5 sm:space-y-3.5 max-w-7xl mx-auto w-full overflow-hidden">
-      {/* Page Header */}
-      <div className="shrink-0 [&>div]:mb-0 [&>div]:pb-2 sm:[&>div]:pb-3">
-        <PageHeader
-          title="Messages Inbox & Client Communications"
-          subtitle="Manage real-time two-way client communications, survey inspection queries, and customer portal threads."
-          breadcrumb={['Admin', 'Messages']}
-        />
-      </div>
-
-      {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5 shrink-0">
-        {/* Card 1: Active Customer Chats */}
-        <div className="p-3 sm:p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Customer Chats
-            </span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
-              <MessageSquare className="w-3.5 h-3.5" />
-            </div>
+    <div className="h-full flex flex-col min-h-0 space-y-2.5 max-w-7xl mx-auto w-full overflow-hidden">
+      {/* Sleek Header Bar (Breadcrumbs + Title + Compact Live Stat Pills) */}
+      <div className="shrink-0 flex flex-wrap items-center justify-between gap-2.5 px-0.5 pt-0.5">
+        <div>
+          <nav className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium whitespace-nowrap mb-0.5">
+            <span>NJS Property Group</span>
+            <span className="text-slate-400">/</span>
+            <span>Admin</span>
+            <span className="text-slate-400">/</span>
+            <span className="text-[#2563EB] font-bold">Messages</span>
+          </nav>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-extrabold text-[#0B1F4D] tracking-tight">
+              Messages Inbox &amp; Client Communications
+            </h1>
           </div>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1.5">
-            <span className="text-lg sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
-              {displayConversations.length}
-            </span>
-            <span className="text-xs font-semibold text-slate-500">Threads</span>
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-            London &amp; Home Counties Inbound
-          </p>
         </div>
 
-        {/* Card 2: Unread Queries */}
-        <div className="p-3 sm:p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Unread Queries
+        {/* 3 Sleek Compact Stat Pills */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
+            <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span className="text-xs font-semibold text-slate-700">
+              <strong className="text-[#0B1F4D]">{displayConversations.length}</strong> Chats
             </span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
           </div>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1.5">
-            <span className="text-lg sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
-              {totalUnreadAdmin}
-            </span>
-            <span className="text-xs font-semibold text-slate-500">Pending Review</span>
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-            Client Portal Action Queue
-          </p>
-        </div>
 
-        {/* Card 3: Live Portal Gateway */}
-        <div className="p-3 sm:p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Portal Gateway
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
+            <Clock className="w-3.5 h-3.5 text-rose-500" />
+            <span className="text-xs font-semibold text-slate-700">
+              <strong className="text-rose-600">{totalUnreadAdmin}</strong> Unread
             </span>
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-3.5 h-3.5" />
-            </div>
           </div>
-          <div className="mt-0.5 sm:mt-1 flex items-baseline gap-1.5">
-            <span className="text-lg sm:text-2xl font-bold tracking-tight text-emerald-700">
-              100%
+
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200/90 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-emerald-800">
+              Portal Gateway 100% Active
             </span>
-            <span className="text-xs font-semibold text-slate-500">Operational</span>
           </div>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-            Two-Way Client Sync Active
-          </p>
         </div>
       </div>
 
@@ -543,8 +516,8 @@ export const AdminMessagesPage = () => {
       >
         {activeConv ? (
           <>
-            {/* Clean Real Chat Top Header Bar (Only Customer Avatar + Name) */}
-            <div className="h-14 sm:h-16 px-4 sm:px-6 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between gap-3 min-w-0 shadow-2xs">
+            {/* WhatsApp-Style Chat Top Header Bar */}
+            <div className="h-16 px-4 sm:px-5 border-b border-slate-200 bg-white shrink-0 flex items-center justify-between gap-3 min-w-0 shadow-2xs">
               <div className="flex items-center gap-3 min-w-0">
                 {/* Mobile Back Button */}
                 <button
@@ -556,47 +529,58 @@ export const AdminMessagesPage = () => {
                   <ArrowLeft className="w-5 h-5" />
                 </button>
 
-                {/* Customer Initials Badge */}
-                <div className="w-10 h-10 rounded-xl bg-[#0B1F4D] text-white flex items-center justify-center font-extrabold text-sm shadow-xs shrink-0 tracking-wider">
-                  {activeConv.clientName
-                    ?.split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .substring(0, 2)
-                    .toUpperCase() || 'CU'}
+                {/* Customer Avatar with Active Online Dot */}
+                <div className="relative shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-sm shadow-xs tracking-wider">
+                    {activeConv.clientName
+                      ?.split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase() || 'CU'}
+                  </div>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white absolute bottom-0 right-0" />
                 </div>
 
-                {/* ONLY Customer Name */}
-                <h2 className="font-extrabold text-slate-900 text-base sm:text-lg truncate leading-tight">
-                  {activeConv.clientName}
-                </h2>
+                <div className="min-w-0">
+                  <h2 className="font-bold text-slate-900 text-sm sm:text-base truncate leading-tight">
+                    {activeConv.clientName}
+                  </h2>
+                  <p className="text-[11px] text-emerald-600 font-medium truncate flex items-center gap-1.5">
+                    <span>Active on Portal</span>
+                    {activeConv.property && (
+                      <>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-slate-500 truncate max-w-[240px]">{activeConv.property}</span>
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
+
+              {/* Linked Job Reference Badge */}
+              {activeConv.jobId && (
+                <Link
+                  to={`/admin/jobs/${activeConv.jobId}`}
+                  className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[#0B1F4D] text-xs font-mono font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                  title="Open full survey job in workspace"
+                >
+                  <span>Job #{activeConv.jobId}</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </Link>
+              )}
             </div>
 
-            {/* Message Thread Body (Real Chat Canvas - ONLY this container scrolls) */}
+            {/* Message Thread Body (WhatsApp Web Style Canvas) */}
             <div
               ref={chatMessagesRef}
-              className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/70 min-h-0"
+              className="flex-1 p-3.5 sm:p-5 overflow-y-auto space-y-2 bg-[#F0F2F5] min-h-0"
             >
-              {/* Channel Header Divider */}
-              <div className="flex items-center justify-center my-1">
-                <div className="px-3.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider shadow-2xs flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>RICS Survey Direct Client Communications</span>
-                  {activeConv.jobId && (
-                    <>
-                      <span>•</span>
-                      <Link
-                        to={`/admin/jobs/${activeConv.jobId}`}
-                        className="text-[#0B1F4D] hover:underline flex items-center gap-1 font-mono font-bold"
-                        title="Open full survey job in workspace"
-                      >
-                        <span>Job #{activeConv.jobId}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </Link>
-                    </>
-                  )}
-                </div>
+              {/* Centered Date / Channel Divider */}
+              <div className="flex items-center justify-center my-1.5 sticky top-0 z-10 pointer-events-none">
+                <span className="px-3 py-1 rounded-lg bg-white/95 backdrop-blur-xs border border-slate-200/80 text-slate-600 text-[11px] font-semibold shadow-2xs">
+                  RICS Client Direct Communications
+                </span>
               </div>
 
               {activeConv.messages?.map((m) => {
@@ -604,32 +588,33 @@ export const AdminMessagesPage = () => {
                 return (
                   <div
                     key={m.id}
-                    className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
+                    className={`flex flex-col mb-1.5 ${isAdmin ? 'items-end' : 'items-start'}`}
                   >
-                    <div className="flex items-center gap-1.5 mb-1 px-1">
-                      <span className="text-[11px] font-bold text-slate-600">{m.sender}</span>
-                      <span className="text-[10px] text-slate-400 font-mono">• {m.time}</span>
-                    </div>
-
                     <div
-                      className={`max-w-xl p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-xs ${
+                      className={`relative px-3.5 py-2 text-[13px] sm:text-[13.5px] leading-relaxed shadow-2xs break-words max-w-[85%] sm:max-w-[72%] md:max-w-[62%] w-fit min-w-[110px] select-text ${
                         isAdmin
-                          ? 'bg-[#0B1F4D] text-white rounded-tr-none'
-                          : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                          ? 'bg-[#0B1F4D] text-white rounded-2xl rounded-tr-xs'
+                          : 'bg-white text-slate-900 rounded-2xl rounded-tl-xs border border-slate-200/80'
                       }`}
                     >
                       <p className="whitespace-pre-wrap">{m.text}</p>
 
-                      {isAdmin && (
-                        <div className="flex items-center justify-end gap-1 mt-1.5 text-blue-200/80 text-[10px] font-medium">
-                          <span>{m.readByCustomer ? 'Seen by customer' : 'Delivered to portal'}</span>
-                          {m.readByCustomer ? (
-                            <CheckCheck className="w-3.5 h-3.5 text-sky-300" title="Seen by customer" />
+                      <div
+                        className={`flex items-center justify-end gap-1 mt-1 float-right ml-3 select-none -mb-0.5 ${
+                          isAdmin ? 'text-blue-200/70' : 'text-slate-400'
+                        }`}
+                      >
+                        <span className="text-[10px] font-mono leading-none">
+                          {getMessageTime(m.time)}
+                        </span>
+                        {isAdmin && (
+                          m.readByCustomer ? (
+                            <CheckCheck className="w-3.5 h-3.5 text-sky-400 shrink-0 inline" title="Seen by customer" />
                           ) : (
-                            <Check className="w-3.5 h-3.5 text-blue-300/60" title="Delivered to portal (not seen yet)" />
-                          )}
-                        </div>
-                      )}
+                            <Check className="w-3.5 h-3.5 text-blue-300/70 shrink-0 inline" title="Delivered to portal" />
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -637,36 +622,36 @@ export const AdminMessagesPage = () => {
             </div>
 
             {/* Quick Response Suggestions Bar */}
-            <div className="px-4 py-2 bg-slate-100/80 border-t border-slate-200 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
+            <div className="px-3 py-1.5 bg-slate-50 border-t border-slate-200 flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 shrink-0 flex items-center gap-1 mr-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Quick Suggestions:
+                Quick Reply:
               </span>
               {QUICK_RESPONSES.map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleApplyQuickResponse(chip)}
-                  className="shrink-0 px-3 py-1 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-[#0B1F4D] text-xs font-semibold transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                  className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-[#0B1F4D] text-xs font-medium transition-all shadow-2xs hover:shadow-xs cursor-pointer"
                 >
                   {chip}
                 </button>
               ))}
             </div>
 
-            {/* Bottom Message Input Bar (Full Width, Flush at Bottom) */}
+            {/* Bottom Message Input Bar (WhatsApp Web Style) */}
             <form
               onSubmit={handleSendReply}
-              className="p-3 sm:p-4 bg-white border-t border-slate-200 shrink-0"
+              className="p-2.5 sm:p-3 bg-white border-t border-slate-200 shrink-0"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleAttachFile}
-                  className="p-2.5 rounded-xl text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                  className="p-2 rounded-full text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
                   title="Attach inspection note or photo"
                 >
-                  <Paperclip className="w-4 h-4" />
+                  <Paperclip className="w-5 h-5" />
                 </button>
 
                 <div className="flex-1 relative">
@@ -674,29 +659,19 @@ export const AdminMessagesPage = () => {
                     type="text"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder={`Reply to ${activeConv.clientName}... (Press Enter to send)`}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
+                    placeholder={`Type a message to ${activeConv.clientName}...`}
+                    className="w-full px-4 py-2.5 bg-slate-100 border-0 rounded-full text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 transition-all"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={!replyText.trim() || isSending}
-                  className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+                  className="w-10 h-10 rounded-full bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xs transition-all flex items-center justify-center shrink-0 cursor-pointer"
+                  title="Send message"
                 >
-                  <span>Send</span>
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="w-4 h-4 ml-0.5" />
                 </button>
-              </div>
-
-              <div className="mt-1.5 flex items-center justify-between text-[10.5px] text-slate-400 px-1">
-                <span className="truncate">
-                  Direct 2-way sync with customer&apos;s portal (
-                  <span className="font-mono text-slate-600 font-medium">{activeConv.clientEmail}</span>).
-                </span>
-                <span className="font-semibold text-slate-500 whitespace-nowrap ml-2 hidden sm:inline">
-                  Sender: Alexander Sterling (Admin)
-                </span>
               </div>
             </form>
           </>
