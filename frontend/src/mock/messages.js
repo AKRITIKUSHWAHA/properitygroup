@@ -66,6 +66,7 @@ export const useMessages = () => {
       role: role,
       text: text,
       time: timeString,
+      readByCustomer: role === 'customer',
     };
 
     setConversations((prev) => {
