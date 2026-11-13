@@ -1,10 +1,13 @@
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
 
-const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
-const isResendConfigured = Boolean(resendApiKey && resendApiKey.startsWith('re_') && resendApiKey.length >= 12);
-
-const resend = isResendConfigured ? new Resend(resendApiKey) : null;
+const getResend = () => {
+  const key = (process.env.RESEND_API_KEY || '').trim();
+  if (key && key.startsWith('re_') && key.length >= 12) {
+    return new Resend(key);
+  }
+  return null;
+};
 const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
 const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
 
@@ -100,6 +103,10 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
       </div>
     </div>
   `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
 
   if (resend) {
     try {
@@ -210,6 +217,10 @@ export const sendQuoteProposalEmail = async ({
     </div>
   `;
 
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
   if (resend) {
     try {
       const response = await resend.emails.send({
@@ -255,6 +266,10 @@ export const sendInvoiceReceiptEmail = async ({
       </div>
     </div>
   `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
 
   if (resend) {
     try {
