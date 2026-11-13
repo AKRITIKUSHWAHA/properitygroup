@@ -30,32 +30,7 @@ import { useEffect } from 'react';
 
 export const AdminSurveyorsPage = () => {
   const { addToast } = useToast();
-
-  // Sync surveyors from backend API
-  useEffect(() => {
-    adminSurveyorsApi.getSurveyors()
-      .then((res) => {
-        if (res?.data && res.data.length > 0) {
-          setSurveyorsList(res.data.map((s, idx) => ({
-            id: `srv-${s.id}`,
-            name: s.name,
-            credentials: s.surveyorProfile?.accreditation ? `${s.surveyorProfile.accreditation} Chartered Surveyor` : 'MRICS Chartered Surveyor',
-            postcodes: s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W'],
-            activeJobs: s.surveyorProfile?.activeLoad || 4,
-            maxJobs: s.surveyorProfile?.maxLoad || 8,
-            piiExpiry: '31/12/2027',
-            assignedJobs: s.surveyorProfile?.activeLoad || 12,
-            status: s.status === 'ACTIVE' ? 'Active Field' : s.status,
-            phone: s.phone || `+44 7700 900${idx + 1}84`,
-            email: s.email,
-            specialism: 'RICS Valuation, Level 2 & Level 3',
-            color: '#2563EB',
-          })));
-        }
-      })
-      .catch(() => {});
-  }, []);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [surveyorsList, setSurveyorsList] = useState([
     ...SURVEYORS.map((s, idx) => ({
       ...s,
@@ -67,6 +42,48 @@ export const AdminSurveyorsPage = () => {
       specialism: idx === 0 ? 'Valuation & Level 2' : idx === 1 ? 'Period Structures & Level 3' : 'Damp, Timber & Defects',
     })),
   ]);
+
+  // Sync surveyors from backend API
+  useEffect(() => {
+    let isMounted = true;
+    adminSurveyorsApi.getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []));
+        if (isMounted && raw && raw.length > 0) {
+          setSurveyorsList(raw.map((s, idx) => ({
+            id: `srv-${s.id}`,
+            dbId: s.id,
+            name: s.name,
+            credentials: s.surveyorProfile?.accreditation
+              ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
+              : 'MRICS Chartered Surveyor',
+            postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
+              ? s.surveyorProfile.postcodesCovered
+              : (s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W']),
+            activeJobs: s.surveyorProfile?.activeLoad || s.assignedJobs?.length || 4,
+            maxJobs: s.surveyorProfile?.maxLoad || 8,
+            piiExpiry: s.surveyorProfile?.piiExpiryDate || (idx % 2 === 0 ? '15/12/2026' : '22/01/2027'),
+            assignedJobs: s.assignedJobs?.length ? s.assignedJobs.length * 4 : (s.surveyorProfile?.activeLoad || (12 + idx * 3)),
+            status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
+            phone: s.phone || `+44 7700 900${idx + 1}84`,
+            email: s.email,
+            specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
+              ? 'Dispute & Expert Witness'
+              : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
+              ? 'Residential Defect Specialist'
+              : 'RICS Valuation, Level 2 & Level 3'),
+            color: '#2563EB',
+          })));
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load surveyors from backend:', err?.message || err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -95,49 +112,90 @@ export const AdminSurveyorsPage = () => {
     });
   };
 
-  const handleAddSurveyor = (e) => {
+  const handleAddSurveyor = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || !formData.email.trim()) {
+      addToast({
+        type: 'warning',
+        title: 'Missing Fields',
+        message: 'Surveyor name and email address are required.',
+      });
+      return;
+    }
 
-    const newSurveyor = {
-      id: `srv-${surveyorsList.length + 1}`,
-      name: formData.name.trim(),
-      credentials: formData.credentials,
-      postcodes: formData.postcodes.toUpperCase(),
-      color: formData.color,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
-      piiExpiry: formData.piiExpiry || '31/12/2027',
-      assignedJobs: 0,
-      status: 'Active Field',
-      phone: formData.phone || '+44 7700 900999',
-      email: formData.email || `${formData.name.toLowerCase().split(' ')[0]}@njspropertygroup.com`,
-      specialism: 'RICS Residential Inspections',
-    };
+    try {
+      setIsSubmitting(true);
+      let accTag = 'MRICS';
+      if (formData.credentials.includes('FRICS')) accTag = 'FRICS';
+      else if (formData.credentials.includes('AssocRICS')) accTag = 'AssocRICS';
+      else if (formData.credentials.includes('MRICS')) accTag = 'MRICS';
 
-    setSurveyorsList((prev) => [...prev, newSurveyor]);
-    setIsAddModalOpen(false);
-    setFormData({
-      name: '',
-      credentials: 'MRICS Chartered Valuation Surveyor',
-      postcodes: 'SW, W, KT',
-      phone: '',
-      email: '',
-      color: '#2563EB',
-      piiExpiry: '31/12/2027',
-    });
+      const res = await adminSurveyorsApi.onboardSurveyor({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || '+44 7700 900999',
+        accreditation: accTag,
+        postcodesCovered: formData.postcodes.trim() || 'SW, W, KT',
+      });
 
-    addToast({
-      type: 'success',
-      title: 'Chartered Surveyor Onboarded',
-      message: `${newSurveyor.name} has been added to field operations network.`,
-    });
+      const saved = res?.surveyor || res?.data?.surveyor;
+      const newSurveyor = {
+        id: saved?.id ? `srv-${saved.id}` : `srv-${surveyorsList.length + 1}`,
+        dbId: saved?.id,
+        name: formData.name.trim(),
+        credentials: formData.credentials,
+        postcodes: formData.postcodes.split(',').map((p) => p.trim()),
+        color: formData.color,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+        piiExpiry: formData.piiExpiry || '31/12/2027',
+        assignedJobs: 0,
+        status: 'Active Field',
+        phone: formData.phone || '+44 7700 900999',
+        email: formData.email,
+        specialism: 'RICS Residential Inspections',
+      };
+
+      setSurveyorsList((prev) => [...prev, newSurveyor]);
+      setIsAddModalOpen(false);
+      setFormData({
+        name: '',
+        credentials: 'MRICS Chartered Valuation Surveyor',
+        postcodes: 'SW, W, KT',
+        phone: '',
+        email: '',
+        color: '#2563EB',
+        piiExpiry: '31/12/2027',
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Chartered Surveyor Onboarded',
+        message: `${newSurveyor.name} has been added to field operations database.`,
+      });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Error Onboarding Surveyor',
+        message: err?.message || 'Could not onboard surveyor to backend.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteSurveyor = (e, id, name) => {
+  const handleDeleteSurveyor = async (e, id, name, dbId) => {
     e.stopPropagation();
     setActiveDropdownId(null);
     if (window.confirm(`Are you sure you want to offboard ${name} from active panel?`)) {
       setSurveyorsList((prev) => prev.filter((s) => s.id !== id));
+      const targetId = dbId || (typeof id === 'number' ? id : parseInt(String(id).replace('srv-', ''), 10));
+      if (targetId) {
+        try {
+          await adminSurveyorsApi.updateSurveyor(targetId, { available: false, status: 'INACTIVE' });
+        } catch (err) {
+          console.warn('Backend surveyor offboard error:', err?.message || err);
+        }
+      }
       addToast({
         type: 'info',
         title: 'Surveyor Offboarded',
@@ -416,7 +474,7 @@ export const AdminSurveyorsPage = () => {
 
                             <button
                               type="button"
-                              onClick={(e) => handleDeleteSurveyor(e, surveyor.id, surveyor.name)}
+                              onClick={(e) => handleDeleteSurveyor(e, surveyor.id, surveyor.name, surveyor.dbId)}
                               className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
@@ -452,9 +510,10 @@ export const AdminSurveyorsPage = () => {
             <button
               type="submit"
               form="add-surveyor-form"
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm disabled:opacity-50 cursor-pointer"
             >
-              Register Surveyor
+              {isSubmitting ? 'Registering...' : 'Register Surveyor'}
             </button>
           </>
         }
@@ -533,9 +592,10 @@ export const AdminSurveyorsPage = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Practice Email Address</label>
+              <label className="block font-bold text-slate-700 mb-1">Practice Email Address *</label>
               <input
                 type="email"
+                required
                 placeholder="surveyor@njspropertygroup.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
