@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendQuoteProposalEmail } from '../services/emailService.js';
 
 /**
  * Superadmin Menu 8: Quotations & Payments (UK 20% VAT, Invoicing, Stripe & BACS)
@@ -95,11 +96,17 @@ export const createQuote = async (req, res, next) => {
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + validDays);
 
+    let parsedLeadId = null;
+    if (leadId) {
+      const numLead = Number(leadId);
+      if (!isNaN(numLead)) parsedLeadId = numLead;
+    }
+
     const quote = await prisma.quote.create({
       data: {
         reference,
         jobId: jobId ? parseInt(jobId) : null,
-        leadId: leadId ? parseInt(leadId) : null,
+        leadId: parsedLeadId,
         baseFee: fee,
         vatRate,
         vatAmount,
@@ -110,7 +117,58 @@ export const createQuote = async (req, res, next) => {
       },
     });
 
-    return ApiResponse.created(res, { quote }, 'Quote issued with 20% UK VAT calculated');
+    // Also update lead status to QUOTE_SENT if lead exists
+    if (parsedLeadId) {
+      try {
+        await prisma.lead.update({
+          where: { id: parsedLeadId },
+          data: { status: 'QUOTE_SENT' },
+        });
+      } catch (lErr) {}
+    }
+
+    // Dispatch formal RICS quote proposal email via Resend
+    let recipientEmail = req.body.clientEmail;
+    let recipientName = req.body.clientName;
+    let propertyAddress = req.body.propertyAddress;
+    let surveyType = req.body.surveyType;
+
+    if (parsedLeadId && (!recipientEmail || !recipientName)) {
+      try {
+        const lead = await prisma.lead.findUnique({ where: { id: parsedLeadId } });
+        if (lead) {
+          recipientEmail = recipientEmail || lead.clientEmail;
+          recipientName = recipientName || lead.clientName;
+          propertyAddress = propertyAddress || lead.propertyAddress;
+          surveyType = surveyType || lead.serviceType;
+        }
+      } catch (err) {}
+    }
+
+    let emailSent = false;
+    if (recipientEmail) {
+      try {
+        const emailRes = await sendQuoteProposalEmail({
+          to: recipientEmail,
+          clientName: recipientName || 'Valued Client',
+          quoteAmount: totalAmount.toFixed(2),
+          surveyType: surveyType || 'RICS Level 2 Home Survey',
+          propertyAddress: propertyAddress || 'Subject Property',
+          quoteLink: req.body.quoteLink || `${process.env.CLIENT_URL?.split(',')[0] || 'https://property-group.netlify.app'}/contact#quote`,
+        });
+        emailSent = Boolean(emailRes?.success);
+      } catch (emailErr) {
+        console.warn('Resend quotation email warning:', emailErr.message);
+      }
+    }
+
+    return ApiResponse.created(
+      res, 
+      { quote, emailSent, recipientEmail }, 
+      emailSent 
+        ? `Quote issued and formal proposal emailed to ${recipientEmail}` 
+        : 'Quote issued with 20% UK VAT calculated'
+    );
   } catch (error) {
     next(error);
   }

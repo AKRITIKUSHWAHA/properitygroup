@@ -5,8 +5,8 @@ const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
 const isResendConfigured = Boolean(resendApiKey && resendApiKey.startsWith('re_') && resendApiKey.length >= 12);
 
 const resend = isResendConfigured ? new Resend(resendApiKey) : null;
-const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <operations@njspropertygroup.co.uk>';
-const ENQUIRY_INBOX = env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
 
 const escapeHtml = (value = '') =>
   String(value)

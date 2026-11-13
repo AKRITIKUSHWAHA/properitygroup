@@ -27,6 +27,7 @@ import {
 import { useToast } from '../ToastContext';
 import { useQuotes } from '../../mock/quotes';
 import { useClientProfiles } from '../../mock/clientProfiles';
+import { adminQuotationsAndPaymentsApi } from '../../api/adminApi';
 
 // Standard recommended RICS guide fees (ex. VAT)
 const STANDARD_FEES = {
@@ -160,6 +161,22 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
       subject: `Quotation Sent (${quoteId})`,
       notes: `Dispatched formal fee proposal of £${totalAmount.toFixed(2)} inc. VAT for ${surveyType} at ${lead.property}. Lead marked as Quoted (Deal Live). Quote ref: ${quoteId}.`,
       tags: ['Quote Sent', 'Quoted', lead.source],
+    });
+
+    // Call backend API to persist quote in MySQL and dispatch live Resend proposal email
+    adminQuotationsAndPaymentsApi.createQuote({
+      leadId: lead.dbId || lead.id,
+      baseFee: currentBaseFee,
+      clientEmail: lead.customerEmail,
+      clientName: lead.customerName,
+      propertyAddress: lead.property,
+      surveyType: surveyType,
+    }).then((res) => {
+      if (res?.data?.emailSent || res?.emailSent) {
+        console.log(`[Resend Live] Quote proposal emailed to ${lead.customerEmail}`);
+      }
+    }).catch((err) => {
+      console.warn('Backend quote creation warning:', err.message);
     });
 
     // Callback to update lead status to 'Quoted' in parent
