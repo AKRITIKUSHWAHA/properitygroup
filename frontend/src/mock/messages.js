@@ -58,7 +58,7 @@ export const useMessages = () => {
   }, [conversations]);
 
   // Send a message to a specific conversation
-  const sendMessage = (conversationId, text, senderName, role = 'admin') => {
+  const sendMessage = (conversationId, text, senderName, role = 'admin', syncToRemote = true) => {
     const timeString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
     const newMsg = {
       id: Date.now(),
@@ -69,11 +69,18 @@ export const useMessages = () => {
       readByCustomer: role === 'customer',
     };
 
+    let updatedList = null;
+
     setConversations((prev) => {
       let matched = false;
       const updated = prev.map((c) => {
         if (c.id === conversationId || c.jobId === conversationId || c.clientEmail === conversationId) {
           matched = true;
+          // Guard against duplicate insertion (e.g. React StrictMode running updater twice)
+          const isDuplicate = (c.messages || []).some(
+            (m) => m.text === text && m.role === role && Math.abs((m.id || 0) - newMsg.id) < 2000
+          );
+          if (isDuplicate) return c;
           return {
             ...c,
             unreadAdmin: role === 'client' ? (c.unreadAdmin || 0) + 1 : 0,
@@ -103,14 +110,22 @@ export const useMessages = () => {
         updated.push(newConv);
       }
 
+      updatedList = updated;
+      return updated;
+    });
+
+    // Side effects executed ONCE outside the setState updater
+    if (updatedList) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updatedList }));
       } catch (err) {
         console.warn(err);
       }
+    }
 
-      // Sync to backend messages API
+    // Sync to backend messages API only if requested and not handled directly by the caller
+    if (syncToRemote) {
       const token = localStorage.getItem('property_group_auth_token');
       if (token) {
         fetch('/api/v1/messages', {
@@ -126,9 +141,7 @@ export const useMessages = () => {
           }),
         }).catch(() => {});
       }
-
-      return updated;
-    });
+    }
 
     return newMsg;
   };

@@ -43,7 +43,17 @@ export const getMessageThreads = async (req, res, next) => {
       }
 
       const thread = threadMap.get(msg.conversationId);
-      thread.messages.unshift(msg);
+      // Deduplicate messages with identical content and role created within 3 seconds of each other
+      const isDuplicate = thread.messages.some(
+        (existing) =>
+          existing.id === msg.id ||
+          (existing.content === msg.content &&
+            existing.role === msg.role &&
+            Math.abs(new Date(existing.createdAt).getTime() - new Date(msg.createdAt).getTime()) < 3000)
+      );
+      if (!isDuplicate) {
+        thread.messages.unshift(msg);
+      }
       if (!msg.readByAdmin && msg.role === 'customer') thread.unreadAdmin += 1;
       if (!msg.readByCustomer && msg.role === 'admin') thread.unreadCustomer += 1;
     }
@@ -93,13 +103,26 @@ export const getThreadMessages = async (req, res, next) => {
       orderBy: { createdAt: 'asc' },
     });
 
+    // Deduplicate any rapid identical duplicate messages
+    const deduplicated = [];
+    for (const m of messages) {
+      const isDup = deduplicated.some(
+        (existing) =>
+          existing.id === m.id ||
+          (existing.content === m.content &&
+            existing.role === m.role &&
+            Math.abs(new Date(existing.createdAt).getTime() - new Date(m.createdAt).getTime()) < 3000)
+      );
+      if (!isDup) deduplicated.push(m);
+    }
+
     // Mark as read for admin
     await prisma.message.updateMany({
       where: { conversationId, readByAdmin: false },
       data: { readByAdmin: true },
     });
 
-    return ApiResponse.success(res, { messages, total: messages.length });
+    return ApiResponse.success(res, { messages: deduplicated, total: deduplicated.length });
   } catch (error) {
     next(error);
   }
@@ -111,6 +134,25 @@ export const sendAdminMessage = async (req, res, next) => {
 
     if (!conversationId || !content?.trim()) {
       throw ApiError.badRequest('Conversation ID and message text are required');
+    }
+
+    const trimmedContent = content.trim();
+
+    // Idempotency guard: prevent duplicate submissions created within 3 seconds
+    const recentDuplicate = await prisma.message.findFirst({
+      where: {
+        conversationId,
+        content: trimmedContent,
+        role: 'admin',
+        createdAt: {
+          gte: new Date(Date.now() - 3000),
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (recentDuplicate) {
+      return ApiResponse.success(res, { message: recentDuplicate }, 'Reply already dispatched');
     }
 
     let numericJobId = null;

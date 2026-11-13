@@ -51,6 +51,33 @@ export const AdminMessagesPage = () => {
       const rawThreads = res?.threads || res?.data?.threads || [];
       if (Array.isArray(rawThreads) && rawThreads.length > 0) {
         const mapped = rawThreads.map((t) => {
+          const rawMsgs = (t.messages || []).map((m) => {
+            const created = m.createdAt ? new Date(m.createdAt) : new Date();
+            const timeString =
+              m.time ||
+              `${created.toLocaleDateString('en-GB')}, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+            return {
+              id: m.id,
+              sender:
+                m.sender ||
+                m.senderName ||
+                (m.role === 'admin' ? 'Alexander Sterling (Admin)' : t.clientName),
+              role: m.role || 'customer',
+              text: m.text || m.content || '',
+              time: timeString,
+              readByCustomer: Boolean(m.readByCustomer),
+            };
+          });
+
+          // Deduplicate any repeated messages
+          const uniqueMsgs = [];
+          for (const m of rawMsgs) {
+            const isDup = uniqueMsgs.some(
+              (u) => u.id === m.id || (u.text === m.text && u.role === m.role && u.time === m.time)
+            );
+            if (!isDup) uniqueMsgs.push(m);
+          }
+
           return {
             id: t.conversationId,
             jobId: t.jobId || 'General Inquiry',
@@ -60,23 +87,7 @@ export const AdminMessagesPage = () => {
             property: t.property || 'Direct Portal Query',
             unreadAdmin: t.unreadAdmin || 0,
             unreadCustomer: t.unreadCustomer || 0,
-            messages: (t.messages || []).map((m) => {
-              const created = m.createdAt ? new Date(m.createdAt) : new Date();
-              const timeString =
-                m.time ||
-                `${created.toLocaleDateString('en-GB')}, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-              return {
-                id: m.id,
-                sender:
-                  m.sender ||
-                  m.senderName ||
-                  (m.role === 'admin' ? 'Alexander Sterling (Admin)' : t.clientName),
-                role: m.role || 'customer',
-                text: m.text || m.content || '',
-                time: timeString,
-                readByCustomer: Boolean(m.readByCustomer),
-              };
-            }),
+            messages: uniqueMsgs,
           };
         });
         setApiThreads(mapped);
@@ -212,6 +223,9 @@ export const AdminMessagesPage = () => {
     setApiThreads((prev) =>
       prev.map((t) => {
         if (t.id === activeConv.id) {
+          if (t.messages?.some((m) => m.id === tempId || (m.text === messageContent && m.role === 'admin' && m.time === timeString))) {
+            return t;
+          }
           return {
             ...t,
             unreadCustomer: (t.unreadCustomer || 0) + 1,
@@ -222,13 +236,14 @@ export const AdminMessagesPage = () => {
       })
     );
 
-    // Sync with mock/localStorage for cross-tab reactivity
+    // Sync with mock/localStorage for cross-tab reactivity (skip backend fetch since adminMessagesApi handles it)
     try {
       sendMessage(
         activeConv.id,
         messageContent,
         'Alexander Sterling (Admin)',
-        'admin'
+        'admin',
+        false
       );
     } catch {
       // ignore
@@ -246,10 +261,13 @@ export const AdminMessagesPage = () => {
         setApiThreads((prev) =>
           prev.map((t) => {
             if (t.id === activeConv.id) {
+              const updated = (t.messages || []).map((m) =>
+                m.id === tempId ? { ...m, id: savedMsg.id, readByCustomer: Boolean(savedMsg.readByCustomer) } : m
+              );
               return {
                 ...t,
-                messages: (t.messages || []).map((m) =>
-                  m.id === tempId ? { ...m, id: savedMsg.id, readByCustomer: Boolean(savedMsg.readByCustomer) } : m
+                messages: updated.filter(
+                  (m, idx, arr) => arr.findIndex((x) => x.id === m.id) === idx
                 ),
               };
             }
@@ -554,7 +572,16 @@ export const AdminMessagesPage = () => {
                 </span>
               </div>
 
-              {activeConv.messages?.map((m) => {
+              {activeConv.messages
+                ?.filter(
+                  (m, idx, arr) =>
+                    arr.findIndex(
+                      (x) =>
+                        x.id === m.id ||
+                        (x.text === m.text && x.role === m.role && x.time === m.time)
+                    ) === idx
+                )
+                .map((m) => {
                 const isAdmin = m.role === 'admin';
                 return (
                   <div
