@@ -11,7 +11,10 @@ import {
   Sparkles,
   ArrowLeft,
   X,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
+import { PageHeader } from '../../components/PageHeader';
 import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
 import { adminMessagesApi } from '../../api/adminApi';
@@ -253,15 +256,6 @@ export const AdminMessagesPage = () => {
     }
   };
 
-  // Lock body scroll while in full-bleed messages
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, []);
-
   const handleApplyQuickResponse = (text) => {
     setReplyText(text);
   };
@@ -275,13 +269,88 @@ export const AdminMessagesPage = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col md:flex-row bg-white overflow-hidden select-text">
-      {/* Left Column: Conversation Directory (Full Height, Edge-to-Edge) */}
-      <div
-        className={`w-full md:w-80 lg:w-[340px] xl:w-[380px] shrink-0 border-r border-slate-200 bg-white flex flex-col h-full min-h-0 ${
-          mobileView === 'chat' ? 'hidden md:flex' : 'flex'
-        }`}
-      >
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      {/* Page Header */}
+      <PageHeader
+        title="Messages Inbox & Client Communications"
+        subtitle="Manage real-time two-way client communications, survey inspection queries, and customer portal threads."
+        breadcrumb={['Admin', 'Messages']}
+      />
+
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        {/* Card 1: Active Customer Chats */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Customer Chats
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+              <MessageSquare className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
+              {displayConversations.length}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Threads</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            London &amp; Home Counties Inbound
+          </p>
+        </div>
+
+        {/* Card 2: Unread Queries */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Unread Queries
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
+              {totalUnreadAdmin}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Pending Review</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            Client Portal Action Queue
+          </p>
+        </div>
+
+        {/* Card 3: Live Portal Gateway */}
+        <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Portal Gateway
+            </span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-700">
+              100%
+            </span>
+            <span className="text-xs font-semibold text-slate-500">Operational</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
+            Two-Way Client Sync Active
+          </p>
+        </div>
+      </div>
+
+      {/* Main Chat Application Card (Separated from sidebar with rounded borders & soft shadow) */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden h-[620px] lg:h-[680px] xl:h-[720px] flex flex-col md:flex-row select-text">
+        {/* Left Column: Conversation Directory */}
+        <div
+          className={`w-full md:w-80 lg:w-[340px] xl:w-[360px] shrink-0 border-r border-slate-200 bg-white flex flex-col h-full min-h-0 ${
+            mobileView === 'chat' ? 'hidden md:flex' : 'flex'
+          }`}
+        >
         {/* Directory Top Header Bar */}
         <div className="p-3.5 bg-white border-b border-slate-200 space-y-2.5 shrink-0">
           <div className="flex items-center justify-between">
@@ -618,5 +687,6 @@ export const AdminMessagesPage = () => {
         )}
       </div>
     </div>
-  );
+  </div>
+);
 };
