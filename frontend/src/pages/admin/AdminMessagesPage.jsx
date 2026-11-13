@@ -88,7 +88,18 @@ export const AdminMessagesPage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const messagesEndRef = useRef(null);
+  const chatMessagesRef = useRef(null);
+
+  // Ensure body scroll is unlocked and page is positioned cleanly at top
+  useEffect(() => {
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, []);
 
   const displayConversations = apiThreads.length > 0 ? apiThreads : conversations;
 
@@ -124,10 +135,10 @@ export const AdminMessagesPage = () => {
     displayConversations.find((c) => c.id === selectedConvId || c.jobId === selectedConvId) ||
     displayConversations[0];
 
-  // Auto-scroll chat to bottom whenever messages change or conversation switches
+  // Auto-scroll ONLY the chat messages container to bottom without shifting the parent window
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [activeConv?.messages?.length, selectedConvId]);
 
@@ -344,7 +355,7 @@ export const AdminMessagesPage = () => {
       </div>
 
       {/* Main Chat Application Card (Separated from sidebar with rounded borders & soft shadow) */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden h-[620px] lg:h-[680px] xl:h-[720px] flex flex-col md:flex-row select-text">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden h-[560px] sm:h-[600px] lg:h-[640px] flex flex-col md:flex-row select-text">
         {/* Left Column: Conversation Directory */}
         <div
           className={`w-full md:w-80 lg:w-[340px] xl:w-[360px] shrink-0 border-r border-slate-200 bg-white flex flex-col h-full min-h-0 ${
@@ -426,8 +437,8 @@ export const AdminMessagesPage = () => {
           </div>
         </div>
 
-        {/* Conversation List (Scrolls independently with isolated overscroll) */}
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0 bg-slate-50/40 overscroll-contain">
+        {/* Conversation List */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 min-h-0 bg-slate-50/40">
           {filteredConversations.length === 0 ? (
             <div className="p-8 text-center text-slate-400">
               <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -558,7 +569,10 @@ export const AdminMessagesPage = () => {
             </div>
 
             {/* Message Thread Body (Real Chat Canvas - ONLY this container scrolls) */}
-            <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/70 min-h-0 overscroll-contain">
+            <div
+              ref={chatMessagesRef}
+              className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 bg-slate-50/70 min-h-0"
+            >
               {/* Channel Header Divider */}
               <div className="flex items-center justify-center my-1">
                 <div className="px-3.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider shadow-2xs flex items-center gap-2">
@@ -611,7 +625,6 @@ export const AdminMessagesPage = () => {
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Quick Response Suggestions Bar */}
