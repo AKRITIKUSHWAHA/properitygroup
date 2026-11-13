@@ -8,14 +8,10 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Zap,
   Server,
   ShieldCheck,
   Send,
-  AlertCircle,
   KeyRound,
-  Check,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -53,17 +49,6 @@ export const AdminSettingsPage = () => {
 
   const [activeTab, setActiveTab] = useState('smtp');
 
-  // Sync settings from backend API
-  useEffect(() => {
-    adminSettingsApi.getSettings()
-      .then((res) => {
-        if (res?.data) {
-          // Live settings loaded
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   // Load SMTP config from localStorage or defaults
   const [smtpConfig, setSmtpConfig] = useState(() => {
     try {
@@ -81,14 +66,58 @@ export const AdminSettingsPage = () => {
   const [isSendingTest, setIsSendingTest] = useState(false);
 
   // Survey Types & Pricing Rate Card
-  const [surveyTypes, setSurveyTypes] = useState([
-    { id: '1', name: 'RICS Level 2 Home Survey', baseFee: 650, duration: '3.0 Hours', scope: 'Standard residential properties in reasonable condition' },
-    { id: '2', name: 'RICS Level 3 Building Survey', baseFee: 1450, duration: '5.0 Hours', scope: 'Period, listed, altered, or dilapidated structures' },
-    { id: '3', name: 'New Build Snagging Survey', baseFee: 495, duration: '4.0 Hours', scope: 'Pre-completion NHQB builder defect inspection' },
-    { id: '4', name: 'Residential Red Book Valuation', baseFee: 550, duration: '2.0 Hours', scope: 'Mortgage lending, probate, capital gains tax' },
-    { id: '5', name: 'Specialist Damp & Defect Survey', baseFee: 920, duration: '3.5 Hours', scope: 'Moisture mapping, timber decay, rising damp' },
-    { id: '6', name: 'Expert Witness (CPR Part 35)', baseFee: 2400, duration: '8.0 Hours', scope: 'Court litigation, boundary disputes, disrepair claims' },
-  ]);
+  const [surveyTypes, setSurveyTypes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('propertygroup_rate_cards');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return [
+      { id: '1', name: 'RICS Level 2 Home Survey', baseFee: 650, duration: '3.0 Hours', scope: 'Standard residential properties in reasonable condition' },
+      { id: '2', name: 'RICS Level 3 Building Survey', baseFee: 1450, duration: '5.0 Hours', scope: 'Period, listed, altered, or dilapidated structures' },
+      { id: '3', name: 'New Build Snagging Survey', baseFee: 495, duration: '4.0 Hours', scope: 'Pre-completion NHQB builder defect inspection' },
+      { id: '4', name: 'Residential Red Book Valuation', baseFee: 550, duration: '2.0 Hours', scope: 'Mortgage lending, probate, capital gains tax' },
+      { id: '5', name: 'Specialist Damp & Defect Survey', baseFee: 920, duration: '3.5 Hours', scope: 'Moisture mapping, timber decay, rising damp' },
+      { id: '6', name: 'Expert Witness (CPR Part 35)', baseFee: 2400, duration: '8.0 Hours', scope: 'Court litigation, boundary disputes, disrepair claims' },
+    ];
+  });
+
+  // Sync settings from backend API
+  useEffect(() => {
+    adminSettingsApi.getSettings()
+      .then((res) => {
+        const s = res?.data?.data?.settings || res?.data?.settings;
+        if (s) {
+          setSmtpConfig((prev) => ({
+            ...prev,
+            provider: s.smtp_provider || prev.provider,
+            host: s.smtp_host || prev.host,
+            port: s.smtp_port || prev.port,
+            encryption: s.smtp_encryption || prev.encryption,
+            username: s.smtp_username || prev.username,
+            fromName: s.smtp_from_name || s.practice_name || prev.fromName,
+            fromEmail: s.smtp_from_email || s.operations_email || prev.fromEmail,
+            replyTo: s.smtp_reply_to || s.operations_email || prev.replyTo,
+            footerText: s.smtp_footer_text || prev.footerText,
+            status: s.smtp_status || prev.status,
+            lastVerified: s.smtp_last_verified || prev.lastVerified,
+          }));
+
+          if (s.rate_cards_json) {
+            try {
+              const parsed = JSON.parse(s.rate_cards_json);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setSurveyTypes(parsed);
+              }
+            } catch (err) {
+              console.warn('Error parsing rate cards json:', err);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const tabs = [
     { id: 'smtp', label: 'SMTP & Mail Server' },
@@ -137,6 +166,25 @@ export const AdminSettingsPage = () => {
       console.error(err);
     }
 
+    // Sync with backend API
+    adminSettingsApi
+      .updateSettings({
+        smtp_provider: smtpConfig.provider,
+        smtp_host: smtpConfig.host,
+        smtp_port: smtpConfig.port,
+        smtp_encryption: smtpConfig.encryption,
+        smtp_username: smtpConfig.username,
+        smtp_from_name: smtpConfig.fromName,
+        smtp_from_email: smtpConfig.fromEmail,
+        smtp_reply_to: smtpConfig.replyTo,
+        smtp_footer_text: smtpConfig.footerText,
+        smtp_status: smtpConfig.status,
+        smtp_last_verified: smtpConfig.lastVerified,
+      })
+      .catch((err) => {
+        console.warn('Backend updateSettings non-blocking:', err);
+      });
+
     addToast({
       type: 'success',
       title: 'SMTP Configuration Saved',
@@ -161,19 +209,30 @@ export const AdminSettingsPage = () => {
     setTimeout(() => {
       setIsSendingTest(false);
       setIsTestModalOpen(false);
-      setSmtpConfig((prev) => {
-        const updated = {
-          ...prev,
-          status: 'Verified',
-          lastVerified: new Date().toLocaleDateString('en-GB') + ', ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-        };
-        try {
-          localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(updated));
-        } catch (err) {
-          console.error(err);
-        }
-        return updated;
-      });
+      const verifiedTimestamp =
+        new Date().toLocaleDateString('en-GB') +
+        ', ' +
+        new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      const updated = {
+        ...smtpConfig,
+        status: 'Verified',
+        lastVerified: verifiedTimestamp,
+      };
+
+      try {
+        localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(updated));
+      } catch (err) {
+        console.error(err);
+      }
+      setSmtpConfig(updated);
+
+      adminSettingsApi
+        .updateSettings({
+          smtp_status: 'Verified',
+          smtp_last_verified: verifiedTimestamp,
+        })
+        .catch(() => {});
 
       addToast({
         type: 'success',
@@ -191,6 +250,20 @@ export const AdminSettingsPage = () => {
   };
 
   const handleSavePricing = () => {
+    try {
+      localStorage.setItem('propertygroup_rate_cards', JSON.stringify(surveyTypes));
+    } catch (err) {
+      console.error(err);
+    }
+
+    adminSettingsApi
+      .updateSettings({
+        rate_cards_json: JSON.stringify(surveyTypes),
+      })
+      .catch((err) => {
+        console.warn('Backend updateSettings pricing non-blocking:', err);
+      });
+
     addToast({
       type: 'success',
       title: 'Pricing Rate Card Saved',
@@ -473,6 +546,21 @@ export const AdminSettingsPage = () => {
               onClick={() => {
                 setSmtpConfig(DEFAULT_SMTP);
                 localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(DEFAULT_SMTP));
+                adminSettingsApi
+                  .updateSettings({
+                    smtp_provider: DEFAULT_SMTP.provider,
+                    smtp_host: DEFAULT_SMTP.host,
+                    smtp_port: DEFAULT_SMTP.port,
+                    smtp_encryption: DEFAULT_SMTP.encryption,
+                    smtp_username: DEFAULT_SMTP.username,
+                    smtp_from_name: DEFAULT_SMTP.fromName,
+                    smtp_from_email: DEFAULT_SMTP.fromEmail,
+                    smtp_reply_to: DEFAULT_SMTP.replyTo,
+                    smtp_footer_text: DEFAULT_SMTP.footerText,
+                    smtp_status: DEFAULT_SMTP.status,
+                    smtp_last_verified: DEFAULT_SMTP.lastVerified,
+                  })
+                  .catch(() => {});
                 addToast({
                   type: 'info',
                   title: 'Default Configuration Restored',
