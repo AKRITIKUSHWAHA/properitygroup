@@ -1,26 +1,19 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Users,
   Search,
   Plus,
-  Shield,
-  UserCheck,
-  UserX,
-  Mail,
-  Building,
-  Key,
   CheckCircle2,
   Lock,
   PhoneCall,
   AlertTriangle,
   Eye,
   EyeOff,
-  ShieldAlert,
+  Pencil,
   ShieldCheck,
   Sliders,
   Trash2,
-  MoreVertical,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -32,92 +25,8 @@ import { useClientProfiles } from '../../mock/clientProfiles';
 import { RolePermissionsManager } from '../../components/admin/RolePermissionsManager';
 import { adminUsersAndRolesApi } from '../../api/adminApi';
 
-// 3-Dot Action Menu Component for Table Rows
-const UserRowActions = ({ row, onSelectClientModal, onDeleteUser }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
-  const isPrimaryAdmin = row.id === 'USR-01' || row.email === 'admin@demo.com';
+// User Actions Helper Functions and UI state
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  return (
-    <div className="relative inline-block text-left" ref={menuRef}>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
-        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
-        title="More Actions"
-        aria-label="User actions"
-      >
-        <MoreVertical className="w-4 h-4" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-          {row.role === 'customer' && (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  onSelectClientModal(row.email, 'calls');
-                }}
-                className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
-              >
-                <PhoneCall className="w-3.5 h-3.5 text-[#2563EB]" />
-                <span>Call Notes</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  onSelectClientModal(row.email, 'complaints');
-                }}
-                className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span>Complaints</span>
-              </button>
-              <div className="h-px bg-slate-100 my-1" />
-            </>
-          )}
-
-          {!isPrimaryAdmin ? (
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                onDeleteUser(row.id, row.name);
-              }}
-              className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete User</span>
-            </button>
-          ) : (
-            <div className="px-3.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left">
-              Primary Admin
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 export const AdminUsersPage = () => {
   const { addToast } = useToast();
@@ -292,8 +201,77 @@ export const AdminUsersPage = () => {
     }
   };
 
-  const handleDeleteUser = (userId, userName) => {
-    if (userId === 'USR-01' || userName === 'Alexander Sterling') {
+  const [viewingUser, setViewingUser] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    role: 'surveyor',
+    org: '',
+    status: 'Active',
+  });
+
+  const handleViewUser = (user) => {
+    setViewingUser(user);
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setEditFormData({
+      name: user.name,
+      role: user.role,
+      org: user.org,
+      status: user.status || 'Active',
+    });
+  };
+
+  const handleSaveEditUser = async (e) => {
+    e.preventDefault();
+    if (!editFormData.name.trim()) return;
+
+    const roleMap = {
+      super_admin: 'Admin',
+      surveyor: 'Surveyor',
+      customer: 'Customer',
+      partner: 'Estate Agent Partner',
+    };
+
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === editingUser.id
+          ? {
+              ...u,
+              name: editFormData.name.trim(),
+              role: editFormData.role,
+              roleLabel: roleMap[editFormData.role] || u.roleLabel,
+              org: editFormData.org.trim() || u.org,
+              status: editFormData.status,
+            }
+          : u
+      )
+    );
+
+    if (typeof editingUser.id === 'number' || /^\d+$/.test(editingUser.id)) {
+      try {
+        await adminUsersAndRolesApi.updateUser(editingUser.id, {
+          name: editFormData.name.trim(),
+          role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
+          status: editFormData.status.toUpperCase(),
+        });
+      } catch (err) {
+        console.warn('Backend update error:', err?.message || err);
+      }
+    }
+
+    setEditingUser(null);
+    addToast({
+      type: 'success',
+      title: 'User Profile Updated',
+      message: `${editFormData.name} has been successfully updated.`,
+    });
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (userId === 'USR-01' || userName === 'Alexander Sterling' || userId === 6) {
       addToast({
         type: 'warning',
         title: 'Action Protected',
@@ -301,7 +279,17 @@ export const AdminUsersPage = () => {
       });
       return;
     }
+
     setUsers((prev) => prev.filter((u) => u.id !== userId));
+
+    if (typeof userId === 'number' || /^\d+$/.test(userId)) {
+      try {
+        await adminUsersAndRolesApi.deleteUser(userId);
+      } catch (err) {
+        console.warn('Backend delete error:', err?.message || err);
+      }
+    }
+
     addToast({
       type: 'info',
       title: 'User Removed',
@@ -404,14 +392,41 @@ export const AdminUsersPage = () => {
       sortable: false,
       className: 'text-right whitespace-nowrap',
       render: (_, row) => (
-        <UserRowActions
-          row={row}
-          onSelectClientModal={(email, tab) => {
-            setSelectedClientEmail(email);
-            setClientModalTab(tab);
-          }}
-          onDeleteUser={handleDeleteUser}
-        />
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {/* 1. View User */}
+          <button
+            type="button"
+            onClick={() => handleViewUser(row)}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+            title="View User Details"
+            aria-label="View user"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+
+          {/* 2. Edit User */}
+          <button
+            type="button"
+            onClick={() => handleEditUser(row)}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+            title="Edit User"
+            aria-label="Edit user"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+
+          {/* 3. Delete User */}
+          <button
+            type="button"
+            onClick={() => handleDeleteUser(row.id, row.name)}
+            disabled={row.id === 'USR-01' || row.email === 'admin@demo.com'}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors cursor-pointer"
+            title={row.id === 'USR-01' || row.email === 'admin@demo.com' ? 'Primary admin cannot be deleted' : 'Delete User'}
+            aria-label="Delete user"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -624,6 +639,179 @@ export const AdminUsersPage = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* View User Details Modal */}
+      <Modal
+        isOpen={!!viewingUser}
+        onClose={() => setViewingUser(null)}
+        title="Platform User Profile"
+        subtitle={viewingUser?.email || ''}
+        maxWidth="max-w-md"
+        footer={
+          <button
+            onClick={() => setViewingUser(null)}
+            className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+          >
+            Close
+          </button>
+        }
+      >
+        {viewingUser && (
+          <div className="space-y-4 text-xs">
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-[#0B1F4D] text-white font-bold flex items-center justify-center text-sm">
+                {(viewingUser.name || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-sm text-slate-900 truncate">{viewingUser.name}</div>
+                <div className="text-slate-500 text-xs truncate">{viewingUser.email}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Role</span>
+                <span className="font-bold text-slate-800">{viewingUser.roleLabel || viewingUser.role}</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Status</span>
+                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                  {viewingUser.status || 'Active'}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Organisation</span>
+                <span className="font-semibold text-slate-800 truncate block">{viewingUser.org || 'NJS Property Group'}</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Last Login</span>
+                <span className="font-semibold text-slate-600 block">{viewingUser.lastLogin || 'Never'}</span>
+              </div>
+            </div>
+
+            {viewingUser.role === 'customer' && (
+              <div className="pt-2 border-t border-slate-100 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const email = viewingUser.email;
+                    setViewingUser(null);
+                    setSelectedClientEmail(email);
+                    setClientModalTab('calls');
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors cursor-pointer"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span>Call Notes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const email = viewingUser.email;
+                    setViewingUser(null);
+                    setSelectedClientEmail(email);
+                    setClientModalTab('complaints');
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors cursor-pointer"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Complaints</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title="Edit Platform User"
+        subtitle={`Update details for ${editingUser?.name || 'user'}`}
+        maxWidth="max-w-md"
+        footer={
+          <>
+            <button
+              onClick={() => setEditingUser(null)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-user-form"
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+            >
+              Save Changes
+            </button>
+          </>
+        }
+      >
+        {editingUser && (
+          <form id="edit-user-form" onSubmit={handleSaveEditUser} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Full Legal Name *</label>
+              <input
+                type="text"
+                required
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                disabled
+                value={editingUser.email}
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Email cannot be changed directly.</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Role *</label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+                >
+                  <option value="super_admin">Admin</option>
+                  <option value="surveyor">Surveyor</option>
+                  <option value="customer">Customer</option>
+                  <option value="partner">Estate Agent / Referral Partner</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Status</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Organisation</label>
+              <input
+                type="text"
+                value={editFormData.org}
+                onChange={(e) => setEditFormData({ ...editFormData, org: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
+              />
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Client Profile, Call Notes & Complaints Modal */}
