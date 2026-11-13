@@ -27,33 +27,41 @@ import { useEffect } from 'react';
 
 export const AdminCompaniesPage = () => {
   const { addToast } = useToast();
+  const [companies, setCompanies] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync companies from backend API
   useEffect(() => {
+    let isMounted = true;
     adminCompaniesApi.getCompanies()
       .then((res) => {
-        if (res?.data && res.data.length > 0) {
-          setCompanies(res.data.map((c) => ({
+        const raw = res?.companies || res?.data?.companies || (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []));
+        if (isMounted && raw && raw.length > 0) {
+          setCompanies(raw.map((c) => ({
             id: `CMP-${String(c.id).padStart(2, '0')}`,
             dbId: c.id,
             name: c.name,
-            code: c.name.slice(0, 2).toUpperCase(),
+            code: (c.name || 'AG').slice(0, 2).toUpperCase(),
             branch: c.branchName || 'London HQ',
             address: c.address || 'London, UK',
             contact: c.contactName || 'Branch Contact',
             role: 'Partner Contact & Keyholder',
             phone: c.contactPhone || '+44 20 7946 0888',
             email: c.contactEmail || 'office@partner.com',
-            leads: c.totalInstructions || 20,
-            status: c.status === 'ACTIVE' ? 'Active Partner' : c.status,
+            leads: c.totalInstructions || c._count?.jobs || 0,
+            status: c.status === 'ACTIVE' ? 'Active Partner' : (c.status || 'Active Partner'),
             keyHolding: c.keyCollectionProtocol || 'Key protocol on file',
           })));
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch((err) => {
+        console.warn('Failed to load companies from backend:', err?.message || err);
+      });
 
-  const [companies, setCompanies] = useState([]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -83,50 +91,81 @@ export const AdminCompaniesPage = () => {
     });
   };
 
-  const handleAddCompany = (e) => {
+  const handleAddCompany = async (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.branch.trim()) return;
 
-    const initials = formData.name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
+    try {
+      setIsSubmitting(true);
+      const res = await adminCompaniesApi.createCompany({
+        name: formData.name.trim(),
+        branchName: formData.branch.trim(),
+        address: formData.address.trim(),
+        contactName: formData.contact.trim(),
+        contactEmail: formData.email.trim(),
+        contactPhone: formData.phone.trim(),
+        keyCollectionProtocol: formData.keyHolding.trim(),
+      });
 
-    const newCompany = {
-      id: `CMP-${String(companies.length + 1).padStart(2, '0')}`,
-      code: initials || 'AG',
-      ...formData,
-      leads: 0,
-      status: 'Active Partner',
-    };
+      const saved = res?.company || res?.data?.company;
+      const initials = formData.name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
 
-    setCompanies((prev) => [newCompany, ...prev]);
-    setIsAddModalOpen(false);
-    setFormData({
-      name: '',
-      branch: '',
-      address: '',
-      contact: '',
-      role: 'Branch Manager',
-      phone: '',
-      email: '',
-      keyHolding: '',
-    });
+      const newCompany = {
+        id: saved?.id ? `CMP-${String(saved.id).padStart(2, '0')}` : `CMP-${String(companies.length + 1).padStart(2, '0')}`,
+        dbId: saved?.id,
+        code: initials || 'AG',
+        ...formData,
+        leads: saved?.totalInstructions || 0,
+        status: 'Active Partner',
+      };
 
-    addToast({
-      type: 'success',
-      title: 'Partner Branch Registered',
-      message: `${newCompany.name} (${newCompany.branch}) has been added to the directory.`,
-    });
+      setCompanies((prev) => [newCompany, ...prev]);
+      setIsAddModalOpen(false);
+      setFormData({
+        name: '',
+        branch: '',
+        address: '',
+        contact: '',
+        role: 'Branch Manager',
+        phone: '',
+        email: '',
+        keyHolding: '',
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Partner Branch Registered',
+        message: `${newCompany.name} (${newCompany.branch}) has been saved to database.`,
+      });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Error Saving Partner',
+        message: err?.message || 'Could not save company branch to database.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteCompany = (e, id, name) => {
+  const handleDeleteCompany = async (e, id, name, dbId) => {
     e.stopPropagation();
     setActiveDropdownId(null);
     if (window.confirm(`Are you sure you want to remove ${name} from partner panels?`)) {
       setCompanies((prev) => prev.filter((c) => c.id !== id));
+      const targetId = dbId || (typeof id === 'number' ? id : parseInt(String(id).replace('CMP-', ''), 10));
+      if (targetId) {
+        try {
+          await adminCompaniesApi.deleteCompany(targetId);
+        } catch (err) {
+          console.warn('Backend delete error:', err?.message || err);
+        }
+      }
       addToast({
         type: 'info',
         title: 'Partner Removed',
@@ -405,7 +444,7 @@ export const AdminCompaniesPage = () => {
 
                             <button
                               type="button"
-                              onClick={(e) => handleDeleteCompany(e, company.id, company.name)}
+                              onClick={(e) => handleDeleteCompany(e, company.id, company.name, company.dbId)}
                               className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
@@ -441,9 +480,10 @@ export const AdminCompaniesPage = () => {
             <button
               type="submit"
               form="add-company-form"
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm disabled:opacity-50 cursor-pointer"
             >
-              Save Partner Branch
+              {isSubmitting ? 'Saving...' : 'Save Partner Branch'}
             </button>
           </>
         }
