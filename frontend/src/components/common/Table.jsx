@@ -205,7 +205,13 @@ export const Table = ({
                           isSortable ? 'cursor-pointer hover:bg-slate-200/60 transition-colors' : ''
                         } ${col.headerClassName || ''}`}
                       >
-                        <div className={`flex items-center gap-1.5 ${(col.className?.includes('text-right') || col.headerClassName?.includes('text-right')) ? 'justify-end' : ''}`}>
+                        <div className={`flex items-center gap-1.5 ${
+                          (col.className?.includes('text-right') || col.headerClassName?.includes('text-right'))
+                            ? 'justify-end'
+                            : (col.className?.includes('text-center') || col.headerClassName?.includes('text-center'))
+                            ? 'justify-center'
+                            : ''
+                        }`}>
                           <span>{col.header}</span>
                           {isSortable && (
                             <span className="text-slate-400">

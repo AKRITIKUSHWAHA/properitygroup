@@ -327,6 +327,7 @@ export const AdminUsersPage = () => {
       key: 'name',
       header: 'Full Legal Name',
       sortable: true,
+      className: 'w-[30%] min-w-[210px]',
       render: (val, row) => {
         if (row.role === 'customer') {
           return (
@@ -335,11 +336,11 @@ export const AdminUsersPage = () => {
                 setSelectedClientEmail(row.email);
                 setClientModalTab('calls');
               }}
-              className="text-left group cursor-pointer"
+              className="text-left group cursor-pointer block max-w-full"
             >
-              <div className="font-bold text-[#0B1F4D] group-hover:text-[#2563EB] group-hover:underline text-xs flex items-center gap-1.5">
+              <div className="font-bold text-[#0B1F4D] group-hover:text-[#2563EB] group-hover:underline text-xs flex items-center gap-1.5 flex-wrap">
                 <span>{val}</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] font-bold">Client Profile</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] font-bold whitespace-nowrap">Client Profile</span>
               </div>
               <div className="text-[11px] text-slate-400 font-mono mt-0.5">{row.email}</div>
             </button>
@@ -357,13 +358,14 @@ export const AdminUsersPage = () => {
       key: 'roleLabel',
       header: 'Assigned Role',
       sortable: true,
+      className: 'w-[18%] min-w-[130px]',
       render: (val, row) => {
         let badgeColor = 'bg-[#0B1F4D] text-white';
         if (row.role === 'surveyor') badgeColor = 'bg-purple-100 text-purple-800 border border-purple-200';
         if (row.role === 'customer') badgeColor = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
 
         return (
-          <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${badgeColor}`}>
+          <span className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold whitespace-nowrap ${badgeColor}`}>
             {val}
           </span>
         );
@@ -373,15 +375,16 @@ export const AdminUsersPage = () => {
       key: 'org',
       header: 'Organisation / Practice',
       sortable: true,
-      className: 'text-xs text-slate-700 font-medium',
+      className: 'w-[26%] min-w-[170px] text-xs text-slate-700 font-medium',
     },
     {
       key: 'status',
       header: 'Status',
       sortable: true,
+      className: 'w-[14%] min-w-[100px]',
       render: (val) => (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 whitespace-nowrap">
+          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
           {val}
         </span>
       ),
@@ -390,9 +393,10 @@ export const AdminUsersPage = () => {
       key: 'actions',
       header: 'Actions',
       sortable: false,
-      className: 'text-right whitespace-nowrap',
+      headerClassName: 'text-center w-[12%] min-w-[110px]',
+      className: 'text-center w-[12%] min-w-[110px] whitespace-nowrap',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {/* 1. View User */}
           <button
             type="button"
