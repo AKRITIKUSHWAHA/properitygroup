@@ -30,6 +30,7 @@ export const getMessageThreads = async (req, res, next) => {
         threadMap.set(msg.conversationId, {
           conversationId: msg.conversationId,
           jobId: msg.job?.reference || null,
+          jobDbId: msg.jobId || null,
           property: msg.job?.propertyAddress || 'Direct Portal Query',
           clientName: msg.job?.clientName || msg.senderName,
           clientEmail: msg.job?.clientEmail || null,
@@ -112,10 +113,32 @@ export const sendAdminMessage = async (req, res, next) => {
       throw ApiError.badRequest('Conversation ID and message text are required');
     }
 
+    let numericJobId = null;
+    if (jobId) {
+      const parsed = parseInt(jobId, 10);
+      if (!isNaN(parsed) && String(parsed) === String(jobId).trim()) {
+        numericJobId = parsed;
+      } else if (typeof jobId === 'string') {
+        const matchingJob = await prisma.job.findFirst({
+          where: { reference: jobId.trim() },
+          select: { id: true },
+        });
+        if (matchingJob) numericJobId = matchingJob.id;
+      }
+    }
+
+    if (!numericJobId && conversationId) {
+      const existingMsgWithJob = await prisma.message.findFirst({
+        where: { conversationId, jobId: { not: null } },
+        select: { jobId: true },
+      });
+      if (existingMsgWithJob) numericJobId = existingMsgWithJob.jobId;
+    }
+
     const message = await prisma.message.create({
       data: {
         conversationId,
-        jobId: jobId ? parseInt(jobId) : null,
+        jobId: numericJobId,
         senderId: req.user.id,
         senderName: `${req.user.name} (Admin)`,
         role: 'admin',

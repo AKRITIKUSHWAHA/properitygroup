@@ -1,30 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   MessageSquare,
   Send,
   Paperclip,
   Search,
   ExternalLink,
-  Mail,
-  Phone,
-  Building,
-  User,
-  Clock,
-  CheckCircle2,
-  ShieldCheck,
   CheckCheck,
-  RefreshCw,
   AlertCircle,
-  FileText,
-  Calendar,
   Sparkles,
   ArrowLeft,
-  MapPin,
   X,
 } from 'lucide-react';
 import { useMessages } from '../../mock/messages';
-import { useJobs } from '../../mock/jobs';
 import { useToast } from '../../components/ToastContext';
 import { adminMessagesApi } from '../../api/adminApi';
 
@@ -36,24 +24,70 @@ const QUICK_RESPONSES = [
 ];
 
 export const AdminMessagesPage = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { conversations, sendMessage, markAsRead } = useMessages();
-  const { jobs } = useJobs();
   const { addToast } = useToast();
 
+  const [apiThreads, setApiThreads] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'unread'
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
 
-  // Fetch threads & metrics from backend messages API on mount
+  // Fetch threads & metrics from backend messages API (MySQL)
+  const fetchThreads = async () => {
+    try {
+      const res = await adminMessagesApi.getThreads();
+      const rawThreads = res?.threads || res?.data?.threads || [];
+      if (Array.isArray(rawThreads) && rawThreads.length > 0) {
+        const mapped = rawThreads.map((t) => {
+          return {
+            id: t.conversationId,
+            jobId: t.jobId || 'General Inquiry',
+            jobDbId: t.jobDbId || null,
+            clientEmail: t.clientEmail || 'customer@demo.com',
+            clientName: t.clientName || 'Customer',
+            property: t.property || 'Direct Portal Query',
+            unreadAdmin: t.unreadAdmin || 0,
+            unreadCustomer: t.unreadCustomer || 0,
+            messages: (t.messages || []).map((m) => {
+              const created = m.createdAt ? new Date(m.createdAt) : new Date();
+              const timeString =
+                m.time ||
+                `${created.toLocaleDateString('en-GB')}, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+              return {
+                id: m.id,
+                sender:
+                  m.sender ||
+                  m.senderName ||
+                  (m.role === 'admin' ? 'Alexander Sterling (Admin)' : t.clientName),
+                role: m.role || 'customer',
+                text: m.text || m.content || '',
+                time: timeString,
+              };
+            }),
+          };
+        });
+        setApiThreads(mapped);
+      }
+      adminMessagesApi.getMetrics().catch(() => {});
+    } catch (err) {
+      console.warn('Unable to load threads from backend messages API:', err);
+    } finally {
+      setIsLoadingThreads(false);
+    }
+  };
+
   useEffect(() => {
-    adminMessagesApi.getThreads().catch(() => {});
-    adminMessagesApi.getMetrics().catch(() => {});
+    fetchThreads();
+    const interval = setInterval(fetchThreads, 15000);
+    return () => clearInterval(interval);
   }, []);
+
   const messagesEndRef = useRef(null);
+
+  const displayConversations = apiThreads.length > 0 ? apiThreads : conversations;
 
   // Initialize selected conversation from URL param or first conversation
   const urlJobId = searchParams.get('jobId');
@@ -61,18 +95,31 @@ export const AdminMessagesPage = () => {
 
   const [selectedConvId, setSelectedConvId] = useState(() => {
     if (urlConvId) {
-      const match = conversations.find((c) => c.id === urlConvId);
+      const match = displayConversations.find((c) => c.id === urlConvId);
       if (match) return match.id;
     }
     if (urlJobId) {
-      const match = conversations.find((c) => c.jobId === urlJobId);
+      const match = displayConversations.find((c) => c.jobId === urlJobId);
       if (match) return match.id;
     }
-    return conversations[0]?.id || 'conv-1';
+    return displayConversations[0]?.id || 'conv-1';
   });
 
+  // Ensure selectedConvId is synchronized whenever threads load
+  useEffect(() => {
+    if (apiThreads.length > 0) {
+      setSelectedConvId((current) => {
+        if (current && apiThreads.some((t) => t.id === current || t.jobId === current)) {
+          return current;
+        }
+        return apiThreads[0].id;
+      });
+    }
+  }, [apiThreads]);
+
   const activeConv =
-    conversations.find((c) => c.id === selectedConvId) || conversations[0];
+    displayConversations.find((c) => c.id === selectedConvId || c.jobId === selectedConvId) ||
+    displayConversations[0];
 
   // Auto-scroll chat to bottom whenever messages change or conversation switches
   useEffect(() => {
@@ -85,11 +132,15 @@ export const AdminMessagesPage = () => {
   useEffect(() => {
     if (activeConv?.id && activeConv.unreadAdmin > 0) {
       markAsRead(activeConv.id, 'admin');
+      adminMessagesApi.markRead(activeConv.id).catch(() => {});
+      setApiThreads((prev) =>
+        prev.map((t) => (t.id === activeConv.id ? { ...t, unreadAdmin: 0 } : t))
+      );
     }
   }, [activeConv?.id, activeConv?.unreadAdmin]);
 
   // Filter conversations by search query & filter tab
-  const filteredConversations = conversations.filter((c) => {
+  const filteredConversations = displayConversations.filter((c) => {
     if (filterType === 'unread' && !(c.unreadAdmin > 0)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
@@ -102,7 +153,7 @@ export const AdminMessagesPage = () => {
   });
 
   // Calculate unread count for admin
-  const totalUnreadAdmin = conversations.reduce(
+  const totalUnreadAdmin = displayConversations.reduce(
     (sum, c) => sum + (c.unreadAdmin || 0),
     0
   );
@@ -110,10 +161,14 @@ export const AdminMessagesPage = () => {
   const handleSelectConv = (convId) => {
     setSelectedConvId(convId);
     markAsRead(convId, 'admin');
+    adminMessagesApi.markRead(convId).catch(() => {});
+    setApiThreads((prev) =>
+      prev.map((t) => (t.id === convId ? { ...t, unreadAdmin: 0 } : t))
+    );
     setMobileView('chat');
   };
 
-  const handleSendReply = (e) => {
+  const handleSendReply = async (e) => {
     e?.preventDefault();
     if (!replyText.trim() || !activeConv) return;
 
@@ -121,6 +176,31 @@ export const AdminMessagesPage = () => {
     const messageContent = replyText.trim();
     setReplyText('');
 
+    const timeString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+    const tempId = Date.now();
+    const optimisticMsg = {
+      id: tempId,
+      sender: 'Alexander Sterling (Admin)',
+      role: 'admin',
+      text: messageContent,
+      time: timeString,
+    };
+
+    // Optimistically update thread state
+    setApiThreads((prev) =>
+      prev.map((t) => {
+        if (t.id === activeConv.id) {
+          return {
+            ...t,
+            unreadCustomer: (t.unreadCustomer || 0) + 1,
+            messages: [...(t.messages || []), optimisticMsg],
+          };
+        }
+        return t;
+      })
+    );
+
+    // Sync with mock/localStorage for cross-tab reactivity
     try {
       sendMessage(
         activeConv.id,
@@ -128,18 +208,45 @@ export const AdminMessagesPage = () => {
         'Alexander Sterling (Admin)',
         'admin'
       );
+    } catch {
+      // ignore
+    }
+
+    try {
+      const res = await adminMessagesApi.sendMessage({
+        conversationId: activeConv.id,
+        content: messageContent,
+        jobId: activeConv.jobDbId || activeConv.jobId || null,
+      });
+
+      const savedMsg = res?.message || res?.data?.message;
+      if (savedMsg?.id) {
+        setApiThreads((prev) =>
+          prev.map((t) => {
+            if (t.id === activeConv.id) {
+              return {
+                ...t,
+                messages: (t.messages || []).map((m) =>
+                  m.id === tempId ? { ...m, id: savedMsg.id } : m
+                ),
+              };
+            }
+            return t;
+          })
+        );
+      }
 
       addToast({
         type: 'success',
         title: 'Reply Sent to Customer',
-        message: `Your message has been delivered to ${activeConv.clientName} and synced with their portal.`,
+        message: `Your message has been delivered to ${activeConv.clientName} and saved to database.`,
       });
     } catch (err) {
-      console.error(err);
+      console.error('Failed to persist message via API:', err);
       addToast({
         type: 'error',
-        title: 'Dispatch Failed',
-        message: 'Could not deliver message. Please retry.',
+        title: 'Dispatch Warning',
+        message: 'Message delivered locally, but failed to sync to server database.',
       });
     } finally {
       setIsSending(false);
@@ -182,14 +289,19 @@ export const AdminMessagesPage = () => {
               <MessageSquare className="w-5 h-5 text-[#0B1F4D]" />
               <span>Customer Chats</span>
               <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-mono font-bold">
-                {conversations.length}
+                {displayConversations.length}
               </span>
             </h2>
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10.5px] font-bold shadow-2xs">
+            <button
+              type="button"
+              onClick={fetchThreads}
+              title="Refresh messages from database"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10.5px] font-bold shadow-2xs transition-colors cursor-pointer"
+            >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>Live Portal Gateway</span>
-            </span>
+            </button>
           </div>
 
           {/* Search Box */}
@@ -224,7 +336,7 @@ export const AdminMessagesPage = () => {
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
               }`}
             >
-              All Threads ({conversations.length})
+              All Threads ({displayConversations.length})
             </button>
             <button
               type="button"
