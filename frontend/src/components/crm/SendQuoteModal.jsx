@@ -169,8 +169,10 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
       baseFee: currentBaseFee,
       clientEmail: lead.customerEmail,
       clientName: lead.customerName,
+      clientPhone: lead.customerPhone,
       propertyAddress: lead.property,
       surveyType: surveyType,
+      discount: discountAmount,
     }).then((res) => {
       if (res?.data?.emailSent || res?.emailSent) {
         console.log(`[Resend Live] Quote proposal emailed to ${lead.customerEmail}`);

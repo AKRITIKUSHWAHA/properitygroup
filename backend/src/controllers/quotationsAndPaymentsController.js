@@ -82,16 +82,23 @@ export const createQuote = async (req, res, next) => {
     const {
       jobId,
       leadId,
-      client,
-      clientEmail,
+      client: inputClient,
+      clientName,
+      clientEmail: inputClientEmail,
       clientPhone,
-      property,
-      surveyType,
+      property: inputProperty,
+      propertyAddress,
+      surveyType: inputSurveyType,
       baseFee,
       discount = 0,
       inclusions,
       validDays = 30,
     } = req.body;
+
+    const client = inputClient || clientName || '';
+    const clientEmail = inputClientEmail || '';
+    const property = inputProperty || propertyAddress || '';
+    const surveyType = inputSurveyType || '';
 
     if (!baseFee || parseFloat(baseFee) <= 0) {
       throw ApiError.badRequest('Valid base inspection fee is required');
