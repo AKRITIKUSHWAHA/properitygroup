@@ -15,6 +15,7 @@ import {
   PhoneCall,
   AlertTriangle,
   Eye,
+  EyeOff,
   ShieldAlert,
   ShieldCheck,
   Sliders,
@@ -220,17 +221,27 @@ export const AdminUsersPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [mainView, setMainView] = useState(initialView); // 'users' | 'permissions'
 
+  const [showModalPassword, setShowModalPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'surveyor',
     org: '',
-    tempPassword: '',
   });
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim()) return;
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+      addToast({
+        type: 'warning',
+        title: 'Missing Fields',
+        message: 'Please provide legal name, email, and a password.',
+      });
+      return;
+    }
 
     const roleMap = {
       super_admin: 'Admin',
@@ -239,26 +250,46 @@ export const AdminUsersPage = () => {
       partner: 'Estate Agent Partner',
     };
 
-    const newUser = {
-      id: `USR-${String(users.length + 1).padStart(2, '0')}`,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      role: formData.role,
-      roleLabel: roleMap[formData.role],
-      org: formData.org.trim() || 'NJS Property Group',
-      lastLogin: 'Never',
-      status: 'Active',
-    };
+    setIsSubmitting(true);
+    try {
+      // Persist to real backend database with hashed password
+      const backendRole = formData.role === 'super_admin' ? 'ADMIN' : (formData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER');
+      await adminUsersAndRolesApi.createUser({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+        role: backendRole,
+      });
 
-    setUsers((prev) => [newUser, ...prev]);
-    setIsAddModalOpen(false);
-    setFormData({ name: '', email: '', role: 'surveyor', org: '', tempPassword: '' });
+      const newUser = {
+        id: `USR-${String(users.length + 1).padStart(2, '0')}`,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        role: formData.role,
+        roleLabel: roleMap[formData.role] || 'User',
+        org: formData.org.trim() || 'NJS Property Group',
+        lastLogin: 'Never',
+        status: 'Active',
+      };
 
-    addToast({
-      type: 'success',
-      title: 'User Provisioned',
-      message: `${newUser.name} added as ${newUser.roleLabel}. Welcome credentials dispatched.`,
-    });
+      setUsers((prev) => [newUser, ...prev]);
+      setIsAddModalOpen(false);
+      setFormData({ name: '', email: '', password: '', role: 'surveyor', org: '' });
+
+      addToast({
+        type: 'success',
+        title: 'User Account Created',
+        message: `${newUser.name} created! Can now log in using ${newUser.email} and the chosen password.`,
+      });
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Account Creation Failed',
+        message: err?.message || 'Could not save user to database.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteUser = (userId, userName) => {
@@ -502,9 +533,10 @@ export const AdminUsersPage = () => {
             <button
               type="submit"
               form="add-user-form"
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] disabled:opacity-50 cursor-pointer"
             >
-              Create Account
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </button>
           </>
         }
@@ -532,6 +564,37 @@ export const AdminUsersPage = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
             />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-semibold text-slate-700">Login Password *</label>
+              <button
+                type="button"
+                onClick={() => setShowModalPassword(!showModalPassword)}
+                className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+              >
+                {showModalPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showModalPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type={showModalPassword ? 'text' : 'password'}
+                required
+                minLength={6}
+                placeholder="Enter password (e.g. Password123!)"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              User will log in using this email and password. They can change it anytime in their profile.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

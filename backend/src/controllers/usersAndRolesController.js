@@ -87,15 +87,20 @@ export const createUser = async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const rawRole = String(role).toUpperCase();
+    const normalizedRole = ['ADMIN', 'SUPER_ADMIN'].includes(rawRole)
+      ? 'ADMIN'
+      : (rawRole === 'SURVEYOR' ? 'SURVEYOR' : 'CUSTOMER');
+
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: role.toUpperCase(),
+        role: normalizedRole,
         phone,
         status: 'ACTIVE',
-        ...(role.toUpperCase() === 'SURVEYOR'
+        ...(normalizedRole === 'SURVEYOR'
           ? {
               surveyorProfile: {
                 create: {
