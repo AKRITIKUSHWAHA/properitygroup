@@ -10,18 +10,13 @@ import {
   Eye,
   ExternalLink,
   ChevronRight,
-  ClipboardCheck,
   Lock,
   MoreVertical,
   PhoneCall,
-  AlertTriangle,
   CheckCircle2,
   FileText,
-  TrendingUp,
-  UserCheck,
   Copy,
   Building2,
-  ShieldCheck,
   CalendarDays,
   FileCheck2,
   ChevronUp,
@@ -38,24 +33,109 @@ import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useToast } from '../../components/ToastContext';
 import { adminSurveyJobsApi } from '../../api/adminApi';
 
+// Mapper from Backend Job model to Frontend Job state
+const mapBackendJobToFrontend = (bj) => {
+  let mappedStatus = 'Action Required';
+  const stage = (bj.stage || '').toUpperCase();
+  if (stage === 'COMPLETE') {
+    mappedStatus = 'Completed';
+  } else if (stage === 'PREPARING_REPORT' || stage === 'IN_PROGRESS') {
+    mappedStatus = 'In Progress';
+  } else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') {
+    mappedStatus = 'Scheduled';
+  } else if (stage === 'QUOTE' || stage === 'INSTRUCTION' || stage === 'NEW') {
+    mappedStatus = 'Action Required';
+  }
+
+  const termsSigned = Array.isArray(bj.terms) && bj.terms.some((t) => t.signed);
+  const invoicePaid = Array.isArray(bj.invoices) && bj.invoices.some((i) => i.status === 'PAID');
+
+  const termsStatus = termsSigned ? 'Signed' : (Array.isArray(bj.terms) && bj.terms.length > 0 ? 'Sent' : 'Pending');
+  const paymentStatus = invoicePaid ? 'Paid' : (Array.isArray(bj.invoices) && bj.invoices.length > 0 ? 'Invoice Sent' : 'Awaiting Payment');
+  const canBook = termsSigned && invoicePaid;
+
+  let surveyorName = bj.surveyor?.name || 'David Thorne MRICS';
+  let sId = 'srv-1';
+  if (surveyorName.includes('Oliver')) sId = 'srv-2';
+  else if (surveyorName.includes('Claire')) sId = 'srv-3';
+  else if (surveyorName.includes('Jonathan')) sId = 'srv-4';
+  else if (surveyorName.includes('Fiona')) sId = 'srv-5';
+
+  return {
+    id: String(bj.id),
+    dbId: bj.id,
+    jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
+    date: bj.inspectionDate
+      ? new Date(bj.inspectionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '14 Nov 2026',
+    timeSlot: bj.inspectionTime || '10:00 AM - 01:00 PM',
+    customer: bj.clientName || 'Private Client',
+    customerEmail: bj.clientEmail || 'client@example.com',
+    customerPhone: bj.clientPhone || '+44 7700 900000',
+    surveyType: bj.serviceType || 'RICS Level 2 Home Survey',
+    property: bj.propertyAddress || 'London Property',
+    location: bj.postcode ? `${bj.postcode}, London` : 'London, UK',
+    postcode: bj.postcode || 'W1K 2PB',
+    surveyor: surveyorName,
+    surveyorId: sId,
+    status: mappedStatus,
+    termsStatus,
+    paymentStatus,
+    canBook: canBook || mappedStatus === 'Scheduled' || mappedStatus === 'Completed',
+    accessNotes: bj.company?.keyCollectionProtocol || 'Keys held at estate agent branch',
+    backendSynced: true,
+  };
+};
+
 // 3-Dot Clean Action Dropdown Menu for each Survey Job
 const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
   const menuRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
+    const handleScrollOrResize = () => {
+      if (isOpen) setIsOpen(false);
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
   }, [isOpen]);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const openUpwards = rect.bottom + 220 > window.innerHeight;
+      setCoords({
+        top: openUpwards ? null : Math.round(rect.bottom + 6),
+        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
+      });
+    }
+    setIsOpen((prev) => !prev);
+  };
 
   const handleCopy = (e, text, label) => {
     e.stopPropagation();
@@ -69,13 +149,11 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
   };
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
+    <div className="relative inline-block text-left">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
         title="Job actions"
         aria-label="Job actions"
@@ -84,7 +162,17 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: coords.top !== null ? `${coords.top}px` : 'auto',
+            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+            right: `${coords.right}px`,
+            zIndex: 9999,
+          }}
+          className="w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+        >
           {/* Primary View Action */}
           <button
             type="button"
@@ -160,13 +248,43 @@ export const AdminJobsPage = () => {
   const location = useLocation();
   const baseJobsPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
-  const { jobs, addJob } = useJobs();
+  const { jobs, setJobs, addJob } = useJobs();
+  const [_backendMetrics, setBackendMetrics] = useState(null);
 
   // Fetch survey jobs + metrics from backend API
   useEffect(() => {
-    adminSurveyJobsApi.getJobs().catch(() => {});
-    adminSurveyJobsApi.getMetrics().catch(() => {});
-  }, []);
+    let isMounted = true;
+    const fetchBackendJobs = async () => {
+      try {
+        const [jobsRes, metricsRes] = await Promise.allSettled([
+          adminSurveyJobsApi.getJobs(),
+          adminSurveyJobsApi.getMetrics(),
+        ]);
+
+        if (jobsRes.status === 'fulfilled' && jobsRes.value?.data?.data?.jobs && isMounted) {
+          const apiJobs = jobsRes.value.data.data.jobs;
+          if (Array.isArray(apiJobs) && apiJobs.length > 0) {
+            const mapped = apiJobs.map(mapBackendJobToFrontend);
+            setJobs((prev) => {
+              const prevFiltered = prev.filter((p) => !mapped.some((m) => m.jobNo === p.jobNo));
+              return [...mapped, ...prevFiltered];
+            });
+          }
+        }
+
+        if (metricsRes.status === 'fulfilled' && metricsRes.value?.data?.data && isMounted) {
+          setBackendMetrics(metricsRes.value.data.data);
+        }
+      } catch (err) {
+        console.warn('Jobs backend sync error:', err);
+      }
+    };
+
+    fetchBackendJobs();
+    return () => {
+      isMounted = false;
+    };
+  }, [setJobs]);
 
   const queryFilter = useMemo(() => {
     return new URLSearchParams(location.search).get('filter') || 'All';
@@ -214,6 +332,29 @@ export const AdminJobsPage = () => {
   // Handle new job creation
   const handleCreateJob = (newJob) => {
     addJob(newJob);
+
+    // Call backend API asynchronously
+    adminSurveyJobsApi
+      .createJob({
+        serviceType: newJob.surveyType || 'RICS Level 2 Home Survey',
+        propertyAddress: newJob.property || newJob.location || 'London Property',
+        postcode: newJob.postcode || 'SW1A 1AA',
+        clientName: newJob.customer || 'Private Client',
+        clientEmail: newJob.customerEmail || 'client@example.com',
+        clientPhone: newJob.customerPhone || '+44 7700 900000',
+        baseFee: 650.0,
+      })
+      .then((res) => {
+        if (res?.data?.data?.job) {
+          const bj = res.data.data.job;
+          newJob.dbId = bj.id;
+          newJob.jobNo = bj.reference || newJob.jobNo;
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend create job non-blocking error:', err);
+      });
+
     addToast({
       type: newJob.canBook ? 'success' : 'info',
       title: 'Survey Job Registered',
