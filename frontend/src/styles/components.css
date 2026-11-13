@@ -9642,6 +9642,24 @@ p.mega-action-sub {
   .hero-slide-bg.active {
     transform: none !important;
   }
+
+  /* 5. Disable continuous GPU-draining animations on mobile devices */
+  .stat-pulse-dot,
+  .hero-float-stat,
+  .process-timeline-bar::after,
+  .live-status-dot {
+    animation: none !important;
+  }
+
+  /* 6. Skip rendering off-screen sections until scrolled into view (60fps/120fps optimization) */
+  .services-overview-section,
+  .survey-selector-section,
+  .regional-coverage-section,
+  .workflow-process-section,
+  .dedicated-quote-section {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 650px;
+  }
 }
 
 /* =============================================================
