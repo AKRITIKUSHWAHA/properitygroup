@@ -28,6 +28,15 @@ import { SURVEYORS } from '../../mock/jobs';
 import { adminSurveyorsApi } from '../../api/adminApi';
 import { useEffect } from 'react';
 
+// Preset professional surveyor avatars
+const DEFAULT_AVATARS = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80',
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=128&q=80',
+  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=128&q=80',
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=128&q=80',
+];
+
 export const AdminSurveyorsPage = () => {
   const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,6 +76,7 @@ export const AdminSurveyorsPage = () => {
             status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
             phone: s.phone || `+44 7700 900${idx + 1}84`,
             email: s.email,
+            avatar: s.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
             specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
               ? 'Dispute & Expert Witness'
               : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
@@ -354,11 +364,25 @@ export const AdminSurveyorsPage = () => {
                     <td className="py-3.5 px-4 sm:px-5 min-w-[240px]">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                          <img
-                            src={surveyor.avatar}
-                            alt={surveyor.name}
-                            className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white shadow-xs"
-                          />
+                          {surveyor.avatar ? (
+                            <img
+                              src={surveyor.avatar}
+                              alt={surveyor.name}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }
+                              }}
+                              className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white shadow-xs"
+                            />
+                          ) : null}
+                          <div
+                            style={{ display: surveyor.avatar ? 'none' : 'flex' }}
+                            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white items-center justify-center font-bold text-xs ring-2 ring-white shadow-xs"
+                          >
+                            {surveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                          </div>
                           <span
                             className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
                             style={{ backgroundColor: surveyor.color || '#2563EB' }}
@@ -641,11 +665,27 @@ export const AdminSurveyorsPage = () => {
           <div className="space-y-4 text-xs">
             {/* Header Identity Card */}
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3.5">
-              <img
-                src={viewingSurveyor.avatar}
-                alt={viewingSurveyor.name}
-                className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow-sm"
-              />
+              <div className="relative shrink-0">
+                {viewingSurveyor.avatar ? (
+                  <img
+                    src={viewingSurveyor.avatar}
+                    alt={viewingSurveyor.name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow-sm"
+                  />
+                ) : null}
+                <div
+                  style={{ display: viewingSurveyor.avatar ? 'none' : 'flex' }}
+                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white items-center justify-center font-bold text-base ring-2 ring-white shadow-sm"
+                >
+                  {viewingSurveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                </div>
+              </div>
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">{viewingSurveyor.name}</h4>
                 <div className="text-xs text-[#2563EB] font-semibold">{viewingSurveyor.credentials}</div>
