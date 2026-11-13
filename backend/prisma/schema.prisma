@@ -78,6 +78,7 @@ model User {
   auditLogs       AuditLog[]
   reviews         CustomerReview[]
   supportTickets  SupportTicket[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -363,4 +364,22 @@ model SupportTicket {
 
   @@map("support_tickets")
 }
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role?
+  title     String
+  desc      String   @db.Text
+  type      String   @default("booking") // booking, terms, payment, report, lead, alert
+  amount    String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
 

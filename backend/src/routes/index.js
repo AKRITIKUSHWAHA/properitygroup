@@ -17,6 +17,8 @@ import uploadRoutes from './uploadRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
 import postcodeRoutes from './postcodeRoutes.js';
 import publicRoutes from './publicRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
+import searchRoutes from './searchRoutes.js';
 
 const router = Router();
 
@@ -96,5 +98,11 @@ router.use('/postcodes', postcodeRoutes);
 
 // Public Website Quote & Contact Enquiries (Notifications to info@njspropertygroup.com)
 router.use('/public', publicRoutes);
+
+// Role-Based Notifications
+router.use('/notifications', notificationRoutes);
+
+// Global Search API
+router.use('/search', searchRoutes);
 
 export default router;
