@@ -487,15 +487,6 @@ export function Header() {
             {/* Header Actions */}
             <div className="header-actions">
               <Link
-                to="/login"
-                className="header-login-glass-btn"
-                title="Customer Portal Login"
-              >
-                <User size={14} style={{ marginRight: '6px' }} />
-                <span>Customer Login</span>
-              </Link>
-
-              <Link
                 to="/request-quote"
                 className="header-quote-glass-btn"
               >
