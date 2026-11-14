@@ -96,6 +96,7 @@ export const AdminSurveyorsPage = () => {
   }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [qualificationFilter, setQualificationFilter] = useState('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const [viewingSurveyor, setViewingSurveyor] = useState(null);
@@ -220,14 +221,20 @@ export const AdminSurveyorsPage = () => {
   };
 
   const filtered = surveyorsList.filter((s) => {
-    if (!searchTerm.trim()) return true;
-    const q = searchTerm.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(q) ||
-      s.credentials.toLowerCase().includes(q) ||
-      s.postcodes.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q)
-    );
+    const q = searchTerm.trim().toLowerCase();
+    const postcodesStr = Array.isArray(s.postcodes) ? s.postcodes.join(' ') : String(s.postcodes || '');
+    const matchesSearch =
+      !q ||
+      s.name?.toLowerCase().includes(q) ||
+      s.credentials?.toLowerCase().includes(q) ||
+      postcodesStr.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q);
+
+    const matchesFilter =
+      qualificationFilter === 'ALL' ||
+      s.credentials?.toLowerCase().includes(qualificationFilter.toLowerCase());
+
+    return matchesSearch && matchesFilter;
   });
 
   return (
@@ -325,15 +332,50 @@ export const AdminSurveyorsPage = () => {
             </p>
           </div>
 
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search surveyor name, RICS credential, postcodes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-            />
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            {/* Qualification Filter Dropdown */}
+            <div className="relative w-full sm:w-64">
+              <select
+                value={qualificationFilter}
+                onChange={(e) => setQualificationFilter(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                title="Filter by Surveyor Qualification / Designation"
+              >
+                <option value="ALL">All Qualifications / Designations</option>
+                <optgroup label="Client Specified Surveying Designations">
+                  <option value="Guided Trainee Surveyor">
+                    Guided Trainee Surveyor (RICS Candidate)
+                  </option>
+                  <option value="Civil Engineering, MRPSA">
+                    Experienced Surveyor (Civil Engineering, MRPSA)
+                  </option>
+                  <option value="MCIOB, MRPSA">
+                    Experienced Surveyor (MCIOB, AssocRICS, MEWI)
+                  </option>
+                  <option value="Building Surveying, MRPSA">
+                    Experienced Surveyor (Building Surveying, ACABE)
+                  </option>
+                </optgroup>
+                <optgroup label="Standard RICS Designations">
+                  <option value="MRICS">MRICS Chartered Valuation Surveyor</option>
+                  <option value="Senior Building">Senior Building Surveyor (MRICS)</option>
+                  <option value="FRICS">Fellow Chartered Surveyor (FRICS)</option>
+                  <option value="Historic">Historic Buildings Consultant</option>
+                </optgroup>
+              </select>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-60">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search surveyor name, postcodes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8.5 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              />
+            </div>
           </div>
         </div>
 
