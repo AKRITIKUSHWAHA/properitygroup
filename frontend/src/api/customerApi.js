@@ -57,8 +57,10 @@ export const customerReportsApi = {
 
 // Menu 10: Messages
 export const customerMessagesApi = {
-  getMessages: () => api.get('/customer/messages'),
-  sendMessage: (content) => api.post('/customer/messages', { content }),
+  getContacts: () => api.get('/customer/messages/contacts'),
+  getMessages: (params = {}) => api.get('/customer/messages', { params }),
+  sendMessage: (payload) =>
+    api.post('/customer/messages', typeof payload === 'string' ? { content: payload } : payload),
 };
 
 // Menu 11: Leave a Review

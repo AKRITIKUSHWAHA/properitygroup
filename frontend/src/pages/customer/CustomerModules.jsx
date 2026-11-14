@@ -2691,116 +2691,28 @@ export const CustomerAssignedSurveyorPage = () => {
 };
 
 // ==========================================
-// 9. MESSAGES PAGE (Direct 2-Way Chat with Admin - Refined Card Layout)
+// 9. MESSAGES PAGE (Direct 2-Way Chat - Real Customer & Surveyor Directory)
 // ==========================================
 export const CustomerMessagesPage = () => {
-  useEffect(() => { customerMessagesApi.getMessages().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
-  const { jobs } = useJobs();
-  const { conversations, sendMessage, markAsRead } = useMessages();
+  const { sendMessage } = useMessages();
   const messagesEndRef = useRef(null);
 
-  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
-  const currentJob = myJobs[0] || null;
-
-  // Strict customer conversation isolation:
-  const currentConv = conversations.find((c) => {
-    const uEmail = (user?.email || '').toLowerCase().trim();
-    const uName = (user?.name || '').toLowerCase().trim();
-    const cEmail = (c.clientEmail || '').toLowerCase().trim();
-    const cName = (c.clientName || '').toLowerCase().trim();
-    const cJobId = (c.jobId || '').toLowerCase().trim();
-
-    if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
-      return cEmail === 'customer@demo.com' || c.id === 'conv-1' || cJobId === 'job-2026-080';
-    }
-    if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
-      return cEmail.includes('harrison') || c.id === 'conv-3' || cJobId === 'job-2026-082';
-    }
-    return cEmail === uEmail || cName === uName;
-  });
-
-  // Effective conversation (isolated, guaranteed to persist & render immediately)
-  const effectiveConv = currentConv || {
-    id: user?.name?.includes('Harrison') || user?.email?.includes('harrison') || user?.email === 'customer2@demo.com' ? 'conv-3' : `conv-${user?.id || 'new'}`,
-    jobId: currentJob?.id || (user?.name?.includes('Harrison') ? 'JOB-2026-082' : 'JOB-2026-080'),
-    clientEmail: user?.email || (user?.name?.includes('Harrison') ? 'harrison@demo.com' : 'customer@demo.com'),
-    clientName: user?.name || (user?.name?.includes('Harrison') ? 'Harrison Croft' : 'Emma Watson'),
-    property: currentJob?.property || (user?.name?.includes('Harrison') ? '12 Pembroke Square, Kensington, London W8 6PA' : '14 Mayfair Gate'),
-    surveyType: currentJob?.surveyType || (user?.name?.includes('Harrison') ? 'RICS Level 3 Building Survey' : 'RICS Level 2 Home Survey'),
-    surveyor: currentJob?.surveyor || 'David Thorne MRICS',
-    messages: [
-      {
-        id: 1,
-        sender: 'NJS Operations Desk',
-        role: 'admin',
-        text: `Hello ${user?.name || 'Customer'}, welcome to your dedicated communications channel with NJS Property Group. How can our surveying team assist you today?`,
-        time: 'Today, 2:00pm',
-      },
-    ],
-  };
-
-  const messages = effectiveConv.messages || [];
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChannelId, setActiveChannelId] = useState('desk');
   const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
 
-  // Auto-scroll chat to bottom whenever messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages.length]);
-
-  useEffect(() => {
-    if (effectiveConv?.id) {
-      markAsRead(effectiveConv.id, 'client');
-    }
-  }, [effectiveConv?.id]);
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!inputMessage.trim()) return;
-
-    const textToSend = inputMessage.trim();
-    setInputMessage('');
-
-    sendMessage(
-      effectiveConv.id,
-      textToSend,
-      user?.name || effectiveConv.clientName || 'Client',
-      'client'
-    );
-
-    addToast({
-      type: 'success',
-      title: 'Message Dispatched',
-      message: 'Your query has been dispatched to operations (info@njspropertygroup.com).',
-    });
-  };
-
-  const handleAttach = () => {
-    addToast({
-      type: 'info',
-      title: 'Attach Media',
-      message: 'Photograph / document attached to your enquiry.',
-    });
-  };
-
-  const lastMsg = messages[messages.length - 1];
-  const lastMsgSnippet = lastMsg ? (lastMsg.text.length > 24 ? lastMsg.text.slice(0, 24) + '...' : lastMsg.text) : 'Active survey conversation';
-  const lastMsgTime = lastMsg ? (lastMsg.time?.includes(',') ? lastMsg.time.split(',')[1].trim() : lastMsg.time) : 'Today';
-
-  // Groups and Contacts
-  const groups = [
+  // Initial Groups State
+  const [groups, setGroups] = useState([
     {
       id: 'desk',
       name: 'NJS Operations Desk',
       avatar: 'NJS',
-      lastMessage: lastMsgSnippet,
-      time: lastMsgTime,
+      lastMessage: 'hii',
+      time: '16:31',
+      lastMessageTime: '2026-11-14T11:01:11.959Z',
       unread: false,
       online: true,
       lastSeen: '2:02pm',
@@ -2811,67 +2723,404 @@ export const CustomerMessagesPage = () => {
       avatar: 'SD',
       lastMessage: 'Appointment slot allocated',
       time: 'Yesterday',
+      lastMessageTime: '2026-11-13T12:00:00.000Z',
       unread: false,
       online: true,
       lastSeen: 'Yesterday',
     },
-  ];
+  ]);
 
-  const people = [
+  // Initial People Roster (All Real Surveyors & Customers from DB Seed)
+  const [people, setPeople] = useState([
     {
-      id: 'surveyor',
-      name: effectiveConv.surveyor || 'David Thorne MRICS',
+      id: 'conv-user-21',
+      userId: 21,
+      name: 'David Thorne MRICS',
+      email: 'david.thorne@njspropertygroup.com',
+      role: 'SURVEYOR',
+      roleTitle: 'RICS Surveyor',
       avatar: 'DT',
       lastMessage: 'On-site inspection completed',
       time: 'Today, 2:02pm',
+      lastMessageTime: '2026-11-14T08:32:00.000Z',
       unread: false,
       online: true,
       lastSeen: '2:02pm',
     },
     {
-      id: 'oliver',
+      id: 'conv-user-23',
+      userId: 23,
       name: 'Oliver Hughes MRICS',
+      email: 'oliver.hughes@njspropertygroup.com',
+      role: 'SURVEYOR',
+      roleTitle: 'RICS Surveyor',
       avatar: 'OH',
       lastMessage: 'Structural defect review',
       time: 'Yesterday',
+      lastMessageTime: '2026-11-13T14:15:00.000Z',
       unread: false,
       online: false,
       lastSeen: 'Yesterday',
     },
     {
-      id: 'agent',
-      name: 'Sarah Croft (Foxtons)',
-      avatar: 'SC',
-      lastMessage: 'Keys held at reception branch',
+      id: 'conv-user-25',
+      userId: 25,
+      name: 'Emma Watson',
+      email: 'customer@demo.com',
+      role: 'CUSTOMER',
+      roleTitle: 'Client',
+      avatar: 'EW',
+      lastMessage: 'Thank you for the quick quote',
+      time: 'Today, 11:30am',
+      lastMessageTime: '2026-11-14T06:00:00.000Z',
+      unread: false,
+      online: true,
+      lastSeen: '11:30am',
+    },
+    {
+      id: 'conv-user-26',
+      userId: 26,
+      name: 'Harrison Sterling',
+      email: 'customer2@demo.com',
+      role: 'CUSTOMER',
+      roleTitle: 'Client',
+      avatar: 'HS',
+      lastMessage: 'Property plans uploaded for inspection',
+      time: 'Yesterday',
+      lastMessageTime: '2026-11-13T10:00:00.000Z',
+      unread: false,
+      online: false,
+      lastSeen: 'Yesterday',
+    },
+    {
+      id: 'conv-user-28',
+      userId: 28,
+      name: 'Test Customer',
+      email: 'testak89193@gmail.com',
+      role: 'CUSTOMER',
+      roleTitle: 'Client',
+      avatar: 'TC',
+      lastMessage: 'Key collection instructions confirmed',
       time: 'Wed, 9:12am',
+      lastMessageTime: '2026-11-12T09:12:00.000Z',
       unread: false,
       online: false,
       lastSeen: 'Wednesday',
     },
     {
-      id: 'clientcare',
-      name: 'Victoria Sterling',
-      avatar: 'VS',
-      lastMessage: 'Feedback & terms assistance',
-      time: 'Mon, 11:12am',
+      id: 'conv-agent',
+      userId: null,
+      name: 'Sarah Croft (Foxtons)',
+      email: 'sarah.croft@foxtons.co.uk',
+      role: 'AGENT',
+      roleTitle: 'Partner Agent',
+      avatar: 'SC',
+      lastMessage: 'Keys held at reception branch',
+      time: 'Wed, 9:12am',
+      lastMessageTime: '2026-11-11T09:12:00.000Z',
       unread: false,
-      online: true,
-      lastSeen: 'Monday',
+      online: false,
+      lastSeen: 'Wednesday',
+    },
+  ]);
+
+  // Thread Messages mapping per conversation
+  const [threadsMap, setThreadsMap] = useState({
+    desk: [
+      {
+        id: 'desk-1',
+        sender: 'NJS Operations Desk',
+        role: 'admin',
+        text: 'Hello, welcome to your dedicated communications channel with NJS Property Group operations desk. How can our surveying team assist you today?',
+        time: 'Today, 2:00pm',
+      },
+      {
+        id: 'desk-2',
+        sender: 'Alexander Sterling',
+        role: 'client',
+        text: 'hii',
+        time: 'Today, 16:31',
+      },
+    ],
+    dispatch: [
+      {
+        id: 'disp-1',
+        sender: 'Survey Dispatch Team',
+        role: 'admin',
+        text: 'Appointment slot allocated with RICS chartered surveyor. Key collection instructions verified with Foxtons.',
+        time: 'Yesterday, 12:00pm',
+      },
+    ],
+    'conv-user-21': [
+      {
+        id: 'dt-1',
+        sender: 'David Thorne MRICS',
+        role: 'admin',
+        text: 'Good day. I am David Thorne MRICS, your assigned Chartered Surveyor. On-site inspection protocol is confirmed for your property.',
+        time: 'Today, 2:02pm',
+      },
+    ],
+    'conv-user-23': [
+      {
+        id: 'oh-1',
+        sender: 'Oliver Hughes MRICS',
+        role: 'admin',
+        text: 'Hello, Oliver Hughes MRICS here. Structural defect review notes are prepared. Please let me know if you have specific survey concerns.',
+        time: 'Yesterday, 2:15pm',
+      },
+    ],
+    'conv-user-25': [
+      {
+        id: 'ew-1',
+        sender: 'Emma Watson',
+        role: 'client',
+        text: 'Thank you for the quick quote. Can you please confirm when the surveyor will visit the property?',
+        time: 'Today, 11:30am',
+      },
+    ],
+    'conv-user-26': [
+      {
+        id: 'hs-1',
+        sender: 'Harrison Sterling',
+        role: 'client',
+        text: 'Hi team, I have uploaded the property plans for the RICS Level 3 survey.',
+        time: 'Yesterday, 10:00am',
+      },
+    ],
+    'conv-user-28': [
+      {
+        id: 'tc-1',
+        sender: 'Test Customer',
+        role: 'client',
+        text: 'Hello, please confirm the key collection instructions with Foxtons.',
+        time: 'Wed, 9:12am',
+      },
+    ],
+    'conv-agent': [
+      {
+        id: 'sc-1',
+        sender: 'Sarah Croft (Foxtons)',
+        role: 'admin',
+        text: 'Keys held at reception branch for surveyor collection. Accreditation ID required upon handover.',
+        time: 'Wed, 9:12am',
+      },
+    ],
+  });
+
+  // Fetch real contacts from Backend Database API
+  useEffect(() => {
+    customerMessagesApi
+      .getContacts()
+      .then((res) => {
+        const serverContacts = res?.contacts || res?.data?.contacts || [];
+        if (Array.isArray(serverContacts) && serverContacts.length > 0) {
+          setPeople((prev) => {
+            const map = new Map();
+            prev.forEach((p) => map.set(p.name.trim().toLowerCase(), p));
+            serverContacts.forEach((sc) => {
+              const key = sc.name.trim().toLowerCase();
+              const existing = map.get(key);
+              map.set(key, {
+                ...(existing || {}),
+                ...sc,
+                id: sc.id || (existing ? existing.id : `conv-user-${sc.userId}`),
+                roleTitle: sc.role === 'SURVEYOR' ? 'RICS Surveyor' : 'Client',
+              });
+            });
+            const merged = Array.from(map.values());
+            // Sort: highest lastMessageTime on top ("jo message kare uska upr aa jay")
+            return merged.sort(
+              (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+            );
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn('Contacts API sync notice:', err);
+      });
+  }, []);
+
+  // Fetch remote messages for active channel from Database
+  useEffect(() => {
+    if (!activeChannelId) return;
+    customerMessagesApi
+      .getMessages({ conversationId: activeChannelId })
+      .then((res) => {
+        const remoteMsgs = res?.messages || res?.data?.messages || [];
+        if (Array.isArray(remoteMsgs) && remoteMsgs.length > 0) {
+          const mapped = remoteMsgs.map((m) => {
+            const created = m.createdAt ? new Date(m.createdAt) : new Date();
+            const timeStr = m.createdAt
+              ? `Today, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+              : 'Today';
+            return {
+              id: m.id,
+              sender: m.senderName || (m.role === 'admin' ? 'Alexander Sterling' : 'Client'),
+              role: m.role === 'customer' || m.role === 'client' ? 'client' : 'admin',
+              text: m.content || '',
+              time: timeStr,
+            };
+          });
+
+          setThreadsMap((prev) => {
+            const currentList = prev[activeChannelId] || [];
+            const combined = [...currentList];
+            mapped.forEach((rm) => {
+              if (
+                !combined.some(
+                  (c) =>
+                    c.text === rm.text &&
+                    (c.id === rm.id || Math.abs((c.id || 0) - (rm.id || 0)) < 3000)
+                )
+              ) {
+                combined.push(rm);
+              }
+            });
+            return {
+              ...prev,
+              [activeChannelId]: combined,
+            };
+          });
+        }
+      })
+      .catch(() => {});
+  }, [activeChannelId]);
+
+  // Find active contact or default to first group
+  const allContacts = [...groups, ...people];
+  const activeContact =
+    allContacts.find((c) => c.id === activeChannelId) || groups[0];
+
+  const currentMessages = threadsMap[activeChannelId] || [
+    {
+      id: 'default-intro',
+      sender: activeContact.name,
+      role: activeContact.role === 'CUSTOMER' ? 'client' : 'admin',
+      text: `Direct secure channel with ${activeContact.name} (${activeContact.roleTitle || 'NJS Support Desk'}). How can we assist today?`,
+      time: 'Today',
     },
   ];
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    g.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  // Auto-scroll chat to bottom whenever messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentMessages.length]);
+
+  // Send message with DYNAMIC BUMP-TO-TOP FLOW ("jo message kare uska upr aa jay")
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim()) return;
+
+    const textToSend = inputMessage.trim();
+    setInputMessage('');
+
+    const timeNow = new Date().toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const nowIso = new Date().toISOString();
+
+    const newMsg = {
+      id: Date.now(),
+      sender: user?.name || 'Alexander Sterling',
+      role: 'client',
+      text: textToSend,
+      time: `Today, ${timeNow}`,
+      createdAt: nowIso,
+    };
+
+    // 1. Update active thread messages
+    setThreadsMap((prev) => ({
+      ...prev,
+      [activeChannelId]: [...(prev[activeChannelId] || []), newMsg],
+    }));
+
+    // 2. DYNAMIC BUMP-TO-TOP: Update contact lastMessage & timestamp, re-sort to top!
+    const isPerson = people.some(
+      (p) => p.id === activeChannelId || (p.userId && p.userId === activeContact.userId)
+    );
+
+    if (isPerson) {
+      setPeople((prev) => {
+        const updated = prev.map((p) => {
+          if (p.id === activeChannelId || (p.userId && p.userId === activeContact.userId)) {
+            return {
+              ...p,
+              lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
+              time: timeNow,
+              lastMessageTime: nowIso,
+            };
+          }
+          return p;
+        });
+        // Re-sort descending so this contact immediately jumps to index 0 (the top)!
+        return updated.sort(
+          (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        );
+      });
+    } else {
+      setGroups((prev) => {
+        const updated = prev.map((g) => {
+          if (g.id === activeChannelId) {
+            return {
+              ...g,
+              lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
+              time: timeNow,
+              lastMessageTime: nowIso,
+            };
+          }
+          return g;
+        });
+        return updated.sort(
+          (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        );
+      });
+    }
+
+    // 3. Persist to Backend API & MySQL Database
+    customerMessagesApi
+      .sendMessage({
+        conversationId: activeContact.id,
+        recipientId: activeContact.userId,
+        content: textToSend,
+      })
+      .catch((err) => console.warn('Message API send failed:', err));
+
+    // 4. Cross-tab sync
+    try {
+      sendMessage(activeContact.id, textToSend, user?.name || 'Client', 'client', false);
+    } catch {}
+
+    addToast({
+      type: 'success',
+      title: 'Message Sent',
+      message: `Message dispatched to ${activeContact.name}`,
+    });
+  };
+
+  const handleAttach = () => {
+    addToast({
+      type: 'info',
+      title: 'Attach Media',
+      message: 'Document or photograph attached to your message.',
+    });
+  };
+
+  // Real-time search filter for Groups & People
+  const filteredGroups = groups.filter(
+    (g) =>
+      g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredPeople = people.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPeople = people.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.lastMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.roleTitle && p.roleTitle.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const activeContact =
-    [...groups, ...people].find((c) => c.id === activeChannelId) || groups[0];
 
   return (
     <div className="max-w-6xl mx-auto w-full p-2 sm:p-4 flex flex-col h-[calc(100vh-120px)] min-h-[640px]">
@@ -2969,11 +3218,16 @@ export const CustomerMessagesPage = () => {
             </div>
           </div>
 
-          {/* 3. People Card Container */}
+          {/* 3. People Card Container (All Customers & Surveyors, Sorted by Latest Activity) */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
-            <h4 className="text-xs font-extrabold text-slate-800 mb-2 px-1">
-              People
-            </h4>
+            <div className="flex items-center justify-between mb-2 px-1">
+              <h4 className="text-xs font-extrabold text-slate-800">
+                People
+              </h4>
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {filteredPeople.length} contacts
+              </span>
+            </div>
             <div className="space-y-1">
               {filteredPeople.map((person) => {
                 const isSelected = activeChannelId === person.id;
@@ -3001,10 +3255,21 @@ export const CustomerMessagesPage = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-slate-900 text-xs truncate">
-                          {person.name}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-bold text-slate-900 text-xs truncate">
+                            {person.name}
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md shrink-0 ${
+                              person.role === 'SURVEYOR'
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                            }`}
+                          >
+                            {person.roleTitle || (person.role === 'SURVEYOR' ? 'RICS' : 'Client')}
+                          </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                        <div className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
                           {person.lastMessage}
                         </div>
                       </div>
@@ -3045,11 +3310,26 @@ export const CustomerMessagesPage = () => {
                 )}
               </div>
               <div className="min-w-0">
-                <h3 className="font-bold text-slate-900 text-sm truncate">
-                  {activeContact.name}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 text-sm truncate">
+                    {activeContact.name}
+                  </h3>
+                  {activeContact.roleTitle && (
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                        activeContact.role === 'SURVEYOR'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                      }`}
+                    >
+                      {activeContact.roleTitle}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-400 font-medium truncate">
-                  {activeContact.online ? `Online • Last seen, ${activeContact.lastSeen}` : `Offline • Seen ${activeContact.lastSeen}`}
+                  {activeContact.online
+                    ? `Online • Active Direct Channel`
+                    : `Offline • Last seen, ${activeContact.lastSeen || 'recently'}`}
                 </p>
               </div>
             </div>
@@ -3057,12 +3337,14 @@ export const CustomerMessagesPage = () => {
 
           {/* Message Thread Body */}
           <div className="flex-1 p-5 sm:p-6 overflow-y-auto min-h-0 space-y-4 bg-white overscroll-contain">
-            {messages.map((m) => {
+            {currentMessages.map((m) => {
               const isClient = m.role === 'client';
-              const cleanTime = m.time?.includes(',') ? m.time.split(',')[1].trim() : m.time || '8:30pm';
+              const cleanTime = m.time?.includes(',')
+                ? m.time.split(',')[1].trim()
+                : m.time || '8:30pm';
 
               if (isClient) {
-                // Outgoing Message (Client - Right aligned, Deep Navy theme)
+                // Outgoing Message (Right aligned, Deep Navy theme)
                 return (
                   <div key={m.id} className="flex flex-col items-end max-w-[85%] sm:max-w-md ml-auto">
                     <div className="flex items-center gap-2 flex-row-reverse">
@@ -3079,7 +3361,7 @@ export const CustomerMessagesPage = () => {
                 );
               }
 
-              // Incoming Message (Operations/Surveyor - Left aligned, soft neutral bubble)
+              // Incoming Message (Left aligned, soft neutral grey bubble)
               return (
                 <div key={m.id} className="flex flex-col items-start max-w-[85%] sm:max-w-md">
                   <div className="flex items-center gap-2">
