@@ -102,7 +102,7 @@ export const AdminSurveyorsPage = () => {
 
   const [formData, setFormData] = useState({
     name: '',
-    credentials: 'MRICS Chartered Valuation Surveyor',
+    credentials: 'Guided Trainee Surveyor (RICS Candidate)',
     postcodes: 'SW, W, KT',
     phone: '',
     email: '',
@@ -136,9 +136,14 @@ export const AdminSurveyorsPage = () => {
     try {
       setIsSubmitting(true);
       let accTag = 'MRICS';
-      if (formData.credentials.includes('FRICS')) accTag = 'FRICS';
+      if (formData.credentials.includes('Trainee')) accTag = 'Guided Trainee (RICS)';
+      else if (formData.credentials.includes('SMSTS')) accTag = 'Experienced (Civil Eng)';
+      else if (formData.credentials.includes('MCIOB')) accTag = 'Experienced (MCIOB)';
+      else if (formData.credentials.includes('ACABE')) accTag = 'Experienced (ACABE)';
+      else if (formData.credentials.includes('FRICS')) accTag = 'FRICS';
       else if (formData.credentials.includes('AssocRICS')) accTag = 'AssocRICS';
       else if (formData.credentials.includes('MRICS')) accTag = 'MRICS';
+      else accTag = formData.credentials;
 
       const res = await adminSurveyorsApi.onboardSurveyor({
         name: formData.name.trim(),
@@ -169,7 +174,7 @@ export const AdminSurveyorsPage = () => {
       setIsAddModalOpen(false);
       setFormData({
         name: '',
-        credentials: 'MRICS Chartered Valuation Surveyor',
+        credentials: 'Guided Trainee Surveyor (RICS Candidate)',
         postcodes: 'SW, W, KT',
         phone: '',
         email: '',
@@ -556,17 +561,33 @@ export const AdminSurveyorsPage = () => {
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">RICS Accreditation Designation *</label>
+            <label className="block font-bold text-slate-700 mb-1">Surveyor Qualification &amp; Designation *</label>
             <select
               value={formData.credentials}
               onChange={(e) => setFormData({ ...formData, credentials: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
-              <option value="MRICS Chartered Valuation Surveyor">MRICS Chartered Valuation Surveyor (Level 2 &amp; Valuations)</option>
-              <option value="Senior Building Surveyor (MRICS)">Senior Building Surveyor (MRICS Level 3 Specialist)</option>
-              <option value="Residential Defect Specialist (AssocRICS)">Residential Defect Specialist (AssocRICS)</option>
-              <option value="Fellow Chartered Surveyor (FRICS)">Fellow Chartered Surveyor (FRICS - Dispute &amp; Expert Witness)</option>
-              <option value="Historic Buildings Consultant (MRICS)">Historic Buildings Consultant (MRICS Heritage)</option>
+              <optgroup label="Client Specified Surveying Designations">
+                <option value="Guided Trainee Surveyor (RICS Candidate)">
+                  Guided Trainee Surveyor (RICS Candidate)
+                </option>
+                <option value="Experienced Surveyor (BSC Hons Civil Engineering, MRPSA, DAE, Retrofit Assessor, SMSTS)">
+                  Experienced Surveyor (BSC Hons Civil Engineering, MRPSA, DAE, Retrofit Assessor, SMSTS)
+                </option>
+                <option value="Experienced Surveyor (MCIOB, MRPSA, AssocRICS, LLB Hons, MEWI)">
+                  Experienced Surveyor (MCIOB, MRPSA, AssocRICS, LLB Hons, MEWI)
+                </option>
+                <option value="Experienced Surveyor (BTEC Civil Engineering, MSC Building Surveying, MRPSA, ACABE)">
+                  Experienced Surveyor (BTEC Civil Engineering, MSC Building Surveying, MRPSA, ACABE)
+                </option>
+              </optgroup>
+              <optgroup label="Standard RICS Designations">
+                <option value="MRICS Chartered Valuation Surveyor">MRICS Chartered Valuation Surveyor (Level 2 &amp; Valuations)</option>
+                <option value="Senior Building Surveyor (MRICS)">Senior Building Surveyor (MRICS Level 3 Specialist)</option>
+                <option value="Residential Defect Specialist (AssocRICS)">Residential Defect Specialist (AssocRICS)</option>
+                <option value="Fellow Chartered Surveyor (FRICS)">Fellow Chartered Surveyor (FRICS - Dispute &amp; Expert Witness)</option>
+                <option value="Historic Buildings Consultant (MRICS)">Historic Buildings Consultant (MRICS Heritage)</option>
+              </optgroup>
             </select>
           </div>
 
