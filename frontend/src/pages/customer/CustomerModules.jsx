@@ -37,6 +37,13 @@ import {
   Award,
   CheckCircle,
   Eye,
+  Video,
+  Smile,
+  Camera,
+  CheckCheck,
+  Search,
+  MoreVertical,
+  Mic,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useAuth } from '../../auth/AuthContext';
@@ -2677,7 +2684,7 @@ export const CustomerAssignedSurveyorPage = () => {
 };
 
 // ==========================================
-// 9. MESSAGES PAGE (Direct 2-Way Chat with Admin)
+// 9. MESSAGES PAGE (Direct 2-Way Chat with Admin - Refined Card Layout)
 // ==========================================
 export const CustomerMessagesPage = () => {
   useEffect(() => { customerMessagesApi.getMessages().catch(() => {}); }, []);
@@ -2722,13 +2729,16 @@ export const CustomerMessagesPage = () => {
         sender: 'NJS Operations Desk',
         role: 'admin',
         text: `Hello ${user?.name || 'Customer'}, welcome to your dedicated communications channel with NJS Property Group. How can our surveying team assist you today?`,
-        time: 'Today',
+        time: 'Today, 2:00pm',
       },
     ],
   };
 
   const messages = effectiveConv.messages || [];
   const [inputMessage, setInputMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeChannelId, setActiveChannelId] = useState('desk');
+  const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
 
   // Auto-scroll chat to bottom whenever messages change
   useEffect(() => {
@@ -2759,7 +2769,7 @@ export const CustomerMessagesPage = () => {
 
     addToast({
       type: 'success',
-      title: 'Message Sent to NJS Desk',
+      title: 'Message Dispatched',
       message: 'Your query has been dispatched to operations (info@njspropertygroup.com).',
     });
   };
@@ -2767,119 +2777,431 @@ export const CustomerMessagesPage = () => {
   const handleAttach = () => {
     addToast({
       type: 'info',
-      title: 'Attachment Upload',
+      title: 'Attach Media',
       message: 'Photograph / document attached to your enquiry.',
     });
   };
 
-  return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto overflow-hidden w-full p-2 sm:p-4">
-      {/* Sleek Compact Header */}
-      <div className="bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 mb-2 shrink-0">
-        <div>
-          <h2 className="text-sm font-extrabold text-[#0B1F4D] flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-[#2563EB]" />
-            <span>Direct Messages</span>
-            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-              Live Gateway Active
-            </span>
-          </h2>
-          <p className="text-[11px] text-slate-500">
-            Secure two-way communication with NJS coordination desk &amp; surveyor {effectiveConv.surveyor || 'David Thorne MRICS'}.
-          </p>
-        </div>
+  const handleCall = () => {
+    addToast({
+      type: 'info',
+      title: 'Direct Practice Hotline',
+      message: 'Connecting to NJS Practice Desk: 0800 169 9661',
+    });
+  };
 
-        <div className="hidden sm:flex items-center gap-2 text-xs">
-          <span className="font-mono text-slate-500 font-semibold">{effectiveConv.jobId}</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        </div>
+  const handleVideo = () => {
+    addToast({
+      type: 'info',
+      title: 'Virtual Debrief',
+      message: 'Video conference invitation dispatched to surveyor.',
+    });
+  };
+
+  const handleMore = () => {
+    addToast({
+      type: 'info',
+      title: 'Inspection Reference',
+      message: `Job Ref: ${effectiveConv.jobId} • Property: ${effectiveConv.property}`,
+    });
+  };
+
+  const lastMsg = messages[messages.length - 1];
+  const lastMsgSnippet = lastMsg ? (lastMsg.text.length > 24 ? lastMsg.text.slice(0, 24) + '...' : lastMsg.text) : 'Active survey conversation';
+  const lastMsgTime = lastMsg ? (lastMsg.time?.includes(',') ? lastMsg.time.split(',')[1].trim() : lastMsg.time) : 'Today';
+
+  // Groups and Contacts
+  const groups = [
+    {
+      id: 'desk',
+      name: 'NJS Operations Desk',
+      avatar: 'NJS',
+      lastMessage: lastMsgSnippet,
+      time: lastMsgTime,
+      unread: false,
+      online: true,
+      lastSeen: '2:02pm',
+    },
+    {
+      id: 'dispatch',
+      name: 'Survey Dispatch Team',
+      avatar: 'SD',
+      lastMessage: 'Appointment slot allocated',
+      time: 'Yesterday',
+      unread: false,
+      online: true,
+      lastSeen: 'Yesterday',
+    },
+  ];
+
+  const people = [
+    {
+      id: 'surveyor',
+      name: effectiveConv.surveyor || 'David Thorne MRICS',
+      avatar: 'DT',
+      lastMessage: 'On-site inspection completed',
+      time: 'Today, 2:02pm',
+      unread: false,
+      online: true,
+      lastSeen: '2:02pm',
+    },
+    {
+      id: 'oliver',
+      name: 'Oliver Hughes MRICS',
+      avatar: 'OH',
+      lastMessage: 'Structural defect review',
+      time: 'Yesterday',
+      unread: false,
+      online: false,
+      lastSeen: 'Yesterday',
+    },
+    {
+      id: 'agent',
+      name: 'Sarah Croft (Foxtons)',
+      avatar: 'SC',
+      lastMessage: 'Keys held at reception branch',
+      time: 'Wed, 9:12am',
+      unread: false,
+      online: false,
+      lastSeen: 'Wednesday',
+    },
+    {
+      id: 'clientcare',
+      name: 'Victoria Sterling',
+      avatar: 'VS',
+      lastMessage: 'Feedback & terms assistance',
+      time: 'Mon, 11:12am',
+      unread: false,
+      online: true,
+      lastSeen: 'Monday',
+    },
+  ];
+
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPeople = people.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeContact =
+    [...groups, ...people].find((c) => c.id === activeChannelId) || groups[0];
+
+  return (
+    <div className="max-w-6xl mx-auto w-full p-2 sm:p-4 flex flex-col h-[calc(100vh-120px)] min-h-[640px]">
+      {/* Mobile switcher tab */}
+      <div className="flex md:hidden items-center justify-between bg-white px-3.5 py-2 rounded-2xl border border-slate-200/90 shadow-2xs mb-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => setMobileView('list')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            mobileView === 'list' ? 'bg-[#0B1F4D] text-white' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          Conversations ({groups.length + people.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView('chat')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+            mobileView === 'chat' ? 'bg-[#0B1F4D] text-white' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          {activeContact.name}
+        </button>
       </div>
 
-      {/* Main Chat Box Container (Fills exact viewport height, locked outer scroll) */}
-      <div className="bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-        {/* Chat Header (shrink-0) */}
-        <div className="p-3 sm:p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-              NJS
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm truncate">
-                  NJS Operations &amp; Surveyor Desk
-                </h4>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              </div>
-              <span className="text-[11px] text-slate-500 truncate block">
-                Ref: <strong className="text-slate-700">{effectiveConv.jobId}</strong> • {effectiveConv.property}
-              </span>
+      {/* Main 2-Column Chat Layout Matching Reference Image */}
+      <div className="flex flex-col md:flex-row gap-3.5 sm:gap-4 flex-1 min-h-0 overflow-hidden">
+        {/* Left Column: Search & Contact Cards */}
+        <div
+          className={`w-full md:w-72 lg:w-80 flex flex-col gap-3 shrink-0 ${
+            mobileView === 'list' ? 'flex' : 'hidden md:flex'
+          }`}
+        >
+          {/* 1. Rounded Search Input */}
+          <div className="relative shrink-0">
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200/90 rounded-2xl text-xs font-medium text-slate-800 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
+            />
+          </div>
+
+          {/* 2. Groups Card Container */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 shrink-0">
+            <h4 className="text-xs font-extrabold text-slate-800 mb-2 px-1">
+              Groups
+            </h4>
+            <div className="space-y-1">
+              {filteredGroups.map((grp) => {
+                const isSelected = activeChannelId === grp.id;
+                return (
+                  <button
+                    key={grp.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveChannelId(grp.id);
+                      setMobileView('chat');
+                    }}
+                    className={`w-full p-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-slate-100/90 ring-1 ring-slate-200'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                        {grp.avatar}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-slate-900 text-xs truncate">
+                          {grp.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {grp.lastMessage}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] text-slate-400 block font-medium">
+                        {grp.time}
+                      </span>
+                      {grp.unread ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block mt-0.5" />
+                      ) : (
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-600 inline-block mt-0.5" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <span className="text-[11px] font-bold text-[#2563EB] bg-blue-50 border border-blue-200/80 px-2.5 py-1 rounded-xl shrink-0 whitespace-nowrap">
-            Active Thread
-          </span>
+          {/* 3. People Card Container */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
+            <h4 className="text-xs font-extrabold text-slate-800 mb-2 px-1">
+              People
+            </h4>
+            <div className="space-y-1">
+              {filteredPeople.map((person) => {
+                const isSelected = activeChannelId === person.id;
+                return (
+                  <button
+                    key={person.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveChannelId(person.id);
+                      setMobileView('chat');
+                    }}
+                    className={`w-full p-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-slate-100/90 ring-1 ring-slate-200'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                      <div className="relative shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                          {person.avatar}
+                        </div>
+                        {person.online && (
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-slate-900 text-xs truncate">
+                          {person.name}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {person.lastMessage}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] text-slate-400 block font-medium">
+                        {person.time}
+                      </span>
+                      {person.unread ? (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block mt-0.5" />
+                      ) : (
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-600 inline-block mt-0.5" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Message Thread Body (flex-1 overflow-y-auto min-h-0 - THIS IS WHAT SCROLLS) */}
-        <div className="flex-1 p-3.5 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-slate-50/50 overscroll-contain">
-          {messages.map((m) => {
-            const isClient = m.role === 'client';
-            return (
-              <div
-                key={m.id}
-                className={`flex flex-col ${isClient ? 'items-end' : 'items-start'}`}
-              >
-                <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <span className="text-[10.5px] font-bold text-slate-600">{m.sender}</span>
-                  <span className="text-[9.5px] text-slate-400 font-mono">• {m.time}</span>
-                </div>
-                <div
-                  className={`max-w-md p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-xs ${
-                    isClient
-                      ? 'bg-[#0B1F4D] text-white rounded-tr-none'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{m.text}</p>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Chat Input Form (shrink-0 - ALWAYS 100% FULLY VISIBLE & DOCKED AT BOTTOM) */}
-        <form
-          onSubmit={handleSendMessage}
-          className="p-2.5 sm:p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0"
+        {/* Right Column: Chat Box Window */}
+        <div
+          className={`flex-1 bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col min-h-0 ${
+            mobileView === 'chat' ? 'flex' : 'hidden md:flex'
+          }`}
         >
-          <button
-            type="button"
-            onClick={handleAttach}
-            className="p-2 rounded-xl text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-            title="Attach photo or document"
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
+          {/* Chat Window Header */}
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                  {activeContact.avatar}
+                </div>
+                {activeContact.online && (
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-slate-900 text-sm truncate">
+                  {activeContact.name}
+                </h3>
+                <p className="text-[11px] text-slate-400 font-medium truncate">
+                  {activeContact.online ? `Online • Last seen, ${activeContact.lastSeen}` : `Offline • Seen ${activeContact.lastSeen}`}
+                </p>
+              </div>
+            </div>
 
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message to NJS coordination team... (Press Enter to send)"
-            className="flex-1 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
-          />
+            {/* Header Action Buttons Matching Reference Design */}
+            <div className="flex items-center gap-1 text-slate-400 shrink-0">
+              <button
+                type="button"
+                onClick={handleCall}
+                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                title="Voice Call"
+              >
+                <Phone className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleVideo}
+                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                title="Video Consultation"
+              >
+                <Video className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleMore}
+                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                title="Conversation details"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-          <button
-            type="submit"
-            disabled={!inputMessage.trim()}
-            className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-1.5 cursor-pointer shrink-0"
+          {/* Message Thread Body */}
+          <div className="flex-1 p-5 sm:p-6 overflow-y-auto min-h-0 space-y-4 bg-white overscroll-contain">
+            {messages.map((m) => {
+              const isClient = m.role === 'client';
+              const cleanTime = m.time?.includes(',') ? m.time.split(',')[1].trim() : m.time || '8:30pm';
+
+              if (isClient) {
+                // Outgoing Message (Client - Right aligned, Deep Navy theme)
+                return (
+                  <div key={m.id} className="flex flex-col items-end max-w-[85%] sm:max-w-md ml-auto">
+                    <div className="flex items-center gap-2 flex-row-reverse">
+                      <div className="w-2 h-2 rounded-full bg-[#0B1F4D]/30 shrink-0" />
+                      <div className="bg-[#0B1F4D] text-white rounded-3xl rounded-tr-xs px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-medium leading-relaxed shadow-xs">
+                        <p className="whitespace-pre-wrap">{m.text}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10.5px] text-slate-400 mt-1 pr-3 font-medium">
+                      <span>Today, {cleanTime}</span>
+                      <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                    </div>
+                  </div>
+                );
+              }
+
+              // Incoming Message (Operations/Surveyor - Left aligned, soft neutral bubble)
+              return (
+                <div key={m.id} className="flex flex-col items-start max-w-[85%] sm:max-w-md">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />
+                    <div className="bg-slate-100/90 text-slate-800 rounded-3xl rounded-tl-xs px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-[13px] font-medium leading-relaxed shadow-2xs">
+                      <p className="whitespace-pre-wrap">{m.text}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10.5px] text-slate-400 mt-1 pl-3 font-medium">
+                    Today, {cleanTime}
+                  </span>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Bottom Chat Input Bar Matching Reference Design */}
+          <form
+            onSubmit={handleSendMessage}
+            className="p-3 sm:p-4 bg-white border-t border-slate-100 flex items-center gap-2 sm:gap-2.5 shrink-0"
           >
-            <span>Send</span>
-            <Send className="w-3.5 h-3.5" />
-          </button>
-        </form>
+            {/* Paperclip Attachment */}
+            <button
+              type="button"
+              onClick={handleAttach}
+              className="p-2 text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-full transition-colors cursor-pointer shrink-0"
+              title="Attach document or photo"
+            >
+              <Paperclip className="w-4 h-4 -rotate-45" />
+            </button>
+
+            {/* Pill Message Input */}
+            <div className="flex-1 relative flex items-center">
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Type your message here..."
+                className="w-full bg-slate-50 border border-slate-200/80 rounded-full pl-4 sm:pl-5 pr-16 py-2.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
+              />
+
+              <div className="absolute right-2.5 flex items-center gap-1 text-slate-400">
+                <button
+                  type="button"
+                  onClick={() => setInputMessage((prev) => prev + ' 😊')}
+                  className="p-1 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
+                  title="Emoji"
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAttach}
+                  className="p-1 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
+                  title="Take photo / Camera"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Mic / Send Button in Deep Navy Theme */}
+            <button
+              type="submit"
+              disabled={!inputMessage.trim()}
+              className="w-10 h-10 rounded-2xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:hover:bg-[#0B1F4D] text-white flex items-center justify-center transition-all shadow-sm hover:scale-105 shrink-0 cursor-pointer"
+              title={inputMessage.trim() ? 'Send message' : 'Voice note'}
+            >
+              {inputMessage.trim() ? (
+                <Send className="w-4 h-4 ml-0.5" />
+              ) : (
+                <Mic className="w-4 h-4" />
+              )}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
