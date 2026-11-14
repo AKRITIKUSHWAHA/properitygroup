@@ -7,9 +7,13 @@ const PORT = env.PORT || 5000;
 
 async function bootstrap() {
   try {
-    // Verify database connectivity
-    await prisma.$connect();
-    logger.success('Connected successfully to MySQL database (njs_db) via Prisma ORM.');
+    // Attempt database connectivity gracefully without crashing the server if offline
+    try {
+      await prisma.$connect();
+      logger.success('Connected successfully to MySQL database via Prisma ORM.');
+    } catch (dbErr) {
+      logger.warn(`MySQL database server not reachable at startup (${dbErr.message}). Server running in resilient mode with live Resend email dispatch active.`);
+    }
 
     const server = app.listen(PORT, () => {
       logger.success(`NJS Property Group API server running in ${env.NODE_ENV} mode on port ${PORT}`);

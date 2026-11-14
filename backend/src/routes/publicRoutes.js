@@ -5,6 +5,7 @@ const router = Router();
 
 // Public Website Quote & Contact Enquiry Endpoint (no authentication required)
 router.post('/enquiries', submitPublicEnquiry);
+router.post('/enquiry', submitPublicEnquiry);
 
 export default router;
 

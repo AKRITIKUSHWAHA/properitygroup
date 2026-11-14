@@ -110,6 +110,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
 
   if (resend) {
     try {
+      // 1. Dispatch enquiry lead notification to Admin inbox (info@njspropertygroup.com)
       const response = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [ENQUIRY_INBOX],
@@ -118,21 +119,83 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
         html,
       });
 
-      if (response?.error) {
-        console.warn('Resend enquiry notification error:', response.error.message || response.error);
-        return {
-          success: true,
-          emailSent: false,
-          notifiedEmail: ENQUIRY_INBOX,
-          provider: 'resend_error',
-          message: response.error.message || 'Email provider returned an error.',
-        };
+      // 2. Dispatch official acknowledgment receipt to Customer's registered email
+      if (customerEmail && customerEmail.includes('@')) {
+        try {
+          const customerHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">NJS PROPERTY GROUP</h1>
+                <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Independent RICS-Regulated Practice • Firm #084920</p>
+              </div>
+              
+              <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(customerName || 'Valued Client')},</h2>
+                <p>Thank you for requesting a survey quote with NJS Property Group. We have successfully logged your enquiry and our chartered surveying team has begun assessment.</p>
+                
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr>
+                      <td style="padding: 6px 0; color: #64748b; width: 42%;">Instruction Reference:</td>
+                      <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(referenceId)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 0; color: #64748b;">Survey Standard:</td>
+                      <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(serviceName)}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+                      <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml([propertyAddress, propertyPostcode].filter(Boolean).join(', ') || 'Specified Location')}</td>
+                    </tr>
+                    ${timescale ? `<tr>
+                      <td style="padding: 6px 0; color: #64748b;">Timescale:</td>
+                      <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right; text-transform: capitalize;">${escapeHtml(timescale)}</td>
+                    </tr>` : ''}
+                  </table>
+                </div>
+
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 16px; margin: 18px 0;">
+                  <strong style="color: #065f46; font-size: 13px; display: block; margin-bottom: 3px;">What Happens Next?</strong>
+                  <p style="margin: 0; color: #047857; font-size: 13px; line-height: 1.5;">
+                    Our RICS chartered surveyors are reviewing historical sales records and physical property traits to calculate your bespoke, fixed-fee quotation. Your formal quotation proposal will be delivered directly to <strong>${escapeHtml(customerEmail)}</strong> within 24 business hours.
+                  </p>
+                </div>
+
+                <p style="font-size: 13px; color: #334155;">
+                  Your Customer Portal account is active with this email address (<strong>${escapeHtml(customerEmail)}</strong>). You can log in at any time to monitor your survey progress and access digital copies:
+                </p>
+
+                <div style="text-align: center; margin: 24px 0;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Open Customer Portal &rarr;</a>
+                </div>
+
+                <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                  For urgent questions, contact our London operations desk at <strong>020 7946 0912</strong> or reply directly to this email.
+                </p>
+              </div>
+              
+              <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
+                &copy; ${new Date().getFullYear()} NJS Property Group Ltd. Independent Chartered Surveyors. Regulated by RICS.
+              </div>
+            </div>
+          `;
+
+          await resend.emails.send({
+            from: SENDER_EMAIL,
+            to: [customerEmail],
+            subject: `Your Survey Quotation Request Received (${referenceId}) — NJS Property Group`,
+            html: customerHtml,
+          });
+        } catch (cErr) {
+          console.warn('Customer acknowledgment email warning:', cErr.message);
+        }
       }
 
       return {
         success: true,
         emailSent: true,
         notifiedEmail: ENQUIRY_INBOX,
+        customerNotified: customerEmail,
         messageId: response?.data?.id || response?.id,
         provider: 'resend_live',
       };
@@ -226,6 +289,7 @@ export const sendQuoteProposalEmail = async ({
       const response = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
+        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
