@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Building2,
   Search,
@@ -23,7 +24,154 @@ import { PageHeader } from '../../components/PageHeader';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { adminCompaniesApi } from '../../api/adminApi';
-import { useEffect } from 'react';
+
+// Clean floating 3-dot action dropdown using React Portal (zero clipping / z-index issues)
+const CompanyRowActions = ({
+  company,
+  onView,
+  onCopyPhone,
+  onDelete,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, left: null });
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 190;
+      const menuHeight = 150;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+      if (openUpward) {
+        bottom = Math.max(8, Math.round(window.innerHeight - rect.top + 6));
+      } else {
+        top = Math.max(8, Math.round(rect.bottom + 6));
+      }
+
+      const left = Math.max(12, Math.min(Math.round(rect.right - menuWidth), window.innerWidth - menuWidth - 12));
+
+      setCoords({ top, bottom, left });
+      setIsOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleResize = () => {
+      setIsOpen(false);
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', handleResize);
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block text-left">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className={`p-1.5 rounded-xl transition-colors cursor-pointer select-none ${
+          isOpen ? 'bg-blue-100 text-[#0B1F4D] ring-2 ring-blue-300' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+        }`}
+        title="Options"
+      >
+        <MoreVertical className="w-4 h-4 pointer-events-none" />
+      </button>
+
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: coords.top !== null ? `${coords.top}px` : 'auto',
+              bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+              left: `${coords.left}px`,
+              width: '190px',
+              zIndex: 999999,
+              maxHeight: 'calc(100vh - 20px)',
+            }}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left overflow-y-auto"
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onView(company);
+              }}
+              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+            >
+              <Building className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>View Branch Details</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onCopyPhone(e, company.phone, 'Phone number');
+              }}
+              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Copy Contact</span>
+            </button>
+
+            <div className="my-1 border-t border-slate-100" />
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onDelete(e, company.id, company.name, company.dbId);
+              }}
+              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>Remove Branch</span>
+            </button>
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};
 
 export const AdminCompaniesPage = () => {
   const { addToast } = useToast();
@@ -65,7 +213,7 @@ export const AdminCompaniesPage = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [activeDropdownId, setActiveDropdownId] = useState(null);
+
   const [viewingCompany, setViewingCompany] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -155,7 +303,6 @@ export const AdminCompaniesPage = () => {
 
   const handleDeleteCompany = async (e, id, name, dbId) => {
     e.stopPropagation();
-    setActiveDropdownId(null);
     if (window.confirm(`Are you sure you want to remove ${name} from partner panels?`)) {
       setCompanies((prev) => prev.filter((c) => c.id !== id));
       const targetId = dbId || (typeof id === 'number' ? id : parseInt(String(id).replace('CMP-', ''), 10));
@@ -420,56 +567,12 @@ export const AdminCompaniesPage = () => {
 
                     {/* 8. Actions Dropdown */}
                     <td className="py-3.5 px-4 sm:px-5 text-right whitespace-nowrap">
-                      <div className="relative inline-block text-left" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveDropdownId(activeDropdownId === company.id ? null : company.id);
-                          }}
-                          className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="Options"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {activeDropdownId === company.id && (
-                          <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDropdownId(null);
-                                setViewingCompany(company);
-                              }}
-                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              <Building className="w-3.5 h-3.5 text-blue-600" />
-                              <span>View Branch Details</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => handleCopy(e, company.phone, 'Phone number')}
-                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              <Copy className="w-3.5 h-3.5 text-slate-400" />
-                              <span>Copy Contact</span>
-                            </button>
-
-                            <div className="my-1 border-t border-slate-100" />
-
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteCompany(e, company.id, company.name, company.dbId)}
-                              className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                              <span>Remove Branch</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <CompanyRowActions
+                        company={company}
+                        onView={(c) => setViewingCompany(c)}
+                        onCopyPhone={(e, phone, label) => handleCopy(e, phone, label)}
+                        onDelete={(e, id, name, dbId) => handleDeleteCompany(e, id, name, dbId)}
+                      />
                     </td>
                   </tr>
                 ))}
