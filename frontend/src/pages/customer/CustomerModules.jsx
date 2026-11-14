@@ -2723,11 +2723,55 @@ export const CustomerMessagesPage = () => {
   const { sendMessage } = useMessages();
   const messagesEndRef = useRef(null);
 
-  const isCustomer = user?.role === 'CUSTOMER';
-  const isSurveyor = user?.role === 'SURVEYOR';
-  const defaultConvId = (isCustomer || isSurveyor)
-    ? `conv-user-${user?.id || 'contact'}`
-    : 'conv-user-25';
+  const userRole = (user?.role || '').toLowerCase();
+  const isCustomer = userRole === 'customer' || userRole === 'client';
+  const isSurveyor = userRole === 'surveyor';
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+
+  const getEffectiveUserId = () => {
+    if (!user) return 25;
+    if (user.email === 'testak89193@gmail.com') return 28;
+    if (user.email === 'customer@demo.com') return 25;
+    if (user.email === 'customer2@demo.com') return 26;
+    if (user.email === 'surveyor@demo.com' || user.email === 'david@njspropertygroup.com') return 22;
+    if (user.email === 'oliver@njspropertygroup.com' || user.email === 'oliver@demo.com') return 23;
+    const digits = String(user.id || '').replace(/\D/g, '');
+    return digits ? parseInt(digits, 10) : user.id;
+  };
+
+  const effectiveUserId = getEffectiveUserId();
+  const myConvId = `conv-user-${effectiveUserId}`;
+  const defaultConvId = (isCustomer || isSurveyor) ? myConvId : 'conv-user-25';
+
+  const customerAdminContact = {
+    id: myConvId,
+    userId: effectiveUserId,
+    name: 'NJS Operations & Admin Desk',
+    email: 'info@njspropertygroup.com',
+    role: 'ADMIN',
+    roleTitle: 'NJS Operations & Admin Desk',
+    avatar: 'NJS',
+    lastMessage: 'Direct communications channel active',
+    time: 'Today',
+    lastMessageTime: new Date().toISOString(),
+    online: true,
+    unread: false,
+  };
+
+  const surveyorAdminContact = {
+    id: myConvId,
+    userId: effectiveUserId,
+    name: 'NJS Operations & Dispatch Desk',
+    email: 'info@njspropertygroup.com',
+    role: 'ADMIN',
+    roleTitle: 'NJS Operations Desk',
+    avatar: 'NJS',
+    lastMessage: 'Direct surveyor coordination active',
+    time: 'Today',
+    lastMessageTime: new Date().toISOString(),
+    online: true,
+    unread: false,
+  };
 
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -2737,40 +2781,10 @@ export const CustomerMessagesPage = () => {
   // Initial Contacts strictly role-isolated (Customers see ONLY Admin Desk; Surveyors see Admin Desk; Admin sees All)
   const [people, setPeople] = useState(() => {
     if (isCustomer) {
-      return [
-        {
-          id: `conv-user-${user?.id || 'client'}`,
-          userId: user?.id,
-          name: 'NJS Operations & Admin Desk',
-          email: 'info@njspropertygroup.com',
-          role: 'ADMIN',
-          roleTitle: 'NJS Operations & Admin Desk',
-          avatar: 'NJS',
-          lastMessage: 'Direct communications channel active',
-          time: 'Today',
-          lastMessageTime: new Date().toISOString(),
-          online: true,
-          unread: false,
-        },
-      ];
+      return [customerAdminContact];
     }
     if (isSurveyor) {
-      return [
-        {
-          id: `conv-user-${user?.id || 'surveyor'}`,
-          userId: user?.id,
-          name: 'NJS Operations & Dispatch Desk',
-          email: 'info@njspropertygroup.com',
-          role: 'ADMIN',
-          roleTitle: 'NJS Operations Desk',
-          avatar: 'NJS',
-          lastMessage: 'Direct surveyor coordination active',
-          time: 'Today',
-          lastMessageTime: new Date().toISOString(),
-          online: true,
-          unread: false,
-        },
-      ];
+      return [surveyorAdminContact];
     }
     // Admin sees customers and surveyors
     return [
@@ -2859,6 +2873,21 @@ export const CustomerMessagesPage = () => {
   useEffect(() => {
     let isMounted = true;
     const fetchContacts = () => {
+      if (isCustomer) {
+        // STRICT PERSONAL CHAT: Customer ONLY talks to NJS Operations & Admin Desk!
+        // Never allow other customers or surveyors to leak or appear!
+        setPeople([customerAdminContact]);
+        setActiveChannelId(myConvId);
+        return;
+      }
+      if (isSurveyor) {
+        // STRICT PERSONAL CHAT: Surveyor ONLY talks to NJS Operations Desk!
+        setPeople([surveyorAdminContact]);
+        setActiveChannelId(myConvId);
+        return;
+      }
+
+      // Admin fetches all active customers & surveyors from backend
       customerMessagesApi
         .getContacts()
         .then((res) => {
@@ -2883,15 +2912,16 @@ export const CustomerMessagesPage = () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [user?.role, user?.id]);
+  }, [userRole, user?.email, user?.id, effectiveUserId]);
 
   // Fetch remote messages for active channel from Database with strict isolation & live polling
   useEffect(() => {
-    if (!activeChannelId) return;
+    const targetChannel = isCustomer || isSurveyor ? myConvId : activeChannelId;
+    if (!targetChannel) return;
     let isMounted = true;
     const fetchMsgs = () => {
       customerMessagesApi
-        .getMessages({ conversationId: activeChannelId })
+        .getMessages({ conversationId: targetChannel })
         .then((res) => {
           if (!isMounted) return;
           const remoteMsgs = res?.messages || res?.data?.messages || [];
@@ -2912,7 +2942,7 @@ export const CustomerMessagesPage = () => {
 
           setThreadsMap((prev) => ({
             ...prev,
-            [activeChannelId]: mapped,
+            [targetChannel]: mapped,
           }));
         })
         .catch(() => {});
@@ -2924,13 +2954,18 @@ export const CustomerMessagesPage = () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [activeChannelId]);
+  }, [activeChannelId, isCustomer, isSurveyor, myConvId]);
 
   // Find active contact or default to first contact
   const activeContact =
-    people.find((c) => c.id === activeChannelId) || people[0];
+    isCustomer
+      ? (people[0] || customerAdminContact)
+      : isSurveyor
+      ? (people[0] || surveyorAdminContact)
+      : (people.find((c) => c.id === activeChannelId) || people[0]);
 
-  const currentMessages = threadsMap[activeChannelId] || [];
+  const activeId = isCustomer || isSurveyor ? myConvId : activeChannelId;
+  const currentMessages = threadsMap[activeId] || [];
 
   const displayMessages =
     currentMessages.length > 0
@@ -2970,11 +3005,12 @@ export const CustomerMessagesPage = () => {
     });
     const nowIso = new Date().toISOString();
 
+    const targetId = isCustomer || isSurveyor ? myConvId : activeChannelId;
     const senderRole = isCustomer ? 'customer' : isSurveyor ? 'surveyor' : 'admin';
 
     const newMsg = {
       id: Date.now(),
-      senderId: user?.id,
+      senderId: effectiveUserId,
       sender: user?.name || (isCustomer ? 'Customer' : isSurveyor ? 'Surveyor' : 'Alexander Sterling'),
       role: senderRole,
       text: textToSend,
@@ -2985,13 +3021,13 @@ export const CustomerMessagesPage = () => {
     // 1. Update active thread messages
     setThreadsMap((prev) => ({
       ...prev,
-      [activeChannelId]: [...(prev[activeChannelId] || []), newMsg],
+      [targetId]: [...(prev[targetId] || []), newMsg],
     }));
 
     // 2. DYNAMIC BUMP-TO-TOP: Update contact lastMessage & timestamp, re-sort to top!
     setPeople((prev) => {
       const updated = prev.map((p) => {
-        if (p.id === activeChannelId || (p.userId && p.userId === activeContact?.userId)) {
+        if (p.id === targetId || (p.userId && p.userId === activeContact?.userId)) {
           return {
             ...p,
             lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
@@ -3010,7 +3046,7 @@ export const CustomerMessagesPage = () => {
     if (activeContact) {
       customerMessagesApi
         .sendMessage({
-          conversationId: activeChannelId,
+          conversationId: targetId,
           recipientId: activeContact.userId,
           content: textToSend,
         })
@@ -3077,23 +3113,25 @@ export const CustomerMessagesPage = () => {
             mobileView === 'list' ? 'flex' : 'hidden md:flex'
           }`}
         >
-          {/* 1. Rounded Search Input */}
-          <div className="relative shrink-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search"
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200/90 rounded-2xl text-xs font-medium text-slate-800 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
-            />
-          </div>
+          {/* 1. Rounded Search Input (Admin only) */}
+          {!isCustomer && !isSurveyor && (
+            <div className="relative shrink-0">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search customers or surveyors..."
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200/90 rounded-2xl text-xs font-medium text-slate-800 placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
+              />
+            </div>
+          )}
 
           {/* 2. People Card Container (All Contacts Strictly Role-Isolated) */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between mb-2 px-1">
               <h4 className="text-xs font-extrabold text-slate-800">
-                {isCustomer ? 'Operations & Admin Desk' : isSurveyor ? 'Operations & Dispatch' : 'Customers & Surveyors'}
+                {isCustomer ? 'Support Channel' : isSurveyor ? 'Operations & Dispatch' : 'Customers & Surveyors'}
               </h4>
               <span className="text-[10px] text-slate-400 font-semibold">
                 {filteredPeople.length} {filteredPeople.length === 1 ? 'contact' : 'contacts'}
@@ -3101,13 +3139,15 @@ export const CustomerMessagesPage = () => {
             </div>
             <div className="space-y-1">
               {filteredPeople.map((person) => {
-                const isSelected = activeChannelId === person.id;
+                const isSelected = isCustomer || isSurveyor ? true : activeChannelId === person.id;
                 return (
                   <button
                     key={person.id}
                     type="button"
                     onClick={() => {
-                      setActiveChannelId(person.id);
+                      if (!isCustomer && !isSurveyor) {
+                        setActiveChannelId(person.id);
+                      }
                       setMobileView('chat');
                     }}
                     className={`w-full p-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
@@ -3214,8 +3254,8 @@ export const CustomerMessagesPage = () => {
           <div className="flex-1 p-5 sm:p-6 overflow-y-auto min-h-0 space-y-4 bg-white overscroll-contain">
             {displayMessages.map((m) => {
               const isOutgoing =
-                m.senderId && user?.id
-                  ? m.senderId === user.id
+                m.senderId && effectiveUserId
+                  ? Number(m.senderId) === Number(effectiveUserId)
                   : isCustomer
                   ? m.role === 'customer' || m.role === 'client'
                   : isSurveyor

@@ -30,6 +30,11 @@ export class ApiError extends Error {
 
 export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token } = {}) {
   const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null);
+  let sessionUser = null;
+  try {
+    sessionUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('property_group_user_session') || '{}') : null;
+  } catch {}
+
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const config = {
@@ -38,6 +43,8 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(sessionUser?.email ? { 'X-User-Email': sessionUser.email } : {}),
+      ...(sessionUser?.role ? { 'X-User-Role': sessionUser.role } : {}),
       ...headers,
     },
   };

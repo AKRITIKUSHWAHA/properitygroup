@@ -10,7 +10,7 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
 export const getMessageContacts = async (req, res, next) => {
   try {
     const currentUserId = req.user?.id;
-    const currentUserRole = req.user?.role || 'CUSTOMER';
+    const currentUserRole = (req.user?.role || 'CUSTOMER').toUpperCase();
     const currentUserEmail = req.user?.email || '';
 
     // ========================================================
@@ -215,7 +215,7 @@ export const getMessageContacts = async (req, res, next) => {
 export const getCustomerMessages = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const userRole = req.user.role;
+    const userRole = (req.user.role || 'CUSTOMER').toUpperCase();
     const targetConvId = req.query.conversationId;
 
     let conversationId;
@@ -276,7 +276,7 @@ export const sendCustomerMessage = async (req, res, next) => {
   try {
     const { content, conversationId: reqConvId } = req.body;
     const userId = req.user.id;
-    const userRole = req.user.role || 'CUSTOMER';
+    const userRole = (req.user.role || 'CUSTOMER').toUpperCase();
 
     if (!content?.trim()) {
       throw ApiError.badRequest('Message content is required');
