@@ -62,16 +62,32 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
 
     const realJobs = [];
 
-    // Collect all emails from registered customers, leads, quotes
+    const isDummyEmail = (em) => {
+      const e = (em || '').toLowerCase().trim();
+      return (
+        !e ||
+        e === 'customer@demo.com' ||
+        e === 'customer2@demo.com' ||
+        e === 'admin@demo.com' ||
+        e === 'surveyor@demo.com' ||
+        e.includes('emma.watson') ||
+        e.includes('kensingtonestates') ||
+        e.includes('harrison') ||
+        e.includes('oliver.vance') ||
+        e.includes('charlotte.b')
+      );
+    };
+
+    // Collect all emails from registered customers, leads, quotes (filtering out all demo dummies)
     const emails = new Set([
-      ...Object.keys(registered),
-      ...leads.map((l) => l.customerEmail || l.clientEmail).filter(Boolean),
-      ...quotes.map((q) => q.clientEmail).filter(Boolean),
+      ...Object.keys(registered).filter((em) => !isDummyEmail(em)),
+      ...leads.map((l) => l.customerEmail || l.clientEmail).filter((em) => !isDummyEmail(em)),
+      ...quotes.map((q) => q.clientEmail).filter((em) => !isDummyEmail(em)),
     ]);
 
     emails.forEach((emailRaw) => {
       const email = emailRaw.toLowerCase().trim();
-      if (!email || email === 'customer@demo.com' || email === 'admin@demo.com' || email === 'surveyor@demo.com') return;
+      if (isDummyEmail(email)) return;
 
       const reg = registered[email] || {};
       const lead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === email) || {};
@@ -144,14 +160,18 @@ export const getStoredJobs = () => {
 
     const realCustomerJobs = syncRealCustomerJobs(stored);
 
-    // Filter out dummy demo jobs (Emma Watson, Oliver Vance, etc.)
+    // Filter out dummy demo jobs (Emma Watson, Kensington Estates, Oliver Vance, etc.)
     const nonDummyStored = stored.filter((j) => {
       const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
       return (
+        email &&
         email !== 'customer@demo.com' &&
         email !== 'customer2@demo.com' &&
         email !== 'oliver.vance@example.com' &&
-        email !== 'charlotte.b@outlook.com'
+        email !== 'charlotte.b@outlook.com' &&
+        !email.includes('emma.watson') &&
+        !email.includes('kensingtonestates') &&
+        !email.includes('harrison')
       );
     });
 

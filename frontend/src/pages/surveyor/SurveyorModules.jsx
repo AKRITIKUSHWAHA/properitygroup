@@ -63,22 +63,8 @@ export const SurveyorCalendarPage = () => {
   const today = new Date();
   const formatDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
-  const dynamicDays = [-1, 0, 1, 2, 3].map((offset) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + offset);
-    const isToday = offset === 0;
-    return {
-      label: isToday ? `Today (${formatDay(d)})` : formatDay(d),
-      isToday,
-      appointments: isToday ? Math.min(2, myJobs.length) : offset === 1 ? 1 : 0,
-    };
-  });
-
-  const [selectedDay, setSelectedDay] = useState(dynamicDays[1].label);
-
   const appointments = myJobs
     .filter((j) => j.status !== 'Completed')
-    .slice(0, 5)
     .map((j) => ({
       id: j.id,
       jobNo: j.jobNo || j.id,
@@ -86,10 +72,23 @@ export const SurveyorCalendarPage = () => {
       property: j.property,
       location: j.location,
       type: j.surveyType,
-      access: j.accessNotes || j.propertyDetails?.accessDetails || 'Keys held at local estate agent lockbox',
+      access: j.accessNotes || j.propertyDetails?.accessDetails || 'Customer direct instruction via portal',
       status: j.status,
       countdown: j.countdown || '48h SLA Target',
     }));
+
+  const dynamicDays = [-1, 0, 1, 2, 3].map((offset) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + offset);
+    const isToday = offset === 0;
+    return {
+      label: isToday ? `Today (${formatDay(d)})` : formatDay(d),
+      isToday,
+      appointments: isToday ? appointments.length : 0,
+    };
+  });
+
+  const [selectedDay, setSelectedDay] = useState(dynamicDays[1].label);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -409,14 +408,21 @@ export const SurveyorSiteVisitsPage = () => {
   );
 
   const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
+  let regUser = {};
+  try {
+    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+    const firstEmail = Object.keys(reg).find((e) => !e.includes('demo') && !e.includes('watson'));
+    if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
+  } catch {}
+
   const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-080',
-    property: '14 Mayfair Gate',
-    location: 'Mayfair, London W1K 2PB',
+    id: 'JOB-2026-880',
+    property: regUser.address || 'HYDERABAD',
+    location: regUser.postcode || 'GH12AA',
     timeSlot: '10:00 - 13:00',
-    surveyType: 'RICS Level 2 Home Survey',
+    surveyType: regUser.serviceType || 'RICS Level 2 Home Survey',
     propertyDetails: {
-      accessDetails: 'Keys with Foxtons Mayfair (Branch Ref #FX-402)',
+      accessDetails: 'Customer direct instruction via portal',
     },
   };
 
@@ -434,6 +440,13 @@ export const SurveyorSiteVisitsPage = () => {
 
   const handleFinished = () => {
     setHasFinished(true);
+    if (primaryJob?.id && updateJob) {
+      updateJob(primaryJob.id, {
+        status: 'Inspected',
+        timelineStep: 7,
+        stage: 'PREPARING_REPORT',
+      });
+    }
     addToast({
       type: 'success',
       title: 'Site Visit Concluded',

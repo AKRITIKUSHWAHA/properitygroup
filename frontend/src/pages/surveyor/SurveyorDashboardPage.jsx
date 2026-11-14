@@ -66,20 +66,27 @@ export const SurveyorDashboardPage = () => {
       .catch(() => {});
   }, []);
 
+  let regUser = {};
+  try {
+    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+    const firstEmail = Object.keys(reg).find((e) => !e.includes('demo') && !e.includes('watson'));
+    if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
+  } catch {}
+
   const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-080',
-    property: '14 Mayfair Gate',
-    location: 'Mayfair, London W1K 2PB',
-    surveyType: 'RICS Level 2 Home Survey',
-    customer: 'Emma Watson',
-    customerPhone: '+44 7700 900147',
+    id: 'JOB-2026-880',
+    property: regUser.address || 'HYDERABAD',
+    location: regUser.postcode || 'GH12AA',
+    surveyType: regUser.serviceType || 'RICS Level 2 Home Survey',
+    customer: regUser.name || 'abc',
+    customerPhone: regUser.phone || '1234560789',
     timeSlot: '10:00 - 13:00',
-    status: 'In Progress',
-    countdown: '34h 22m remaining',
+    status: 'Booked',
+    countdown: '48h SLA Target',
     propertyDetails: {
-      accessDetails: 'Keys with Foxtons Mayfair (Branch Ref #FX-402)',
-      yearBuilt: 'c. 1892 (Victorian)',
-      propertyType: 'Mansion Apartment',
+      accessDetails: 'Customer direct instruction via portal',
+      yearBuilt: 'Modern Construction',
+      propertyType: 'Residential Property',
     },
   };
 
