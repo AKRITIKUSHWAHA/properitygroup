@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
 import { NewBookingModal } from './NewBookingModal';
+import { RescheduleModal } from '../crm/RescheduleModal';
 import { Modal } from '../common/Modal';
 import { useToast } from '../ToastContext';
 
@@ -51,6 +52,7 @@ export const BookingCalendar = () => {
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
   // New Task Form
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -741,24 +743,35 @@ export const BookingCalendar = () => {
           subtitle={`${selectedEvent.property}, ${selectedEvent.location}`}
           maxWidth="max-w-xl"
           footer={
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full gap-2">
               <button
                 onClick={() => {
                   setSelectedEvent(null);
                   navigate(`${targetJobBase}/${selectedEvent.id}`);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
               >
-                <span>View Full Job Details</span>
+                <span>View Job Details</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
 
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsRescheduleModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  <span>Reschedule</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           }
         >
@@ -847,6 +860,22 @@ export const BookingCalendar = () => {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Reschedule Inspection Modal */}
+      {selectedEvent && (
+        <RescheduleModal
+          isOpen={isRescheduleModalOpen}
+          onClose={() => setIsRescheduleModalOpen(false)}
+          job={selectedEvent}
+          onRescheduled={(updated) => {
+            setJobs((prev) =>
+              prev.map((j) => (j.id === updated.id || j.jobNo === updated.jobNo ? { ...j, ...updated } : j))
+            );
+            setSelectedEvent(null);
+            setIsRescheduleModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

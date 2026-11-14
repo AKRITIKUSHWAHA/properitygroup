@@ -6,6 +6,7 @@ import {
   createSurveyJob,
   updateJobStage,
   assignSurveyor,
+  rescheduleSurveyJob,
 } from '../controllers/surveyJobsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
@@ -22,5 +23,7 @@ router.get('/:id', getSurveyJobById);
 router.post('/', authorizeRoles('ADMIN'), createSurveyJob);
 router.patch('/:id/stage', updateJobStage);
 router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN'), assignSurveyor);
+router.patch('/:id/reschedule', rescheduleSurveyJob);
+router.post('/:id/reschedule', rescheduleSurveyJob);
 
 export default router;

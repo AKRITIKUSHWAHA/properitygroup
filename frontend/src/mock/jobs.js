@@ -208,7 +208,7 @@ export const useJobs = () => {
 
   const updateJob = (id, updates) => {
     setJobs((prev) =>
-      prev.map((j) => (j.id === id ? { ...j, ...updates } : j))
+      prev.map((j) => (j.id === id || j.jobNo === id ? { ...j, ...updates } : j))
     );
     const token = localStorage.getItem('property_group_auth_token');
     if (token && (updates.stage || updates.status)) {
@@ -221,6 +221,21 @@ export const useJobs = () => {
         body: JSON.stringify({
           newStage: (updates.stage || updates.status || '').toUpperCase().replace(/\s+/g, '_'),
           reason: updates.reason || 'Status updated via UI',
+        }),
+      }).catch(() => {});
+    }
+    if (token && (updates.date || updates.inspectionDate || updates.timeSlot)) {
+      fetch(`/api/v1/survey-jobs/${id}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          inspectionDate: updates.inspectionDate || updates.date,
+          inspectionTime: updates.inspectionTime || updates.timeSlot,
+          surveyorId: updates.surveyorId,
+          reason: updates.rescheduleReason || updates.reason || 'Rescheduled via CRM',
         }),
       }).catch(() => {});
     }

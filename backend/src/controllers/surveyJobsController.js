@@ -249,3 +249,105 @@ export const assignSurveyor = async (req, res, next) => {
   }
 };
 
+export const rescheduleSurveyJob = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { inspectionDate, inspectionTime, surveyorId, reason, keyCollectionDetails } = req.body;
+
+    let jobId = parseInt(id, 10);
+    let job = null;
+
+    if (!isNaN(jobId)) {
+      job = await prisma.job.findUnique({ where: { id: jobId } });
+    }
+    if (!job) {
+      job = await prisma.job.findFirst({ where: { reference: String(id) } });
+    }
+    if (!job) {
+      throw ApiError.notFound('Survey job not found');
+    }
+
+    let parsedDate = undefined;
+    if (inspectionDate) {
+      const d = new Date(inspectionDate);
+      if (!isNaN(d.getTime())) {
+        parsedDate = d;
+      }
+    }
+
+    // Validate surveyor ID against database to avoid foreign key violation
+    let validSurveyorId = job.surveyorId;
+    if (surveyorId !== undefined && surveyorId !== null) {
+      const parsedSurveyorId = parseInt(surveyorId);
+      if (!isNaN(parsedSurveyorId)) {
+        const surveyorExists = await prisma.user.findUnique({
+          where: { id: parsedSurveyorId },
+        });
+        if (surveyorExists) {
+          validSurveyorId = surveyorExists.id;
+        } else {
+          // If specific ID doesn't exist, check for any surveyor user
+          const anySurveyor = await prisma.user.findFirst({
+            where: { role: 'SURVEYOR' },
+          });
+          if (anySurveyor) {
+            validSurveyorId = anySurveyor.id;
+          }
+        }
+      }
+    }
+
+    const updated = await prisma.job.update({
+      where: { id: job.id },
+      data: {
+        inspectionDate: parsedDate !== undefined ? parsedDate : job.inspectionDate,
+        inspectionTime: inspectionTime || job.inspectionTime,
+        surveyorId: validSurveyorId,
+        keyCollectionDetails: keyCollectionDetails !== undefined ? keyCollectionDetails : job.keyCollectionDetails,
+        stage: job.stage === 'QUOTE' ? 'BOOKED' : job.stage,
+      },
+      include: {
+        surveyor: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    });
+
+    // Create audit timeline log
+    try {
+      const auditUserId = req.user?.id || (await prisma.user.findFirst({ select: { id: true } }))?.id;
+      if (auditUserId) {
+        await prisma.auditLog.create({
+          data: {
+            jobId: job.id,
+            userId: auditUserId,
+            action: 'JOB_RESCHEDULED',
+            details: `Rescheduled to ${inspectionDate || 'new date'} (${inspectionTime || 'slot'}). Reason: ${reason || 'Client request'}`,
+          },
+        });
+      }
+    } catch (e) {}
+
+    // Also record callLog / timeline note if reason provided
+    if (reason) {
+      try {
+        await prisma.callLog.create({
+          data: {
+            jobId: job.id,
+            leadId: job.leadId,
+            callerName: req.user?.name || 'Staff Coordinator',
+            summary: `Appointment Rescheduled to ${inspectionDate} ${inspectionTime || ''}. Reason: ${reason}`,
+            durationMinutes: 2,
+          },
+        });
+      } catch (e) {}
+    }
+
+    return ApiResponse.success(
+      res,
+      { job: updated },
+      `Inspection appointment successfully rescheduled to ${inspectionDate || 'new date'}`
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+

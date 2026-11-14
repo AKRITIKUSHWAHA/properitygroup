@@ -38,6 +38,7 @@ import {
   AlertTriangle,
   Star,
   ExternalLink,
+  Calendar,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { StatusPill } from '../../components/common/StatusPill';
@@ -47,6 +48,7 @@ import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { useEmailAutomations } from '../../mock/emailAutomations';
 import { RecordBacsPaymentModal } from '../../components/crm/RecordBacsPaymentModal';
+import { RescheduleModal } from '../../components/crm/RescheduleModal';
 import { useMessages } from '../../mock/messages';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 
@@ -83,6 +85,7 @@ export const JobDetailsPage = () => {
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
   const [isAdjustQuoteModalOpen, setIsAdjustQuoteModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
@@ -411,12 +414,7 @@ export const JobDetailsPage = () => {
   };
 
   const handleWhatsNextReschedule = () => {
-    addToast({
-      type: 'info',
-      title: 'Reschedule Requested',
-      message: 'Opening scheduler to select alternative surveyor inspection slot.',
-    });
-    navigate('/staff/calendar');
+    setIsRescheduleModalOpen(true);
   };
 
   const handleWhatsNextArchive = () => {
@@ -737,6 +735,15 @@ export const JobDetailsPage = () => {
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span>Confirm/Adjust quote</span>
+          </button>
+
+          <button
+            onClick={() => setIsRescheduleModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title="Reschedule on-site survey inspection"
+          >
+            <Calendar className="w-4 h-4 text-rose-600" />
+            <span>Reschedule</span>
           </button>
 
           <button
@@ -1394,12 +1401,21 @@ export const JobDetailsPage = () => {
                   <div className="text-xs text-slate-500 mt-0.5">Chartered Valuation Surveyor</div>
                 </div>
 
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                    Inspection Schedule
-                  </span>
-                  <div className="font-bold text-slate-900 text-sm font-mono">{job.date}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">Time window: {job.timeSlot}</div>
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-start justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                      Inspection Schedule
+                    </span>
+                    <div className="font-bold text-slate-900 text-sm font-mono">{job.date}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Time window: {job.timeSlot}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsRescheduleModalOpen(true)}
+                    className="px-2.5 py-1 text-xs font-bold text-[#2563EB] hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors cursor-pointer"
+                  >
+                    Reschedule
+                  </button>
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
@@ -2121,6 +2137,14 @@ export const JobDetailsPage = () => {
         clientEmail={job.customerEmail || 'customer@demo.com'}
         clientName={job.customer}
         defaultTab={clientModalTab}
+      />
+
+      {/* Reschedule Inspection Modal */}
+      <RescheduleModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        job={job}
+        onRescheduled={(updated) => updateJob(job.id, updated)}
       />
     </div>
   );

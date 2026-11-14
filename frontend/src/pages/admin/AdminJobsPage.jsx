@@ -23,12 +23,14 @@ import {
   ChevronDown,
   ChevronsUpDown,
   ChevronLeft,
+  CalendarClock,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
 import { StatusPill } from '../../components/common/StatusPill';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
 import { NewBookingModal } from '../../components/calendar/NewBookingModal';
+import { RescheduleModal } from '../../components/crm/RescheduleModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useToast } from '../../components/ToastContext';
 import { adminSurveyJobsApi } from '../../api/adminApi';
@@ -88,7 +90,7 @@ const mapBackendJobToFrontend = (bj) => {
 };
 
 // 3-Dot Clean Action Dropdown Menu for each Survey Job
-const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
+const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -237,6 +239,22 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile }) => {
             <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>View Access &amp; Keys</span>
           </button>
+
+          <div className="h-px bg-slate-100 my-1" />
+
+          {/* Reschedule Inspection Action */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              if (onReschedule) onReschedule(job);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+          >
+            <CalendarClock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+            <span>Reschedule Inspection</span>
+          </button>
         </div>
       )}
     </div>
@@ -295,6 +313,7 @@ export const AdminJobsPage = () => {
   const [surveyorFilter, setSurveyorFilter] = useState('All');
   const [pageSize] = useState(10);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
+  const [selectedRescheduleJob, setSelectedRescheduleJob] = useState(null);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
@@ -789,6 +808,7 @@ export const AdminJobsPage = () => {
                               setSelectedClientEmail(email);
                               setClientModalTab(tab);
                             }}
+                            onReschedule={(targetJob) => setSelectedRescheduleJob(targetJob)}
                           />
                         </td>
                       </tr>
@@ -862,6 +882,19 @@ export const AdminJobsPage = () => {
         isOpen={isNewBookingModalOpen}
         onClose={() => setIsNewBookingModalOpen(false)}
         onSubmit={handleCreateJob}
+      />
+
+      {/* Reschedule Inspection Modal */}
+      <RescheduleModal
+        isOpen={!!selectedRescheduleJob}
+        onClose={() => setSelectedRescheduleJob(null)}
+        job={selectedRescheduleJob}
+        onRescheduled={(updated) => {
+          setJobs((prev) =>
+            prev.map((j) => (j.id === updated.id || j.jobNo === updated.jobNo ? { ...j, ...updated } : j))
+          );
+          setSelectedRescheduleJob(null);
+        }}
       />
 
       {/* Client Profile, Call Notes & Complaints Modal */}

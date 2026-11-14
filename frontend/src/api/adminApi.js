@@ -58,6 +58,7 @@ export const adminSurveyJobsApi = {
   createJob: (jobData) => api.post('/survey-jobs', jobData),
   updateStage: (id, newStage, reason = '') => api.patch(`/survey-jobs/${id}/stage`, { newStage, reason }),
   assignSurveyor: (id, assignmentData) => api.patch(`/survey-jobs/${id}/assign-surveyor`, assignmentData),
+  rescheduleJob: (id, rescheduleData) => api.patch(`/survey-jobs/${id}/reschedule`, rescheduleData),
 };
 
 // Menu 7: Messages Inbox
