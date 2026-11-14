@@ -704,6 +704,27 @@ export const SurveyorUploadReportsPage = () => {
     }
   };
 
+  const handleStartDrafting = () => {
+    const targetEmail = 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_drafting', 'true');
+    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    if (selectedJob && updateJob) {
+      updateJob(selectedJob, {
+        status: 'Drafting',
+        timelineStep: 8,
+        stage: 'PREPARING_REPORT',
+        customerEmail: targetEmail,
+      });
+    }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
+    addToast({
+      type: 'success',
+      title: 'Report Drafting Commenced',
+      message: `Technical drafting started for ${selectedJob}. Customer Tracker advanced to Stage 8 (80%).`,
+    });
+  };
+
   const handleSubmitAllQA = () => {
     const targetEmail = 'astp750@gmail.com';
     localStorage.setItem('propertygroup_drafting', 'true');
@@ -714,6 +735,7 @@ export const SurveyorUploadReportsPage = () => {
       updateJob(selectedJob, {
         status: 'QA_Review',
         timelineStep: 9,
+        stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
       });
     }
@@ -722,7 +744,7 @@ export const SurveyorUploadReportsPage = () => {
     addToast({
       type: 'success',
       title: 'Dispatched for Quality Assurance',
-      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review. Progress advanced to Stage 9.`,
+      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review. Progress advanced to Stage 9 (90%).`,
     });
   };
 
@@ -829,17 +851,29 @@ export const SurveyorUploadReportsPage = () => {
 
         {/* Uploaded Documents Table */}
         <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h4 className="text-xs font-bold text-[#0B1F4D] uppercase tracking-wider">
               Pending QA Documents ({uploadedFiles.length})
             </h4>
-            <button
-              onClick={handleSubmitAllQA}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Submit Batch to Admin QA</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleStartDrafting}
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Start Drafting (Stage 8)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitAllQA}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Submit to QA (Stage 9)</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">
