@@ -179,9 +179,12 @@ export const JobDetailsPage = () => {
   const handleApproveQaReport = () => {
     setQaStatus('Approved');
     handleStepClick(5); // Complete stage
+    const targetEmail = job?.customerEmail || 'astp750@gmail.com';
+    localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
     updateJob(job.id, {
-      status: 'Complete',
+      status: 'Completed',
       timelineStep: 10,
+      customerEmail: targetEmail,
       activityLog: [
         {
           id: Date.now(),
@@ -191,6 +194,7 @@ export const JobDetailsPage = () => {
         ...(job.activityLog || []),
       ],
     });
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
 
     addToast({
       type: 'success',

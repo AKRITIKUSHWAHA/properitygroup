@@ -2328,21 +2328,28 @@ export const CustomerTrackSurveyPage = () => {
   const currentStep = React.useMemo(() => {
     if (isDemo) return 7;
 
-    const jStatus = (myJob?.status || '').toLowerCase().trim();
-    const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
-    const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || (myJob?.timelineStep || 0) >= 6;
+    const targetEmail = userEmail || 'astp750@gmail.com';
+    const isLocalDelivered = localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
+    const isLocalQA = localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
+    const isLocalDrafting = localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
+    const isLocalInspected = localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
-    if (myJob?.status === 'Completed' || myJob?.timelineStep >= 10 || myJob?.reportStatus === 'Delivered' || jStatus === 'completed') return 10;
-    if (myJob?.status === 'QA_Review' || myJob?.timelineStep === 9 || jStatus === 'qa_review' || jStatus === 'qa review') return 9;
-    if (myJob?.status === 'Drafting' || myJob?.timelineStep === 8 || jStatus === 'drafting' || jStatus === 'preparing report') return 8;
-    if (myJob?.status === 'Inspected' || myJob?.timelineStep === 7 || jStatus === 'inspected') return 7;
+    const jStatus = (myJob?.status || '').toLowerCase().trim();
+    const timelineStep = myJob?.timelineStep || 0;
+    const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
+    const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || timelineStep >= 6;
+
+    if (myJob?.status === 'Completed' || timelineStep >= 10 || isLocalDelivered || jStatus === 'completed') return 10;
+    if (myJob?.status === 'QA_Review' || timelineStep === 9 || isLocalQA || jStatus === 'qa_review' || jStatus === 'qa review') return 9;
+    if (myJob?.status === 'Drafting' || timelineStep === 8 || isLocalDrafting || jStatus === 'drafting' || jStatus === 'preparing report') return 8;
+    if (myJob?.status === 'Inspected' || timelineStep === 7 || isLocalInspected || jStatus === 'inspected') return 7;
     if (isBookedOrScheduled) return 6;
-    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || (myJob?.timelineStep || 0) >= 5) return 5;
+    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || timelineStep >= 5) return 5;
     if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') return 4;
     if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') return 3;
     if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') return 2;
     return 1;
-  }, [myJob, myQuote, myLead, myAgreement, isDemo]);
+  }, [myJob, myQuote, myLead, myAgreement, isDemo, userEmail]);
 
   const milestone = React.useMemo(() => {
     switch (currentStep) {

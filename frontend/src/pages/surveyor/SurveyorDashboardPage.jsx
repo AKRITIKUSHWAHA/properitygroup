@@ -92,11 +92,38 @@ export const SurveyorDashboardPage = () => {
 
   const secondaryJob = activeJobs[1] || null;
 
-  // On-Site Status for Primary Job
-  // 'scheduled' | 'arrived' | 'completed' | 'qa_submitted'
-  const [jobStage, setJobStage] = useState('arrived');
+  const targetCustomerEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+  const isJobCompleted =
+    primaryJob?.status === 'Inspected' ||
+    primaryJob?.status === 'Drafting' ||
+    primaryJob?.status === 'QA_Review' ||
+    primaryJob?.status === 'Completed' ||
+    (primaryJob?.timelineStep || 0) >= 7 ||
+    localStorage.getItem(`propertygroup_inspection_completed_${targetCustomerEmail}`) === 'true';
+
+  const isJobQASubmitted =
+    primaryJob?.status === 'QA_Review' ||
+    primaryJob?.status === 'Completed' ||
+    (primaryJob?.timelineStep || 0) >= 9 ||
+    localStorage.getItem(`propertygroup_qareview_${targetCustomerEmail}`) === 'true';
+
+  // On-Site Status for Primary Job (Persistent across browser refresh)
+  const [jobStage, setJobStage] = useState(
+    isJobQASubmitted ? 'qa_submitted' : isJobCompleted ? 'completed' : 'arrived'
+  );
   const [arrivalTimestamp, setArrivalTimestamp] = useState('Today at 10:02 AM');
-  const [completeTimestamp, setCompleteTimestamp] = useState(null);
+  const [completeTimestamp, setCompleteTimestamp] = useState(
+    isJobCompleted ? 'Today (Completed)' : null
+  );
+
+  useEffect(() => {
+    if (isJobQASubmitted) {
+      setJobStage('qa_submitted');
+    } else if (isJobCompleted) {
+      setJobStage('completed');
+      setCompleteTimestamp('Today (Completed)');
+    }
+  }, [isJobCompleted, isJobQASubmitted]);
 
   // Turnaround Countdown State (48h SLA)
   const [timeRemaining, setTimeRemaining] = useState({ hours: 34, minutes: 22 });
@@ -123,7 +150,7 @@ export const SurveyorDashboardPage = () => {
   ]);
 
   // QA Submission State
-  const [isQASubmitted, setIsQASubmitted] = useState(false);
+  const [isQASubmitted, setIsQASubmitted] = useState(isJobQASubmitted);
 
   // Handlers for On-Site Actions
   const handleLogArrival = () => {
@@ -141,13 +168,20 @@ export const SurveyorDashboardPage = () => {
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
+
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+
     if (primaryJob?.id) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
+        customerEmail: targetEmail,
       });
     }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+
     addToast({
       type: 'success',
       title: 'Inspection Completed',
@@ -170,12 +204,19 @@ export const SurveyorDashboardPage = () => {
     setCapturedPhotos([newPhoto, ...capturedPhotos]);
     setIsPhotoModalOpen(false);
     setDefectNote('');
+
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+
     if (primaryJob?.id) {
       updateJob(primaryJob.id, {
         status: 'Drafting',
         timelineStep: 8,
+        customerEmail: targetEmail,
       });
     }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+
     addToast({
       type: 'success',
       title: 'Site Evidence Saved',
@@ -186,12 +227,19 @@ export const SurveyorDashboardPage = () => {
   const handleSubmitQA = () => {
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
+
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
+
     if (primaryJob?.id) {
       updateJob(primaryJob.id, {
         status: 'QA_Review',
         timelineStep: 9,
+        customerEmail: targetEmail,
       });
     }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+
     addToast({
       type: 'success',
       title: 'Report Submitted for QA Review',

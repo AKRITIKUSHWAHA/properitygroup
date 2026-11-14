@@ -111,7 +111,46 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
       const hasSurveyor = existing?.surveyor && existing.surveyor !== 'Pending Allocation';
       const assignedSurveyor = hasSurveyor ? existing.surveyor : 'David Thorne MRICS';
       const assignedDate = existing?.date && existing.date !== 'Pending Allocation' ? existing.date : '16 Nov 2026';
-      const currentJobStatus = existing?.status || 'Booked';
+
+      const isInspected =
+        existing?.status?.toLowerCase() === 'inspected' ||
+        (existing?.timelineStep || 0) >= 7 ||
+        localStorage.getItem(`propertygroup_inspection_completed_${email}`) === 'true';
+
+      const isDrafting =
+        existing?.status?.toLowerCase() === 'drafting' ||
+        (existing?.timelineStep || 0) >= 8 ||
+        localStorage.getItem(`propertygroup_drafting_${email}`) === 'true';
+
+      const isQAReview =
+        existing?.status?.toLowerCase() === 'qa_review' ||
+        existing?.status?.toLowerCase() === 'qa review' ||
+        (existing?.timelineStep || 0) >= 9 ||
+        localStorage.getItem(`propertygroup_qareview_${email}`) === 'true';
+
+      const isCompleted =
+        existing?.status?.toLowerCase() === 'completed' ||
+        (existing?.timelineStep || 0) >= 10 ||
+        localStorage.getItem(`propertygroup_delivered_${email}`) === 'true';
+
+      let currentJobStatus = 'Booked';
+      let currentTimelineStep = 6;
+
+      if (isCompleted) {
+        currentJobStatus = 'Completed';
+        currentTimelineStep = 10;
+      } else if (isQAReview) {
+        currentJobStatus = 'QA_Review';
+        currentTimelineStep = 9;
+      } else if (isDrafting) {
+        currentJobStatus = 'Drafting';
+        currentTimelineStep = 8;
+      } else if (isInspected) {
+        currentJobStatus = 'Inspected';
+        currentTimelineStep = 7;
+      } else if (existing?.status) {
+        currentJobStatus = existing.status;
+      }
 
       const realJob = {
         id: existing?.id || jobNo,
@@ -128,11 +167,11 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
         surveyor: assignedSurveyor,
         surveyorId: existing?.surveyorId || 'srv-1',
         status: currentJobStatus,
-        stage: 'BOOKED',
+        stage: currentJobStatus === 'Completed' ? 'COMPLETE' : (currentJobStatus === 'Inspected' || currentJobStatus === 'Drafting' ? 'PREPARING_REPORT' : 'BOOKED'),
         termsStatus: 'Signed',
         paymentStatus: 'Paid',
         canBook: true,
-        timelineStep: existing?.timelineStep && existing.timelineStep >= 6 ? existing.timelineStep : 6,
+        timelineStep: currentTimelineStep,
         accessNotes: existing?.accessNotes || 'Customer direct instruction via portal',
         backendSynced: false,
       };
@@ -227,7 +266,14 @@ export const useJobs = () => {
 
   const updateJob = (id, updates) => {
     setJobs((prev) =>
-      prev.map((j) => (j.id === id || j.jobNo === id ? { ...j, ...updates } : j))
+      prev.map((j) => {
+        const matches =
+          j.id === id ||
+          j.jobNo === id ||
+          (updates.customerEmail && j.customerEmail && j.customerEmail.toLowerCase() === updates.customerEmail.toLowerCase()) ||
+          (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase());
+        return matches ? { ...j, ...updates } : j;
+      })
     );
     const token = localStorage.getItem('property_group_auth_token');
     if (token && (updates.stage || updates.status)) {
