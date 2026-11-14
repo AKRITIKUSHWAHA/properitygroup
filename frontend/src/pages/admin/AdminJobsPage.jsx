@@ -157,25 +157,30 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
   };
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
+    <div
+      ref={menuRef}
+      className="relative inline-block text-left"
+      style={{ zIndex: isOpen ? 100 : 'auto' }}
+    >
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen((prev) => !prev);
         }}
-        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer select-none ${
           isOpen ? 'bg-blue-100 text-[#0B1F4D] ring-2 ring-blue-300' : 'text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100'
         }`}
         title="Job actions"
         aria-label="Job actions"
       >
-        <MoreVertical className="w-4 h-4" />
+        <MoreVertical className="w-4 h-4 pointer-events-none" />
       </button>
 
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left"
+          style={{ zIndex: 9999 }}
+          className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
         >
           {/* Primary View Action */}
           <button

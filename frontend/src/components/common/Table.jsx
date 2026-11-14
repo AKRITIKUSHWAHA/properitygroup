@@ -238,14 +238,16 @@ export const Table = ({
                   return (
                     <tr
                       key={rowKey}
+                      style={{ position: 'relative', zIndex: paginatedData.length - rowIdx }}
                       className="hover:bg-slate-50/80 transition-colors group"
                     >
                       {columns.map((col, colIdx) => {
                         const val = col.key ? row[col.key] : null;
+                        const isActionCol = col.key === 'actions' || col.header?.toLowerCase().includes('action');
                         return (
                           <td
                             key={col.key || colIdx}
-                            className={`py-3 px-3 sm:px-3.5 lg:px-4 text-xs text-slate-700 ${col.className || ''}`}
+                            className={`py-3 px-3 sm:px-3.5 lg:px-4 text-xs text-slate-700 ${isActionCol ? 'overflow-visible' : ''} ${col.className || ''}`}
                           >
                             {col.render ? col.render(val, row, rowIdx) : val}
                           </td>
