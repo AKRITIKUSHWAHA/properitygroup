@@ -73,6 +73,11 @@ export function validateQuoteForm(formData) {
     }
   }
 
+  // Account Password (for customer dashboard access)
+  if (!formData.password || formData.password.trim().length < 6) {
+    errors.password = "Please choose a password with at least 6 characters for your customer portal login.";
+  }
+
   // Privacy Notice Consent
   if (!formData.privacyConsent) {
     errors.privacyConsent = "Please confirm that you agree to the processing of your enquiry details.";

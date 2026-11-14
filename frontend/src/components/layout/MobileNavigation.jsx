@@ -278,6 +278,17 @@ export function MobileNavigation({ isOpen, onClose }) {
         {/* Mobile Action Callouts */}
         <div className="mobile-drawer-bottom">
           <Button
+            to="/login"
+            variant="outline"
+            isBlock
+            onClick={onClose}
+            style={{ marginBottom: 'var(--space-2)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+          >
+            <User size={15} style={{ marginRight: '6px' }} />
+            <span>Customer Login</span>
+          </Button>
+
+          <Button
             to="/request-quote"
             variant="gold"
             isBlock

@@ -157,8 +157,8 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     return config.defaultEmail;
   };
 
-  const [email, setEmail] = useState(() => getInitialEmail(activeRoleKey));
-  const [password, setPassword] = useState(DEFAULT_DEMO_PASSWORD);
+  const [email, setEmail] = useState(() => location.state?.prefilledEmail || getInitialEmail(activeRoleKey));
+  const [password, setPassword] = useState(() => (location.state?.prefilledEmail ? '' : DEFAULT_DEMO_PASSWORD));
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -166,10 +166,15 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
 
   // Keep state synchronized whenever the route or active role changes
   useEffect(() => {
-    setEmail(getInitialEmail(activeRoleKey));
-    setPassword(DEFAULT_DEMO_PASSWORD);
+    if (location.state?.prefilledEmail) {
+      setEmail(location.state.prefilledEmail);
+      setPassword('');
+    } else {
+      setEmail(getInitialEmail(activeRoleKey));
+      setPassword(DEFAULT_DEMO_PASSWORD);
+    }
     setErrorMessage('');
-  }, [activeRoleKey]);
+  }, [activeRoleKey, location.state]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
