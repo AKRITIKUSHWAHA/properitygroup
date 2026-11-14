@@ -268,7 +268,19 @@ export const CustomerDashboardPage = () => {
       </div>
 
       {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
-      <SurveyProgressTracker currentStep={customerJob?.timelineStep || 7} job={customerJob} />
+      <SurveyProgressTracker
+        currentStep={
+          customerJob?.timelineStep ||
+          ((user?.email || '').toLowerCase().trim() === 'customer@demo.com'
+            ? 7
+            : customerJob?.termsStatus === 'Signed'
+            ? customerJob?.paymentStatus === 'Paid'
+              ? 5
+              : 4
+            : 2)
+        }
+        job={customerJob}
+      />
 
       {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

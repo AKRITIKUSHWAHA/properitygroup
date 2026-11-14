@@ -101,7 +101,7 @@ export const CustomerTermsPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, addJob } = useJobs();
   const { agreements, setAgreements, markAgreementSigned } = useTerms();
 
   // 1. Strict customer job isolation
@@ -348,23 +348,75 @@ export const CustomerTermsPage = () => {
       }
 
       // 2. Update in useJobs store
+      const jobPayload = {
+        termsStatus: 'Signed',
+        paymentStatus: 'Paid',
+        canBook: true,
+        timelineStep: 5,
+        status: 'Booked',
+      };
+
       if (currentJob?.id) {
         updateJob(currentJob.id, {
-          termsStatus: 'Signed',
-          paymentStatus: 'Paid',
-          canBook: true,
-          timelineStep: 4,
+          ...jobPayload,
           tasks: (currentJob.tasks || []).map((t) => ({ ...t, done: true })),
           activityLog: [
             {
               id: Date.now(),
               time: nowString,
-              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & settled invoice (£${grossTotal}).`,
+              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & settled invoice (£${grossTotal.toFixed(2)}).`,
             },
             ...(currentJob.activityLog || []),
           ],
         });
+      } else {
+        addJob({
+          id: jobNo || `JOB-2026-880`,
+          jobNo: jobNo || `JOB-2026-880`,
+          customer: user?.name || typedName || 'Client',
+          customerEmail: userEmail || 'client@example.com',
+          customerPhone: regUser.phone || user?.phone || '',
+          surveyType: surveyType,
+          property: propertyAddress,
+          location: regUser.postcode || '',
+          postcode: regUser.postcode || '',
+          surveyor: 'Pending Allocation',
+          status: 'Booked',
+          termsStatus: 'Signed',
+          paymentStatus: 'Paid',
+          timelineStep: 5,
+          date: 'Pending Allocation',
+          timeSlot: 'Pending Confirmation',
+          quote: {
+            baseFee: baseFee,
+            total: grossTotal,
+          },
+        });
       }
+
+      // 3. Update quotes repository
+      try {
+        const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+        const updatedQuotes = storedQuotes.map((q) => {
+          if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === (user?.name || '').toLowerCase().trim()) {
+            return { ...q, status: 'Paid', termsStatus: 'Signed' };
+          }
+          return q;
+        });
+        localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
+      } catch {}
+
+      // 4. Update leads repository to Converted
+      try {
+        const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+        const updatedLeads = storedLeads.map((l) => {
+          if ((l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail || (l.customerName || l.clientName || '').toLowerCase().trim() === (user?.name || '').toLowerCase().trim()) {
+            return { ...l, status: 'Converted' };
+          }
+          return l;
+        });
+        localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+      } catch {}
 
       setIsProcessingPayment(false);
       setStage('confirmed');
@@ -1435,7 +1487,7 @@ export const CustomerInvoicesPage = () => {
   useEffect(() => { customerInvoicesAndPaymentsApi.getInvoices().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, addJob } = useJobs();
 
   const [settlingInvoice, setSettlingInvoice] = useState(null);
   const [viewingReceipt, setViewingReceipt] = useState(null);
@@ -1986,7 +2038,7 @@ export const CustomerReportsPage = () => {
   useEffect(() => { customerReportsApi.getReports().catch(() => {}); }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, addJob } = useJobs();
   const [reviewPromptJob, setReviewPromptJob] = useState(null);
   const [promptRating, setPromptRating] = useState(5);
   const [promptFeedback, setPromptFeedback] = useState('');
@@ -2234,12 +2286,17 @@ export const CustomerTrackSurveyPage = () => {
   const { jobs } = useJobs();
   const { quotes = [] } = useQuotes();
   const { leads = [] } = useLeads();
+  const { agreements = [] } = useTerms();
   const userEmail = (user?.email || '').toLowerCase().trim();
   const isDemo = userEmail === 'customer@demo.com';
 
   const myJob = jobs.find((j) => isJobForCustomer(j, user));
   const myQuote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail);
   const myLead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail);
+  const myAgreement = agreements.find((a) => {
+    const aEmail = (a.signerEmail || '').toLowerCase().trim();
+    return (userEmail && aEmail === userEmail) || (myJob && a.jobNo === myJob.id);
+  });
 
   let regUser = {};
   try {
@@ -2260,6 +2317,102 @@ export const CustomerTrackSurveyPage = () => {
   const refNo = myJob?.id || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
   const surveyorName = myJob?.surveyor || 'David Thorne MRICS';
 
+  // Calculate live dynamic step (1 to 10) based on client lifecycle
+  const currentStep = React.useMemo(() => {
+    if (isDemo) return 7;
+
+    if (myJob?.status === 'Completed' || myJob?.timelineStep >= 10 || myJob?.reportStatus === 'Delivered') return 10;
+    if (myJob?.status === 'QA_Review' || myJob?.timelineStep === 9) return 9;
+    if (myJob?.status === 'Drafting' || myJob?.timelineStep === 8) return 8;
+    if (myJob?.status === 'Inspected' || myJob?.timelineStep === 7) return 7;
+    if (myJob?.status === 'Scheduled' || (myJob?.surveyor && myJob.surveyor !== 'Pending Allocation' && myJob.date && myJob.date !== 'Pending Allocation')) return 6;
+    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid') return 5;
+    if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') return 4;
+    if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') return 3;
+    if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') return 2;
+    return 1;
+  }, [myJob, myQuote, myLead, myAgreement, isDemo]);
+
+  const milestone = React.useMemo(() => {
+    switch (currentStep) {
+      case 1:
+        return {
+          cStage: 'Stage 1: Enquiry Logged',
+          cDesc: `Enquiry received for ${propertyAddress}.`,
+          aStage: 'Stage 2: Quotation Preparation (Current)',
+          aDesc: 'Operations estimating desk is finalizing your fixed fee proposal.',
+          uStage: 'Stage 3: Proposal Review & Client Acceptance',
+          uDesc: 'Proposal will be issued to your email and portal.',
+        };
+      case 2:
+      case 3:
+        return {
+          cStage: 'Stage 2: Quotation Issued',
+          cDesc: `Formal fee proposal issued for ${propertyAddress}.`,
+          aStage: 'Stage 3: Proposal Review & Acceptance (Current)',
+          aDesc: 'Please review and accept your quotation to proceed with RICS engagement.',
+          uStage: 'Stage 4: Terms of Engagement Signing',
+          uDesc: 'Digital signature required under RICS regulatory compliance.',
+        };
+      case 4:
+        return {
+          cStage: 'Stage 4: Terms of Engagement Signed',
+          cDesc: `Letter of engagement executed for ${propertyAddress}. Official contract sealed.`,
+          aStage: 'Stage 5: Booking Fee / Advance Payment (Current)',
+          aDesc: 'Awaiting invoice payment to lock diary inspection window with assigned surveyor.',
+          uStage: 'Stage 6: Surveyor Allocation & Date Confirmation',
+          uDesc: 'Operations desk will coordinate key collection and confirmed site access slot.',
+        };
+      case 5:
+        return {
+          cStage: 'Stage 5: Payment Confirmed & Receipt Issued',
+          cDesc: 'Payment registered and VAT receipt issued. Booking is locked.',
+          aStage: 'Stage 6: Operations Desk Allocating Surveyor (Current)',
+          aDesc: `Operations team is assigning local RICS surveyor and coordinating access for ${propertyAddress}.`,
+          uStage: 'Stage 7: On-Site Physical Inspection',
+          uDesc: 'Surveyor will conduct detailed inspection.',
+        };
+      case 6:
+        return {
+          cStage: 'Stage 6: Inspection Date Booked',
+          cDesc: `Survey inspection locked for ${propertyAddress} with ${surveyorName}. Access arranged with agent.`,
+          aStage: 'Stage 7: Physical On-Site Inspection (Current)',
+          aDesc: `Surveyor on-site at ${propertyAddress} conducting structural evaluation.`,
+          uStage: 'Stage 8: Report Compilation & Defect Diagnostics',
+          uDesc: 'Surveyor compiling condition ratings and rebuild calculations.',
+        };
+      case 7:
+        return {
+          cStage: 'Stage 7: On-Site Inspection Completed',
+          cDesc: `${surveyorName} concluded inspection at ${propertyAddress}. Key access concluded and site secured.`,
+          aStage: 'Stage 8: Report Drafting & Analysis (Current)',
+          aDesc: 'Surveyor compiling defect findings, condition ratings 1 to 3, and rebuild costs.',
+          uStage: 'Stage 9: Quality Assurance & Lead Sign-off',
+          uDesc: 'Senior RICS Lead Surveyor audit prior to client release.',
+        };
+      case 8:
+        return {
+          cStage: 'Stage 8: Report Drafting Concluded',
+          cDesc: 'Full inspection findings and repair recommendations compiled.',
+          aStage: 'Stage 9: Quality Assurance & Lead Sign-off (Current)',
+          aDesc: 'Lead Surveyor auditing defect ratings against RICS Home Survey Standard.',
+          uStage: 'Stage 10: Official Report Delivery',
+          uDesc: 'Final certified PDF publication to My Reports.',
+        };
+      case 9:
+      case 10:
+      default:
+        return {
+          cStage: 'Stage 9: QA Audit Approved',
+          cDesc: 'Report audited and certified by Lead Surveyor under RICS guidelines.',
+          aStage: 'Stage 10: Official Report Delivered (Current)',
+          aDesc: 'Your comprehensive RICS report is published and available for download in My Reports.',
+          uStage: 'Consultation: Surveyor Telephone Debrief',
+          uDesc: 'Direct telephone debrief available with your surveyor for any technical questions.',
+        };
+    }
+  }, [currentStep, propertyAddress, surveyorName]);
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
@@ -2268,7 +2421,7 @@ export const CustomerTrackSurveyPage = () => {
         breadcrumb={['Customer Portal', 'Track My Survey']}
       />
 
-      <SurveyProgressTracker currentStep={7} />
+      <SurveyProgressTracker currentStep={currentStep} job={myJob || { property: propertyAddress, surveyor: surveyorName }} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
@@ -2281,9 +2434,9 @@ export const CustomerTrackSurveyPage = () => {
             <div className="flex items-start gap-3 p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-emerald-950 block">Stage 7: On-Site Inspection Completed</strong>
+                <strong className="text-emerald-950 block">{milestone.cStage}</strong>
                 <span className="text-emerald-800 text-[11px]">
-                  {surveyorName} concluded physical inspection at {propertyAddress}. Key access concluded and site secured.
+                  {milestone.cDesc}
                 </span>
               </div>
             </div>
@@ -2291,9 +2444,9 @@ export const CustomerTrackSurveyPage = () => {
             <div className="flex items-start gap-3 p-3 bg-blue-50/70 border border-blue-200 rounded-2xl">
               <Sparkles className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-blue-950 block">Stage 8: Report Drafting & Analysis (Current)</strong>
+                <strong className="text-blue-950 block">{milestone.aStage}</strong>
                 <span className="text-blue-800 text-[11px]">
-                  Surveyor is presently compiling defect findings, calculating rebuild costs, and preparing condition ratings 1 to 3.
+                  {milestone.aDesc}
                 </span>
               </div>
             </div>
@@ -2301,9 +2454,9 @@ export const CustomerTrackSurveyPage = () => {
             <div className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl opacity-75">
               <Clock className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-slate-800 block">Stage 9: Quality Assurance & Lead Surveyor Sign-off</strong>
+                <strong className="text-slate-800 block">{milestone.uStage}</strong>
                 <span className="text-slate-600 text-[11px]">
-                  Expected completion by tomorrow, 10:30 AM.
+                  {milestone.uDesc}
                 </span>
               </div>
             </div>
@@ -2733,7 +2886,7 @@ export const CustomerMessagesPage = () => {
 // ==========================================
 export const CustomerReviewPage = () => {
   const { user } = useAuth();
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, addJob } = useJobs();
   const { addToast } = useToast();
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
