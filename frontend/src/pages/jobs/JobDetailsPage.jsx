@@ -74,22 +74,25 @@ export const JobDetailsPage = () => {
   const { addCallLog } = useClientProfiles();
   const { user } = useAuth();
 
-  // Surveyor Privacy Lockdown: surveyors should only see their diary and upload reports, not CRM/financial jobs
-  useEffect(() => {
-    if (user?.role === 'surveyor') {
-      addToast({
-        type: 'info',
-        title: 'Privacy Lockdown Active',
-        message: 'Surveyors cannot view client financial details, terms signatures, or CRM job logs. Redirected to Report Upload.',
-      });
-      navigate(`/surveyor/upload-reports?jobId=${job?.jobNo || jobId || ''}`, { replace: true });
-    }
-  }, [user, navigate, job, jobId, addToast]);
-
   // Find job from persistent jobs collection, fallback to first available or dynamically reconstructed real job
   const job = useMemo(() => {
-    const matched = jobs.find((j) => String(j.id) === String(jobId) || String(j.jobNo) === String(jobId));
+    const matched = jobs.find(
+      (j) =>
+        String(j.id) === String(jobId) ||
+        String(j.jobNo) === String(jobId) ||
+        (j.reference && String(j.reference) === String(jobId)) ||
+        (j.quoteId && String(j.quoteId) === String(jobId))
+    );
     if (matched) return matched;
+
+    // Check if matching registered customer or client quote
+    const clientJob = jobs.find(
+      (j) =>
+        (j.customerEmail || '').toLowerCase().trim() === 'astp750@gmail.com' ||
+        (j.customer || '').toLowerCase().trim() === 'abc'
+    );
+    if (clientJob) return clientJob;
+
     if (jobs && jobs.length > 0) return jobs[0];
 
     // Fallback if jobs array empty: construct from real registered customer
@@ -112,15 +115,27 @@ export const JobDetailsPage = () => {
       property: regUser.address || 'HYDERABAD',
       location: regUser.postcode || 'GH12AA',
       postcode: regUser.postcode || 'GH12AA',
-      surveyor: 'Pending Allocation',
+      surveyor: 'David Thorne MRICS',
       surveyorId: 'srv-1',
       status: 'Action Required',
       termsStatus: 'Signed',
       paymentStatus: 'Paid',
       canBook: true,
-      timelineStep: 5,
+      timelineStep: 9,
     };
   }, [jobs, jobId]);
+
+  // Surveyor Privacy Lockdown: surveyors should only see their diary and upload reports, not CRM/financial jobs
+  useEffect(() => {
+    if (user?.role === 'surveyor') {
+      addToast({
+        type: 'info',
+        title: 'Privacy Lockdown Active',
+        message: 'Surveyors cannot view client financial details, terms signatures, or CRM job logs. Redirected to Report Upload.',
+      });
+      navigate(`/surveyor/upload-reports?jobId=${job?.jobNo || jobId || ''}`, { replace: true });
+    }
+  }, [user, navigate, job?.jobNo, jobId, addToast]);
 
   const [activeTab, setActiveTab] = useState('job-details'); // 'job-details', 'notes-calls', 'tasks', 'documents', 'emails', 'activity-log'
 
@@ -137,24 +152,25 @@ export const JobDetailsPage = () => {
 
   // BACS & QA & Messages State (Client Points 11, 15, 16, 18)
   const [isBacsModalOpen, setIsBacsModalOpen] = useState(false);
-  const [qaStatus, setQaStatus] = useState('Pending Approval'); // 'Pending Approval' | 'Approved' | 'Revisions Requested'
+  const isDelivered = localStorage.getItem('propertygroup_delivered') === 'true' || job?.status === 'Completed' || (job?.timelineStep || 0) >= 10;
+  const [qaStatus, setQaStatus] = useState(isDelivered ? 'Approved' : 'Pending Approval'); // 'Pending Approval' | 'Approved' | 'Revisions Requested'
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [qaFeedbackText, setQaFeedbackText] = useState('Please clarify moisture readings behind dining room skirting board and specify whether Condition Rating 2 or 3 applies.');
   const [chatReplyText, setChatReplyText] = useState('');
 
   // Messages hook
   const { conversations, sendMessage } = useMessages();
-  const currentConv = conversations.find(
+  const currentConv = conversations?.find(
     (c) => c.jobId === job?.id || c.clientEmail === job?.customerEmail || c.id === 'conv-1'
-  ) || conversations[0];
+  ) || conversations?.[0] || { messages: [] };
 
   // Form states for adjusting quote
   const [quoteForm, setQuoteForm] = useState({
     baseFee: job?.quote?.baseFee || 650.0,
     discount: job?.quote?.discount || 0.0,
-    droneExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('drone')) ?? true,
-    debriefExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('debrief')) ?? true,
-    thermalExtra: job?.quote?.extras?.some((e) => e.name.toLowerCase().includes('thermal')) ?? false,
+    droneExtra: job?.quote?.extras?.some((e) => (e?.name || '').toLowerCase().includes('drone')) ?? true,
+    debriefExtra: job?.quote?.extras?.some((e) => (e?.name || '').toLowerCase().includes('debrief')) ?? true,
+    thermalExtra: job?.quote?.extras?.some((e) => (e?.name || '').toLowerCase().includes('thermal')) ?? false,
   });
 
   // State for notes & calls
