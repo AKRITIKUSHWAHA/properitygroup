@@ -152,7 +152,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="e.g. Fiona Campbell"
               value={formData.customer}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
 
@@ -166,7 +166,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="fiona@example.co.uk"
               value={formData.customerEmail}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
 
@@ -180,7 +180,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="+44 7700 900..."
               value={formData.customerPhone}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -198,13 +198,13 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="e.g. 52 Clarendon Road"
               value={formData.property}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Location & Postcode *
+              Location &amp; Postcode *
             </label>
             <input
               type="text"
@@ -213,7 +213,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="e.g. Notting Hill, London W11 2HR"
               value={formData.location}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -228,7 +228,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               name="surveyorId"
               value={formData.surveyorId}
               onChange={handleChange}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             >
               {SURVEYORS.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -248,7 +248,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               placeholder="DD/MM/YYYY"
               value={formData.date}
               onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium font-mono text-slate-900 placeholder:text-slate-400 placeholder:text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             />
           </div>
 
@@ -260,7 +260,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               name="timeSlot"
               value={formData.timeSlot}
               onChange={handleChange}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             >
               <option value="09:00 - 12:00">09:00 - 12:00 (Morning)</option>
               <option value="10:00 - 13:00">10:00 - 13:00 (Mid-Morning)</option>
@@ -299,7 +299,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 name="accessType"
                 value={formData.accessType}
                 onChange={handleChange}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
               >
                 <option value="Keys with Selling Agent">Keys with Selling Agent</option>
                 <option value="Vendor / Homeowner on Site">Vendor / Homeowner on Site</option>
@@ -318,7 +318,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 placeholder="e.g. Foxtons Mayfair #FX-402"
                 value={formData.keyRef}
                 onChange={handleChange}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
               />
             </div>
           </div>
@@ -334,7 +334,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 placeholder="e.g. #8492"
                 value={formData.conciergeCode}
                 onChange={handleChange}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium font-mono text-slate-800 placeholder:text-slate-400 placeholder:text-xs focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
               />
             </div>
 
@@ -348,7 +348,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
                 placeholder="e.g. Sarah Croft (020 7629 8171)"
                 value={formData.sellingAgent}
                 onChange={handleChange}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] transition-all"
               />
             </div>
           </div>
@@ -363,7 +363,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
             name="surveyType"
             value={formData.surveyType}
             onChange={handleChange}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
           >
             <option value="RICS Level 2 Home Survey">RICS Level 2 Home Survey</option>
             <option value="RICS Level 2 Home Survey (with Valuation)">RICS Level 2 Home Survey (with Valuation)</option>
