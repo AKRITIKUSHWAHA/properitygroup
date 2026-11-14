@@ -40,3 +40,11 @@ export const surveyorAvailabilityApi = {
   updateAvailability: (data) => api.patch('/surveyor/my-availability', data),
 };
 
+// Menu 7: Messages Inbox
+export const surveyorMessagesApi = {
+  getContacts: () => api.get('/customer/messages/contacts'),
+  getMessages: (params = {}) => api.get('/customer/messages', { params }),
+  sendMessage: (payload) =>
+    api.post('/customer/messages', typeof payload === 'string' ? { content: payload } : payload),
+};
+

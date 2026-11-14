@@ -3,7 +3,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 
 /**
- * Customer Menu 10: Messages (/customer/messages)
+ * Customer & Surveyor Messages Controller
  * Strict Chat Thread Isolation per User Role (Customer / Surveyor / Admin)
  */
 
@@ -15,19 +15,16 @@ export const getMessageContacts = async (req, res, next) => {
 
     // ========================================================
     // FLOW 1: LOGGED IN USER IS A CUSTOMER
-    // A customer MUST ONLY see NJS Operations Desk & their Assigned Surveyor
-    // They must NEVER see other customers or other customer messages!
+    // Sees ONLY NJS Operations Desk & their Assigned Surveyor
     // ========================================================
     if (currentUserRole === 'CUSTOMER') {
       const customerConvId = `conv-user-${currentUserId}`;
 
-      // 1. Fetch latest message in this customer's dedicated thread
       const latestCustomerMsg = await prisma.message.findFirst({
         where: { conversationId: customerConvId },
         orderBy: { createdAt: 'desc' },
       });
 
-      // 2. Find customer's job to get their assigned surveyor if any
       const customerJob = await prisma.job.findFirst({
         where: {
           OR: [{ clientId: currentUserId }, { clientEmail: currentUserEmail }],
@@ -98,9 +95,111 @@ export const getMessageContacts = async (req, res, next) => {
     }
 
     // ========================================================
-    // FLOW 2: LOGGED IN USER IS AN ADMIN / SUPER ADMIN
-    // Admins manage all customer queries and surveyor dispatches
-    // Each customer has their own isolated thread!
+    // FLOW 2: LOGGED IN USER IS A SURVEYOR
+    // Sees NJS Operations Desk (Admin) & Assigned Survey Clients
+    // ========================================================
+    if (currentUserRole === 'SURVEYOR') {
+      const surveyorConvId = `conv-user-${currentUserId}`;
+
+      // 1. Channel with NJS Operations Desk
+      const latestDeskMsg = await prisma.message.findFirst({
+        where: {
+          OR: [
+            { conversationId: surveyorConvId },
+            { conversationId: `conv-usr_${currentUserId}` },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const lastTime = latestDeskMsg ? latestDeskMsg.createdAt : new Date();
+      const isToday = new Date(lastTime).toDateString() === new Date().toDateString();
+      const formattedTime = isToday
+        ? new Date(lastTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+        : 'Today';
+
+      const deskContact = {
+        id: surveyorConvId,
+        userId: currentUserId,
+        name: 'NJS Operations & Dispatch Desk',
+        email: 'info@njspropertygroup.com',
+        role: 'ADMIN',
+        roleTitle: 'NJS Operations Desk',
+        avatar: 'NJS',
+        lastMessage: latestDeskMsg ? latestDeskMsg.content : 'Direct surveyor coordination active',
+        time: formattedTime,
+        lastMessageTime: lastTime,
+        online: true,
+        unread: false,
+      };
+
+      // 2. Assigned Clients
+      const assignedJobs = await prisma.job.findMany({
+        where: { surveyorId: currentUserId },
+        select: {
+          id: true,
+          reference: true,
+          clientName: true,
+          clientEmail: true,
+          clientId: true,
+          propertyAddress: true,
+        },
+      });
+
+      const clientContacts = await Promise.all(
+        assignedJobs.map(async (j) => {
+          const clientConvId = j.clientId ? `conv-user-${j.clientId}` : `conv-job-${j.id}`;
+          const latestClientMsg = await prisma.message.findFirst({
+            where: {
+              OR: [{ conversationId: clientConvId }, { jobId: j.id }],
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          const nameParts = j.clientName.trim().split(/\s+/);
+          const initials =
+            nameParts.length >= 2
+              ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
+              : (j.clientName.slice(0, 2) || 'CL').toUpperCase();
+
+          const clientTime = latestClientMsg ? latestClientMsg.createdAt : new Date();
+          const clientIsToday = new Date(clientTime).toDateString() === new Date().toDateString();
+          const clientFormattedTime = clientIsToday
+            ? new Date(clientTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+            : 'Today';
+
+          return {
+            id: clientConvId,
+            userId: j.clientId,
+            name: `${j.clientName} (${j.reference})`,
+            email: j.clientEmail,
+            role: 'CUSTOMER',
+            roleTitle: 'Assigned Client',
+            avatar: initials,
+            lastMessage: latestClientMsg ? latestClientMsg.content : `Inspection for ${j.propertyAddress}`,
+            time: clientFormattedTime,
+            lastMessageTime: clientTime,
+            online: true,
+            unread: false,
+          };
+        })
+      );
+
+      const allSurveyorContacts = [deskContact, ...clientContacts];
+      allSurveyorContacts.sort(
+        (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      );
+
+      return ApiResponse.success(res, {
+        contacts: allSurveyorContacts,
+        total: allSurveyorContacts.length,
+      });
+    }
+
+    // ========================================================
+    // FLOW 3: LOGGED IN USER IS AN ADMIN / SUPER ADMIN
+    // Admins manage communication with all Customers & Surveyors
+    // Each contact has their own isolated thread!
     // ========================================================
     const users = await prisma.user.findMany({
       where: {
@@ -124,7 +223,6 @@ export const getMessageContacts = async (req, res, next) => {
       },
     });
 
-    // Deduplicate duplicate demo accounts by name & role
     const uniqueUsersMap = new Map();
     for (const u of users) {
       const key = `${u.name.trim().toLowerCase()}-${u.role}`;
@@ -142,7 +240,6 @@ export const getMessageContacts = async (req, res, next) => {
       distinctUsers.map(async (u) => {
         const convId = `conv-user-${u.id}`;
 
-        // Find the latest message in this specific user's conversation thread
         const latestMsg = await prisma.message.findFirst({
           where: {
             OR: [
@@ -153,7 +250,6 @@ export const getMessageContacts = async (req, res, next) => {
           orderBy: { createdAt: 'desc' },
         });
 
-        // Generate clean initials
         const nameParts = u.name.trim().split(/\s+/);
         const initials =
           nameParts.length >= 2
@@ -192,7 +288,7 @@ export const getMessageContacts = async (req, res, next) => {
       })
     );
 
-    // Sort: most recent message activity on top ("jo message kare uska upr aa jay")
+    // Dynamic Activity Sorting: newest activity on top ("jo message kare uska upr aa jay")
     contactsWithActivity.sort(
       (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
     );
@@ -217,17 +313,17 @@ export const getCustomerMessages = async (req, res, next) => {
 
     let conversationId = targetConvId;
 
-    // Strict Security Isolation:
-    // If CUSTOMER is logged in, they can ONLY access their own conversation thread!
     if (userRole === 'CUSTOMER') {
       conversationId = `conv-user-${userId}`;
+    } else if (userRole === 'SURVEYOR') {
+      // Surveyor can access their desk thread or their assigned client thread
+      conversationId = targetConvId || `conv-user-${userId}`;
     }
 
     if (!conversationId) {
       conversationId = `conv-user-${userId}`;
     }
 
-    // Strictly fetch messages belonging ONLY to this conversationId!
     const messages = await prisma.message.findMany({
       where: {
         conversationId,
@@ -238,18 +334,12 @@ export const getCustomerMessages = async (req, res, next) => {
     // Mark unread messages as read
     if (userRole === 'CUSTOMER') {
       await prisma.message.updateMany({
-        where: {
-          conversationId,
-          readByCustomer: false,
-        },
+        where: { conversationId, readByCustomer: false },
         data: { readByCustomer: true },
       });
     } else {
       await prisma.message.updateMany({
-        where: {
-          conversationId,
-          readByAdmin: false,
-        },
+        where: { conversationId, readByAdmin: false },
         data: { readByAdmin: true },
       });
     }
@@ -279,9 +369,10 @@ export const sendCustomerMessage = async (req, res, next) => {
 
     let conversationId = reqConvId;
 
-    // If CUSTOMER is sending, enforce their own isolated conversation thread
     if (userRole === 'CUSTOMER') {
       conversationId = `conv-user-${userId}`;
+    } else if (userRole === 'SURVEYOR') {
+      conversationId = reqConvId || `conv-user-${userId}`;
     }
 
     if (!conversationId) {

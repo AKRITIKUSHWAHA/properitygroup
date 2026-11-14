@@ -2716,14 +2716,17 @@ export const CustomerMessagesPage = () => {
   const messagesEndRef = useRef(null);
 
   const isCustomer = user?.role === 'CUSTOMER';
-  const defaultConvId = isCustomer ? `conv-user-${user?.id || 'client'}` : 'conv-user-25';
+  const isSurveyor = user?.role === 'SURVEYOR';
+  const defaultConvId = (isCustomer || isSurveyor)
+    ? `conv-user-${user?.id || 'contact'}`
+    : 'conv-user-25';
 
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChannelId, setActiveChannelId] = useState(defaultConvId);
   const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
 
-  // Initial Contacts strictly role-isolated (Customers only see NJS Desk & Assigned Surveyor)
+  // Initial Contacts strictly role-isolated (Customers see NJS Desk & Surveyor; Surveyors see NJS Desk & Clients; Admin sees All)
   const [people, setPeople] = useState(() => {
     if (isCustomer) {
       return [
@@ -2752,6 +2755,24 @@ export const CustomerMessagesPage = () => {
           lastMessage: 'RICS on-site inspection protocol & QA',
           time: 'Today, 2:02pm',
           lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
+          online: true,
+          unread: false,
+        },
+      ];
+    }
+    if (isSurveyor) {
+      return [
+        {
+          id: `conv-user-${user?.id || 'surveyor'}`,
+          userId: user?.id,
+          name: 'NJS Operations & Dispatch Desk',
+          email: 'info@njspropertygroup.com',
+          role: 'ADMIN',
+          roleTitle: 'NJS Operations Desk',
+          avatar: 'NJS',
+          lastMessage: 'Direct surveyor coordination active',
+          time: 'Today',
+          lastMessageTime: new Date().toISOString(),
           online: true,
           unread: false,
         },
@@ -2905,6 +2926,8 @@ export const CustomerMessagesPage = () => {
             role: 'incoming',
             text: isCustomer
               ? `Hello ${user?.name || 'Customer'}, welcome to your dedicated NJS Property Group communications channel. How can our surveying team assist you today?`
+              : isSurveyor
+              ? `Hello ${user?.name || 'Surveyor'}, this is your direct channel with NJS Operations & Dispatch. Send updates or queries regarding your assigned survey jobs here.`
               : `Direct communications channel with ${activeContact?.name || 'Client'}. You can send updates or respond to customer queries here.`,
             time: 'Today',
           },
@@ -2931,12 +2954,12 @@ export const CustomerMessagesPage = () => {
     });
     const nowIso = new Date().toISOString();
 
-    const senderRole = isCustomer ? 'customer' : 'admin';
+    const senderRole = isCustomer ? 'customer' : isSurveyor ? 'surveyor' : 'admin';
 
     const newMsg = {
       id: Date.now(),
       senderId: user?.id,
-      sender: user?.name || (isCustomer ? 'Customer' : 'Alexander Sterling'),
+      sender: user?.name || (isCustomer ? 'Customer' : isSurveyor ? 'Surveyor' : 'Alexander Sterling'),
       role: senderRole,
       text: textToSend,
       time: `Today, ${timeNow}`,
@@ -3054,7 +3077,7 @@ export const CustomerMessagesPage = () => {
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between mb-2 px-1">
               <h4 className="text-xs font-extrabold text-slate-800">
-                {isCustomer ? 'Support Channels' : 'Clients & Surveyors'}
+                {isCustomer ? 'Support Channels' : isSurveyor ? 'Operations & Clients' : 'Clients & Surveyors'}
               </h4>
               <span className="text-[10px] text-slate-400 font-semibold">
                 {filteredPeople.length} contacts
@@ -3179,6 +3202,8 @@ export const CustomerMessagesPage = () => {
                   ? m.senderId === user.id
                   : isCustomer
                   ? m.role === 'customer' || m.role === 'client'
+                  : isSurveyor
+                  ? m.role === 'surveyor'
                   : m.role === 'admin';
 
               const cleanTime = m.time?.includes(',')

@@ -47,6 +47,7 @@ export const ROLE_NAVIGATION = {
       { id: 'site-visits', name: 'Site Visits & Key Access', path: '/surveyor/site-visits', icon: 'MapPin', badge: null },
       { id: 'upload-reports', name: 'Upload Reports', path: '/surveyor/upload-reports', icon: 'UploadCloud', badge: null },
       { id: 'my-availability', name: 'My Availability', path: '/surveyor/my-availability', icon: 'Clock', badge: null },
+      { id: 'messages', name: 'Messages', path: '/surveyor/messages', icon: 'MessageSquare', badge: null },
     ],
   },
   customer: {

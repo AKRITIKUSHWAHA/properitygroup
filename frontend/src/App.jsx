@@ -325,6 +325,7 @@ function AppRoutes() {
             <Route path="/surveyor/site-visits" element={<SurveyorSiteVisitsPage />} />
             <Route path="/surveyor/upload-reports" element={<SurveyorUploadReportsPage />} />
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />
+            <Route path="/surveyor/messages" element={<CustomerMessagesPage />} />
           </Route>
 
           {/* Customer Routes (14 menus per Client Requirement Point 12 - deactivated when showPublicPortalLogin is false) */}

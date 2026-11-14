@@ -5,6 +5,7 @@ import surveyorJobsRoutes from './surveyorJobsRoutes.js';
 import surveyorSiteVisitsRoutes from './surveyorSiteVisitsRoutes.js';
 import surveyorUploadReportsRoutes from './surveyorUploadReportsRoutes.js';
 import surveyorAvailabilityRoutes from './surveyorAvailabilityRoutes.js';
+import customerMessagesRoutes from '../customer/customerMessagesRoutes.js';
 
 const router = Router();
 
@@ -25,6 +26,9 @@ router.use('/upload-reports', surveyorUploadReportsRoutes);
 
 // 6. My Availability
 router.use('/my-availability', surveyorAvailabilityRoutes);
+
+// 7. Messages Inbox
+router.use('/messages', customerMessagesRoutes);
 
 export default router;
 
