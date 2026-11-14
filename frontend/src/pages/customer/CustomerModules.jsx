@@ -2230,6 +2230,36 @@ export const CustomerReportsPage = () => {
 // ==========================================
 export const CustomerTrackSurveyPage = () => {
   useEffect(() => { customerTrackSurveyApi.getTracking().catch(() => {}); }, []);
+  const { user } = useAuth();
+  const { jobs } = useJobs();
+  const { quotes = [] } = useQuotes();
+  const { leads = [] } = useLeads();
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const isDemo = userEmail === 'customer@demo.com';
+
+  const myJob = jobs.find((j) => isJobForCustomer(j, user));
+  const myQuote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail);
+  const myLead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail);
+
+  let regUser = {};
+  try {
+    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+    regUser = reg[userEmail] || {};
+  } catch {}
+
+  const propertyAddress = myJob?.property
+    ? `${myJob.property}, ${myJob.location || ''}`
+    : myQuote?.property
+    ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}`
+    : myLead?.property
+    ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}`
+    : regUser.address
+    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
+    : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
+
+  const refNo = myJob?.id || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
+  const surveyorName = myJob?.surveyor || 'David Thorne MRICS';
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
@@ -2253,7 +2283,7 @@ export const CustomerTrackSurveyPage = () => {
               <div>
                 <strong className="text-emerald-950 block">Stage 7: On-Site Inspection Completed</strong>
                 <span className="text-emerald-800 text-[11px]">
-                  David Thorne MRICS concluded physical inspection at 14 Mayfair Gate on 27/10/2026, 12:45. Key access concluded and site secured.
+                  {surveyorName} concluded physical inspection at {propertyAddress}. Key access concluded and site secured.
                 </span>
               </div>
             </div>
@@ -2273,7 +2303,7 @@ export const CustomerTrackSurveyPage = () => {
               <div>
                 <strong className="text-slate-800 block">Stage 9: Quality Assurance & Lead Surveyor Sign-off</strong>
                 <span className="text-slate-600 text-[11px]">
-                  Expected completion by 28/10/2026, 10:30.
+                  Expected completion by tomorrow, 10:30 AM.
                 </span>
               </div>
             </div>
@@ -2284,13 +2314,12 @@ export const CustomerTrackSurveyPage = () => {
           <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3 text-xs">
             <h4 className="font-bold text-[#0B1F4D]">Property Reference</h4>
             <div className="space-y-1.5 text-slate-600">
-              <div className="text-slate-900 font-bold">14 Mayfair Gate</div>
-              <div>Mayfair, London W1K 2PB</div>
+              <div className="text-slate-900 font-bold">{propertyAddress}</div>
               <div className="pt-2 border-t border-slate-100 text-[11px]">
-                Ref: <strong>JOB-2026-080</strong>
+                Ref: <strong>{refNo}</strong>
               </div>
               <div className="text-[11px]">
-                Surveyor: <strong>David Thorne MRICS</strong>
+                Surveyor: <strong>{surveyorName}</strong>
               </div>
             </div>
           </div>
