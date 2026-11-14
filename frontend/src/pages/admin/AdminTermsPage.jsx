@@ -88,22 +88,19 @@ const AgreementRowActions = ({
       }
     };
 
-    const handleScrollOrResize = (e) => {
-      if (menuRef.current && menuRef.current.contains(e.target)) return;
+    const handleResize = () => {
       setIsOpen(false);
     };
 
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScrollOrResize, true);
-      window.addEventListener('resize', handleScrollOrResize);
-    }, 10);
+      window.addEventListener('resize', handleResize);
+    }, 50);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
@@ -139,6 +136,7 @@ const AgreementRowActions = ({
         createPortal(
           <div
             ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
               top: coords.top !== null ? `${coords.top}px` : 'auto',

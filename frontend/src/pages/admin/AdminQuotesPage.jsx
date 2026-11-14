@@ -89,22 +89,19 @@ const QuoteRowActions = ({
       }
     };
 
-    const handleScrollOrResize = (e) => {
-      if (menuRef.current && menuRef.current.contains(e.target)) return;
+    const handleResize = () => {
       setIsOpen(false);
     };
 
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScrollOrResize, true);
-      window.addEventListener('resize', handleScrollOrResize);
-    }, 10);
+      window.addEventListener('resize', handleResize);
+    }, 50);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
@@ -142,6 +139,7 @@ const QuoteRowActions = ({
         createPortal(
           <div
             ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: 'fixed',
               top: coords.top !== null ? `${coords.top}px` : 'auto',
@@ -777,36 +775,46 @@ export const AdminQuotesPage = () => {
   }, [displayQuotes, activeTab, statusFilter, searchTerm]);
 
   // Quick action: Mark as paid
-  const handleMarkPaid = (id) => {
+  const handleMarkPaid = async (id) => {
     updateQuoteStatus(id, 'Paid');
     setApiQuotes((prev) =>
       prev.map((q) => (q.id === id || q.dbId === id ? { ...q, status: 'Paid', paidDate: new Date().toLocaleDateString('en-GB') } : q))
     );
     const targetQuote = displayQuotes.find((q) => q.id === id || q.dbId === id);
-    if (targetQuote?.dbId || targetQuote?.refNo) {
-      adminQuotationsAndPaymentsApi.updateQuoteStatus(targetQuote.dbId || targetQuote.refNo, 'PAID').catch(() => {});
+    const lookupId = targetQuote?.dbId || targetQuote?.refNo || id;
+    if (lookupId) {
+      try {
+        await adminQuotationsAndPaymentsApi.updateQuoteStatus(lookupId, 'PAID');
+      } catch (err) {
+        console.warn('Backend mark paid synced locally:', err?.message || err);
+      }
     }
     addToast({
       type: 'success',
       title: 'Payment Cleared',
-      message: `Quotation ${id} has been marked as settled in full. Receipt generated.`,
+      message: `Quotation ${targetQuote?.refNo || id} has been marked as settled in full. Receipt generated.`,
     });
   };
 
   // Quick action: Send Quote
-  const handleSendQuote = (id, clientEmail) => {
+  const handleSendQuote = async (id, clientEmail) => {
     updateQuoteStatus(id, 'Sent');
     setApiQuotes((prev) =>
       prev.map((q) => (q.id === id || q.dbId === id ? { ...q, status: 'Sent' } : q))
     );
     const targetQuote = displayQuotes.find((q) => q.id === id || q.dbId === id);
-    if (targetQuote?.dbId || targetQuote?.refNo) {
-      adminQuotationsAndPaymentsApi.updateQuoteStatus(targetQuote.dbId || targetQuote.refNo, 'SENT').catch(() => {});
+    const lookupId = targetQuote?.dbId || targetQuote?.refNo || id;
+    if (lookupId) {
+      try {
+        await adminQuotationsAndPaymentsApi.updateQuoteStatus(lookupId, 'SENT');
+      } catch (err) {
+        console.warn('Backend quote send synced locally:', err?.message || err);
+      }
     }
     addToast({
       type: 'info',
       title: 'Quotation Dispatched',
-      message: `Official proposal for ${id} sent via email to ${clientEmail}.`,
+      message: `Official proposal for ${targetQuote?.refNo || id} sent via email to ${clientEmail}.`,
     });
   };
 
