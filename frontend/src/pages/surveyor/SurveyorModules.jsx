@@ -45,7 +45,7 @@ import {
 export const SurveyorCalendarPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
 
   // Fetch surveyor calendar API
   useEffect(() => {
@@ -247,7 +247,7 @@ export const SurveyorCalendarPage = () => {
 export const SurveyorJobsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
 
   // Fetch surveyor jobs API
   useEffect(() => {
@@ -393,7 +393,7 @@ export const SurveyorJobsPage = () => {
 export const SurveyorSiteVisitsPage = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
 
   // Fetch surveyor site visits API
   useEffect(() => {
@@ -520,7 +520,7 @@ export const SurveyorSiteVisitsPage = () => {
 export const SurveyorUploadReportsPage = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
   const [searchParams] = useSearchParams();
   const queryJobId = searchParams.get('jobId');
 
@@ -625,6 +625,12 @@ export const SurveyorUploadReportsPage = () => {
   };
 
   const handleSubmitAllQA = () => {
+    if (selectedJob && updateJob) {
+      updateJob(selectedJob, {
+        status: 'QA_Review',
+        timelineStep: 9,
+      });
+    }
     addToast({
       type: 'success',
       title: 'Dispatched for Quality Assurance',

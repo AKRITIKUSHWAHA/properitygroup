@@ -43,7 +43,7 @@ export const SurveyorDashboardPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
-  const { jobs } = useJobs();
+  const { jobs, updateJob } = useJobs();
 
   // Strict surveyor job isolation
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
@@ -134,6 +134,13 @@ export const SurveyorDashboardPage = () => {
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
+    if (primaryJob?.id) {
+      updateJob(primaryJob.id, {
+        status: 'Inspected',
+        timelineStep: 7,
+        stage: 'PREPARING_REPORT',
+      });
+    }
     addToast({
       type: 'success',
       title: 'Inspection Completed',
@@ -156,6 +163,12 @@ export const SurveyorDashboardPage = () => {
     setCapturedPhotos([newPhoto, ...capturedPhotos]);
     setIsPhotoModalOpen(false);
     setDefectNote('');
+    if (primaryJob?.id) {
+      updateJob(primaryJob.id, {
+        status: 'Drafting',
+        timelineStep: 8,
+      });
+    }
     addToast({
       type: 'success',
       title: 'Site Evidence Saved',
@@ -166,6 +179,12 @@ export const SurveyorDashboardPage = () => {
   const handleSubmitQA = () => {
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
+    if (primaryJob?.id) {
+      updateJob(primaryJob.id, {
+        status: 'QA_Review',
+        timelineStep: 9,
+      });
+    }
     addToast({
       type: 'success',
       title: 'Report Submitted for QA Review',
