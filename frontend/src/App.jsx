@@ -319,9 +319,9 @@ function AppRoutes() {
 
           {/* Surveyor Routes (Privacy Lockdown: Default landing on My Diary/Calendar, direct report upload) */}
           <Route element={<ProtectedRoute allowedRoles={['surveyor', 'super_admin']} />}>
-            <Route path="/surveyor/dashboard" element={<Navigate to="/surveyor/my-calendar" replace />} />
+            <Route path="/surveyor/dashboard" element={<SurveyorDashboardPage />} />
             <Route path="/surveyor/my-calendar" element={<SurveyorCalendarPage />} />
-            <Route path="/surveyor/my-jobs" element={<Navigate to="/surveyor/my-calendar" replace />} />
+            <Route path="/surveyor/my-jobs" element={<SurveyorJobsPage />} />
             <Route path="/surveyor/site-visits" element={<SurveyorSiteVisitsPage />} />
             <Route path="/surveyor/upload-reports" element={<SurveyorUploadReportsPage />} />
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />

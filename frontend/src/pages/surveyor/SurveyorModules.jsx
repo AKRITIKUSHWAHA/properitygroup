@@ -277,6 +277,19 @@ export const SurveyorJobsPage = () => {
         breadcrumb={['Surveyor', 'My Jobs']}
       />
 
+      {/* Surveyor Privacy Shield Banner */}
+      <div className="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 flex items-start gap-2.5 text-xs text-blue-900">
+        <ShieldCheck className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <span className="font-bold text-[#0B1F4D] block">
+            Surveyor Privacy Shield Active
+          </span>
+          <p className="text-slate-600">
+            Client billing, invoice payment settlements, quote fee totals, and signed terms timestamps are strictly restricted to central management.
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-center gap-2">
         <button
           onClick={() => setFilter('active')}
@@ -354,7 +367,7 @@ export const SurveyorJobsPage = () => {
                   On-Site Portal
                 </button>
                 <button
-                  onClick={() => navigate('/surveyor/upload-reports')}
+                  onClick={() => navigate(`/surveyor/upload-reports?jobId=${j.jobNo || j.id}`)}
                   className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-200 cursor-pointer"
                 >
                   Upload Draft
