@@ -48,6 +48,7 @@ import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../u
 import { useMessages } from '../../mock/messages';
 import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
 import { useQuotes } from '../../mock/quotes';
+import { useLeads } from '../../mock/leads';
 import {
   customerQuotationsApi,
   customerBookingsApi,
@@ -121,35 +122,48 @@ export const CustomerTermsPage = () => {
     currentAgreement?.status === 'Signed' || currentJob?.termsStatus === 'Signed';
 
   const userEmail = (user?.email || '').toLowerCase().trim();
+  const userName = (user?.name || '').toLowerCase().trim();
   const isEmma = userEmail === 'customer@demo.com';
   const { quotes: storedQuotes = [] } = useQuotes();
+  const { leads: storedLeads = [] } = useLeads();
   const userQuote = storedQuotes.find(
     (q) => (q.clientEmail || '').toLowerCase().trim() === userEmail
   );
+  const userLead = storedLeads.find((l) => {
+    const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+    const lName = (l.customerName || l.clientName || '').toLowerCase().trim();
+    return (userEmail && (lEmail === userEmail || lEmail.includes(userEmail))) || (userName && (lName === userName || lName.includes(userName)));
+  });
+
   let regUser = {};
   try {
     const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
     regUser = registered[userEmail] || {};
   } catch {}
 
+  const leadTotal = userLead?.estimatedValue ? parseFloat(userLead.estimatedValue.replace(/[^0-9.]/g, '')) : null;
+  const leadNet = leadTotal ? Math.round((leadTotal / 1.2) * 100) / 100 : null;
+
   // 3. Dynamic property and fee values
   const propertyAddress = currentJob?.property
     ? `${currentJob.property}, ${currentJob.location || ''}`
     : userQuote?.property
     ? `${userQuote.property}${userQuote.location ? `, ${userQuote.location}` : ''}`
+    : userLead?.property
+    ? `${userLead.property}${userLead.location ? `, ${userLead.location}` : ''}`
     : regUser.address
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
     : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Pending Property Address');
-  const surveyType = currentJob?.surveyType || userQuote?.surveyType || 'RICS Level 2 Home Survey';
+  const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || 'RICS Level 2 Home Survey';
   const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
     : 'Pending Scheduling';
-  const jobNo = currentJob?.id || userQuote?.id || 'JOB-2026-PENDING';
+  const jobNo = currentJob?.id || userQuote?.id || userLead?.quoteRef || userLead?.id || 'JOB-2026-PENDING';
 
-  const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || (surveyType.includes('Level 3') ? 1450 : 550);
-  const vatAmount = userQuote?.vatAmount || Math.round(baseFee * 0.2);
-  const grossTotal = userQuote?.totalAmount || (baseFee + vatAmount);
+  const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || leadNet || (surveyType.includes('Level 3') ? 1450 : 550);
+  const vatAmount = userQuote?.vatAmount || (leadTotal && leadNet ? Math.round((leadTotal - leadNet) * 100) / 100 : Math.round(baseFee * 0.2));
+  const grossTotal = userQuote?.totalAmount || leadTotal || (baseFee + vatAmount);
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
@@ -1173,13 +1187,34 @@ export const CustomerBookingsPage = () => {
 // 3. QUOTATIONS PAGE
 // ==========================================
 export const CustomerQuotationsPage = () => {
-  useEffect(() => { customerQuotationsApi.getQuotations().catch(() => {}); }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
   const { quotes: storedQuotes = [] } = useQuotes();
+  const { leads = [] } = useLeads();
+  const [apiQuotes, setApiQuotes] = useState([]);
 
-  const userEmail = (user?.email || '').toLowerCase().trim();
+  useEffect(() => {
+    customerQuotationsApi.getQuotations()
+      .then((res) => {
+        const list = res?.data?.quotes || res?.quotes || (Array.isArray(res) ? res : []);
+        if (Array.isArray(list) && list.length > 0) setApiQuotes(list);
+      })
+      .catch(() => {});
+  }, []);
+
+  let userEmail = (user?.email || '').toLowerCase().trim();
+  let userName = (user?.name || '').toLowerCase().trim();
+
+  // If email missing from user session, recover from registered customers
+  if (!userEmail && userName) {
+    try {
+      const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      const found = Object.values(reg).find((c) => (c.name || '').toLowerCase().trim() === userName);
+      if (found?.email) userEmail = found.email.toLowerCase().trim();
+    } catch {}
+  }
+
   const isDemo = userEmail === 'customer@demo.com';
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
@@ -1202,10 +1237,13 @@ export const CustomerQuotationsPage = () => {
     };
   });
 
-  // Collect standalone quotes issued from CRM for this customer
+  // 1. Collect standalone quotes from quotes store for this customer
   const userStoredQuotes = storedQuotes.filter((q) => {
-    const qEmail = (q.clientEmail || '').toLowerCase().trim();
-    return qEmail && qEmail === userEmail;
+    const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+    const qName = (q.client || q.customer || '').toLowerCase().trim();
+    const matchesEmail = userEmail && (qEmail === userEmail || qEmail.includes(userEmail) || userEmail.includes(qEmail));
+    const matchesName = userName && (qName === userName || qName.includes(userName) || userName.includes(qName));
+    return matchesEmail || matchesName;
   });
 
   const standAloneQuotes = userStoredQuotes
@@ -1229,7 +1267,45 @@ export const CustomerQuotationsPage = () => {
       };
     });
 
-  const quotes = isDemo ? jobQuotes : (standAloneQuotes.length > 0 ? standAloneQuotes : jobQuotes);
+  // 2. Collect quotes from CRM Leads if lead was quoted for this customer
+  const quotedLeads = leads.filter((l) => {
+    const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+    const lName = (l.customerName || l.clientName || '').toLowerCase().trim();
+    const matchesEmail = userEmail && (lEmail === userEmail || lEmail.includes(userEmail) || userEmail.includes(lEmail));
+    const matchesName = userName && (lName === userName || lName.includes(userName) || userName.includes(lName));
+    const isQuoted = (l.status || '').toLowerCase() === 'quoted' || (l.status || '').toLowerCase() === 'quote_sent' || (l.estimatedValue && !l.estimatedValue.toLowerCase().includes('pending'));
+    return (matchesEmail || matchesName) && isQuoted;
+  });
+
+  const leadQuotes = quotedLeads
+    .filter((l) => !standAloneQuotes.some((sq) => sq.jobId === l.id || sq.id === l.quoteRef) && !jobQuotes.some((jq) => jq.jobId === l.id))
+    .map((l) => {
+      const rawVal = l.estimatedValue ? parseFloat(l.estimatedValue.replace(/[^0-9.]/g, '')) : 660.0;
+      const total = rawVal > 50 ? rawVal : 660.0;
+      const net = Math.round((total / 1.2) * 100) / 100;
+      const vat = Math.round((total - net) * 100) / 100;
+      return {
+        id: l.quoteRef || `QUO-${(l.id || '').replace(/[^0-9]/g, '') || '2026-880'}`,
+        jobId: l.id,
+        property: `${l.property || ''}${l.location ? `, ${l.location}` : ''}`,
+        surveyType: l.enquiry || 'RICS Level 2 Home Survey (Homebuyer)',
+        net: `£${net.toFixed(2)}`,
+        vat: `£${vat.toFixed(2)}`,
+        total: `£${total.toFixed(2)}`,
+        date: l.created || new Date().toLocaleDateString('en-GB'),
+        status: 'Open Proposal',
+        termsStatus: 'Pending',
+        validUntil: '14 Days Remaining',
+      };
+    });
+
+  // Final quotes list
+  let quotes = [];
+  if (isDemo) {
+    quotes = jobQuotes;
+  } else {
+    quotes = [...standAloneQuotes, ...leadQuotes, ...jobQuotes];
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
