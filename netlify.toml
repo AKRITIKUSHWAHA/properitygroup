@@ -10,6 +10,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/v1/*"
+  to = "https://njs-proprty-group-production.up.railway.app/api/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/construction/*"
   to = "/services/building-survey-level-3"
   status = 301

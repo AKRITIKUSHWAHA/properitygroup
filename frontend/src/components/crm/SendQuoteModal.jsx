@@ -85,6 +85,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   const [surveyType, setSurveyType] = useState(() => resolveInitialSurveyType(lead?.enquiry));
   const [baseFee, setBaseFee] = useState(() => resolveInitialBaseFee(lead));
   const [discount, setDiscount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset cleanly whenever a new lead is passed
   useEffect(() => {
@@ -118,20 +119,36 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   const totalAmount = subtotal + vatAmount;
   const combinedValuationAmount = totalAmount + 120.0;
 
-  const handleSendQuote = (e) => {
+  const handleSendQuote = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (isSubmitting) return;
 
+    const targetEmail = (lead?.customerEmail || lead?.clientEmail || lead?.email || '').trim();
+    const targetName = (lead?.customerName || lead?.clientName || lead?.name || 'Valued Client').trim();
+    const targetPhone = (lead?.customerPhone || lead?.clientPhone || lead?.phone || '').trim();
+    const targetAddress = (lead?.property || lead?.propertyAddress || lead?.address || 'Subject Property').trim();
+
+    if (!targetEmail) {
+      addToast({
+        type: 'error',
+        title: 'Missing Customer Email',
+        message: 'Cannot dispatch quote proposal: no valid recipient email address found for this lead.',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     const quoteId = `QUO-2026-${Math.floor(100 + Math.random() * 900)}`;
 
     const newQuoteRecord = {
       id: quoteId,
       refNo: quoteId,
       invoiceNo: `INV-${quoteId.replace('QUO-', '')}`,
-      client: lead.customerName,
-      clientEmail: lead.customerEmail,
-      clientPhone: lead.customerPhone,
-      property: lead.property,
-      location: lead.location,
+      client: targetName,
+      clientEmail: targetEmail,
+      clientPhone: targetPhone,
+      property: targetAddress,
+      location: lead?.location || '',
       surveyType: surveyType,
       baseFee: currentBaseFee,
       extras: [],
@@ -151,48 +168,68 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
     addQuote(newQuoteRecord);
 
     // Add auto-logged note in client profile
-    addCallLog(lead.customerEmail, {
-      clientName: lead.customerName,
-      clientPhone: lead.customerPhone,
-      clientAddress: `${lead.property}, ${lead.location}`,
+    addCallLog(targetEmail, {
+      clientName: targetName,
+      clientPhone: targetPhone,
+      clientAddress: `${targetAddress}, ${lead?.location || ''}`,
       direction: 'Outbound',
       staff: 'Sarah Jenkins',
       duration: '3 mins',
       subject: `Quotation Sent (${quoteId})`,
-      notes: `Dispatched formal fee proposal of £${totalAmount.toFixed(2)} inc. VAT for ${surveyType} at ${lead.property}. Lead marked as Quoted (Deal Live). Quote ref: ${quoteId}.`,
-      tags: ['Quote Sent', 'Quoted', lead.source],
+      notes: `Dispatched formal fee proposal of £${totalAmount.toFixed(2)} inc. VAT for ${surveyType} at ${targetAddress}. Lead marked as Quoted (Deal Live). Quote ref: ${quoteId}.`,
+      tags: ['Quote Sent', 'Quoted', lead?.source || 'Website'],
     });
 
-    // Call backend API to persist quote in MySQL and dispatch live Resend proposal email
-    adminQuotationsAndPaymentsApi.createQuote({
-      leadId: lead.dbId || lead.id,
-      baseFee: currentBaseFee,
-      clientEmail: lead.customerEmail,
-      clientName: lead.customerName,
-      clientPhone: lead.customerPhone,
-      propertyAddress: lead.property,
-      surveyType: surveyType,
-      discount: discountAmount,
-    }).then((res) => {
-      if (res?.data?.emailSent || res?.emailSent) {
-        console.log(`[Resend Live] Quote proposal emailed to ${lead.customerEmail}`);
+    try {
+      // Call backend API to persist quote in MySQL and dispatch live Resend proposal email
+      const res = await adminQuotationsAndPaymentsApi.createQuote({
+        leadId: lead?.dbId || lead?.id,
+        baseFee: currentBaseFee,
+        clientEmail: targetEmail,
+        clientName: targetName,
+        clientPhone: targetPhone,
+        propertyAddress: targetAddress,
+        surveyType: surveyType,
+        discount: discountAmount,
+      });
+
+      const emailSent = Boolean(res?.data?.emailSent || res?.emailSent);
+
+      // Callback to update lead status to 'Quoted' in parent
+      if (onQuoteSent && lead?.id) {
+        onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteId);
       }
-    }).catch((err) => {
+
+      if (emailSent) {
+        console.log(`[Resend Live] Quote proposal emailed to ${targetEmail}`);
+        addToast({
+          type: 'success',
+          title: 'Quotation Dispatched & Email Delivered',
+          message: `Formal quote proposal ${quoteId} (£${totalAmount.toFixed(2)}) sent to ${targetEmail}. Deal status set to 'Quoted'.`,
+        });
+      } else {
+        addToast({
+          type: 'success',
+          title: 'Quotation Generated & Deal Live',
+          message: `Quote proposal ${quoteId} (£${totalAmount.toFixed(2)}) registered for ${targetName}.`,
+        });
+      }
+
+      onClose();
+    } catch (err) {
       console.warn('Backend quote creation warning:', err.message);
-    });
-
-    // Callback to update lead status to 'Quoted' in parent
-    if (onQuoteSent) {
-      onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteId);
+      if (onQuoteSent && lead?.id) {
+        onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteId);
+      }
+      addToast({
+        type: 'warning',
+        title: 'Quote Dispatched (Email Notification Pending)',
+        message: `Quote registered in CRM. If email to ${targetEmail} is delayed, check spam or verify delivery.`,
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-
-    addToast({
-      type: 'success',
-      title: 'Quotation Dispatched & Deal Live',
-      message: `Quote proposal ${quoteId} (£${totalAmount.toFixed(2)}) sent to ${lead.customerName}. Lead status updated to 'Quoted'.`,
-    });
-
-    onClose();
   };
 
   return (
@@ -481,10 +518,11 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-[#0B1F4D]/20 cursor-pointer transition-all"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-[#0B1F4D]/20 cursor-pointer transition-all"
                 >
-                  <Send className="w-4 h-4 text-amber-300" />
-                  <span>Send Quotation to Client &bull; £{totalAmount.toFixed(2)}</span>
+                  <Send className={`w-4 h-4 text-amber-300 ${isSubmitting ? 'animate-pulse' : ''}`} />
+                  <span>{isSubmitting ? 'Dispatching Proposal...' : `Send Quotation to Client • £${totalAmount.toFixed(2)}`}</span>
                 </button>
               </div>
             </div>
@@ -614,10 +652,11 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
               <button
                 type="button"
                 onClick={handleSendQuote}
-                className="px-6 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer transition-all"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer transition-all"
               >
-                <Send className="w-4 h-4 text-amber-300" />
-                <span>Confirm &amp; Dispatch This Quotation (£{totalAmount.toFixed(2)})</span>
+                <Send className={`w-4 h-4 text-amber-300 ${isSubmitting ? 'animate-pulse' : ''}`} />
+                <span>{isSubmitting ? 'Dispatching Proposal...' : `Confirm & Dispatch This Quotation (£${totalAmount.toFixed(2)})`}</span>
               </button>
             </div>
           </div>

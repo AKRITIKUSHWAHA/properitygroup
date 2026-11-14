@@ -1,10 +1,24 @@
 /**
  * Centralized API Client for NJS Property Group Frontend
- * Communicates with backend on http://localhost:5000/api/v1 (or via /api/v1 proxy)
+ * Dynamically resolves to Railway live backend in production or localhost:5000 in dev
  * Automatically attaches Authorization Bearer token from localStorage
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+export function getApiBaseUrl() {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    // If running in production / live domain (njspropertygroup.com, netlify, etc.)
+    if (!isLocalhost) {
+      if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('localhost')) {
+        return envUrl;
+      }
+      return 'https://njs-proprty-group-production.up.railway.app/api/v1';
+    }
+  }
+  return envUrl || 'http://localhost:5000/api/v1';
+}
 
 export class ApiError extends Error {
   constructor(message, status = 500, errors = []) {
@@ -15,7 +29,7 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token } = {}) {
-  const authToken = token || localStorage.getItem('property_group_auth_token');
+  const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null);
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const config = {
@@ -32,7 +46,9 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
     config.body = isFormData ? body : JSON.stringify(body);
   }
 
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
 
   try {
     const response = await fetch(url, config);

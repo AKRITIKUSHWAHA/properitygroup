@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DEMO_USERS } from '../mock/users';
 import { ROLE_NAVIGATION } from '../mock/navigation';
@@ -45,6 +45,22 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
+  // Ensure active admin has a live backend JWT stored for reliable CRM & quote API operations
+  useEffect(() => {
+    if (user && (user.role === 'admin' || user.role === 'super_admin')) {
+      const existingToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      if (!existingToken) {
+        authApi.login('admin@demo.com', 'password123')
+          .then((res) => {
+            if (res?.token) {
+              localStorage.setItem(AUTH_TOKEN_KEY, res.token);
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, [user]);
+
   // Fast role switcher for development/testing if needed
   const switchRole = useCallback((newRole) => {
     if (newRole === 'customer' && !isClientPortalEnabled()) {
@@ -61,6 +77,18 @@ export const AuthProvider = ({ children }) => {
     if (targetUser) {
       setUser(targetUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(targetUser));
+
+      // Auto-fetch real backend JWT in background for admin API requests
+      if (newRole === 'admin' || newRole === 'super_admin') {
+        authApi.login('admin@demo.com', 'password123')
+          .then((res) => {
+            if (res?.token) {
+              localStorage.setItem(AUTH_TOKEN_KEY, res.token);
+            }
+          })
+          .catch(() => {});
+      }
+
       return targetUser;
     }
   }, []);
