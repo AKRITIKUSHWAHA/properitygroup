@@ -221,7 +221,7 @@ export const createQuote = async (req, res, next) => {
           quoteAmount: totalAmount.toFixed(2),
           surveyType: targetSurveyType || 'RICS Level 2 Home Survey',
           propertyAddress: targetProperty || 'Subject Property',
-          quoteLink: req.body.quoteLink || `${process.env.CLIENT_URL?.split(',')[0] || 'https://njspropertygroup.com'}/login`,
+          quoteLink: req.body.quoteLink || `${process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5175'}/login?email=${encodeURIComponent(recipientEmail)}&role=customer`,
         });
         emailSent = Boolean(emailRes?.success);
       } catch (emailErr) {

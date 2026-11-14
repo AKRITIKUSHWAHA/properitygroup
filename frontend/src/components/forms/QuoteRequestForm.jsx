@@ -116,6 +116,9 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           roleLabel: 'Property Client',
           company: 'NJS Property Group',
           phone: formData.customerPhone || '',
+          address: formData.propertyAddress || '',
+          city: formData.city || formData.propertyLocation || '',
+          postcode: formData.propertyPostcode || '',
         };
         localStorage.setItem('property_group_registered_customers', JSON.stringify(storedCustomers));
       } catch {}

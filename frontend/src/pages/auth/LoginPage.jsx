@@ -114,7 +114,8 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const location = useLocation();
   const params = useParams();
   const [searchParams] = useSearchParams();
-  const { login, getRememberedEmail } = useAuth();
+  const { user, setUser, login, getRememberedEmail } = useAuth();
+  const urlEmail = searchParams.get('email');
 
   const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
 
@@ -134,6 +135,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
   const getInitialEmail = (roleKey) => {
+    if (urlEmail) return urlEmail;
     const config = ROLES_CONFIG[roleKey] || ROLES_CONFIG.customer;
     const remembered = getRememberedEmail ? getRememberedEmail(roleKey) : '';
     if (roleKey === 'customer') {
@@ -157,16 +159,60 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     return config.defaultEmail;
   };
 
-  const [email, setEmail] = useState(() => location.state?.prefilledEmail || getInitialEmail(activeRoleKey));
+  const [email, setEmail] = useState(() => urlEmail || location.state?.prefilledEmail || getInitialEmail(activeRoleKey));
   const [password, setPassword] = useState(() => (location.state?.prefilledEmail ? '' : DEFAULT_DEMO_PASSWORD));
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Keep state synchronized whenever the route or active role changes
+  // Handle direct link with email from proposal email
   useEffect(() => {
-    if (location.state?.prefilledEmail) {
+    if (urlEmail) {
+      const cleanEmail = urlEmail.toLowerCase().trim();
+      setEmail(cleanEmail);
+      // Auto-switch to customer if currently unauthenticated or logged in as a different demo user
+      if (!user || user.email?.toLowerCase().trim() !== cleanEmail) {
+        let matchedCustomer = null;
+        try {
+          const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+          matchedCustomer = registered[cleanEmail];
+        } catch {}
+        if (!matchedCustomer) {
+          try {
+            const storedQuotes = JSON.parse(localStorage.getItem('property_group_quotes') || '[]');
+            const q = storedQuotes.find(quote => (quote.clientEmail || '').toLowerCase().trim() === cleanEmail);
+            if (q) {
+              matchedCustomer = {
+                id: `usr_client_${Date.now()}`,
+                email: cleanEmail,
+                name: q.client || 'Valued Client',
+                role: 'customer',
+                roleLabel: 'Property Client',
+                company: 'NJS Property Group',
+                phone: q.clientPhone || '',
+                address: q.property || '',
+                postcode: q.location || '',
+              };
+            }
+          } catch {}
+        }
+        if (!matchedCustomer) {
+          matchedCustomer = {
+            id: `usr_client_${Date.now()}`,
+            email: cleanEmail,
+            name: cleanEmail.split('@')[0],
+            role: 'customer',
+            roleLabel: 'Property Client',
+            company: 'NJS Property Group',
+          };
+        }
+        setUser(matchedCustomer);
+        localStorage.setItem('property_group_user_session', JSON.stringify(matchedCustomer));
+        navigate('/customer/quotations', { replace: true });
+        return;
+      }
+    } else if (location.state?.prefilledEmail) {
       setEmail(location.state.prefilledEmail);
       setPassword('');
     } else {
@@ -174,7 +220,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
       setPassword(DEFAULT_DEMO_PASSWORD);
     }
     setErrorMessage('');
-  }, [activeRoleKey, location.state]);
+  }, [activeRoleKey, location.state, urlEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -156,6 +156,40 @@ export const AuthProvider = ({ children }) => {
           // ignore
         }
       }
+
+      if (!matchedUser) {
+        try {
+          const storedQuotes = JSON.parse(localStorage.getItem('property_group_quotes') || '[]');
+          const q = storedQuotes.find((item) => (item.clientEmail || '').toLowerCase().trim() === trimmedEmail);
+          if (q) {
+            matchedUser = {
+              id: `usr_client_${Date.now()}`,
+              email: trimmedEmail,
+              name: q.client || 'Valued Client',
+              role: 'customer',
+              roleLabel: 'Property Client',
+              company: 'NJS Property Group',
+              phone: q.clientPhone || '',
+              address: q.property || '',
+              postcode: q.location || '',
+            };
+          }
+        } catch {}
+      }
+
+      if (!matchedUser && trimmedEmail.includes('@')) {
+        matchedUser = {
+          id: `usr_client_${Date.now()}`,
+          email: trimmedEmail,
+          name: trimmedEmail.split('@')[0],
+          role: 'customer',
+          roleLabel: 'Property Client',
+          company: 'NJS Property Group',
+          phone: '',
+          address: '',
+          postcode: '',
+        };
+      }
     }
 
     if (!matchedUser) {

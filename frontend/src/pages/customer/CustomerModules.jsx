@@ -47,6 +47,7 @@ import { SurveyProgressTracker } from '../../components/customer/SurveyProgressT
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
 import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
+import { useQuotes } from '../../mock/quotes';
 import {
   customerQuotationsApi,
   customerBookingsApi,
@@ -119,20 +120,36 @@ export const CustomerTermsPage = () => {
   const isAlreadySigned =
     currentAgreement?.status === 'Signed' || currentJob?.termsStatus === 'Signed';
 
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const isEmma = userEmail === 'customer@demo.com';
+  const { quotes: storedQuotes = [] } = useQuotes();
+  const userQuote = storedQuotes.find(
+    (q) => (q.clientEmail || '').toLowerCase().trim() === userEmail
+  );
+  let regUser = {};
+  try {
+    const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+    regUser = registered[userEmail] || {};
+  } catch {}
+
   // 3. Dynamic property and fee values
   const propertyAddress = currentJob?.property
     ? `${currentJob.property}, ${currentJob.location || ''}`
-    : '14 Mayfair Gate, Mayfair, London W1K 2PB';
-  const surveyType = currentJob?.surveyType || 'RICS Level 2 Home Survey';
+    : userQuote?.property
+    ? `${userQuote.property}${userQuote.location ? `, ${userQuote.location}` : ''}`
+    : regUser.address
+    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
+    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Pending Property Address');
+  const surveyType = currentJob?.surveyType || userQuote?.surveyType || 'RICS Level 2 Home Survey';
   const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
-    : '27 Oct, 10:00 - 13:00';
-  const jobNo = currentJob?.id || 'JOB-2026-080';
+    : 'Pending Scheduling';
+  const jobNo = currentJob?.id || userQuote?.id || 'JOB-2026-PENDING';
 
-  const baseFee = currentJob?.quote?.baseFee || (surveyType.includes('Level 3') ? 1450 : 770);
-  const vatAmount = Math.round(baseFee * 0.2);
-  const grossTotal = baseFee + vatAmount;
+  const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || (surveyType.includes('Level 3') ? 1450 : 550);
+  const vatAmount = userQuote?.vatAmount || Math.round(baseFee * 0.2);
+  const grossTotal = userQuote?.totalAmount || (baseFee + vatAmount);
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
@@ -1160,9 +1177,13 @@ export const CustomerQuotationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs } = useJobs();
+  const { quotes: storedQuotes = [] } = useQuotes();
+
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const isDemo = userEmail === 'customer@demo.com';
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
-  const quotes = myJobs.map((j) => {
+  const jobQuotes = myJobs.map((j) => {
     const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
     const vat = net * 0.2;
     const total = net + vat;
@@ -1180,6 +1201,35 @@ export const CustomerQuotationsPage = () => {
       validUntil: j.termsStatus === 'Signed' ? 'Confirmed' : '14 Days Remaining',
     };
   });
+
+  // Collect standalone quotes issued from CRM for this customer
+  const userStoredQuotes = storedQuotes.filter((q) => {
+    const qEmail = (q.clientEmail || '').toLowerCase().trim();
+    return qEmail && qEmail === userEmail;
+  });
+
+  const standAloneQuotes = userStoredQuotes
+    .filter((q) => !jobQuotes.some((jq) => jq.id === q.id || jq.jobId?.includes(q.id.replace('QUO-', ''))))
+    .map((q) => {
+      const net = q.baseFee || q.amountExVat || 550.0;
+      const vat = q.vatAmount || net * 0.2;
+      const total = q.totalAmount || (net + vat);
+      return {
+        id: q.id,
+        jobId: q.id,
+        property: `${q.property || ''}${q.location ? `, ${q.location}` : ''}`,
+        surveyType: q.surveyType || 'RICS Level 2 Home Survey',
+        net: `£${net.toFixed(2)}`,
+        vat: `£${vat.toFixed(2)}`,
+        total: `£${total.toFixed(2)}`,
+        date: q.date || new Date().toLocaleDateString('en-GB'),
+        status: q.status === 'Accepted' || q.termsStatus === 'Signed' ? 'Accepted & Executed' : 'Open Proposal',
+        termsStatus: q.termsStatus || 'Pending',
+        validUntil: q.dueDate ? `Valid until ${q.dueDate}` : '14 Days Remaining',
+      };
+    });
+
+  const quotes = isDemo ? jobQuotes : (standAloneQuotes.length > 0 ? standAloneQuotes : jobQuotes);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -2796,21 +2846,74 @@ export const CustomerPreviousSurveysPage = () => {
 // ==========================================
 export const CustomerDetailsPage = () => {
   useEffect(() => { customerDetailsApi.getDetails().catch(() => {}); }, []);
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { addToast } = useToast();
 
-  const [profile, setProfile] = useState({
-    name: user?.name || 'Emma Watson',
-    email: user?.email || 'customer@demo.com',
-    phone: '+44 7700 900147',
-    address: 'Flat 4, 12 Gloucester Road',
-    city: 'London',
-    postcode: 'SW7 4RB',
+  const [profile, setProfile] = useState(() => {
+    try {
+      const uEmail = (user?.email || '').toLowerCase().trim();
+      const isEmma = uEmail === 'customer@demo.com';
+      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      const regUser = registered[uEmail] || {};
+      return {
+        name: user?.name || regUser.name || (isEmma ? 'Emma Watson' : ''),
+        email: user?.email || regUser.email || (isEmma ? 'customer@demo.com' : ''),
+        phone: user?.phone || regUser.phone || (isEmma ? '+44 7700 900147' : ''),
+        address: user?.address || regUser.address || (isEmma ? 'Flat 4, 12 Gloucester Road' : ''),
+        city: user?.city || regUser.city || (isEmma ? 'London' : ''),
+        postcode: user?.postcode || regUser.postcode || (isEmma ? 'SW7 4RB' : ''),
+      };
+    } catch {
+      return {
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        address: user?.address || '',
+        city: user?.city || '',
+        postcode: user?.postcode || '',
+      };
+    }
   });
+
+  useEffect(() => {
+    if (user?.email) {
+      try {
+        const uEmail = user.email.toLowerCase().trim();
+        const isEmma = uEmail === 'customer@demo.com';
+        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+        const regUser = registered[uEmail] || {};
+        setProfile({
+          name: user.name || regUser.name || (isEmma ? 'Emma Watson' : ''),
+          email: user.email,
+          phone: user.phone || regUser.phone || (isEmma ? '+44 7700 900147' : ''),
+          address: user.address || regUser.address || (isEmma ? 'Flat 4, 12 Gloucester Road' : ''),
+          city: user.city || regUser.city || (isEmma ? 'London' : ''),
+          postcode: user.postcode || regUser.postcode || (isEmma ? 'SW7 4RB' : ''),
+        });
+      } catch {}
+    }
+  }, [user]);
 
   const handleSave = (e) => {
     e.preventDefault();
-    addToast({ type: 'success', title: 'Details Updated', message: 'Your contact and billing details have been saved.' });
+    try {
+      const updatedUser = { ...user, ...profile };
+      localStorage.setItem('property_group_user_session', JSON.stringify(updatedUser));
+      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      if (profile.email) {
+        registered[profile.email.toLowerCase().trim()] = {
+          ...(registered[profile.email.toLowerCase().trim()] || {}),
+          ...profile,
+        };
+        localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+      }
+      if (setUser) {
+        setUser(updatedUser);
+      }
+      addToast({ type: 'success', title: 'Details Updated', message: 'Your contact and billing details have been saved.' });
+    } catch {
+      addToast({ type: 'success', title: 'Details Updated', message: 'Your contact and billing details have been saved.' });
+    }
   };
 
   return (
