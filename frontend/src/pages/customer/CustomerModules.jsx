@@ -2782,30 +2782,6 @@ export const CustomerMessagesPage = () => {
     });
   };
 
-  const handleCall = () => {
-    addToast({
-      type: 'info',
-      title: 'Direct Practice Hotline',
-      message: 'Connecting to NJS Practice Desk: 0800 169 9661',
-    });
-  };
-
-  const handleVideo = () => {
-    addToast({
-      type: 'info',
-      title: 'Virtual Debrief',
-      message: 'Video conference invitation dispatched to surveyor.',
-    });
-  };
-
-  const handleMore = () => {
-    addToast({
-      type: 'info',
-      title: 'Inspection Reference',
-      message: `Job Ref: ${effectiveConv.jobId} • Property: ${effectiveConv.property}`,
-    });
-  };
-
   const lastMsg = messages[messages.length - 1];
   const lastMsgSnippet = lastMsg ? (lastMsg.text.length > 24 ? lastMsg.text.slice(0, 24) + '...' : lastMsg.text) : 'Active survey conversation';
   const lastMsgTime = lastMsg ? (lastMsg.time?.includes(',') ? lastMsg.time.split(',')[1].trim() : lastMsg.time) : 'Today';
@@ -3069,34 +3045,6 @@ export const CustomerMessagesPage = () => {
                   {activeContact.online ? `Online • Last seen, ${activeContact.lastSeen}` : `Offline • Seen ${activeContact.lastSeen}`}
                 </p>
               </div>
-            </div>
-
-            {/* Header Action Buttons Matching Reference Design */}
-            <div className="flex items-center gap-1 text-slate-400 shrink-0">
-              <button
-                type="button"
-                onClick={handleCall}
-                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Voice Call"
-              >
-                <Phone className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleVideo}
-                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Video Consultation"
-              >
-                <Video className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleMore}
-                className="p-2 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Conversation details"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
