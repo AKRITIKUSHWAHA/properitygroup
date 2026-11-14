@@ -2701,34 +2701,8 @@ export const CustomerMessagesPage = () => {
 
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeChannelId, setActiveChannelId] = useState('desk');
+  const [activeChannelId, setActiveChannelId] = useState('conv-user-21');
   const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
-
-  // Initial Groups State
-  const [groups, setGroups] = useState([
-    {
-      id: 'desk',
-      name: 'NJS Operations Desk',
-      avatar: 'NJS',
-      lastMessage: 'hii',
-      time: '16:31',
-      lastMessageTime: '2026-11-14T11:01:11.959Z',
-      unread: false,
-      online: true,
-      lastSeen: '2:02pm',
-    },
-    {
-      id: 'dispatch',
-      name: 'Survey Dispatch Team',
-      avatar: 'SD',
-      lastMessage: 'Appointment slot allocated',
-      time: 'Yesterday',
-      lastMessageTime: '2026-11-13T12:00:00.000Z',
-      unread: false,
-      online: true,
-      lastSeen: 'Yesterday',
-    },
-  ]);
 
   // Initial People Roster (All Real Surveyors & Customers from DB Seed)
   const [people, setPeople] = useState([
@@ -2826,31 +2800,6 @@ export const CustomerMessagesPage = () => {
 
   // Thread Messages mapping per conversation
   const [threadsMap, setThreadsMap] = useState({
-    desk: [
-      {
-        id: 'desk-1',
-        sender: 'NJS Operations Desk',
-        role: 'admin',
-        text: 'Hello, welcome to your dedicated communications channel with NJS Property Group operations desk. How can our surveying team assist you today?',
-        time: 'Today, 2:00pm',
-      },
-      {
-        id: 'desk-2',
-        sender: 'Alexander Sterling',
-        role: 'client',
-        text: 'hii',
-        time: 'Today, 16:31',
-      },
-    ],
-    dispatch: [
-      {
-        id: 'disp-1',
-        sender: 'Survey Dispatch Team',
-        role: 'admin',
-        text: 'Appointment slot allocated with RICS chartered surveyor. Key collection instructions verified with Foxtons.',
-        time: 'Yesterday, 12:00pm',
-      },
-    ],
     'conv-user-21': [
       {
         id: 'dt-1',
@@ -2986,17 +2935,16 @@ export const CustomerMessagesPage = () => {
       .catch(() => {});
   }, [activeChannelId]);
 
-  // Find active contact or default to first group
-  const allContacts = [...groups, ...people];
+  // Find active contact or default to first person
   const activeContact =
-    allContacts.find((c) => c.id === activeChannelId) || groups[0];
+    people.find((c) => c.id === activeChannelId) || people[0];
 
   const currentMessages = threadsMap[activeChannelId] || [
     {
       id: 'default-intro',
-      sender: activeContact.name,
-      role: activeContact.role === 'CUSTOMER' ? 'client' : 'admin',
-      text: `Direct secure channel with ${activeContact.name} (${activeContact.roleTitle || 'NJS Support Desk'}). How can we assist today?`,
+      sender: activeContact?.name || 'Contact',
+      role: activeContact?.role === 'CUSTOMER' ? 'client' : 'admin',
+      text: `Direct secure channel with ${activeContact?.name || 'Contact'} (${activeContact?.roleTitle || 'Support'}). How can we assist today?`,
       time: 'Today',
     },
   ];
@@ -3038,66 +2986,45 @@ export const CustomerMessagesPage = () => {
     }));
 
     // 2. DYNAMIC BUMP-TO-TOP: Update contact lastMessage & timestamp, re-sort to top!
-    const isPerson = people.some(
-      (p) => p.id === activeChannelId || (p.userId && p.userId === activeContact.userId)
-    );
-
-    if (isPerson) {
-      setPeople((prev) => {
-        const updated = prev.map((p) => {
-          if (p.id === activeChannelId || (p.userId && p.userId === activeContact.userId)) {
-            return {
-              ...p,
-              lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
-              time: timeNow,
-              lastMessageTime: nowIso,
-            };
-          }
-          return p;
-        });
-        // Re-sort descending so this contact immediately jumps to index 0 (the top)!
-        return updated.sort(
-          (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-        );
+    setPeople((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id === activeChannelId || (p.userId && p.userId === activeContact?.userId)) {
+          return {
+            ...p,
+            lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
+            time: timeNow,
+            lastMessageTime: nowIso,
+          };
+        }
+        return p;
       });
-    } else {
-      setGroups((prev) => {
-        const updated = prev.map((g) => {
-          if (g.id === activeChannelId) {
-            return {
-              ...g,
-              lastMessage: textToSend.length > 28 ? textToSend.slice(0, 28) + '...' : textToSend,
-              time: timeNow,
-              lastMessageTime: nowIso,
-            };
-          }
-          return g;
-        });
-        return updated.sort(
-          (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-        );
-      });
-    }
+      // Re-sort descending so this contact immediately jumps to index 0 (the top)!
+      return updated.sort(
+        (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      );
+    });
 
     // 3. Persist to Backend API & MySQL Database
-    customerMessagesApi
-      .sendMessage({
-        conversationId: activeContact.id,
-        recipientId: activeContact.userId,
-        content: textToSend,
-      })
-      .catch((err) => console.warn('Message API send failed:', err));
+    if (activeContact) {
+      customerMessagesApi
+        .sendMessage({
+          conversationId: activeContact.id,
+          recipientId: activeContact.userId,
+          content: textToSend,
+        })
+        .catch((err) => console.warn('Message API send failed:', err));
 
-    // 4. Cross-tab sync
-    try {
-      sendMessage(activeContact.id, textToSend, user?.name || 'Client', 'client', false);
-    } catch {}
+      // 4. Cross-tab sync
+      try {
+        sendMessage(activeContact.id, textToSend, user?.name || 'Client', 'client', false);
+      } catch {}
 
-    addToast({
-      type: 'success',
-      title: 'Message Sent',
-      message: `Message dispatched to ${activeContact.name}`,
-    });
+      addToast({
+        type: 'success',
+        title: 'Message Sent',
+        message: `Message dispatched to ${activeContact.name}`,
+      });
+    }
   };
 
   const handleAttach = () => {
@@ -3108,13 +3035,7 @@ export const CustomerMessagesPage = () => {
     });
   };
 
-  // Real-time search filter for Groups & People
-  const filteredGroups = groups.filter(
-    (g) =>
-      g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      g.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  // Real-time search filter for People
   const filteredPeople = people.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -3133,7 +3054,7 @@ export const CustomerMessagesPage = () => {
             mobileView === 'list' ? 'bg-[#0B1F4D] text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Conversations ({groups.length + people.length})
+          Conversations ({people.length})
         </button>
         <button
           type="button"
@@ -3142,13 +3063,13 @@ export const CustomerMessagesPage = () => {
             mobileView === 'chat' ? 'bg-[#0B1F4D] text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          {activeContact.name}
+          {activeContact?.name || 'Chat'}
         </button>
       </div>
 
       {/* Main 2-Column Chat Layout Matching Reference Image */}
       <div className="flex flex-col md:flex-row gap-3.5 sm:gap-4 flex-1 min-h-0 overflow-hidden">
-        {/* Left Column: Search & Contact Cards */}
+        {/* Left Column: Search & People Directory */}
         <div
           className={`w-full md:w-72 lg:w-80 flex flex-col gap-3 shrink-0 ${
             mobileView === 'list' ? 'flex' : 'hidden md:flex'
@@ -3166,59 +3087,7 @@ export const CustomerMessagesPage = () => {
             />
           </div>
 
-          {/* 2. Groups Card Container */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 shrink-0">
-            <h4 className="text-xs font-extrabold text-slate-800 mb-2 px-1">
-              Groups
-            </h4>
-            <div className="space-y-1">
-              {filteredGroups.map((grp) => {
-                const isSelected = activeChannelId === grp.id;
-                return (
-                  <button
-                    key={grp.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveChannelId(grp.id);
-                      setMobileView('chat');
-                    }}
-                    className={`w-full p-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-slate-100/90 ring-1 ring-slate-200'
-                        : 'hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
-                        {grp.avatar}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-slate-900 text-xs truncate">
-                          {grp.name}
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
-                          {grp.lastMessage}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0">
-                      <span className="text-[10px] text-slate-400 block font-medium">
-                        {grp.time}
-                      </span>
-                      {grp.unread ? (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block mt-0.5" />
-                      ) : (
-                        <CheckCheck className="w-3.5 h-3.5 text-emerald-600 inline-block mt-0.5" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. People Card Container (All Customers & Surveyors, Sorted by Latest Activity) */}
+          {/* 2. People Card Container (All Customers & Surveyors, Sorted by Latest Activity) */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between mb-2 px-1">
               <h4 className="text-xs font-extrabold text-slate-800">
@@ -3303,18 +3172,18 @@ export const CustomerMessagesPage = () => {
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                  {activeContact.avatar}
+                  {activeContact?.avatar || 'NJS'}
                 </div>
-                {activeContact.online && (
+                {activeContact?.online && (
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
                 )}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-slate-900 text-sm truncate">
-                    {activeContact.name}
+                    {activeContact?.name || 'Active Chat'}
                   </h3>
-                  {activeContact.roleTitle && (
+                  {activeContact?.roleTitle && (
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
                         activeContact.role === 'SURVEYOR'
@@ -3327,9 +3196,9 @@ export const CustomerMessagesPage = () => {
                   )}
                 </div>
                 <p className="text-[11px] text-slate-400 font-medium truncate">
-                  {activeContact.online
+                  {activeContact?.online
                     ? `Online • Active Direct Channel`
-                    : `Offline • Last seen, ${activeContact.lastSeen || 'recently'}`}
+                    : `Offline • Last seen, ${activeContact?.lastSeen || 'recently'}`}
                 </p>
               </div>
             </div>
