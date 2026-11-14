@@ -84,33 +84,47 @@ export const downloadTermsPDF = ({
   signatureType = 'typed',
   signatureValue = 'Emma Watson',
   ipAddress = '86.142.19.104',
+  surveyorName = 'David Thorne MRICS',
+  instructingSolicitor = null,
+  courtClaimNumber = null,
+  courtForum = null,
+  hourlyRate = 250.0,
+  courtDailyFee = 1500.0,
+  isExpertWitness = false,
 }) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const stLower = (surveyType || '').toLowerCase();
+  const isEW = isExpertWitness || stLower.includes('expert') || stLower.includes('cpr');
 
-  drawNJSHeader(doc, 'TERMS OF ENGAGEMENT (DIGITALLY EXECUTED)', `Instruction Ref: ${jobNo} • Legally Binding Contract`);
+  const docTitle = isEW
+    ? 'EXPERT WITNESS MANDATE (CPR PART 35)'
+    : `${(surveyType || 'RICS HOME SURVEY').toUpperCase()} TERMS OF ENGAGEMENT`;
 
-  // Instruction Summary Box
+  drawNJSHeader(doc, docTitle, `Instruction Ref: ${jobNo} • Legally Binding Contract`);
+
+  // Instruction Summary Box (Expanded height for EW)
+  const boxHeight = isEW ? 44 : 36;
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(15, 50, 180, 36, 2, 2, 'FD');
+  doc.roundedRect(15, 50, 180, boxHeight, 2, 2, 'FD');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(11, 31, 77);
-  doc.text('CLIENT / INSTRUCTION DETAILS', 20, 56);
+  doc.text('CLIENT & INSTRUCTION PARTICULARS', 20, 56);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
 
-  doc.text(`Instructing Client:`, 20, 63);
+  doc.text(`Instructing Party:`, 20, 63);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text(clientName, 55, 63);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
-  doc.text(`Survey Property:`, 20, 70);
+  doc.text(`Subject Property:`, 20, 70);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text(property, 55, 70);
@@ -134,68 +148,176 @@ export const downloadTermsPDF = ({
   doc.text(`Execution Date:`, 120, 70);
   doc.text(`${signedDate} at ${signedTime}`, 145, 70);
 
-  // Contract Terms Clauses
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(11, 31, 77);
-  doc.text('1. SCOPE OF THE SERVICE & RICS PROFESSIONAL STANDARDS', 15, 94);
+  if (isEW) {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Solicitor / Claim:`, 20, 84);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(146, 64, 14); // Amber-800
+    doc.text(`${instructingSolicitor || 'Herbert Smith Freehills LLP'} • ${courtClaimNumber || 'Claim No. F00CL891'}`, 55, 84);
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
-  const clause1 = [
-    '1.1 NJS Property Group agrees to inspect the subject property in accordance with the current RICS Home Survey',
-    'Standard (Professional Standard, UK). The surveyor is a qualified member of the Royal Institution of Chartered Surveyors.',
-    '1.2 The inspection is a visual examination of the surface material and features accessible safely from ground level or',
-    'safe working platforms. Carpets, floor coverings, and fitted furniture are not lifted or moved.',
-    '1.3 Where specialist elements (e.g. electrical wiring, gas appliances, underground drainage) require inspection,',
-    'the surveyor will report observable visual indicators and advise on specialist testing where warranted.',
-  ];
-  let curY = 99;
-  clause1.forEach((line) => {
-    doc.text(line, 15, curY);
-    curY += 4.5;
-  });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Forensic Scale:`, 120, 77);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(11, 31, 77);
+    doc.text(`£${hourlyRate}/hr • £${courtDailyFee}/day`, 145, 77);
+  }
 
-  curY += 2;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(11, 31, 77);
-  doc.text('2. FEES, CANCELLATION RIGHTS & PAYMENT', 15, curY);
+  // Contract Terms Clauses (Dynamically Tailored to Service)
+  let curY = isEW ? 101 : 94;
 
-  curY += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
-  const clause2 = [
-    '2.1 The agreed fee is payable prior to inspection release. Payment is handled securely via Stripe Card or BACS.',
-    '2.2 Cancellation by Client: Notice must be received at least 24 hours prior to the booked inspection date to receive',
-    'a full refund minus reasonable administrative disbursements. Cancellations within 24 hours may incur a 50% survey fee.',
-    '2.3 NJS Property Group maintains full Professional Indemnity Insurance with an aggregate limit of £5,000,000.',
-  ];
-  clause2.forEach((line) => {
-    doc.text(line, 15, curY);
-    curY += 4.5;
-  });
+  if (isEW) {
+    // 1. CPR 35 Duty
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('1. OVERRIDING STATUTORY DUTY TO THE COURT (CPR PART 35)', 15, curY);
 
-  curY += 2;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(11, 31, 77);
-  doc.text('3. COMPLAINTS HANDLING PROCEDURE', 15, curY);
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const ew1 = [
+      '1.1 Under Civil Procedure Rule 35.3, the Expert’s overriding and primary duty is to the Court, superseding any private',
+      'obligation to the appointing party or instructing solicitor. Payment is for professional forensic work, never for a favorable opinion.',
+      '1.2 The named expert acts independently and objectively and must consider contrary factual or technical evidence.',
+    ];
+    ew1.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
 
-  curY += 5;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
-  const clause3 = [
-    '3.1 In the unlikely event of dissatisfaction, NJS Property Group operates a formal Complaints Handling Procedure approved',
-    'by the RICS. A full written copy is provided upon request and Stage 2 disputes may be referred to CEDR.',
-  ];
-  clause3.forEach((line) => {
-    doc.text(line, 15, curY);
-    curY += 4.5;
-  });
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('2. APPOINTMENT ROUTE, FORENSIC RATES & COURT ATTENDANCE', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const ew2 = [
+      `2.1 Hourly Rate: £${hourlyRate}/hr + VAT for investigations, document review, conference, and report drafting.`,
+      `2.2 Court Attendance: £${courtDailyFee}/day + VAT (or £${Math.round(courtDailyFee / 2)}/half-day) for trial attendance and judicial hearings.`,
+      `2.3 Instructing Solicitor: ${instructingSolicitor || 'Herbert Smith Freehills LLP'}. Court & Claim: ${courtClaimNumber || 'Claim No. F00CL891'}.`,
+    ];
+    ew2.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('3. STATEMENT OF TRUTH & JOINT STATEMENTS (CPR 35.12)', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const ew3 = [
+      '3.1 The final expert report incorporates the mandatory declaration of truthfulness and compliance with Practice Direction 35.',
+      '3.2 In court-ordered expert discussions, the expert participates independently without solicitor veto or conditional approval.',
+    ];
+    ew3.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+  } else if (stLower.includes('level 3')) {
+    // Level 3 Building Survey
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('1. LEVEL 3 COMPREHENSIVE STRUCTURAL INVESTIGATION SCOPE', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l31 = [
+      '1.1 Exhaustive structural audit covering building fabric, load-bearing walls, chimney breasts, roof trusses, and sub-floors.',
+      '1.2 Sub-floor voids and main roof voids are entered where safe and accessible without structural damage.',
+      '1.3 Defect cause diagnosis is provided with indicative repair cost estimates and urgency prioritization categories.',
+    ];
+    l31.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('2. FULL STRUCTURAL INDEMNITY & STATUTORY CANCELLATION', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l32 = [
+      '2.1 NJS Property Group Ltd maintains £1,000,000 professional indemnity cover backed by Lloyd’s and RSA syndicates.',
+      '2.2 Statutory 14-day consumer cancellation applies unless express consent is given to perform the on-site inspection.',
+      '2.3 In accordance with RICS rules, advance settlement of fees is required before on-site inspection slots are confirmed.',
+    ];
+    l32.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('3. COMPLAINTS HANDLING & INDEPENDENT CEDR REDRESS', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l33 = [
+      '3.1 Complaints should be directed to Natasha Shergill at info@njspropertygroup.com (07444 918809 / 0333 305 2777).',
+      '3.2 Eligible consumer disputes may proceed to CEDR (Centre for Effective Dispute Resolution) after stage 2 review.',
+    ];
+    l33.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+  } else {
+    // Level 2 / Standard
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('1. SCOPE OF SERVICE & RICS HOME SURVEY STANDARD LEVEL 2', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l21 = [
+      '1.1 Visual condition examination of surface fabric, accessible roof voids, and moisture testing with Protimeter meters.',
+      '1.2 Assigns Condition Ratings 1-3 to building components. Concealed structures and fitted carpets are not lifted.',
+      '1.3 Governed by RICS Home Survey Standard (1st Edition). Professional Indemnity cover capped at £250,000.',
+    ];
+    l21.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('2. ADVANCE SETTLEMENT & STATUTORY CONSUMER RIGHTS', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l22 = [
+      '2.1 Agreed fees (including 20% UK VAT) must be settled in full prior to site visit confirmation.',
+      '2.2 Statutory 14-day cancellation right applies. Work commenced within this period upon express client request.',
+      '2.3 NJS Property Group Ltd (Company No. 14367377, Fareham PO16 0EN) is your contracting supplier.',
+    ];
+    l22.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+
+    curY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('3. COMPLAINTS & INDEPENDENT REDRESS (CEDR)', 15, curY);
+
+    curY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+    const l23 = [
+      '3.1 Complaints Manager: Natasha Shergill, info@njspropertygroup.com / 07444 918809 / 0333 305 2777.',
+      '3.2 Independent consumer redress provided by CEDR (100 St Paul’s Churchyard, London EC4M 8BU).',
+    ];
+    l23.forEach((l) => { doc.text(l, 15, curY); curY += 4.2; });
+  }
 
   // Digital Signature Box
   curY += 4;

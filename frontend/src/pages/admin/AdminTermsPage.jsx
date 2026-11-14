@@ -15,6 +15,8 @@ import {
   Copy,
   ChevronDown,
   ChevronUp,
+  Scale,
+  Gavel,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -23,6 +25,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { adminTermsAndDocumentsApi } from '../../api/adminApi';
 import { TERMS_TEMPLATES, useTerms } from '../../mock/terms';
+import { SendTermsModal } from '../../components/crm/SendTermsModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { downloadTermsPDF } from '../../utils/pdfGenerator';
 
@@ -311,6 +314,7 @@ export const AdminTermsPage = () => {
 
   // Modals state
   const [isSendTermsModalOpen, setIsSendTermsModalOpen] = useState(false);
+  const [sendTermsInitialKey, setSendTermsInitialKey] = useState(null);
   const [selectedTemplateToPreview, setSelectedTemplateToPreview] = useState(null);
   const [selectedAgreementDetail, setSelectedAgreementDetail] = useState(null);
 
@@ -433,9 +437,19 @@ export const AdminTermsPage = () => {
       jobNo: agreement.jobNo || agreement.refNo,
       clientName: agreement.client,
       property: agreement.property,
-      surveyType: agreement.templateName || 'RICS Level 2 Home Survey',
-      signatureType: 'drawn',
-      signatureValue: 'Verified Digital Signature',
+      surveyType: agreement.templateName || agreement.serviceKey || 'RICS Level 2 Home Survey',
+      agreedFee: `£${(agreement.totalAmount || 840).toFixed(2)} (inc. 20% VAT)`,
+      signedDate: agreement.signedDate ? agreement.signedDate.split(',')[0] : new Date().toLocaleDateString('en-GB'),
+      signedTime: agreement.signedDate ? (agreement.signedDate.split(',')[1] || '').trim() : '14:00',
+      signatureType: agreement.signatureType || 'drawn',
+      signatureValue: agreement.signatureValue || agreement.client,
+      ipAddress: agreement.signerIp ? agreement.signerIp.split(' ')[0] : '86.142.19.45',
+      surveyorName: agreement.surveyorName || 'David Thorne MRICS',
+      instructingSolicitor: agreement.instructingSolicitor,
+      courtClaimNumber: agreement.courtClaimNumber,
+      hourlyRate: agreement.hourlyRate || 250.0,
+      courtDailyFee: agreement.courtDailyFee || 1500.0,
+      isExpertWitness: agreement.isExpertWitness || agreement.serviceKey === 'Expert Witness',
     });
     addToast({
       type: 'success',
@@ -797,7 +811,7 @@ export const AdminTermsPage = () => {
 
                   <button
                     onClick={() => {
-                      setFormData((prev) => ({ ...prev, serviceKey: tmpl.serviceKey }));
+                      setSendTermsInitialKey(tmpl.serviceKey);
                       setIsSendTermsModalOpen(true);
                     }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
@@ -879,139 +893,15 @@ export const AdminTermsPage = () => {
         />
       </div>
 
-      {/* MODAL 1: "Send terms" Modal (Prompt: signer email) */}
-      <Modal
+      {/* MODAL 1: Dispatch Terms Modal with Service Templates & CPR 35 Blanks */}
+      <SendTermsModal
         isOpen={isSendTermsModalOpen}
-        onClose={() => setIsSendTermsModalOpen(false)}
-        title="Dispatch Digital Terms of Engagement"
-        subtitle="Issue an encrypted e-signature contract link to the client / purchaser via email and SMS."
-        maxWidth="max-w-xl"
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={() => setIsSendTermsModalOpen(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              form="send-terms-form"
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] shadow-sm flex items-center gap-1.5 cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Dispatch to Signer
-            </button>
-          </>
-        }
-      >
-        <form id="send-terms-form" onSubmit={handleSendTermsSubmit} className="space-y-4 text-xs">
-          {/* Signer Email (Required by user prompt) */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Signer Email Address * (Client e-signature delivery)
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="e.g. client@example.co.uk"
-              value={formData.signerEmail}
-              onChange={(e) => setFormData({ ...formData, signerEmail: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-            />
-            <span className="text-[10px] text-slate-400 mt-1 block">
-              The recipient will receive an encrypted DocuSign / RICS authentication token to execute terms.
-            </span>
-          </div>
-
-          {/* Client Name & Service Template */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Client / Signer Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Oliver Montgomery"
-                value={formData.clientName}
-                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Service Template * (One per service)
-              </label>
-              <select
-                value={formData.serviceKey}
-                onChange={(e) => setFormData({ ...formData, serviceKey: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-              >
-                {TERMS_TEMPLATES.map((tmpl) => (
-                  <option key={tmpl.id} value={tmpl.serviceKey}>
-                    {tmpl.serviceKey} — {tmpl.version} ({tmpl.year})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Property Address & Postcode */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Subject Property Address *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. 29 Cheyne Walk"
-                value={formData.property}
-                onChange={(e) => setFormData({ ...formData, property: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">
-                Location / Postcode
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Chelsea, London SW3 5HH"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">
-              Custom Inspection Notes / Caveats (Optional)
-            </label>
-            <textarea
-              rows="2"
-              placeholder="e.g. Roof space access subject to vendor providing safe loft ladder..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
-            />
-          </div>
-
-          {/* RICS Compliance Banner */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-amber-900">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="text-[11px] leading-snug">
-              Per UK surveying regulations, on-site inspections will remain on hold until the signer successfully executes this mandate.
-            </span>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => {
+          setIsSendTermsModalOpen(false);
+          setSendTermsInitialKey(null);
+        }}
+        initialTemplateKey={sendTermsInitialKey}
+      />
 
       {/* MODAL 2: Template Clauses Preview Modal */}
       {selectedTemplateToPreview && (
@@ -1040,12 +930,24 @@ export const AdminTermsPage = () => {
               {selectedTemplateToPreview.summary}
             </p>
 
+            {selectedTemplateToPreview.isExpertWitness && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl space-y-1 text-amber-900">
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <Gavel className="w-4 h-4 text-amber-600" />
+                  <span>CPR Part 35 Mandatory Forensic Blanks</span>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  This mandate incorporates editable blanks for Instructing Solicitor, Court &amp; Claim Number, Hourly Rate (£250/hr), and Court Attendance Daily Refresher (£1,500/day).
+                </p>
+              </div>
+            )}
+
             <h5 className="font-bold text-[#0B1F4D] text-xs uppercase tracking-wider">
-              Statutory Terms &amp; Standard Clauses:
+              Statutory Terms &amp; Standard Clauses (Client Word Document):
             </h5>
 
-            <div className="space-y-3">
-              {selectedTemplateToPreview.keyClauses.map((clause, idx) => (
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              {(selectedTemplateToPreview.clauses || selectedTemplateToPreview.keyClauses || []).map((clause, idx) => (
                 <div key={idx} className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-[#2563EB] bg-blue-50 px-2 py-0.5 rounded text-[11px]">
@@ -1053,7 +955,7 @@ export const AdminTermsPage = () => {
                     </span>
                     <span className="font-bold text-slate-900">{clause.title}</span>
                   </div>
-                  <p className="text-slate-600 leading-relaxed pt-1">
+                  <p className="text-slate-600 leading-relaxed pt-1 text-[11px]">
                     {clause.text}
                   </p>
                 </div>
@@ -1115,10 +1017,54 @@ export const AdminTermsPage = () => {
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">Template Version</span>
-                <span className="font-mono text-slate-800">{selectedAgreementDetail.versionYear}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">Assigned Surveyor</span>
+                <span className="font-bold text-[#0B1F4D]">{selectedAgreementDetail.surveyorName || 'David Thorne MRICS'}</span>
               </div>
             </div>
+
+            {/* Financial Details Box */}
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Agreed Professional Fee</span>
+                <span className="font-mono text-slate-800 font-semibold">
+                  Base: £{(selectedAgreementDetail.baseFee || 700).toFixed(2)} + 20% VAT (£{(selectedAgreementDetail.vatAmount || 140).toFixed(2)})
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Gross Total</span>
+                <span className="font-mono font-bold text-emerald-700 text-sm">
+                  £{(selectedAgreementDetail.totalAmount || 840).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* CPR Part 35 Expert Witness Particulars Card (if applicable) */}
+            {(selectedAgreementDetail.isExpertWitness || selectedAgreementDetail.serviceKey === 'Expert Witness') && (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2 text-xs">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900 border-b border-amber-200/80 pb-1.5">
+                  <Scale className="w-4 h-4 text-amber-700" />
+                  <span>CPR Part 35 Court &amp; Litigation Particulars</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase">Instructing Solicitor:</span>
+                    <span className="font-bold text-slate-900">{selectedAgreementDetail.instructingSolicitor || 'Herbert Smith Freehills LLP'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase">Court &amp; Claim Ref:</span>
+                    <span className="font-mono font-bold text-slate-800">{selectedAgreementDetail.courtClaimNumber || 'County Court Claim No. F00CL891'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase">Hourly Rate:</span>
+                    <span className="font-mono font-bold text-slate-900">£{selectedAgreementDetail.hourlyRate || 250}/hr + VAT</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase">Court Attendance:</span>
+                    <span className="font-mono font-bold text-slate-900">£{selectedAgreementDetail.courtDailyFee || 1500}/day + VAT</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {selectedAgreementDetail.status === 'Signed' ? (
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-2">
@@ -1130,6 +1076,7 @@ export const AdminTermsPage = () => {
                   <div>Timestamp: {selectedAgreementDetail.signedDate}</div>
                   <div>IP Address: {selectedAgreementDetail.signerIp || '86.142.19.42 (London, UK)'}</div>
                   <div>Audit Hash: {selectedAgreementDetail.auditCode}</div>
+                  <div>Signer: {selectedAgreementDetail.signatureValue || selectedAgreementDetail.client} ({selectedAgreementDetail.signatureType || 'digital'})</div>
                 </div>
               </div>
             ) : (

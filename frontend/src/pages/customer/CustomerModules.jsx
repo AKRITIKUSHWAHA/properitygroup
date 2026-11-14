@@ -494,7 +494,7 @@ export const CustomerTermsPage = () => {
                   <div className="text-[11px] text-slate-400 font-mono">
                     Template: {activeTemplate.name} • Version: {activeTemplate.version} ({activeTemplate.year})
                   </div>
-                  {activeTemplate.keyClauses?.map((clause, idx) => (
+                  {(activeTemplate.clauses || activeTemplate.keyClauses || []).map((clause, idx) => (
                     <div key={idx} className="space-y-1">
                       <strong className="text-slate-900 block font-bold">
                         Clause {clause.num}: {clause.title}
@@ -630,10 +630,10 @@ export const CustomerTermsPage = () => {
               <p>
                 NJS Property Group agrees to carry out a physical visual inspection of {propertyAddress} in accordance with {activeTemplate.governingBody}. The surveyor is a qualified Chartered Surveyor (MRICS) registered with the Royal Institution of Chartered Surveyors.
               </p>
-              {activeTemplate.keyClauses?.map((c, i) => (
+              {(activeTemplate.clauses || activeTemplate.keyClauses || []).map((c, i) => (
                 <div key={i} className="space-y-1">
                   <p className="font-bold text-slate-900">
-                    {c.num}. {c.title}
+                    Clause {c.num}: {c.title}
                   </p>
                   <p>{c.text}</p>
                 </div>

@@ -50,6 +50,7 @@ import { useClientProfiles } from '../../mock/clientProfiles';
 import { useEmailAutomations } from '../../mock/emailAutomations';
 import { RecordBacsPaymentModal } from '../../components/crm/RecordBacsPaymentModal';
 import { RescheduleModal } from '../../components/crm/RescheduleModal';
+import { SendTermsModal } from '../../components/crm/SendTermsModal';
 import { useMessages } from '../../mock/messages';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 
@@ -250,8 +251,15 @@ export const JobDetailsPage = () => {
         clientName: job.customer,
         property: `${job.property}, ${job.location}`,
         surveyType: job.surveyType,
+        agreedFee: `£${totalAmount.toFixed(2)} (inc. 20% VAT)`,
         signatureType: 'drawn',
         signatureValue: 'Verified Digital Signature',
+        surveyorName: job.surveyor || 'David Thorne MRICS',
+        instructingSolicitor: job.contacts?.solicitor?.firm ? `${job.contacts.solicitor.firm} (${job.contacts.solicitor.name || 'Lead'})` : null,
+        courtClaimNumber: job.contacts?.solicitor?.ref ? `Ref: ${job.contacts.solicitor.ref}` : null,
+        hourlyRate: 250.0,
+        courtDailyFee: 1500.0,
+        isExpertWitness: (job.surveyType || '').toLowerCase().includes('expert'),
       });
     } else if (docNameLower.includes('invoice') || docNameLower.includes('vat') || docNameLower.includes('receipt') || docTypeLower.includes('invoice')) {
       downloadInvoicePDF({
@@ -2009,58 +2017,15 @@ export const JobDetailsPage = () => {
         </div>
       </Modal>
 
-      {/* Send Terms Modal */}
-      <Modal
+      {/* Send Service-Specific Terms of Engagement Modal (Client Point 4) */}
+      <SendTermsModal
         isOpen={isSendTermsModalOpen}
         onClose={() => setIsSendTermsModalOpen(false)}
-        title="Send RICS Terms of Engagement Contract"
-        size="md"
-      >
-        <div className="space-y-4 text-xs">
-          <p className="text-slate-600">
-            Dispatch digital Terms of Engagement agreement for <strong>{job.surveyType}</strong> to{' '}
-            <strong>{job.customerEmail}</strong>.
-          </p>
-
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Document Type:</span>
-              <span className="font-bold text-slate-800">RICS Home Survey Standard (2026/27)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Agreed Fixed Fee:</span>
-              <span className="font-bold text-emerald-700 font-mono">£{totalAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Payment Schedule:</span>
-              <span className="font-bold text-slate-800">100% in advance of site visit</span>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3">
-            <button
-              onClick={() => setIsSendTermsModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 font-bold"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                setIsSendTermsModalOpen(false);
-                updateJob(job.id, { termsStatus: 'Signed' });
-                addToast({
-                  type: 'success',
-                  title: 'Terms of Engagement Dispatched',
-                  message: 'Agreement contract sent to client email.',
-                });
-              }}
-              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold"
-            >
-              Dispatch Agreement Now
-            </button>
-          </div>
-        </div>
-      </Modal>
+        job={job}
+        onTermsSent={(agreement) => {
+          updateJob(job.id, { termsStatus: 'Sent' });
+        }}
+      />
 
       {/* View Full Dispatched Email Modal */}
       {viewingEmail && (
