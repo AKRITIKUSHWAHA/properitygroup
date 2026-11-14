@@ -2321,12 +2321,16 @@ export const CustomerTrackSurveyPage = () => {
   const currentStep = React.useMemo(() => {
     if (isDemo) return 7;
 
-    if (myJob?.status === 'Completed' || myJob?.timelineStep >= 10 || myJob?.reportStatus === 'Delivered') return 10;
-    if (myJob?.status === 'QA_Review' || myJob?.timelineStep === 9) return 9;
-    if (myJob?.status === 'Drafting' || myJob?.timelineStep === 8) return 8;
-    if (myJob?.status === 'Inspected' || myJob?.timelineStep === 7) return 7;
-    if (myJob?.status === 'Scheduled' || (myJob?.surveyor && myJob.surveyor !== 'Pending Allocation' && myJob.date && myJob.date !== 'Pending Allocation')) return 6;
-    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid') return 5;
+    const jStatus = (myJob?.status || '').toLowerCase().trim();
+    const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
+    const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || (myJob?.timelineStep || 0) >= 6;
+
+    if (myJob?.status === 'Completed' || myJob?.timelineStep >= 10 || myJob?.reportStatus === 'Delivered' || jStatus === 'completed') return 10;
+    if (myJob?.status === 'QA_Review' || myJob?.timelineStep === 9 || jStatus === 'qa_review' || jStatus === 'qa review') return 9;
+    if (myJob?.status === 'Drafting' || myJob?.timelineStep === 8 || jStatus === 'drafting' || jStatus === 'preparing report') return 8;
+    if (myJob?.status === 'Inspected' || myJob?.timelineStep === 7 || jStatus === 'inspected') return 7;
+    if (isBookedOrScheduled) return 6;
+    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || (myJob?.timelineStep || 0) >= 5) return 5;
     if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') return 4;
     if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') return 3;
     if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') return 2;
