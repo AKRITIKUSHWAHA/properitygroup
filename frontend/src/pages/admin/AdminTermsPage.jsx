@@ -248,6 +248,46 @@ const AgreementRowActions = ({
   );
 };
 
+// Styling themes per surveying discipline for clean visual hierarchy
+const SERVICE_THEMES = {
+  'Homebuyer L2': {
+    badge: 'bg-[#0B1F4D] text-white border-[#0B1F4D]',
+    border: 'hover:border-blue-400',
+    iconColor: 'text-[#2563EB]',
+  },
+  'Building L3': {
+    badge: 'bg-indigo-950 text-indigo-100 border-indigo-900',
+    border: 'hover:border-indigo-400',
+    iconColor: 'text-indigo-600',
+  },
+  'Valuation': {
+    badge: 'bg-purple-950 text-purple-100 border-purple-900',
+    border: 'hover:border-purple-400',
+    iconColor: 'text-purple-600',
+  },
+  'Damp': {
+    badge: 'bg-teal-950 text-teal-100 border-teal-900',
+    border: 'hover:border-teal-400',
+    iconColor: 'text-teal-600',
+  },
+  'Snagging': {
+    badge: 'bg-amber-950 text-amber-100 border-amber-900',
+    border: 'hover:border-amber-400',
+    iconColor: 'text-amber-600',
+  },
+  'Expert Witness': {
+    badge: 'bg-slate-900 text-slate-100 border-slate-800',
+    border: 'hover:border-slate-500',
+    iconColor: 'text-slate-700',
+  },
+};
+
+const formatVersionBadge = (versionStr, year) => {
+  const match = (versionStr || '').match(/v\d+(\.\d+)?/i);
+  if (match) return `${match[0]} • ${year || '2026'}`;
+  return `v${year || '2026'}`;
+};
+
 export const AdminTermsPage = () => {
   const { addToast } = useToast();
   const { agreements, setAgreements, addAgreement, markAgreementSigned } = useTerms();
@@ -694,93 +734,103 @@ export const AdminTermsPage = () => {
       />
 
       {/* TOP 3 EXECUTIVE KPI METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
         {/* Metric 1 */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Executed Legal Panel
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] tracking-tight">
+            <div className="text-2xl sm:text-3xl font-black text-[#0B1F4D] tracking-tight">
               {kpiStats.signedCount}{' '}
               <span className="text-xs font-semibold text-slate-500">/ {kpiStats.total}</span>
             </div>
-            <div className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+            <div className="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span>Verified digital signatures</span>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
+          <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/80 shadow-2xs">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Signed Compliance Rate
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] tracking-tight">
+            <div className="text-2xl sm:text-3xl font-black text-[#0B1F4D] tracking-tight">
               {kpiStats.rate}%
             </div>
-            <div className="text-[11px] text-[#2563EB] font-medium flex items-center gap-1 mt-0.5">
-              <ShieldCheck className="w-3 h-3 text-[#2563EB] shrink-0" />
+            <div className="text-[11px] text-[#2563EB] font-medium flex items-center gap-1 mt-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
               <span>Average turnaround &lt; 18h</span>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
-            <FileSignature className="w-4 h-4" />
+          <div className="w-11 h-11 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs">
+            <FileSignature className="w-5 h-5" />
           </div>
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
+        <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
               Pending Client Signatures
             </span>
-            <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] tracking-tight">
+            <div className="text-2xl sm:text-3xl font-black text-[#0B1F4D] tracking-tight">
               {kpiStats.pendingCount}{' '}
               <span className="text-xs font-semibold text-slate-500">Awaiting</span>
             </div>
-            <div className="text-[11px] text-amber-600 font-medium flex items-center gap-1 mt-0.5">
-              <Clock className="w-3 h-3 text-amber-500 shrink-0" />
+            <div className="text-[11px] text-amber-600 font-medium flex items-center gap-1 mt-1">
+              <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>Auto-reminders dispatched</span>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Clock className="w-4 h-4" />
+          <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100/80 shadow-2xs">
+            <Clock className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* SECTION 1: ONE TERMS TEMPLATE PER SERVICE (6 SERVICES) */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#2563EB]" />
-              <span>Standard Service Terms Templates (6 Disciplines)</span>
-            </h3>
-            <p className="text-xs text-slate-500">
-              Updated for 2026 UK statutory regulations, RICS Home Survey Standard, and Consumer Rights Act 2015.
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 shadow-2xs">
+              <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-[#2563EB]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black text-[#0B1F4D]">
+                  Standard Service Terms Templates
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-[#0B1F4D] border border-blue-200/60">
+                  6 Disciplines
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Updated for 2026 UK statutory regulations, RICS Home Survey Standard, and Consumer Rights Act 2015.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-xs font-bold font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded-xl">
-              6 Active Templates (Year: 2026)
+          <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+            <span className="text-xs font-bold font-mono text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+              Year: 2026 Active
             </span>
             <button
               onClick={() => setShowTemplatesSection((prev) => !prev)}
-              className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
               title={showTemplatesSection ? 'Collapse templates view' : 'Expand templates view'}
             >
+              <span>{showTemplatesSection ? 'Hide Templates' : 'Show 6 Templates'}</span>
               {showTemplatesSection ? (
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-4 h-4 text-slate-500" />
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-4 h-4 text-slate-500" />
               )}
             </button>
           </div>
@@ -788,66 +838,80 @@ export const AdminTermsPage = () => {
 
         {/* 6 Template Cards Grid */}
         {showTemplatesSection && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {TERMS_TEMPLATES.map((tmpl) => (
-              <div
-                key={tmpl.id}
-                className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-              >
-                <div>
-                  {/* Header with service badge and version/year */}
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-xl text-xs font-black bg-[#0B1F4D] text-white">
-                      {tmpl.serviceKey}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold bg-blue-50 text-[#2563EB] border border-blue-200">
-                      {tmpl.version} ({tmpl.year})
-                    </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            {TERMS_TEMPLATES.map((tmpl) => {
+              const theme = SERVICE_THEMES[tmpl.serviceKey] || SERVICE_THEMES['Homebuyer L2'];
+              const shortVer = formatVersionBadge(tmpl.version, tmpl.year);
+              const clauseCount = tmpl.clauses?.length || tmpl.keyClauses?.length || 8;
+
+              return (
+                <div
+                  key={tmpl.id}
+                  className={`bg-white p-5 sm:p-5.5 rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-md ${theme.border} transition-all flex flex-col justify-between group`}
+                >
+                  <div>
+                    {/* Header with service badge and version/year */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className={`px-2.5 py-1 rounded-xl text-xs font-black tracking-wide border shadow-2xs ${theme.badge}`}>
+                        {tmpl.serviceKey}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-blue-50 text-[#2563EB] border border-blue-200/80 shrink-0">
+                        {shortVer}
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors leading-snug line-clamp-2 min-h-[2.5rem]">
+                      {tmpl.name}
+                    </h4>
+
+                    <div className="text-[11px] text-slate-500 font-medium mt-1.5 flex items-center gap-1.5">
+                      <Scale className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+                      <span className="truncate">Mandate: <strong className="text-slate-700">{tmpl.governingBody}</strong></span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 mt-2.5 leading-relaxed line-clamp-2">
+                      {tmpl.summary}
+                    </p>
+
+                    {/* Metadata strip: PI Liability + Clauses */}
+                    <div className="mt-3.5 py-2 px-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="text-slate-500 font-medium">PI Liability:</span>
+                        <strong className="text-[#0B1F4D] font-mono font-bold">
+                          {tmpl.piiCap.split(' ')[0]} Cover
+                        </strong>
+                      </div>
+                      <span className="text-[11px] font-mono font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-lg border border-slate-200/70">
+                        {clauseCount} Clauses
+                      </span>
+                    </div>
                   </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors leading-snug line-clamp-1">
-                    {tmpl.name}
-                  </h4>
+                  {/* Action buttons */}
+                  <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => setSelectedTemplateToPreview(tmpl)}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#0B1F4D] bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-xl transition-colors cursor-pointer border border-slate-200/60"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#2563EB]" />
+                      <span>Preview Clauses</span>
+                    </button>
 
-                  <div className="text-[11px] text-slate-500 font-medium mt-1 truncate">
-                    Mandate: <strong className="text-slate-700">{tmpl.governingBody}</strong>
-                  </div>
-
-                  <p className="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">
-                    {tmpl.summary}
-                  </p>
-
-                  <div className="mt-3 py-1.5 px-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 font-medium">PI Liability:</span>
-                    <span className="font-bold text-[#0B1F4D] font-mono">
-                      {tmpl.piiCap.split(' ')[0]} Cover
-                    </span>
+                    <button
+                      onClick={() => {
+                        setSendTermsInitialKey(tmpl.serviceKey);
+                        setIsSendTermsModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs hover:shadow cursor-pointer"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>Send Terms</span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Action buttons */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => setSelectedTemplateToPreview(tmpl)}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0B1F4D] transition-colors cursor-pointer py-1"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-[#2563EB]" />
-                    <span>Preview Clauses</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setSendTermsInitialKey(tmpl.serviceKey);
-                      setIsSendTermsModalOpen(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Send Terms</span>
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
