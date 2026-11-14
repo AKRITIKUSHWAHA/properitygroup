@@ -270,14 +270,19 @@ export const CustomerDashboardPage = () => {
       {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
       <SurveyProgressTracker
         currentStep={
-          customerJob?.timelineStep ||
-          ((user?.email || '').toLowerCase().trim() === 'customer@demo.com'
+          (customerJob?.status === 'Completed' || localStorage.getItem('propertygroup_delivered') === 'true' || (customerJob?.timelineStep || 0) >= 10)
+            ? 10
+            : (customerJob?.status === 'QA_Review' || localStorage.getItem('propertygroup_qareview') === 'true' || customerJob?.timelineStep === 9)
+            ? 9
+            : (customerJob?.status === 'Drafting' || localStorage.getItem('propertygroup_drafting') === 'true' || customerJob?.timelineStep === 8)
+            ? 8
+            : (customerJob?.status === 'Inspected' || localStorage.getItem('propertygroup_inspection_completed') === 'true' || customerJob?.timelineStep === 7)
             ? 7
-            : customerJob?.termsStatus === 'Signed'
-            ? customerJob?.paymentStatus === 'Paid'
-              ? 5
-              : 4
-            : 2)
+            : (customerJob?.surveyor || (customerJob?.timelineStep || 0) >= 6)
+            ? 6
+            : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
+            ? 5
+            : 2
         }
         job={customerJob}
       />

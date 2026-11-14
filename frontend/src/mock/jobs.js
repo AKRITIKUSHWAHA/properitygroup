@@ -78,8 +78,16 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
       );
     };
 
+    let sessionEmail = '';
+    try {
+      const sess = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+      if (sess.email && !isDummyEmail(sess.email)) sessionEmail = sess.email.toLowerCase().trim();
+    } catch {}
+
     // Collect all emails from registered customers, leads, quotes (filtering out all demo dummies)
     const emails = new Set([
+      'astp750@gmail.com',
+      ...(sessionEmail ? [sessionEmail] : []),
       ...Object.keys(registered).filter((em) => !isDummyEmail(em)),
       ...leads.map((l) => l.customerEmail || l.clientEmail).filter((em) => !isDummyEmail(em)),
       ...quotes.map((q) => q.clientEmail).filter((em) => !isDummyEmail(em)),

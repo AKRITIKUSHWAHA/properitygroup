@@ -2335,37 +2335,45 @@ export const CustomerTrackSurveyPage = () => {
   const refNo = myJob?.id || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
   const surveyorName = myJob?.surveyor || 'David Thorne MRICS';
 
-  // Calculate live dynamic step (1 to 10) based on client lifecycle
-  const currentStep = React.useMemo(() => {
-    if (isDemo) return 7;
+  // Calculate live dynamic step (1 to 10) based on client lifecycle (Direct reactive calculation without stale useMemo caching)
+  const targetEmail = userEmail || 'astp750@gmail.com';
+  const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
+  const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
+  const isUniversalDrafting = localStorage.getItem('propertygroup_drafting') === 'true';
+  const isUniversalInspected = localStorage.getItem('propertygroup_inspection_completed') === 'true';
 
-    const targetEmail = userEmail || 'astp750@gmail.com';
-    const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
-    const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
-    const isUniversalDrafting = localStorage.getItem('propertygroup_drafting') === 'true';
-    const isUniversalInspected = localStorage.getItem('propertygroup_inspection_completed') === 'true';
+  const isLocalDelivered = isUniversalDelivered || localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
+  const isLocalQA = isUniversalQA || localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
+  const isLocalDrafting = isUniversalDrafting || localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
+  const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
-    const isLocalDelivered = isUniversalDelivered || localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
-    const isLocalQA = isUniversalQA || localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
-    const isLocalDrafting = isUniversalDrafting || localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
-    const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
+  const jStatus = (myJob?.status || '').toLowerCase().trim();
+  const timelineStep = myJob?.timelineStep || 0;
+  const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
+  const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || timelineStep >= 6;
 
-    const jStatus = (myJob?.status || '').toLowerCase().trim();
-    const timelineStep = myJob?.timelineStep || 0;
-    const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
-    const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || timelineStep >= 6;
-
-    if (myJob?.status === 'Completed' || timelineStep >= 10 || isLocalDelivered || jStatus === 'completed') return 10;
-    if (myJob?.status === 'QA_Review' || timelineStep === 9 || isLocalQA || jStatus === 'qa_review' || jStatus === 'qa review') return 9;
-    if (myJob?.status === 'Drafting' || timelineStep === 8 || isLocalDrafting || jStatus === 'drafting' || jStatus === 'preparing report') return 8;
-    if (myJob?.status === 'Inspected' || timelineStep === 7 || isLocalInspected || jStatus === 'inspected') return 7;
-    if (isBookedOrScheduled) return 6;
-    if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || timelineStep >= 5) return 5;
-    if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') return 4;
-    if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') return 3;
-    if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') return 2;
-    return 1;
-  }, [myJob, myQuote, myLead, myAgreement, isDemo, userEmail]);
+  let currentStep = 1;
+  if (isDemo) {
+    currentStep = 7;
+  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || isLocalDelivered || jStatus === 'completed') {
+    currentStep = 10;
+  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || isLocalQA || jStatus === 'qa_review' || jStatus === 'qa review') {
+    currentStep = 9;
+  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || isLocalDrafting || jStatus === 'drafting' || jStatus === 'preparing report') {
+    currentStep = 8;
+  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || isLocalInspected || jStatus === 'inspected') {
+    currentStep = 7;
+  } else if (isBookedOrScheduled) {
+    currentStep = 6;
+  } else if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || timelineStep >= 5) {
+    currentStep = 5;
+  } else if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') {
+    currentStep = 4;
+  } else if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') {
+    currentStep = 3;
+  } else if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') {
+    currentStep = 2;
+  }
 
   const milestone = React.useMemo(() => {
     switch (currentStep) {
