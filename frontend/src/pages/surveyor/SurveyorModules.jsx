@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -78,16 +78,15 @@ export const SurveyorCalendarPage = () => {
 
   const appointments = myJobs
     .filter((j) => j.status !== 'Completed')
-    .slice(0, 3)
+    .slice(0, 5)
     .map((j) => ({
       id: j.id,
+      jobNo: j.jobNo || j.id,
       time: j.timeSlot || '10:00 - 13:00',
       property: j.property,
       location: j.location,
       type: j.surveyType,
-      client: j.customer,
-      phone: j.customerPhone || '+44 7700 900147',
-      access: j.propertyDetails?.accessDetails || 'Keys with estate agent',
+      access: j.accessNotes || j.propertyDetails?.accessDetails || 'Keys held at local estate agent lockbox',
       status: j.status,
       countdown: j.countdown || '48h SLA Target',
     }));
@@ -96,9 +95,34 @@ export const SurveyorCalendarPage = () => {
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
         title="My Field Calendar & Diary"
-        subtitle="Manage daily inspection appointments, check-in logistics, and travel windows."
-        breadcrumb={['Surveyor', 'My Calendar']}
+        subtitle="Manage daily inspection appointments, property locations, and key access collection notes."
+        breadcrumb={['Surveyor', 'My Diary / Calendar']}
+        actionLabel="Upload Report"
+        actionIcon={UploadCloud}
+        onAction={() => navigate('/surveyor/upload-reports')}
       />
+
+      {/* Surveyor Privacy Lockdown Banner */}
+      <div className="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-start sm:items-center gap-2.5">
+          <ShieldCheck className="w-5 h-5 text-blue-700 shrink-0 mt-0.5 sm:mt-0" />
+          <div className="space-y-0.5">
+            <span className="font-bold text-[#0B1F4D] block">
+              Surveyor Privacy Shield Active (Restricted View)
+            </span>
+            <p className="text-slate-600">
+              Only inspection time slots, property addresses, and key access notes are shown. Company billing, client quotations, payment settlement, and signed terms are restricted to central management.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/surveyor/upload-reports')}
+          className="px-3.5 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] shrink-0 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+        >
+          <UploadCloud className="w-3.5 h-3.5" />
+          <span>Upload Report PDF</span>
+        </button>
+      </div>
 
       {/* Week Day Pills with Real Computed Dates */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -129,24 +153,24 @@ export const SurveyorCalendarPage = () => {
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-sm font-bold text-[#0B1F4D]">
-              Schedule for {selectedDay}
+              Inspection Diary for {selectedDay}
             </h3>
-            <p className="text-xs text-slate-500">Daylight hours optimized for external & roof void inspection.</p>
+            <p className="text-xs text-slate-500">Daylight hours allocated for on-site physical inspection.</p>
           </div>
           <span className="text-xs font-mono font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl">
-            {appointments.length} Appointments Confirmed
+            {appointments.length} Appointments Allocated
           </span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {appointments.map((apt) => (
             <div
               key={apt.id}
               className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all space-y-3"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-black text-[#0B1F4D] bg-white px-2.5 py-1 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono text-xs font-black text-[#0B1F4D] bg-white px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
                     {apt.time}
                   </span>
                   <h4 className="font-bold text-slate-900 text-sm">
@@ -159,35 +183,49 @@ export const SurveyorCalendarPage = () => {
                     {apt.countdown}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200">
-                    {apt.status}
+                    {apt.type}
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600 bg-white p-3.5 rounded-xl border border-slate-200/70">
-                <div className="flex items-center gap-2">
-                  <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span className="truncate">
-                    Access: <strong>{apt.access}</strong>
+              {/* Key Access & Protocol Box (Primary focus for surveyor) */}
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-start gap-3 text-xs">
+                <Key className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+                    Key Access & Property Entry Protocol
                   </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>
-                    Client Contact: <strong>{apt.client}</strong> ({apt.phone})
-                  </span>
+                  <p className="font-semibold text-slate-800 leading-relaxed">
+                    {apt.access}
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-medium">{apt.type}</span>
-                <button
-                  onClick={() => navigate('/surveyor/dashboard')}
-                  className="font-bold text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Open On-Site Check-in</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              {/* Action Buttons: Clean Report Upload & Navigation */}
+              <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="text-slate-400 font-mono text-[11px]">
+                  Ref: {apt.jobNo}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://maps.google.com/?q=${encodeURIComponent(`${apt.property} ${apt.location || ''}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Navigation className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <span>Navigation</span>
+                  </a>
+
+                  <button
+                    onClick={() => navigate(`/surveyor/upload-reports?jobId=${apt.jobNo}`)}
+                    className="px-3.5 py-1.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5 text-blue-200" />
+                    <span>Upload Report PDF</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -470,6 +508,8 @@ export const SurveyorUploadReportsPage = () => {
   const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs } = useJobs();
+  const [searchParams] = useSearchParams();
+  const queryJobId = searchParams.get('jobId');
 
   // Fetch pending reports upload API
   useEffect(() => {
@@ -484,15 +524,28 @@ export const SurveyorUploadReportsPage = () => {
     (surveyorName && j.surveyor === surveyorName)
   );
 
-  const [selectedJob, setSelectedJob] = useState(myJobs[0]?.id || 'JOB-2026-080');
+  const defaultJobId = queryJobId
+    ? (myJobs.find((j) => j.jobNo === queryJobId || j.id === queryJobId)?.jobNo ||
+       myJobs.find((j) => j.jobNo === queryJobId || j.id === queryJobId)?.id ||
+       queryJobId)
+    : (myJobs[0]?.jobNo || myJobs[0]?.id || 'JOB-2026-080');
+
+  const [selectedJob, setSelectedJob] = useState(defaultJobId);
+
+  useEffect(() => {
+    if (queryJobId) {
+      setSelectedJob(queryJobId);
+    }
+  }, [queryJobId]);
+
   const [reportStandard, setReportStandard] = useState('RICS Level 2 Home Survey (Final)');
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([
     {
-      name: `Draft_Report_${myJobs[0]?.id || 'JOB-2026-080'}_v1.pdf`,
+      name: `Draft_Report_${defaultJobId}_v1.pdf`,
       size: '14.2 MB',
       date: 'Today, 14:15',
-      jobId: myJobs[0]?.id || 'JOB-2026-080',
+      jobId: defaultJobId,
       status: 'Under Admin QA Review',
     },
   ]);
@@ -574,6 +627,19 @@ export const SurveyorUploadReportsPage = () => {
         breadcrumb={['Surveyor', 'Upload Reports']}
       />
 
+      {/* Privacy Shield Banner */}
+      <div className="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 flex items-start gap-2.5 text-xs text-blue-900">
+        <ShieldCheck className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <span className="font-bold text-[#0B1F4D] block">
+            Direct Report QA Handoff (Privacy Shield Protected)
+          </span>
+          <p className="text-slate-600">
+            Upload your draft/final RICS report PDF directly to your assigned inspection. Customer payment amounts, invoice statuses, and terms signature timestamps are completely isolated from this view.
+          </p>
+        </div>
+      </div>
+
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
         {/* Job Selector */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -586,11 +652,14 @@ export const SurveyorUploadReportsPage = () => {
               onChange={(e) => setSelectedJob(e.target.value)}
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
             >
-              {myJobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.id} — {j.property}
-                </option>
-              ))}
+              {myJobs.map((j) => {
+                const jobRef = j.jobNo || j.id;
+                return (
+                  <option key={j.id} value={jobRef}>
+                    {jobRef} — {j.property}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

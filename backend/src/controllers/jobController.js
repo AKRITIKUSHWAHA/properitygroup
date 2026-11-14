@@ -45,6 +45,12 @@ export const getJobs = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    if (user.role === 'SURVEYOR') {
+      // Surveyor privacy lockdown: strip quotes, terms, invoices, financial amounts
+      const sanitizedJobs = jobs.map(({ quotes: _quotes, terms: _terms, invoices: _invoices, ...rest }) => rest);
+      return ApiResponse.success(res, { jobs: sanitizedJobs, total: sanitizedJobs.length });
+    }
+
     return ApiResponse.success(res, { jobs, total: jobs.length });
   } catch (error) {
     next(error);
@@ -81,8 +87,30 @@ export const getJobById = async (req, res, next) => {
     if (req.user.role === 'CUSTOMER' && job.clientId !== req.user.id) {
       throw ApiError.forbidden('You do not have access to this survey job.');
     }
-    if (req.user.role === 'SURVEYOR' && job.surveyorId !== req.user.id) {
-      throw ApiError.forbidden('You are not assigned to this survey job.');
+    if (req.user.role === 'SURVEYOR') {
+      if (job.surveyorId !== req.user.id) {
+        throw ApiError.forbidden('You are not assigned to this survey job.');
+      }
+      // Surveyor privacy lockdown: omit billing, quotes, invoices, terms signatures, call logs
+      const sanitized = {
+        id: job.id,
+        reference: job.reference,
+        serviceType: job.serviceType,
+        propertyAddress: job.propertyAddress,
+        postcode: job.postcode,
+        inspectionDate: job.inspectionDate,
+        inspectionTime: job.inspectionTime,
+        keyCollectionDetails: job.keyCollectionDetails,
+        specialInstructions: job.specialInstructions,
+        stage: job.stage,
+        reportPdfUrl: job.reportPdfUrl,
+        company: job.company ? {
+          name: job.company.name,
+          branchName: job.company.branchName,
+          keyCollectionProtocol: job.company.keyCollectionProtocol,
+        } : null,
+      };
+      return ApiResponse.success(res, { job: sanitized });
     }
 
     return ApiResponse.success(res, { job });

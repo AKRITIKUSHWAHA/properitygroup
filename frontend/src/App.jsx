@@ -166,7 +166,7 @@ function AppRoutes() {
         <Route path="/superadmin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
-        <Route path="/surveyor" element={<Navigate to="/surveyor/dashboard" replace />} />
+        <Route path="/surveyor" element={<Navigate to="/surveyor/my-calendar" replace />} />
         <Route
           path="/customer"
           element={isClientLoginEnabled ? <Navigate to="/customer/my-dashboard" replace /> : <Navigate to="/" replace />}
@@ -317,11 +317,11 @@ function AppRoutes() {
           {/* Direct Job Route accessible by authenticated users */}
           <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
 
-          {/* Surveyor Routes (6 menus) */}
+          {/* Surveyor Routes (Privacy Lockdown: Default landing on My Diary/Calendar, direct report upload) */}
           <Route element={<ProtectedRoute allowedRoles={['surveyor', 'super_admin']} />}>
-            <Route path="/surveyor/dashboard" element={<SurveyorDashboardPage />} />
+            <Route path="/surveyor/dashboard" element={<Navigate to="/surveyor/my-calendar" replace />} />
             <Route path="/surveyor/my-calendar" element={<SurveyorCalendarPage />} />
-            <Route path="/surveyor/my-jobs" element={<SurveyorJobsPage />} />
+            <Route path="/surveyor/my-jobs" element={<Navigate to="/surveyor/my-calendar" replace />} />
             <Route path="/surveyor/site-visits" element={<SurveyorSiteVisitsPage />} />
             <Route path="/surveyor/upload-reports" element={<SurveyorUploadReportsPage />} />
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />

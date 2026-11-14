@@ -98,6 +98,9 @@ export const AuthProvider = ({ children }) => {
     if (role === 'customer' && !isClientPortalEnabled()) {
       return '/';
     }
+    if (role === 'surveyor') {
+      return '/surveyor/my-calendar';
+    }
     if (ROLE_NAVIGATION[role]?.defaultPath) {
       return ROLE_NAVIGATION[role].defaultPath;
     }

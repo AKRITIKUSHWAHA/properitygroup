@@ -38,14 +38,12 @@ export const ROLE_NAVIGATION = {
     ],
   },
   surveyor: {
-    defaultPath: '/surveyor/dashboard',
+    defaultPath: '/surveyor/my-calendar',
     label: 'Surveyor',
     items: [
-      { id: 'dashboard', name: 'Dashboard', path: '/surveyor/dashboard', icon: 'LayoutDashboard', badge: null },
-      { id: 'my-calendar', name: 'My Calendar', path: '/surveyor/my-calendar', icon: 'Calendar', badge: '3 Today' },
-      { id: 'my-jobs', name: 'My Jobs', path: '/surveyor/my-jobs', icon: 'Briefcase', badge: '9 Active' },
-      { id: 'site-visits', name: 'Site Visits', path: '/surveyor/site-visits', icon: 'MapPin', badge: null },
+      { id: 'my-calendar', name: 'My Diary / Calendar', path: '/surveyor/my-calendar', icon: 'Calendar', badge: '3 Today' },
       { id: 'upload-reports', name: 'Upload Reports', path: '/surveyor/upload-reports', icon: 'UploadCloud', badge: '2 Pending' },
+      { id: 'site-visits', name: 'Site Visits & Key Access', path: '/surveyor/site-visits', icon: 'MapPin', badge: null },
       { id: 'my-availability', name: 'My Availability', path: '/surveyor/my-availability', icon: 'Clock', badge: null },
     ],
   },

@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
 import {
   ArrowLeft,
   MapPin,
@@ -70,6 +71,19 @@ export const JobDetailsPage = () => {
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
   const { addCallLog } = useClientProfiles();
+  const { user } = useAuth();
+
+  // Surveyor Privacy Lockdown: surveyors should only see their diary and upload reports, not CRM/financial jobs
+  useEffect(() => {
+    if (user?.role === 'surveyor') {
+      addToast({
+        type: 'info',
+        title: 'Privacy Lockdown Active',
+        message: 'Surveyors cannot view client financial details, terms signatures, or CRM job logs. Redirected to Report Upload.',
+      });
+      navigate(`/surveyor/upload-reports?jobId=${job?.jobNo || jobId || ''}`, { replace: true });
+    }
+  }, [user, navigate, job, jobId, addToast]);
 
   // Find job from persistent jobs collection, fallback to first job
   const job = useMemo(() => {
@@ -550,6 +564,29 @@ export const JobDetailsPage = () => {
         >
           Return to Survey Jobs
         </button>
+      </div>
+    );
+  }
+
+  // Surveyor Privacy Lockdown Guard
+  if (user?.role === 'surveyor') {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-4 shadow-sm">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Surveyor Privacy Lockdown</h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            In accordance with firm privacy and RICS governance, client financial details, quotations, terms execution dates, and CRM communications are restricted to management.
+          </p>
+          <button
+            onClick={() => navigate(`/surveyor/upload-reports?jobId=${job?.jobNo || jobId || ''}`)}
+            className="w-full py-2.5 px-4 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] transition-colors cursor-pointer"
+          >
+            Go to Report Upload
+          </button>
+        </div>
       </div>
     );
   }
