@@ -99,12 +99,14 @@ export const SurveyorDashboardPage = () => {
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
     (primaryJob?.timelineStep || 0) >= 7 ||
+    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
     localStorage.getItem(`propertygroup_inspection_completed_${targetCustomerEmail}`) === 'true';
 
   const isJobQASubmitted =
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
     (primaryJob?.timelineStep || 0) >= 9 ||
+    localStorage.getItem('propertygroup_qareview') === 'true' ||
     localStorage.getItem(`propertygroup_qareview_${targetCustomerEmail}`) === 'true';
 
   // On-Site Status for Primary Job (Persistent across browser refresh)
@@ -170,6 +172,7 @@ export const SurveyorDashboardPage = () => {
     setCompleteTimestamp(`Today at ${timeStr}`);
 
     const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_inspection_completed', 'true');
     localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
 
     if (primaryJob?.id) {
@@ -181,6 +184,7 @@ export const SurveyorDashboardPage = () => {
       });
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',
@@ -206,6 +210,7 @@ export const SurveyorDashboardPage = () => {
     setDefectNote('');
 
     const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_drafting', 'true');
     localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
 
     if (primaryJob?.id) {
@@ -216,6 +221,7 @@ export const SurveyorDashboardPage = () => {
       });
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',
@@ -229,6 +235,7 @@ export const SurveyorDashboardPage = () => {
     setJobStage('qa_submitted');
 
     const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_qareview', 'true');
     localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
 
     if (primaryJob?.id) {
@@ -239,6 +246,7 @@ export const SurveyorDashboardPage = () => {
       });
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',

@@ -115,22 +115,26 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
       const isInspected =
         existing?.status?.toLowerCase() === 'inspected' ||
         (existing?.timelineStep || 0) >= 7 ||
+        localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
         localStorage.getItem(`propertygroup_inspection_completed_${email}`) === 'true';
 
       const isDrafting =
         existing?.status?.toLowerCase() === 'drafting' ||
         (existing?.timelineStep || 0) >= 8 ||
+        localStorage.getItem('propertygroup_drafting') === 'true' ||
         localStorage.getItem(`propertygroup_drafting_${email}`) === 'true';
 
       const isQAReview =
         existing?.status?.toLowerCase() === 'qa_review' ||
         existing?.status?.toLowerCase() === 'qa review' ||
         (existing?.timelineStep || 0) >= 9 ||
+        localStorage.getItem('propertygroup_qareview') === 'true' ||
         localStorage.getItem(`propertygroup_qareview_${email}`) === 'true';
 
       const isCompleted =
         existing?.status?.toLowerCase() === 'completed' ||
         (existing?.timelineStep || 0) >= 10 ||
+        localStorage.getItem('propertygroup_delivered') === 'true' ||
         localStorage.getItem(`propertygroup_delivered_${email}`) === 'true';
 
       let currentJobStatus = 'Booked';
@@ -148,8 +152,9 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
       } else if (isInspected) {
         currentJobStatus = 'Inspected';
         currentTimelineStep = 7;
-      } else if (existing?.status) {
+      } else if (existing?.status && existing.status !== 'Booked') {
         currentJobStatus = existing.status;
+        currentTimelineStep = existing.timelineStep || 6;
       }
 
       const realJob = {
@@ -265,13 +270,33 @@ export const useJobs = () => {
   };
 
   const updateJob = (id, updates) => {
+    // Synchronize persistent milestone progress flags
+    const customerEmail = (updates.customerEmail || '').toLowerCase().trim();
+    if (updates.status === 'Inspected' || updates.timelineStep === 7) {
+      localStorage.setItem('propertygroup_inspection_completed', 'true');
+      if (customerEmail) localStorage.setItem(`propertygroup_inspection_completed_${customerEmail}`, 'true');
+    }
+    if (updates.status === 'Drafting' || updates.timelineStep === 8) {
+      localStorage.setItem('propertygroup_drafting', 'true');
+      if (customerEmail) localStorage.setItem(`propertygroup_drafting_${customerEmail}`, 'true');
+    }
+    if (updates.status === 'QA_Review' || updates.timelineStep === 9) {
+      localStorage.setItem('propertygroup_qareview', 'true');
+      if (customerEmail) localStorage.setItem(`propertygroup_qareview_${customerEmail}`, 'true');
+    }
+    if (updates.status === 'Completed' || updates.timelineStep >= 10) {
+      localStorage.setItem('propertygroup_delivered', 'true');
+      if (customerEmail) localStorage.setItem(`propertygroup_delivered_${customerEmail}`, 'true');
+    }
+
     setJobs((prev) =>
       prev.map((j) => {
         const matches =
           j.id === id ||
           j.jobNo === id ||
           (updates.customerEmail && j.customerEmail && j.customerEmail.toLowerCase() === updates.customerEmail.toLowerCase()) ||
-          (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase());
+          (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase()) ||
+          (!id && j.customerEmail);
         return matches ? { ...j, ...updates } : j;
       })
     );

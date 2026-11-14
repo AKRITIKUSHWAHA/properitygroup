@@ -44,6 +44,7 @@ import {
 // ==========================================
 export const SurveyorCalendarPage = () => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs, updateJob } = useJobs();
 
@@ -59,6 +60,38 @@ export const SurveyorCalendarPage = () => {
     (surveyorId && j.surveyorId === surveyorId) ||
     (surveyorName && j.surveyor === surveyorName)
   );
+
+  const isAptInspected = (apt) => {
+    return (
+      apt.status === 'Inspected' ||
+      apt.status === 'Drafting' ||
+      apt.status === 'QA_Review' ||
+      apt.status === 'Completed' ||
+      localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
+      localStorage.getItem('propertygroup_inspection_completed_astp750@gmail.com') === 'true'
+    );
+  };
+
+  const handleCompleteAppointment = (aptId) => {
+    const targetEmail = 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_inspection_completed', 'true');
+    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    if (updateJob) {
+      updateJob(aptId, {
+        status: 'Inspected',
+        timelineStep: 7,
+        stage: 'PREPARING_REPORT',
+        customerEmail: targetEmail,
+      });
+    }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
+    addToast({
+      type: 'success',
+      title: 'Site Visit Concluded & Inspected',
+      message: 'On-site physical inspection logged as completed. RICS survey progress advanced to Stage 7.',
+    });
+  };
 
   const today = new Date();
   const formatDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -207,6 +240,19 @@ export const SurveyorCalendarPage = () => {
                 </span>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCompleteAppointment(apt.id || apt.jobNo)}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                      isAptInspected(apt)
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{isAptInspected(apt) ? '✓ Inspection Completed' : 'Mark Inspection Complete'}</span>
+                  </button>
+
                   <a
                     href={`https://maps.google.com/?q=${encodeURIComponent(`${apt.property} ${apt.location || ''}`)}`}
                     target="_blank"
@@ -426,8 +472,24 @@ export const SurveyorSiteVisitsPage = () => {
     },
   };
 
+  const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+  const isInspectedPersisted =
+    primaryJob?.status === 'Inspected' ||
+    primaryJob?.status === 'Drafting' ||
+    primaryJob?.status === 'QA_Review' ||
+    primaryJob?.status === 'Completed' ||
+    (primaryJob?.timelineStep || 0) >= 7 ||
+    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
+    localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
+
   const [hasArrived, setHasArrived] = useState(true);
-  const [hasFinished, setHasFinished] = useState(false);
+  const [hasFinished, setHasFinished] = useState(isInspectedPersisted);
+
+  useEffect(() => {
+    if (isInspectedPersisted) {
+      setHasFinished(true);
+    }
+  }, [isInspectedPersisted]);
 
   const handleArrival = () => {
     setHasArrived(true);
@@ -440,17 +502,22 @@ export const SurveyorSiteVisitsPage = () => {
 
   const handleFinished = () => {
     setHasFinished(true);
+    localStorage.setItem('propertygroup_inspection_completed', 'true');
+    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
     if (primaryJob?.id && updateJob) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
+        customerEmail: targetEmail,
       });
     }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
     addToast({
       type: 'success',
-      title: 'Site Visit Concluded',
-      message: 'Physical survey finished. Please return property keys to agent/vendor.',
+      title: 'Site Visit Concluded & Inspected',
+      message: 'Physical survey finished. Customer tracker updated to Stage 7.',
     });
   };
 
@@ -638,16 +705,24 @@ export const SurveyorUploadReportsPage = () => {
   };
 
   const handleSubmitAllQA = () => {
+    const targetEmail = 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_drafting', 'true');
+    localStorage.setItem('propertygroup_qareview', 'true');
+    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'QA_Review',
         timelineStep: 9,
+        customerEmail: targetEmail,
       });
     }
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
     addToast({
       type: 'success',
       title: 'Dispatched for Quality Assurance',
-      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review.`,
+      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review. Progress advanced to Stage 9.`,
     });
   };
 

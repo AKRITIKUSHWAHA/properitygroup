@@ -2291,6 +2291,17 @@ export const CustomerTrackSurveyPage = () => {
   useEffect(() => { customerTrackSurveyApi.getTracking().catch(() => {}); }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => setTick((t) => t + 1);
+    window.addEventListener('propertygroup_jobs_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('propertygroup_jobs_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
   const { quotes = [] } = useQuotes();
   const { leads = [] } = useLeads();
   const { agreements = [] } = useTerms();
@@ -2329,10 +2340,15 @@ export const CustomerTrackSurveyPage = () => {
     if (isDemo) return 7;
 
     const targetEmail = userEmail || 'astp750@gmail.com';
-    const isLocalDelivered = localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
-    const isLocalQA = localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
-    const isLocalDrafting = localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
-    const isLocalInspected = localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
+    const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
+    const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
+    const isUniversalDrafting = localStorage.getItem('propertygroup_drafting') === 'true';
+    const isUniversalInspected = localStorage.getItem('propertygroup_inspection_completed') === 'true';
+
+    const isLocalDelivered = isUniversalDelivered || localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
+    const isLocalQA = isUniversalQA || localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
+    const isLocalDrafting = isUniversalDrafting || localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
+    const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
     const jStatus = (myJob?.status || '').toLowerCase().trim();
     const timelineStep = myJob?.timelineStep || 0;

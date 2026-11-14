@@ -180,6 +180,7 @@ export const JobDetailsPage = () => {
     setQaStatus('Approved');
     handleStepClick(5); // Complete stage
     const targetEmail = job?.customerEmail || 'astp750@gmail.com';
+    localStorage.setItem('propertygroup_delivered', 'true');
     localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
     updateJob(job.id, {
       status: 'Completed',

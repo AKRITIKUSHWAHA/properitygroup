@@ -124,6 +124,10 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
   const [selectedStep, setSelectedStep] = useState(currentStep);
   const stages = getSurveyStages(job);
 
+  useEffect(() => {
+    setSelectedStep(currentStep);
+  }, [currentStep]);
+
   // Derive step status: 'completed' | 'current' | 'upcoming'
   const getStepStatus = (stepNumber) => {
     if (stepNumber < currentStep) return 'completed';
