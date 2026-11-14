@@ -238,7 +238,6 @@ export const Table = ({
                   return (
                     <tr
                       key={rowKey}
-                      style={{ position: 'relative', zIndex: paginatedData.length - rowIdx }}
                       className="hover:bg-slate-50/80 transition-colors group"
                     >
                       {columns.map((col, colIdx) => {

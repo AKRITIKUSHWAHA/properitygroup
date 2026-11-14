@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
@@ -94,11 +95,42 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
+  const [coords, setCoords] = useState({ top: null, bottom: null, left: null });
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
 
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 230;
+      const menuHeight = 280;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+      if (openUpward) {
+        bottom = Math.max(8, Math.round(window.innerHeight - rect.top + 6));
+      } else {
+        top = Math.max(8, Math.round(rect.bottom + 6));
+      }
+
+      const left = Math.max(12, Math.min(Math.round(rect.right - menuWidth), window.innerWidth - menuWidth - 12));
+
+      setCoords({ top, bottom, left });
+      setIsOpen(true);
+    }
+  };
+
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e) => {
       if (
         menuRef.current &&
@@ -110,40 +142,24 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
       }
     };
 
-    if (isOpen) {
+    const handleScrollOrResize = (e) => {
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setIsOpen(false);
+    };
+
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
+    }, 10);
+
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
-
-  const handleToggle = (e) => {
-    e.stopPropagation();
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const menuHeight = 240;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      const openUpwards = spaceBelow < menuHeight && spaceAbove >= menuHeight;
-
-      let top = null;
-      let bottom = null;
-
-      if (openUpwards) {
-        bottom = Math.max(10, Math.round(window.innerHeight - rect.top + 4));
-      } else {
-        top = Math.max(10, Math.min(Math.round(rect.bottom + 4), window.innerHeight - menuHeight - 10));
-      }
-
-      setCoords({
-        top,
-        bottom,
-        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
-      });
-    }
-    setIsOpen((prev) => !prev);
-  };
 
   const handleCopy = (e, text, label) => {
     e.stopPropagation();
@@ -157,17 +173,11 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
   };
 
   return (
-    <div
-      ref={menuRef}
-      className="relative inline-block text-left"
-      style={{ zIndex: isOpen ? 100 : 'auto' }}
-    >
+    <div className="relative inline-block text-left">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer select-none ${
           isOpen ? 'bg-blue-100 text-[#0B1F4D] ring-2 ring-blue-300' : 'text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100'
         }`}
@@ -177,11 +187,21 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
         <MoreVertical className="w-4 h-4 pointer-events-none" />
       </button>
 
-      {isOpen && (
-        <div
-          style={{ zIndex: 9999 }}
-          className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
-        >
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: coords.top !== null ? `${coords.top}px` : 'auto',
+              bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+              left: `${coords.left}px`,
+              width: '230px',
+              zIndex: 999999,
+              maxHeight: 'calc(100vh - 20px)',
+            }}
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left overflow-y-auto"
+          >
           {/* Primary View Action */}
           <button
             type="button"
@@ -262,8 +282,9 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
             <CalendarClock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
             <span>Reschedule Inspection</span>
           </button>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Plus,
@@ -28,10 +29,9 @@ import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { RecordBacsPaymentModal } from '../../components/crm/RecordBacsPaymentModal';
 import { downloadInvoicePDF } from '../../utils/pdfGenerator';
 
-// 3-Dot Clean Action Dropdown Menu for each Quotation
+// 3-Dot Clean Action Dropdown Menu for each Quotation using React Portal (guarantees zero z-index/clipping issues)
 const QuoteRowActions = ({
   quote,
-  isNearBottom = false,
   onView,
   onEdit,
   onMarkPaid,
@@ -41,21 +41,70 @@ const QuoteRowActions = ({
   onOpenClientProfile,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, left: null });
+  const buttonRef = useRef(null);
   const menuRef = useRef(null);
   const { addToast } = useToast();
 
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 230;
+      const menuHeight = 310;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+      if (openUpward) {
+        bottom = Math.max(8, Math.round(window.innerHeight - rect.top + 6));
+      } else {
+        top = Math.max(8, Math.round(rect.bottom + 6));
+      }
+
+      const left = Math.max(12, Math.min(Math.round(rect.right - menuWidth), window.innerWidth - menuWidth - 12));
+
+      setCoords({ top, bottom, left });
+      setIsOpen(true);
+    }
+  };
+
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
+    const handleScrollOrResize = (e) => {
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setIsOpen(false);
+    };
+
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
+    }, 10);
+
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
 
@@ -73,17 +122,11 @@ const QuoteRowActions = ({
   const isPaid = quote.status === 'Paid';
 
   return (
-    <div
-      ref={menuRef}
-      className="relative inline-block text-right"
-      style={{ zIndex: isOpen ? 100 : 'auto' }}
-    >
+    <div className="relative inline-block text-right">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleToggle}
         className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer select-none ${
           isOpen
             ? 'bg-blue-100 text-[#0B1F4D] shadow-inner ring-2 ring-blue-400'
@@ -95,135 +138,144 @@ const QuoteRowActions = ({
         <MoreVertical className="w-4 h-4 pointer-events-none" />
       </button>
 
-      {isOpen && (
-        <div
-          style={{ zIndex: 9999 }}
-          className={`absolute right-0 ${
-            isNearBottom ? 'bottom-full mb-1' : 'top-full mt-1'
-          } w-52 sm:w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left`}
-        >
-          {/* Primary View Action */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onView(quote);
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: coords.top !== null ? `${coords.top}px` : 'auto',
+              bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+              left: `${coords.left}px`,
+              width: '230px',
+              zIndex: 999999,
+              maxHeight: 'calc(100vh - 20px)',
             }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-[#0B1F4D] bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left overflow-y-auto"
           >
-            <Eye className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
-            <span>View Fee Breakdown</span>
-          </button>
-
-          {/* Edit Quotation / Fee Action */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              if (onEdit) onEdit(quote);
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer text-left"
-          >
-            <Pencil className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span>Edit Fee / Price</span>
-          </button>
-
-          {/* Settle / Mark Paid */}
-          {!isPaid ? (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  onRecordBacs(quote);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-900 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
-              >
-                <PoundSterling className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Record BACS Payment</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  onMarkPaid(quote.id);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Mark as Paid (£{Number(quote.totalAmount || 0).toFixed(2)})</span>
-              </button>
-            </>
-          ) : (
+            {/* Primary View Action */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsOpen(false);
-                onDownloadReceipt(quote);
+                onView(quote);
               }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-[#0B1F4D] bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
             >
-              <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>Download VAT Receipt (PDF)</span>
+              <Eye className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>View Fee Breakdown</span>
             </button>
-          )}
 
-          {/* Resend Proposal */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onResendQuote(quote.id, quote.clientEmail);
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-          >
-            <Send className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>Resend Proposal Email</span>
-          </button>
+            {/* Edit Quotation / Fee Action */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                if (onEdit) onEdit(quote);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer text-left"
+            >
+              <Pencil className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Edit Fee / Price</span>
+            </button>
 
-          {/* Client Profile with Call Notes & Complaints */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onOpenClientProfile(quote.clientEmail, 'calls');
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
-          >
-            <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
-            <span>Call Notes &amp; Complaints</span>
-          </button>
+            {/* Settle / Mark Paid */}
+            {!isPaid ? (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onRecordBacs(quote);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-900 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+                >
+                  <PoundSterling className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>Record BACS Payment</span>
+                </button>
 
-          <div className="h-px bg-slate-100 my-1" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onMarkPaid(quote.id);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Mark as Paid (£{Number(quote.totalAmount || 0).toFixed(2)})</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onDownloadReceipt(quote);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Download VAT Receipt (PDF)</span>
+              </button>
+            )}
 
-          {/* Copy Shortcuts */}
-          <button
-            type="button"
-            onClick={(e) => handleCopy(e, quote.refNo, 'Quotation Ref')}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-          >
-            <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>Copy Quote Ref ({quote.refNo})</span>
-          </button>
+            {/* Resend Proposal */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onResendQuote(quote.id, quote.clientEmail);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            >
+              <Send className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Resend Proposal Email</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => handleCopy(e, quote.property, 'Property')}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-          >
-            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-            <span>Copy Property Address</span>
-          </button>
-        </div>
-      )}
+            {/* Client Profile with Call Notes & Complaints */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onOpenClientProfile(quote.clientEmail, 'calls');
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+            >
+              <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>Call Notes &amp; Complaints</span>
+            </button>
+
+            <div className="h-px bg-slate-100 my-1" />
+
+            {/* Copy Shortcuts */}
+            <button
+              type="button"
+              onClick={(e) => handleCopy(e, quote.refNo, 'Quotation Ref')}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            >
+              <Copy className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Copy Quote Ref ({quote.refNo})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => handleCopy(e, quote.property, 'Property')}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+            >
+              <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>Copy Property Address</span>
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
@@ -928,10 +980,9 @@ export const AdminQuotesPage = () => {
       key: 'actions',
       header: 'Actions', sortable: false, headerClassName: 'text-right w-[8%] min-w-[44px]',
       className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
-      render: (_, row, rowIdx) => (
+      render: (_, row) => (
         <QuoteRowActions
           quote={row}
-          isNearBottom={typeof rowIdx === 'number' && rowIdx >= 5}
           onView={(q) => setSelectedQuoteDetail(q)}
           onEdit={handleOpenEditQuoteModal}
           onMarkPaid={handleMarkPaid}
