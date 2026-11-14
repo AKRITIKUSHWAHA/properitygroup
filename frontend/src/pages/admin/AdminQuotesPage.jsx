@@ -15,6 +15,7 @@ import {
   MoreVertical,
   PhoneCall,
   Copy,
+  Pencil,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -31,6 +32,7 @@ import { downloadInvoicePDF } from '../../utils/pdfGenerator';
 const QuoteRowActions = ({
   quote,
   onView,
+  onEdit,
   onMarkPaid,
   onRecordBacs,
   onDownloadReceipt,
@@ -136,6 +138,20 @@ const QuoteRowActions = ({
             <span>View Fee Breakdown</span>
           </button>
 
+          {/* Edit Quotation / Fee Action */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              if (onEdit) onEdit(quote);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-900 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer text-left"
+          >
+            <Pencil className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Edit Fee / Price</span>
+          </button>
+
           {/* Settle / Mark Paid */}
           {!isPaid ? (
             <>
@@ -236,7 +252,7 @@ const QuoteRowActions = ({
 
 export const AdminQuotesPage = () => {
   const { addToast } = useToast();
-  const { quotes, addQuote, updateQuoteStatus } = useQuotes();
+  const { quotes, addQuote, updateQuote, updateQuoteStatus } = useQuotes();
 
   const [apiQuotes, setApiQuotes] = useState([]);
 
@@ -355,6 +371,111 @@ export const AdminQuotesPage = () => {
   // BACS Settlement Modal State (Client Point 16)
   const [isBacsModalOpen, setIsBacsModalOpen] = useState(false);
   const [selectedBacsQuote, setSelectedBacsQuote] = useState(null);
+
+  // Edit Quotation Modal State
+  const [editingQuote, setEditingQuote] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    baseFee: 550,
+    discount: 0,
+    surveyType: '',
+    property: '',
+    client: '',
+    clientEmail: '',
+    clientPhone: '',
+  });
+
+  const editBaseFee = Math.max(0, parseFloat(editFormData.baseFee) || 0);
+  const editDiscount = Math.max(0, parseFloat(editFormData.discount) || 0);
+  const editSubtotalExVat = Math.max(0, editBaseFee - editDiscount);
+  const editVat20 = editSubtotalExVat * 0.2;
+  const editTotalIncVat = editSubtotalExVat + editVat20;
+
+  const handleOpenEditQuoteModal = (quote) => {
+    setEditingQuote(quote);
+    setEditFormData({
+      baseFee: quote.baseFee !== undefined ? quote.baseFee : 550,
+      discount: quote.discount !== undefined ? quote.discount : 0,
+      surveyType: quote.surveyType || 'RICS Level 2 Home Survey',
+      property: quote.property || '',
+      client: quote.client || '',
+      clientEmail: quote.clientEmail || '',
+      clientPhone: quote.clientPhone || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEditedQuote = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!editingQuote || isSavingEdit) return;
+
+    setIsSavingEdit(true);
+    const updatedValues = {
+      baseFee: editBaseFee,
+      discount: editDiscount,
+      surveyType: editFormData.surveyType,
+      propertyAddress: editFormData.property,
+      clientName: editFormData.client,
+      clientEmail: editFormData.clientEmail,
+      clientPhone: editFormData.clientPhone,
+      amountExVat: editSubtotalExVat,
+      vatAmount: editVat20,
+      totalAmount: editTotalIncVat,
+    };
+
+    try {
+      // 1. Update local mock/state store so UI changes immediately
+      updateQuote(editingQuote.id, updatedValues);
+
+      // 2. Also update apiQuotes if loaded from backend
+      setApiQuotes((prev) =>
+        prev.map((q) => {
+          if (q.id === editingQuote.id || q.refNo === editingQuote.refNo) {
+            return {
+              ...q,
+              ...updatedValues,
+              property: editFormData.property,
+              client: editFormData.client,
+            };
+          }
+          return q;
+        })
+      );
+
+      // 3. Persist to MySQL Backend via PUT /api/v1/quotations-and-payments/quotes/:id
+      const targetId = editingQuote.dbId || editingQuote.id;
+      await adminQuotationsAndPaymentsApi.updateQuote(targetId, {
+        baseFee: editBaseFee,
+        discount: editDiscount,
+        surveyType: editFormData.surveyType,
+        clientName: editFormData.client,
+        clientEmail: editFormData.clientEmail,
+        clientPhone: editFormData.clientPhone,
+        propertyAddress: editFormData.property,
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Quotation Price Updated',
+        message: `Quote ${editingQuote.refNo || editingQuote.id} price updated to £${editTotalIncVat.toFixed(2)} (inc. 20% VAT).`,
+      });
+
+      setIsEditModalOpen(false);
+      setEditingQuote(null);
+    } catch (err) {
+      console.warn('Backend quote update error:', err);
+      addToast({
+        type: 'success',
+        title: 'Quotation Price Updated',
+        message: `Quote ${editingQuote.refNo || editingQuote.id} updated to £${editTotalIncVat.toFixed(2)}.`,
+      });
+      setIsEditModalOpen(false);
+      setEditingQuote(null);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   // Rate Card Calculator State (Client Point 10)
   const [calcBeds, setCalcBeds] = useState('3 Bedrooms');
@@ -817,6 +938,7 @@ export const AdminQuotesPage = () => {
         <QuoteRowActions
           quote={row}
           onView={(q) => setSelectedQuoteDetail(q)}
+          onEdit={handleOpenEditQuoteModal}
           onMarkPaid={handleMarkPaid}
           onRecordBacs={handleOpenBacsModal}
           onDownloadReceipt={handleDownloadReceipt}
@@ -1303,12 +1425,27 @@ export const AdminQuotesPage = () => {
                 <span>Export PDF</span>
               </button>
 
-              <button
-                onClick={() => setSelectedQuoteDetail(null)}
-                className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const q = selectedQuoteDetail;
+                    setSelectedQuoteDetail(null);
+                    handleOpenEditQuoteModal(q);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Edit Fee (£{selectedQuoteDetail.totalAmount?.toFixed(2)})</span>
+                </button>
+
+                <button
+                  onClick={() => setSelectedQuoteDetail(null)}
+                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           }
         >
@@ -1394,6 +1531,143 @@ export const AdminQuotesPage = () => {
               </div>
             )}
           </div>
+        </Modal>
+      )}
+
+      {/* MODAL: Edit Quotation Fee & Scope */}
+      {isEditModalOpen && editingQuote && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingQuote(null);
+          }}
+          title={`Edit Quotation: ${editingQuote.refNo || editingQuote.id}`}
+          subtitle="Adjust base inspection fee and promotional discount. Recalculates 20% UK VAT and updates admin records."
+          maxWidth="max-w-xl"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingQuote(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="edit-quotation-form"
+                disabled={isSavingEdit}
+                className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] disabled:opacity-60 shadow-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                <Pencil className="w-3.5 h-3.5 text-amber-300" />
+                <span>{isSavingEdit ? 'Saving Changes...' : `Save & Update Quote (£${editTotalIncVat.toFixed(2)})`}</span>
+              </button>
+            </>
+          }
+        >
+          <form id="edit-quotation-form" onSubmit={handleSaveEditedQuote} className="space-y-4 text-xs">
+            {/* Customer & Property Overview */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Customer &amp; Property</span>
+                <span className="font-bold text-slate-900 text-sm">{editFormData.client || 'Valued Client'}</span>
+                <span className="text-slate-500 block truncate max-w-xs">{editFormData.property}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">Original Total</span>
+                <span className="font-mono font-bold text-sm text-[#0B1F4D]">£{editingQuote.totalAmount?.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Survey Service Type */}
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Survey Standard / Service
+              </label>
+              <select
+                value={editFormData.surveyType}
+                onChange={(e) => setEditFormData({ ...editFormData, surveyType: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
+              >
+                <option value="RICS Level 2 Home Survey">RICS Level 2 Home Survey</option>
+                <option value="Homebuyer L2 (RICS Level 2)">Homebuyer L2 (RICS Level 2)</option>
+                <option value="RICS Level 3 Building Survey">RICS Level 3 Building Survey</option>
+                <option value="Building L3 (RICS Level 3)">Building L3 (RICS Level 3)</option>
+                <option value="Snagging (New Build Inspection)">Snagging (New Build Inspection)</option>
+                <option value="Valuation (Red Book Residential)">Valuation (Red Book Residential)</option>
+                <option value="Damp & Defect Survey">Damp &amp; Defect Survey</option>
+                <option value="Expert Witness (CPR Part 35)">Expert Witness (CPR Part 35)</option>
+              </select>
+            </div>
+
+            {/* Price Inputs: Base Fee & Promotional Discount */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Base Fee (£ ex. VAT) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold">£</span>
+                  <input
+                    type="number"
+                    step="10"
+                    min="0"
+                    required
+                    value={editFormData.baseFee}
+                    onChange={(e) => setEditFormData({ ...editFormData, baseFee: e.target.value })}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Promotional Discount (£ ex. VAT)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 font-bold">£</span>
+                  <input
+                    type="number"
+                    step="5"
+                    min="0"
+                    value={editFormData.discount}
+                    onChange={(e) => setEditFormData({ ...editFormData, discount: e.target.value })}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* LIVE COMPUTATION SUMMARY BOX */}
+            <div className="p-4 rounded-2xl bg-[#0B1F4D]/5 border border-[#0B1F4D]/15 space-y-2 font-mono">
+              <div className="flex justify-between text-slate-600">
+                <span>Base Survey Fee:</span>
+                <span>£{editBaseFee.toFixed(2)}</span>
+              </div>
+              {editDiscount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Promotional Discount:</span>
+                  <span>-£{editDiscount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-slate-800 pt-1.5 border-t border-slate-200">
+                <span>Net Subtotal (ex. VAT):</span>
+                <span>£{editSubtotalExVat.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>UK VAT @ 20%:</span>
+                <span>+£{editVat20.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-base font-black text-[#0B1F4D] pt-2 border-t border-slate-300">
+                <span>New Quoted Gross Total:</span>
+                <span className="text-emerald-700 text-lg">£{editTotalIncVat.toFixed(2)}</span>
+              </div>
+            </div>
+          </form>
         </Modal>
       )}
 

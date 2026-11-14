@@ -108,14 +108,20 @@ export const createLead = async (req, res, next) => {
 export const updateLeadStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, estimatedValue } = req.body;
     const numId = Number(id);
 
     const where = !isNaN(numId) && String(numId) === String(id) ? { id: numId } : { reference: String(id) };
 
+    const updateData = {};
+    if (status) updateData.status = status.toUpperCase();
+    if (estimatedValue !== undefined && !isNaN(Number(estimatedValue))) {
+      updateData.estimatedValue = parseFloat(estimatedValue);
+    }
+
     const lead = await prisma.lead.update({
       where,
-      data: { status: status.toUpperCase() },
+      data: updateData,
     });
 
     return ApiResponse.success(res, { lead }, `Lead status updated to ${status}`);

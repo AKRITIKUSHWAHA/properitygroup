@@ -4,6 +4,7 @@ import {
   getInvoicesList,
   getQuotationsAndPaymentsMetrics,
   createQuote,
+  updateQuote,
   updateQuoteStatus,
   settleBacsPayment,
 } from '../controllers/quotationsAndPaymentsController.js';
@@ -19,6 +20,8 @@ router.get('/quotes', getQuotesList);
 router.get('/invoices', getInvoicesList);
 router.get('/metrics', getQuotationsAndPaymentsMetrics);
 router.post('/quotes', createQuote);
+router.put('/quotes/:id', updateQuote);
+router.patch('/quotes/:id', updateQuote);
 router.patch('/quotes/:id/status', updateQuoteStatus);
 router.post('/invoices/:id/settle-bacs', settleBacsPayment);
 

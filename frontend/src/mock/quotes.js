@@ -159,10 +159,38 @@ export const useQuotes = () => {
     }
   };
 
+  const updateQuote = (id, updatedFields) => {
+    setQuotes((prev) =>
+      prev.map((q) => {
+        if (q.id !== id && q.refNo !== id) return q;
+        const currentFee = updatedFields.baseFee !== undefined ? parseFloat(updatedFields.baseFee) : (q.baseFee || 0);
+        const currentDiscount = updatedFields.discount !== undefined ? parseFloat(updatedFields.discount) : (q.discount || 0);
+        const extras = updatedFields.extras !== undefined ? updatedFields.extras : (q.extras || []);
+        const extrasTotal = Array.isArray(extras)
+          ? extras.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0)
+          : 0;
+        const subtotal = Math.max(0, currentFee + extrasTotal - currentDiscount);
+        const vatAmount = subtotal * 0.2;
+        const totalAmount = subtotal + vatAmount;
+
+        return {
+          ...q,
+          ...updatedFields,
+          baseFee: currentFee,
+          discount: currentDiscount,
+          extras,
+          amountExVat: subtotal,
+          vatAmount,
+          totalAmount,
+        };
+      })
+    );
+  };
+
   const updateQuoteStatus = (id, newStatus) => {
     setQuotes((prev) =>
       prev.map((q) => {
-        if (q.id !== id) return q;
+        if (q.id !== id && q.refNo !== id) return q;
         const isPaid = newStatus === 'Paid';
         return {
           ...q,
@@ -174,5 +202,5 @@ export const useQuotes = () => {
     );
   };
 
-  return { quotes, setQuotes, addQuote, updateQuoteStatus };
+  return { quotes, setQuotes, addQuote, updateQuote, updateQuoteStatus };
 };

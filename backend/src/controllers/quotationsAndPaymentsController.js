@@ -166,12 +166,12 @@ export const createQuote = async (req, res, next) => {
       },
     });
 
-    // Also update lead status to QUOTE_SENT if lead exists
+    // Also update lead status to QUOTE_SENT and estimatedValue if lead exists
     if (parsedLeadId) {
       try {
         await prisma.lead.update({
           where: { id: parsedLeadId },
-          data: { status: 'QUOTE_SENT' },
+          data: { status: 'QUOTE_SENT', estimatedValue: totalAmount },
         });
       } catch (lErr) {}
     }
@@ -217,6 +217,100 @@ export const createQuote = async (req, res, next) => {
       emailSent 
         ? `Quote issued and formal proposal emailed to ${recipientEmail}` 
         : 'Quote issued with 20% UK VAT calculated'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateQuote = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      baseFee,
+      discount,
+      extras,
+      surveyType,
+      clientName,
+      clientEmail,
+      clientPhone,
+      propertyAddress,
+    } = req.body;
+
+    let quoteId = parseInt(id, 10);
+    let quote = null;
+
+    if (!isNaN(quoteId)) {
+      quote = await prisma.quote.findUnique({ where: { id: quoteId } });
+    }
+
+    if (!quote) {
+      quote = await prisma.quote.findFirst({ where: { reference: String(id) } });
+    }
+
+    if (!quote) {
+      throw ApiError.notFound('Quotation record not found');
+    }
+
+    const currentFee = baseFee !== undefined ? parseFloat(baseFee) : quote.baseFee;
+    const currentDiscount = discount !== undefined ? Math.max(0, parseFloat(discount)) : 0;
+
+    let extrasTotal = 0;
+    if (Array.isArray(extras)) {
+      extrasTotal = extras.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    }
+
+    const subtotal = Math.max(0, currentFee + extrasTotal - currentDiscount);
+    const vatRate = 20.0;
+    const vatAmount = parseFloat(((subtotal * vatRate) / 100).toFixed(2));
+    const totalAmount = parseFloat((subtotal + vatAmount).toFixed(2));
+
+    let parsedInclusions = {};
+    try {
+      if (quote.inclusions) {
+        parsedInclusions = JSON.parse(quote.inclusions);
+      }
+    } catch (e) {}
+
+    const updatedInclusions = {
+      ...parsedInclusions,
+      ...(clientName ? { client: clientName } : {}),
+      ...(clientEmail ? { clientEmail } : {}),
+      ...(clientPhone ? { clientPhone } : {}),
+      ...(propertyAddress ? { property: propertyAddress } : {}),
+      ...(surveyType ? { surveyType } : {}),
+      discount: currentDiscount,
+      extras: Array.isArray(extras) ? extras : parsedInclusions.extras || [],
+    };
+
+    const updated = await prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        baseFee: currentFee,
+        vatRate,
+        vatAmount,
+        totalAmount,
+        inclusions: JSON.stringify(updatedInclusions),
+      },
+      include: {
+        job: true,
+        lead: true,
+      },
+    });
+
+    if (updated.leadId) {
+      try {
+        await prisma.lead.update({
+          where: { id: updated.leadId },
+          data: { estimatedValue: totalAmount },
+        });
+      } catch (err) {}
+    }
+
+    return ApiResponse.success(
+      res,
+      { quote: updated },
+      `Quotation ${quote.reference} updated to £${totalAmount.toFixed(2)} (inc. 20% VAT)`
     );
   } catch (error) {
     next(error);

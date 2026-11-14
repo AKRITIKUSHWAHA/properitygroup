@@ -75,6 +75,7 @@ export const adminQuotationsAndPaymentsApi = {
   getInvoices: (params = '') => api.get(`/quotations-and-payments/invoices${params ? `?${params}` : ''}`),
   getMetrics: () => api.get('/quotations-and-payments/metrics'),
   createQuote: (quoteData) => api.post('/quotations-and-payments/quotes', quoteData),
+  updateQuote: (id, quoteData) => api.put(`/quotations-and-payments/quotes/${id}`, quoteData),
   updateQuoteStatus: (id, status) => api.patch(`/quotations-and-payments/quotes/${id}/status`, { status }),
   settleBacs: (id, bacsData) => api.post(`/quotations-and-payments/invoices/${id}/settle-bacs`, bacsData),
 };

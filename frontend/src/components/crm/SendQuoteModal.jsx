@@ -74,9 +74,15 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
 
   // Helper to extract numeric fee from lead if already set
   const resolveInitialBaseFee = (leadObj) => {
+    if (leadObj?.baseFee && !isNaN(Number(leadObj.baseFee))) {
+      return Number(leadObj.baseFee);
+    }
     if (leadObj?.estimatedValue && !leadObj.estimatedValue.toLowerCase().includes('pending')) {
       const parsed = parseFloat(leadObj.estimatedValue.replace(/[^0-9.]/g, ''));
-      if (parsed && !isNaN(parsed) && parsed > 50) return parsed;
+      if (parsed && !isNaN(parsed) && parsed > 50) {
+        // If estimatedValue is gross (e.g. £660 or £1020), convert to net baseFee (£550 or £850)
+        return Math.round((parsed / 1.2) / 10) * 10;
+      }
     }
     const defaultType = resolveInitialSurveyType(leadObj?.enquiry);
     return STANDARD_FEES[defaultType] || 550;

@@ -97,13 +97,20 @@ export const useLeads = () => {
         Converted: 'CONVERTED',
         Lost: 'LOST',
       };
+      const numVal = extraData.estimatedValue
+        ? parseFloat(String(extraData.estimatedValue).replace(/[^0-9.]/g, ''))
+        : undefined;
+
       fetch(`/api/v1/crm-and-leads/${leadId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: statusMap[newStatus] || newStatus.toUpperCase() }),
+        body: JSON.stringify({
+          status: statusMap[newStatus] || (newStatus ? newStatus.toUpperCase() : 'NEW'),
+          ...(numVal !== undefined && !isNaN(numVal) ? { estimatedValue: numVal } : {}),
+        }),
       }).catch(() => {});
     }
   };
