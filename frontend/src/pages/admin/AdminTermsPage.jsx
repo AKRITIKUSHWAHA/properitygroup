@@ -55,19 +55,12 @@ const AgreementRowActions = ({
         setIsOpen(false);
       }
     };
-    const handleScrollOrResize = () => {
-      if (isOpen) setIsOpen(false);
-    };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScrollOrResize, true);
-      window.addEventListener('resize', handleScrollOrResize);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
 
@@ -75,10 +68,23 @@ const AgreementRowActions = ({
     e.stopPropagation();
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const openUpwards = rect.bottom + 270 > window.innerHeight;
+      const menuHeight = 270;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpwards = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+
+      if (openUpwards) {
+        bottom = Math.max(10, Math.round(window.innerHeight - rect.top + 4));
+      } else {
+        top = Math.max(10, Math.min(Math.round(rect.bottom + 4), window.innerHeight - menuHeight - 10));
+      }
+
       setCoords({
-        top: openUpwards ? null : Math.round(rect.bottom + 6),
-        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        top,
+        bottom,
         right: Math.max(16, Math.round(window.innerWidth - rect.right)),
       });
     }

@@ -56,19 +56,12 @@ const QuoteRowActions = ({
         setIsOpen(false);
       }
     };
-    const handleScrollOrResize = () => {
-      if (isOpen) setIsOpen(false);
-    };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScrollOrResize, true);
-      window.addEventListener('resize', handleScrollOrResize);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
     };
   }, [isOpen]);
 
@@ -76,10 +69,24 @@ const QuoteRowActions = ({
     e.stopPropagation();
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const openUpwards = rect.bottom + 290 > window.innerHeight;
+      const menuHeight = 290;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      // Only open upwards if space below is insufficient AND space above is sufficient
+      const openUpwards = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+
+      if (openUpwards) {
+        bottom = Math.max(10, Math.round(window.innerHeight - rect.top + 4));
+      } else {
+        top = Math.max(10, Math.min(Math.round(rect.bottom + 4), window.innerHeight - menuHeight - 10));
+      }
+
       setCoords({
-        top: openUpwards ? null : Math.round(rect.bottom + 6),
-        bottom: openUpwards ? Math.round(window.innerHeight - rect.top + 6) : null,
+        top,
+        bottom,
         right: Math.max(16, Math.round(window.innerWidth - rect.right)),
       });
     }
@@ -178,7 +185,7 @@ const QuoteRowActions = ({
                 className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Mark as Paid (£{quote.totalAmount.toFixed(2)})</span>
+                <span>Mark as Paid (£{Number(quote.totalAmount || 0).toFixed(2)})</span>
               </button>
             </>
           ) : (
@@ -800,7 +807,7 @@ export const AdminQuotesPage = () => {
   };
 
   // Status badge renderer: Draft, Sent, Viewed, Accepted, Paid
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (status, row) => {
     switch (status) {
       case 'Paid':
         return (
@@ -825,18 +832,34 @@ export const AdminQuotesPage = () => {
         );
       case 'Sent':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-            <Send className="w-3 h-3 text-[#2563EB]" />
-            Sent
-          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (row) handleSendQuote(row.id, row.clientEmail);
+            }}
+            title="Quotation proposal email dispatched. Click to resend email to client."
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 hover:text-blue-900 hover:border-blue-300 transition-all cursor-pointer group"
+          >
+            <Send className="w-3 h-3 text-[#2563EB] group-hover:scale-110 transition-transform" />
+            <span>Sent</span>
+          </button>
         );
       case 'Draft':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            <FileText className="w-3 h-3 text-slate-400" />
-            Draft
-          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (row) handleSendQuote(row.id, row.clientEmail);
+            }}
+            title="Draft quotation. Click to dispatch proposal email to client now."
+            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 hover:text-amber-900 transition-all cursor-pointer group shadow-2xs"
+          >
+            <Send className="w-3 h-3 text-amber-600 group-hover:scale-110 transition-transform" />
+            <span>Send Quote</span>
+          </button>
         );
     }
   };
@@ -915,10 +938,10 @@ export const AdminQuotesPage = () => {
       render: (val, row) => (
         <div className="font-mono min-w-0">
           <div className="font-black text-xs sm:text-sm text-[#0B1F4D]">
-            £{val.toFixed(2)}
+            £{Number(val || 0).toFixed(2)}
           </div>
           <div className="text-[10px] text-slate-500 truncate">
-            Net £{row.amountExVat.toFixed(2)} + £{row.vatAmount.toFixed(2)} VAT
+            Net £{Number(row.amountExVat || 0).toFixed(2)} + £{Number(row.vatAmount || 0).toFixed(2)} VAT
           </div>
         </div>
       ),
@@ -927,8 +950,8 @@ export const AdminQuotesPage = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      className: 'w-[11%] min-w-[75px]',
-      render: (val) => renderStatusBadge(val),
+      className: 'w-[12%] min-w-[85px]',
+      render: (val, row) => renderStatusBadge(val, row),
     },
     {
       key: 'actions',
