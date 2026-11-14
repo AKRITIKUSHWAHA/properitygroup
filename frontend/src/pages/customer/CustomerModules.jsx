@@ -2734,35 +2734,21 @@ export const CustomerMessagesPage = () => {
   const [activeChannelId, setActiveChannelId] = useState(defaultConvId);
   const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
 
-  // Initial Contacts strictly role-isolated (Customers see NJS Desk & Surveyor; Surveyors see NJS Desk & Clients; Admin sees All)
+  // Initial Contacts strictly role-isolated (Customers see ONLY Admin Desk; Surveyors see Admin Desk; Admin sees All)
   const [people, setPeople] = useState(() => {
     if (isCustomer) {
       return [
         {
           id: `conv-user-${user?.id || 'client'}`,
           userId: user?.id,
-          name: 'NJS Operations & Surveyor Desk',
+          name: 'NJS Operations & Admin Desk',
           email: 'info@njspropertygroup.com',
           role: 'ADMIN',
-          roleTitle: 'NJS Coordination Desk',
+          roleTitle: 'NJS Operations & Admin Desk',
           avatar: 'NJS',
           lastMessage: 'Direct communications channel active',
           time: 'Today',
           lastMessageTime: new Date().toISOString(),
-          online: true,
-          unread: false,
-        },
-        {
-          id: `conv-surveyor-${user?.id || 'client'}`,
-          userId: 21,
-          name: 'David Thorne MRICS',
-          email: 'david.thorne@njspropertygroup.com',
-          role: 'SURVEYOR',
-          roleTitle: 'Assigned RICS Surveyor',
-          avatar: 'DT',
-          lastMessage: 'RICS on-site inspection protocol & QA',
-          time: 'Today, 2:02pm',
-          lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
           online: true,
           unread: false,
         },
@@ -2804,16 +2790,16 @@ export const CustomerMessagesPage = () => {
         lastSeen: '11:30am',
       },
       {
-        id: 'conv-user-21',
-        userId: 21,
+        id: 'conv-user-22',
+        userId: 22,
         name: 'David Thorne MRICS',
-        email: 'david.thorne@njspropertygroup.com',
+        email: 'surveyor@demo.com',
         role: 'SURVEYOR',
         roleTitle: 'RICS Surveyor',
         avatar: 'DT',
-        lastMessage: 'On-site inspection completed',
+        lastMessage: 'hi',
         time: 'Today, 2:02pm',
-        lastMessageTime: '2026-11-14T08:32:00.000Z',
+        lastMessageTime: '2026-11-14T12:13:43.000Z',
         unread: false,
         online: true,
         lastSeen: '2:02pm',
@@ -2869,53 +2855,75 @@ export const CustomerMessagesPage = () => {
   // Thread Messages mapping per conversation
   const [threadsMap, setThreadsMap] = useState({});
 
-  // Fetch role-isolated contacts from Backend Database API
+  // Fetch role-isolated contacts from Backend Database API with live periodic polling
   useEffect(() => {
-    customerMessagesApi
-      .getContacts()
-      .then((res) => {
-        const serverContacts = res?.contacts || res?.data?.contacts || [];
-        if (Array.isArray(serverContacts) && serverContacts.length > 0) {
-          setPeople(serverContacts);
-          // If activeChannelId is not in contacts, select the first valid contact
-          if (!serverContacts.some((c) => c.id === activeChannelId)) {
-            setActiveChannelId(serverContacts[0].id);
+    let isMounted = true;
+    const fetchContacts = () => {
+      customerMessagesApi
+        .getContacts()
+        .then((res) => {
+          if (!isMounted) return;
+          const serverContacts = res?.contacts || res?.data?.contacts || [];
+          if (Array.isArray(serverContacts) && serverContacts.length > 0) {
+            setPeople(serverContacts);
+            // If activeChannelId is not in contacts, select the first valid contact
+            if (!serverContacts.some((c) => c.id === activeChannelId)) {
+              setActiveChannelId(serverContacts[0].id);
+            }
           }
-        }
-      })
-      .catch((err) => {
-        console.warn('Contacts API sync notice:', err);
-      });
+        })
+        .catch((err) => {
+          console.warn('Contacts API sync notice:', err);
+        });
+    };
+
+    fetchContacts();
+    const interval = setInterval(fetchContacts, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [user?.role, user?.id]);
 
-  // Fetch remote messages for active channel from Database with strict isolation
+  // Fetch remote messages for active channel from Database with strict isolation & live polling
   useEffect(() => {
     if (!activeChannelId) return;
-    customerMessagesApi
-      .getMessages({ conversationId: activeChannelId })
-      .then((res) => {
-        const remoteMsgs = res?.messages || res?.data?.messages || [];
-        const mapped = remoteMsgs.map((m) => {
-          const created = m.createdAt ? new Date(m.createdAt) : new Date();
-          const timeStr = m.createdAt
-            ? `Today, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
-            : 'Today';
-          return {
-            id: m.id,
-            senderId: m.senderId,
-            sender: m.senderName || (m.role === 'admin' ? 'Alexander Sterling' : 'Client'),
-            role: m.role || 'customer',
-            text: m.content || '',
-            time: timeStr,
-          };
-        });
+    let isMounted = true;
+    const fetchMsgs = () => {
+      customerMessagesApi
+        .getMessages({ conversationId: activeChannelId })
+        .then((res) => {
+          if (!isMounted) return;
+          const remoteMsgs = res?.messages || res?.data?.messages || [];
+          const mapped = remoteMsgs.map((m) => {
+            const created = m.createdAt ? new Date(m.createdAt) : new Date();
+            const timeStr = m.createdAt
+              ? `Today, ${created.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+              : 'Today';
+            return {
+              id: m.id,
+              senderId: m.senderId,
+              sender: m.senderName || (m.role === 'admin' ? 'Alexander Sterling' : 'Client'),
+              role: m.role || 'customer',
+              text: m.content || '',
+              time: timeStr,
+            };
+          });
 
-        setThreadsMap((prev) => ({
-          ...prev,
-          [activeChannelId]: mapped,
-        }));
-      })
-      .catch(() => {});
+          setThreadsMap((prev) => ({
+            ...prev,
+            [activeChannelId]: mapped,
+          }));
+        })
+        .catch(() => {});
+    };
+
+    fetchMsgs();
+    const interval = setInterval(fetchMsgs, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [activeChannelId]);
 
   // Find active contact or default to first contact
@@ -3085,10 +3093,10 @@ export const CustomerMessagesPage = () => {
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between mb-2 px-1">
               <h4 className="text-xs font-extrabold text-slate-800">
-                {isCustomer ? 'Support Channels' : isSurveyor ? 'Operations & Clients' : 'Clients & Surveyors'}
+                {isCustomer ? 'Operations & Admin Desk' : isSurveyor ? 'Operations & Dispatch' : 'Customers & Surveyors'}
               </h4>
               <span className="text-[10px] text-slate-400 font-semibold">
-                {filteredPeople.length} contacts
+                {filteredPeople.length} {filteredPeople.length === 1 ? 'contact' : 'contacts'}
               </span>
             </div>
             <div className="space-y-1">

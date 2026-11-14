@@ -15,7 +15,8 @@ export const getMessageContacts = async (req, res, next) => {
 
     // ========================================================
     // FLOW 1: LOGGED IN USER IS A CUSTOMER
-    // Sees ONLY NJS Operations Desk & their Assigned Surveyor
+    // Customer chats strictly 1-on-1 with Admin (NJS Operations & Admin Desk)
+    // No other customer or surveyor is visible ("kisi ki v kisi ko na dikhe")
     // ========================================================
     if (currentUserRole === 'CUSTOMER') {
       const customerConvId = `conv-user-${currentUserId}`;
@@ -24,32 +25,6 @@ export const getMessageContacts = async (req, res, next) => {
         where: { conversationId: customerConvId },
         orderBy: { createdAt: 'desc' },
       });
-
-      const customerJob = await prisma.job.findFirst({
-        where: {
-          OR: [{ clientId: currentUserId }, { clientEmail: currentUserEmail }],
-        },
-        include: {
-          surveyor: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              surveyorProfile: { select: { accreditation: true } },
-            },
-          },
-        },
-      });
-
-      const assignedSurveyor = customerJob?.surveyor;
-      const surveyorName = assignedSurveyor?.name || 'David Thorne MRICS';
-      const surveyorInitials = surveyorName
-        .split(' ')
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
 
       const lastTime = latestCustomerMsg ? latestCustomerMsg.createdAt : new Date();
       const isToday = new Date(lastTime).toDateString() === new Date().toDateString();
@@ -61,28 +36,14 @@ export const getMessageContacts = async (req, res, next) => {
         {
           id: customerConvId,
           userId: currentUserId,
-          name: 'NJS Operations & Surveyor Desk',
+          name: 'NJS Operations & Admin Desk',
           email: 'info@njspropertygroup.com',
           role: 'ADMIN',
-          roleTitle: 'NJS Coordination Desk',
+          roleTitle: 'NJS Operations & Admin Desk',
           avatar: 'NJS',
           lastMessage: latestCustomerMsg ? latestCustomerMsg.content : 'Direct communications channel active',
           time: formattedTime,
           lastMessageTime: lastTime,
-          online: true,
-          unread: false,
-        },
-        {
-          id: `conv-surveyor-${currentUserId}`,
-          userId: assignedSurveyor?.id || 21,
-          name: surveyorName,
-          email: assignedSurveyor?.email || 'david.thorne@njspropertygroup.com',
-          role: 'SURVEYOR',
-          roleTitle: 'Assigned RICS Surveyor',
-          avatar: surveyorInitials,
-          lastMessage: 'RICS on-site inspection protocol & QA',
-          time: 'Today, 2:02pm',
-          lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
           online: true,
           unread: false,
         },
@@ -96,12 +57,12 @@ export const getMessageContacts = async (req, res, next) => {
 
     // ========================================================
     // FLOW 2: LOGGED IN USER IS A SURVEYOR
-    // Sees NJS Operations Desk (Admin) & Assigned Survey Clients
+    // Surveyor chats strictly 1-on-1 with Admin (NJS Operations & Dispatch Desk)
+    // No other surveyor or customer is visible
     // ========================================================
     if (currentUserRole === 'SURVEYOR') {
       const surveyorConvId = `conv-user-${currentUserId}`;
 
-      // 1. Channel with NJS Operations Desk
       const latestDeskMsg = await prisma.message.findFirst({
         where: {
           OR: [
@@ -118,88 +79,34 @@ export const getMessageContacts = async (req, res, next) => {
         ? new Date(lastTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
         : 'Today';
 
-      const deskContact = {
-        id: surveyorConvId,
-        userId: currentUserId,
-        name: 'NJS Operations & Dispatch Desk',
-        email: 'info@njspropertygroup.com',
-        role: 'ADMIN',
-        roleTitle: 'NJS Operations Desk',
-        avatar: 'NJS',
-        lastMessage: latestDeskMsg ? latestDeskMsg.content : 'Direct surveyor coordination active',
-        time: formattedTime,
-        lastMessageTime: lastTime,
-        online: true,
-        unread: false,
-      };
-
-      // 2. Assigned Clients
-      const assignedJobs = await prisma.job.findMany({
-        where: { surveyorId: currentUserId },
-        select: {
-          id: true,
-          reference: true,
-          clientName: true,
-          clientEmail: true,
-          clientId: true,
-          propertyAddress: true,
+      const surveyorContacts = [
+        {
+          id: surveyorConvId,
+          userId: currentUserId,
+          name: 'NJS Operations & Dispatch Desk',
+          email: 'info@njspropertygroup.com',
+          role: 'ADMIN',
+          roleTitle: 'NJS Operations Desk',
+          avatar: 'NJS',
+          lastMessage: latestDeskMsg ? latestDeskMsg.content : 'Direct surveyor coordination active',
+          time: formattedTime,
+          lastMessageTime: lastTime,
+          online: true,
+          unread: false,
         },
-      });
-
-      const clientContacts = await Promise.all(
-        assignedJobs.map(async (j) => {
-          const clientConvId = j.clientId ? `conv-user-${j.clientId}` : `conv-job-${j.id}`;
-          const latestClientMsg = await prisma.message.findFirst({
-            where: {
-              OR: [{ conversationId: clientConvId }, { jobId: j.id }],
-            },
-            orderBy: { createdAt: 'desc' },
-          });
-
-          const nameParts = j.clientName.trim().split(/\s+/);
-          const initials =
-            nameParts.length >= 2
-              ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
-              : (j.clientName.slice(0, 2) || 'CL').toUpperCase();
-
-          const clientTime = latestClientMsg ? latestClientMsg.createdAt : new Date();
-          const clientIsToday = new Date(clientTime).toDateString() === new Date().toDateString();
-          const clientFormattedTime = clientIsToday
-            ? new Date(clientTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-            : 'Today';
-
-          return {
-            id: clientConvId,
-            userId: j.clientId,
-            name: `${j.clientName} (${j.reference})`,
-            email: j.clientEmail,
-            role: 'CUSTOMER',
-            roleTitle: 'Assigned Client',
-            avatar: initials,
-            lastMessage: latestClientMsg ? latestClientMsg.content : `Inspection for ${j.propertyAddress}`,
-            time: clientFormattedTime,
-            lastMessageTime: clientTime,
-            online: true,
-            unread: false,
-          };
-        })
-      );
-
-      const allSurveyorContacts = [deskContact, ...clientContacts];
-      allSurveyorContacts.sort(
-        (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-      );
+      ];
 
       return ApiResponse.success(res, {
-        contacts: allSurveyorContacts,
-        total: allSurveyorContacts.length,
+        contacts: surveyorContacts,
+        total: surveyorContacts.length,
       });
     }
 
     // ========================================================
     // FLOW 3: LOGGED IN USER IS AN ADMIN / SUPER ADMIN
     // Admins manage communication with all Customers & Surveyors
-    // Each contact has their own isolated thread!
+    // Each contact has their own isolated thread: conv-user-${u.id}
+    // Dynamic Activity Sorting: whoever messages moves to index 0 (top)!
     // ========================================================
     const users = await prisma.user.findMany({
       where: {
@@ -311,16 +218,24 @@ export const getCustomerMessages = async (req, res, next) => {
     const userRole = req.user.role;
     const targetConvId = req.query.conversationId;
 
-    let conversationId = targetConvId;
+    let conversationId;
 
-    if (userRole === 'CUSTOMER') {
+    if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
+      // Customer and Surveyor are locked strictly to their own conversation thread with Admin!
+      // Absolute privacy - never accesses anyone else's messages
       conversationId = `conv-user-${userId}`;
-    } else if (userRole === 'SURVEYOR') {
-      // Surveyor can access their desk thread or their assigned client thread
-      conversationId = targetConvId || `conv-user-${userId}`;
-    }
-
-    if (!conversationId) {
+    } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+      // Admin views whichever contact thread is selected
+      conversationId = targetConvId;
+      if (!conversationId) {
+        // Default to the first customer or surveyor's conversation
+        const latestMsg = await prisma.message.findFirst({
+          where: { conversationId: { startsWith: 'conv-user-' } },
+          orderBy: { createdAt: 'desc' },
+        });
+        conversationId = latestMsg ? latestMsg.conversationId : 'conv-user-25';
+      }
+    } else {
       conversationId = `conv-user-${userId}`;
     }
 
@@ -332,7 +247,7 @@ export const getCustomerMessages = async (req, res, next) => {
     });
 
     // Mark unread messages as read
-    if (userRole === 'CUSTOMER') {
+    if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
       await prisma.message.updateMany({
         where: { conversationId, readByCustomer: false },
         data: { readByCustomer: true },
@@ -367,15 +282,18 @@ export const sendCustomerMessage = async (req, res, next) => {
       throw ApiError.badRequest('Message content is required');
     }
 
-    let conversationId = reqConvId;
+    let conversationId;
 
-    if (userRole === 'CUSTOMER') {
+    if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
+      // Customer and Surveyor always send to their own thread with Admin
       conversationId = `conv-user-${userId}`;
-    } else if (userRole === 'SURVEYOR') {
-      conversationId = reqConvId || `conv-user-${userId}`;
-    }
-
-    if (!conversationId) {
+    } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+      // Admin sends into the active contact's conversation thread
+      conversationId = reqConvId;
+      if (!conversationId) {
+        throw ApiError.badRequest('Target conversation ID is required for Admin');
+      }
+    } else {
       conversationId = `conv-user-${userId}`;
     }
 
@@ -388,7 +306,7 @@ export const sendCustomerMessage = async (req, res, next) => {
         senderName: req.user.name,
         role: roleName,
         content: content.trim(),
-        readByCustomer: userRole === 'CUSTOMER',
+        readByCustomer: userRole === 'CUSTOMER' || userRole === 'SURVEYOR',
         readByAdmin: userRole === 'ADMIN' || userRole === 'SUPER_ADMIN',
       },
     });
