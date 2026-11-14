@@ -49,129 +49,123 @@ export const SURVEYORS = [
   },
 ];
 
-export const INITIAL_JOBS = [
-  {
-    id: '1',
-    jobNo: 'JOB-2026-080',
-    date: '14 Nov 2026',
-    timeSlot: '10:00 AM - 01:00 PM',
-    customer: 'Emma Watson',
-    customerEmail: 'customer@demo.com',
-    customerPhone: '+44 7911 123456',
-    surveyType: 'RICS Level 2 Home Survey',
-    property: '14 Mayfair Gate',
-    location: 'Mayfair, London',
-    postcode: 'W1K 2PB',
-    surveyor: 'David Thorne MRICS',
-    surveyorId: 'srv-1',
-    status: 'Scheduled',
-    termsStatus: 'Signed',
-    paymentStatus: 'Paid',
-    canBook: true,
-    accessNotes: 'Keys held at Foxtons Mayfair under branch reference FX-402',
-    keyProtocol: 'AGENT_PICKUP',
-  },
-  {
-    id: '2',
-    jobNo: 'JOB-2026-081',
-    date: '18 Oct 2026',
-    timeSlot: '02:00 PM - 05:30 PM',
-    customer: 'Emma Watson',
-    customerEmail: 'customer@demo.com',
-    customerPhone: '+44 7911 123456',
-    surveyType: 'RICS Level 3 Building Survey',
-    property: '88 Belgrave Square',
-    location: 'Belgravia, London',
-    postcode: 'SW1X 8PH',
-    surveyor: 'David Thorne MRICS',
-    surveyorId: 'srv-1',
-    status: 'Completed',
-    termsStatus: 'Signed',
-    paymentStatus: 'Paid',
-    canBook: true,
-    accessNotes: 'Vendor present on site. Full loft & basement inspection completed.',
-    reportUrl: 'https://storage.googleapis.com/property-group-reports/JOB-2026-081-L3-Final.pdf',
-  },
-  {
-    id: '3',
-    jobNo: 'JOB-2026-082',
-    date: '16 Nov 2026',
-    timeSlot: '11:00 AM - 02:00 PM',
-    customer: 'Harrison Sterling',
-    customerEmail: 'customer2@demo.com',
-    customerPhone: '+44 7700 900333',
-    surveyType: 'RICS Level 3 Building Survey',
-    property: '27 Kensington Church St',
-    location: 'Kensington, London',
-    postcode: 'W8 4LL',
-    surveyor: 'Oliver Hughes MRICS',
-    surveyorId: 'srv-2',
-    status: 'Action Required',
-    termsStatus: 'Sent',
-    paymentStatus: 'Awaiting Payment',
-    canBook: false,
-    accessNotes: 'Dexters Kensington key lockbox 4912 on side entrance',
-  },
-  {
-    id: '4',
-    jobNo: 'JOB-2026-083',
-    date: '12 Nov 2026',
-    timeSlot: '09:30 AM - 12:30 PM',
-    customer: 'Oliver Vance',
-    customerEmail: 'oliver.vance@example.com',
-    customerPhone: '+44 7700 900555',
-    surveyType: 'RICS Red Book Valuation',
-    property: '12 Richmond Hill',
-    location: 'Richmond, London',
-    postcode: 'TW10 6QX',
-    surveyor: 'Jonathan Cross FRICS',
-    surveyorId: 'srv-4',
-    status: 'In Progress',
-    termsStatus: 'Signed',
-    paymentStatus: 'Paid',
-    canBook: true,
-    accessNotes: 'Access arranged via Savills Residential Richmond',
-  },
-  {
-    id: '5',
-    jobNo: 'JOB-2026-084',
-    date: '15 Nov 2026',
-    timeSlot: '01:00 PM - 04:00 PM',
-    customer: 'Charlotte Bronte',
-    customerEmail: 'charlotte.b@outlook.com',
-    customerPhone: '+44 7700 900666',
-    surveyType: 'New Build Snagging Survey',
-    property: '5 The Courtyard, Highgate',
-    location: 'Highgate, London',
-    postcode: 'N6 4BA',
-    surveyor: 'Claire Bennet AssocRICS',
-    surveyorId: 'srv-3',
-    status: 'Scheduled',
-    termsStatus: 'Signed',
-    paymentStatus: 'Paid',
-    canBook: true,
-    accessNotes: 'Site manager customer care office at plot 5',
-  },
-];
+export const INITIAL_JOBS = [];
+
+export const syncRealCustomerJobs = (existingJobs = []) => {
+  try {
+    const regRaw = localStorage.getItem('property_group_registered_customers');
+    const registered = regRaw ? JSON.parse(regRaw) : {};
+    const leadsRaw = localStorage.getItem('propertygroup_crm_leads_v1');
+    const leads = leadsRaw ? JSON.parse(leadsRaw) : [];
+    const quotesRaw = localStorage.getItem('propertygroup_quotes');
+    const quotes = quotesRaw ? JSON.parse(quotesRaw) : [];
+
+    const realJobs = [];
+
+    // Collect all emails from registered customers, leads, quotes
+    const emails = new Set([
+      ...Object.keys(registered),
+      ...leads.map((l) => l.customerEmail || l.clientEmail).filter(Boolean),
+      ...quotes.map((q) => q.clientEmail).filter(Boolean),
+    ]);
+
+    emails.forEach((emailRaw) => {
+      const email = emailRaw.toLowerCase().trim();
+      if (!email || email === 'customer@demo.com' || email === 'admin@demo.com' || email === 'surveyor@demo.com') return;
+
+      const reg = registered[email] || {};
+      const lead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === email) || {};
+      const quote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === email) || {};
+
+      const existing = existingJobs.find(
+        (j) => (j.customerEmail || j.clientEmail || '').toLowerCase().trim() === email
+      );
+
+      const jobNo = existing?.jobNo || quote.id || (lead.id ? `JOB-${lead.id.replace('LED-', '')}` : 'JOB-2026-880');
+      const property = existing?.property || reg.address || lead.property || quote.property || 'HYDERABAD';
+      const postcode = existing?.postcode || reg.postcode || lead.location || quote.location || 'GH12AA';
+      const customer = existing?.customer || reg.name || lead.customer || quote.clientName || 'abc';
+      const customerPhone = existing?.customerPhone || reg.phone || lead.customerPhone || '1234560789';
+      const surveyType = existing?.surveyType || reg.serviceType || lead.surveyType || quote.surveyType || 'RICS Level 2 Home Survey';
+
+      const isPaid = existing?.paymentStatus === 'Paid' || quote.status === 'Paid' || lead.status === 'Converted';
+      const isSigned = existing?.termsStatus === 'Signed' || quote.termsStatus === 'Signed' || isPaid;
+
+      const isScheduled = existing?.status?.toLowerCase() === 'scheduled' || (existing?.surveyor && existing.surveyor !== 'Pending Allocation' && existing.date && existing.date !== 'Pending Allocation');
+
+      const realJob = {
+        id: existing?.id || jobNo,
+        jobNo: jobNo,
+        date: existing?.date || 'Pending Allocation',
+        timeSlot: existing?.timeSlot || '10:00 AM - 01:00 PM',
+        customer,
+        customerEmail: email,
+        customerPhone,
+        surveyType,
+        property,
+        location: postcode,
+        postcode,
+        surveyor: existing?.surveyor || 'Pending Allocation',
+        surveyorId: existing?.surveyorId || 'srv-1',
+        status: existing?.status || (isScheduled ? 'Scheduled' : 'Action Required'),
+        termsStatus: isSigned ? 'Signed' : 'Pending',
+        paymentStatus: isPaid ? 'Paid' : 'Pending',
+        canBook: isPaid && isSigned,
+        timelineStep: existing?.timelineStep || (isScheduled ? 6 : (isPaid ? 5 : 2)),
+        accessNotes: existing?.accessNotes || 'Customer direct instruction via portal',
+        backendSynced: false,
+      };
+
+      realJobs.push(realJob);
+    });
+
+    return realJobs;
+  } catch (e) {
+    console.error('Error syncing real customer jobs:', e);
+    return [];
+  }
+};
 
 export const getStoredJobs = () => {
   try {
-    if (!localStorage.getItem('njs_fresh_jobs_v2')) {
-      localStorage.setItem('njs_fresh_jobs_v2', 'true');
-      localStorage.setItem('propertygroup_jobs', JSON.stringify(INITIAL_JOBS));
-      return INITIAL_JOBS;
-    }
+    let stored = [];
     const raw = localStorage.getItem('propertygroup_jobs');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        stored = parsed;
       }
     }
+
+    const realCustomerJobs = syncRealCustomerJobs(stored);
+
+    // Filter out dummy demo jobs (Emma Watson, Oliver Vance, etc.)
+    const nonDummyStored = stored.filter((j) => {
+      const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+      return (
+        email !== 'customer@demo.com' &&
+        email !== 'customer2@demo.com' &&
+        email !== 'oliver.vance@example.com' &&
+        email !== 'charlotte.b@outlook.com'
+      );
+    });
+
+    // Merge: real customer jobs first, followed by non-dummy stored
+    const merged = [...realCustomerJobs];
+    nonDummyStored.forEach((j) => {
+      if (!merged.some((m) => m.jobNo === j.jobNo || m.id === j.id)) {
+        merged.push(j);
+      }
+    });
+
+    if (merged.length > 0) {
+      return merged;
+    }
+    return realCustomerJobs;
   } catch (e) {
     console.error(e);
   }
-  return INITIAL_JOBS;
+  return [];
 };
 
 export const saveStoredJobs = (jobs) => {

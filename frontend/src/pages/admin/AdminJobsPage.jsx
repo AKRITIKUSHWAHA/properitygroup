@@ -308,11 +308,16 @@ export const AdminJobsPage = () => {
         if (jobsRes.status === 'fulfilled' && jobsRes.value?.data?.data?.jobs && isMounted) {
           const apiJobs = jobsRes.value.data.data.jobs;
           if (Array.isArray(apiJobs) && apiJobs.length > 0) {
-            const mapped = apiJobs.map(mapBackendJobToFrontend);
-            setJobs((prev) => {
-              const prevFiltered = prev.filter((p) => !mapped.some((m) => m.jobNo === p.jobNo));
-              return [...mapped, ...prevFiltered];
+            const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
+              const email = (bj.customerEmail || '').toLowerCase().trim();
+              return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
             });
+            if (mapped.length > 0) {
+              setJobs((prev) => {
+                const prevFiltered = prev.filter((p) => !mapped.some((m) => m.jobNo === p.jobNo));
+                return [...prevFiltered, ...mapped];
+              });
+            }
           }
         }
 
