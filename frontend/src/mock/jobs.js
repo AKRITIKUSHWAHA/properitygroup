@@ -310,6 +310,12 @@ export const useJobs = () => {
     );
     const token = localStorage.getItem('property_group_auth_token');
     if (token && (updates.stage || updates.status)) {
+      let stageName = (updates.stage || updates.status || '').toUpperCase().replace(/\s+/g, '_');
+      if (['INSPECTED', 'DRAFTING', 'QA_REVIEW'].includes(stageName)) {
+        stageName = 'PREPARING_REPORT';
+      } else if (['COMPLETED', 'DELIVERED'].includes(stageName)) {
+        stageName = 'COMPLETE';
+      }
       fetch(`/api/v1/survey-jobs/${id}/stage`, {
         method: 'PATCH',
         headers: {
@@ -317,7 +323,7 @@ export const useJobs = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          newStage: (updates.stage || updates.status || '').toUpperCase().replace(/\s+/g, '_'),
+          newStage: stageName,
           reason: updates.reason || 'Status updated via UI',
         }),
       }).catch(() => {});
