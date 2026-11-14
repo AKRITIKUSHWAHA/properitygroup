@@ -63,7 +63,7 @@ export const SurveyorDashboardPage = () => {
           // Surveyor live dashboard synced
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   let regUser = {};
@@ -71,7 +71,7 @@ export const SurveyorDashboardPage = () => {
     const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
     const firstEmail = Object.keys(reg).find((e) => !e.includes('demo') && !e.includes('watson'));
     if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
-  } catch {}
+  } catch { }
 
   const primaryJob = activeJobs[0] || myJobs[0] || {
     id: 'JOB-2026-880',
@@ -313,24 +313,23 @@ export const SurveyorDashboardPage = () => {
               </span>
               <span
                 className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider
-                  ${
-                    jobStage === 'scheduled'
-                      ? 'bg-amber-100 text-amber-800'
-                      : jobStage === 'arrived'
+                  ${jobStage === 'scheduled'
+                    ? 'bg-amber-100 text-amber-800'
+                    : jobStage === 'arrived'
                       ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-300'
                       : jobStage === 'completed'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-purple-100 text-purple-800'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-purple-100 text-purple-800'
                   }
                 `}
               >
                 {jobStage === 'scheduled'
                   ? 'Upcoming (En Route)'
                   : jobStage === 'arrived'
-                  ? 'On-Site (Inspecting)'
-                  : jobStage === 'completed'
-                  ? 'Inspection Concluded'
-                  : 'Submitted for QA'}
+                    ? 'On-Site (Inspecting)'
+                    : jobStage === 'completed'
+                      ? 'Inspection Concluded'
+                      : 'Submitted for QA'}
               </span>
             </div>
 
@@ -406,11 +405,10 @@ export const SurveyorDashboardPage = () => {
             {/* Button 1: Log Arrival */}
             <button
               onClick={handleLogArrival}
-              className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
-                jobStage === 'arrived' || jobStage === 'completed' || jobStage === 'qa_submitted'
+              className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${jobStage === 'arrived' || jobStage === 'completed' || jobStage === 'qa_submitted'
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              }`}
+                }`}
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>
@@ -424,13 +422,12 @@ export const SurveyorDashboardPage = () => {
             <button
               onClick={handleInspectionComplete}
               disabled={jobStage === 'scheduled'}
-              className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
-                jobStage === 'completed' || jobStage === 'qa_submitted'
+              className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${jobStage === 'completed' || jobStage === 'qa_submitted'
                   ? 'bg-blue-50 text-blue-900 border border-blue-300'
                   : jobStage === 'arrived'
-                  ? 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
+                    ? 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                }`}
             >
               <Check className="w-4 h-4" />
               <span>
@@ -508,11 +505,10 @@ export const SurveyorDashboardPage = () => {
           <button
             onClick={handleSubmitQA}
             disabled={isQASubmitted}
-            className={`px-5 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-md ${
-              isQASubmitted
+            className={`px-5 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer shadow-md ${isQASubmitted
                 ? 'bg-purple-200 text-purple-900 cursor-not-allowed'
                 : 'bg-purple-700 hover:bg-purple-800 text-white'
-            }`}
+              }`}
           >
             <ShieldCheck className="w-4 h-4" />
             <span>{isQASubmitted ? 'Submitted for QA Review ✓' : 'Submit for Quality Review'}</span>

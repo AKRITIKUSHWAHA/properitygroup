@@ -177,12 +177,12 @@ export const CustomerDashboardPage = () => {
 
   // Dynamically isolated recent reports for current customer
   const recentReports = completedReports.map((j) => ({
-    id: `RPT-${j.id.replace('JOB-2026-', '')}`,
-    title: `RICS_${j.surveyType?.replace(/[^a-zA-Z0-9]/g, '_')}_${j.property?.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
-    property: `${j.property}, ${j.location}`,
-    date: j.date || '27/10/2026',
+    id: `RPT-${(j?.id || '880').toString().replace('JOB-2026-', '')}`,
+    title: `RICS_${(j?.surveyType || 'Survey').toString().replace(/[^a-zA-Z0-9]/g, '_')}_${(j?.property || 'Property').toString().replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+    property: `${j?.property || 'Property'}${j?.location ? `, ${j.location}` : ''}`,
+    date: j?.date || '27/10/2026',
     size: '14.2 MB',
-    surveyor: j.surveyor || 'David Thorne MRICS',
+    surveyor: j?.surveyor || 'David Thorne MRICS',
     status: 'Certified Copy',
   }));
 
