@@ -247,7 +247,7 @@ export const Table = ({
                             key={col.key || colIdx}
                             className={`py-3 px-3 sm:px-3.5 lg:px-4 text-xs text-slate-700 ${col.className || ''}`}
                           >
-                            {col.render ? col.render(val, row) : val}
+                            {col.render ? col.render(val, row, rowIdx) : val}
                           </td>
                         );
                       })}

@@ -157,12 +157,16 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
   };
 
   return (
-    <div className="relative inline-block text-left">
+    <div className="relative inline-block text-left" ref={menuRef}>
       <button
-        ref={buttonRef}
         type="button"
-        onClick={handleToggle}
-        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+          isOpen ? 'bg-blue-100 text-[#0B1F4D] ring-2 ring-blue-300' : 'text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100'
+        }`}
         title="Job actions"
         aria-label="Job actions"
       >
@@ -171,15 +175,7 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
 
       {isOpen && (
         <div
-          ref={menuRef}
-          style={{
-            position: 'fixed',
-            top: coords.top !== null ? `${coords.top}px` : 'auto',
-            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
-            right: `${coords.right}px`,
-            zIndex: 9999,
-          }}
-          className="w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+          className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left"
         >
           {/* Primary View Action */}
           <button

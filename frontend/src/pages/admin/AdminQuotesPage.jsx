@@ -31,6 +31,7 @@ import { downloadInvoicePDF } from '../../utils/pdfGenerator';
 // 3-Dot Clean Action Dropdown Menu for each Quotation
 const QuoteRowActions = ({
   quote,
+  isNearBottom = false,
   onView,
   onEdit,
   onMarkPaid,
@@ -40,19 +41,12 @@ const QuoteRowActions = ({
   onOpenClientProfile,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [coords, setCoords] = useState({ top: null, bottom: null, right: 0 });
   const menuRef = useRef(null);
-  const buttonRef = useRef(null);
   const { addToast } = useToast();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target)
-      ) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
@@ -64,34 +58,6 @@ const QuoteRowActions = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
-
-  const handleToggle = (e) => {
-    e.stopPropagation();
-    if (!isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const menuHeight = 290;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      // Only open upwards if space below is insufficient AND space above is sufficient
-      const openUpwards = spaceBelow < menuHeight && spaceAbove >= menuHeight;
-
-      let top = null;
-      let bottom = null;
-
-      if (openUpwards) {
-        bottom = Math.max(10, Math.round(window.innerHeight - rect.top + 4));
-      } else {
-        top = Math.max(10, Math.min(Math.round(rect.bottom + 4), window.innerHeight - menuHeight - 10));
-      }
-
-      setCoords({
-        top,
-        bottom,
-        right: Math.max(16, Math.round(window.innerWidth - rect.right)),
-      });
-    }
-    setIsOpen((prev) => !prev);
-  };
 
   const handleCopy = (e, text, label) => {
     e.stopPropagation();
@@ -107,12 +73,16 @@ const QuoteRowActions = ({
   const isPaid = quote.status === 'Paid';
 
   return (
-    <div className="relative inline-block text-right">
+    <div className="relative inline-block text-right" ref={menuRef}>
       <button
-        ref={buttonRef}
         type="button"
-        onClick={handleToggle}
-        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+          isOpen ? 'bg-blue-100 text-[#0B1F4D] shadow-inner ring-2 ring-blue-300' : 'text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100'
+        }`}
         title="Quotation actions"
         aria-label="Quotation actions"
       >
@@ -121,15 +91,9 @@ const QuoteRowActions = ({
 
       {isOpen && (
         <div
-          ref={menuRef}
-          style={{
-            position: 'fixed',
-            top: coords.top !== null ? `${coords.top}px` : 'auto',
-            bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
-            right: `${coords.right}px`,
-            zIndex: 9999,
-          }}
-          className="w-52 sm:w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left"
+          className={`absolute right-0 ${
+            isNearBottom ? 'bottom-full mb-1' : 'top-full mt-1'
+          } w-52 sm:w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left`}
         >
           {/* Primary View Action */}
           <button
@@ -957,9 +921,10 @@ export const AdminQuotesPage = () => {
       key: 'actions',
       header: 'Actions', sortable: false, headerClassName: 'text-right w-[8%] min-w-[44px]',
       className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
-      render: (_, row) => (
+      render: (_, row, rowIdx) => (
         <QuoteRowActions
           quote={row}
+          isNearBottom={typeof rowIdx === 'number' && rowIdx >= 5}
           onView={(q) => setSelectedQuoteDetail(q)}
           onEdit={handleOpenEditQuoteModal}
           onMarkPaid={handleMarkPaid}
