@@ -109,6 +109,58 @@ export const TERMS_TEMPLATES = [
     ],
   },
   {
+    id: 'tmpl-l2-val',
+    serviceKey: 'Level 2 with Valuation',
+    aliases: ['level 2 with valuation', 'homebuyer with valuation', 'l2 valuation', '07_level_2'],
+    name: 'RICS Level 2 Home Survey with Valuation Terms of Engagement',
+    shortName: 'Level 2 with Valuation Terms',
+    version: 'v2026.2 (10 November 2026 Edition)',
+    year: '2026',
+    governingBody: 'Royal Institution of Chartered Surveyors (RICS Home Survey Standard & Global Valuation Standards)',
+    piiCap: '£500,000 Professional Indemnity Cover (£1m firm policy)',
+    summary: 'Visual condition survey combined with formal RICS Red Book Market Valuation (VPS 4). Includes building fabric assessment, condition ratings, reinstatement cost assessment, and Land Registry comparable evidence.',
+    isExpertWitness: false,
+    orderFormDefaults: {
+      serviceTitle: 'Service Level 2 and Red Book Market Valuation | Version 10 November 2026',
+      liabilityLimit: '£500,000 per claim or subject property market valuation',
+      cancellationPeriod: '14-day statutory consumer cancellation right',
+      complaintsContact: 'Natasha Shergill (info@njspropertygroup.com / 07444 918809 / 0333 305 2777)',
+      adrEntity: 'CEDR (Centre for Effective Dispute Resolution)',
+    },
+    clauses: [
+      {
+        num: '1',
+        title: 'Joint Condition Inspection & Red Book Valuation Mandate',
+        text: 'This agreement integrates both the RICS Home Survey Standard (Level 2 visual condition inspection) and formal Red Book Market Valuation under RICS Valuation – Global Standards (effective 31 January 2025). NJS Property Group Ltd is your contracting supplier and remains fully accountable for all deliverables.',
+      },
+      {
+        num: '2',
+        title: 'Condition Survey Scope & Ratings (1-3)',
+        text: 'We inspect accessible interior and exterior building fabric, visible roof trusses, sub-floor crawl-spaces (by head-and-shoulders inspection), and permanent outbuildings. Defects are categorized using RICS Condition Ratings 1 (no repair), 2 (defects requiring attention), and 3 (serious/urgent defects requiring immediate remedial action).',
+      },
+      {
+        num: '3',
+        title: 'Market Valuation Basis (VPS 4 & IVS)',
+        text: 'The Market Valuation is prepared by an accredited RICS Registered Valuer on the basis of Market Value (IVS). Market Value represents the estimated amount for which the property should exchange on the valuation date between a willing buyer and willing seller in an arm’s-length transaction. Reinstatement Cost Assessment (insurance rebuilding cost) is included.',
+      },
+      {
+        num: '4',
+        title: 'Assumptions, Title & Environmental Factors',
+        text: 'Unless stated otherwise, the surveyor assumes good marketable freehold/leasehold title, absence of onerous covenants, unencumbered rights of way, and freedom from high flood risk, radon, and invasive plant species (Japanese knotweed).',
+      },
+      {
+        num: '5',
+        title: 'Advance Settlement & Statutory Cancellation Rights',
+        text: 'Full survey fees including 20% UK VAT must be settled prior to inspection. Statutory 14-day consumer cancellation rights apply under the Consumer Contracts Regulations. Early inspection commencement waives cancellation rights once reporting is finalized.',
+      },
+      {
+        num: '6',
+        title: 'Complaints & CEDR Redress',
+        text: 'Complaints should be directed to Natasha Shergill at info@njspropertygroup.com. Unresolved complaints may be escalated to CEDR under its independent RICS consumer arbitration scheme.',
+      },
+    ],
+  },
+  {
     id: 'tmpl-l3',
     serviceKey: 'Building L3',
     aliases: ['level 3', 'building survey', 'structural', 'full structural', 'comprehensive'],
@@ -167,6 +219,53 @@ export const TERMS_TEMPLATES = [
         num: '8',
         title: 'Complaints Redress & Ombudsman',
         text: 'Complaints must be submitted in writing to Natasha Shergill at info@njspropertygroup.com. Unresolved disputes may be escalated to CEDR under its independent RICS adjudication scheme.',
+      },
+    ],
+  },
+  {
+    id: 'tmpl-l3-val',
+    serviceKey: 'Level 3 with Valuation',
+    aliases: ['level 3 with valuation', 'building survey with valuation', 'l3 valuation', 'structural valuation'],
+    name: 'RICS Level 3 Comprehensive Building Survey with Valuation Terms',
+    shortName: 'Level 3 with Valuation Terms',
+    version: 'v2026.1 (10 November 2026 Edition)',
+    year: '2026',
+    governingBody: 'RICS Technical Guidelines & RICS Valuation – Global Standards',
+    piiCap: '£1,000,000 Full Structural & Valuation Cover',
+    summary: 'Exhaustive structural investigation for complex, altered, or period buildings combined with RICS Red Book Market Valuation (VPS 4). Covers load-bearing masonry, timber pathology, costed remedial budgeting, and Land Registry comparables.',
+    isExpertWitness: false,
+    orderFormDefaults: {
+      serviceTitle: 'Service Level 3 Comprehensive Building Survey & RICS Market Valuation | Version 10 November 2026',
+      liabilityLimit: '£1,000,000 Full Structural & Valuation Indemnity',
+      cancellationPeriod: '14-day statutory consumer cancellation right',
+      complaintsContact: 'Natasha Shergill (info@njspropertygroup.com / 07444 918809 / 0333 305 2777)',
+      adrEntity: 'CEDR (Centre for Effective Dispute Resolution)',
+    },
+    clauses: [
+      {
+        num: '1',
+        title: 'Full Structural Audit & Valuation Integration',
+        text: 'Level 3 with Valuation provides an exhaustive technical structural audit combined with RICS Red Book Market Valuation. Tailored for older, period, altered, or high-value residential assets. Covers load-bearing structures, sub-floor pathology, damp diagnostics, and formal valuation appraisal.',
+      },
+      {
+        num: '2',
+        title: 'Detailed Defect Diagnosis & Remedial Cost Budgeting',
+        text: 'The report determines root causes of structural settlement, thermal bridging, roof degradation, and timber infestation, providing prioritized remedial schedules with indicative budget ranges to aid price negotiations and mortgage decisions.',
+      },
+      {
+        num: '3',
+        title: 'RICS Red Book Valuation (VPS 4 Market Value)',
+        text: 'Market Value is determined under RICS Valuation – Global Standards by a RICS Registered Valuer, supported by Land Registry verified transactions, local planning checks, and leasehold tenure appraisal.',
+      },
+      {
+        num: '4',
+        title: 'Advance Settlement & Professional Liability',
+        text: 'Full survey fees including 20% UK VAT must be settled in advance of site attendance. Professional indemnity cover is maintained at £1,000,000 per claim under English law and Consumer Rights Act 2015.',
+      },
+      {
+        num: '5',
+        title: 'Complaints Redress & Ombudsman',
+        text: 'Written complaints should be submitted to Natasha Shergill at info@njspropertygroup.com. Unresolved disputes may be escalated to CEDR under its independent RICS adjudication process.',
       },
     ],
   },
@@ -389,24 +488,30 @@ export const TERMS_TEMPLATES = [
 
 /**
  * Intelligent Service-to-Template Mapper
- * Matches any input survey type string to the canonical 6 templates
+ * Matches any input survey type string to the canonical 8 legal templates
  */
 export const getTemplateForService = (serviceType = '') => {
   const st = String(serviceType).toLowerCase().trim();
   if (st.includes('expert') || st.includes('cpr') || st.includes('witness') || st.includes('dispute') || st.includes('litigation')) {
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-expert-witness') || TERMS_TEMPLATES[5];
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-expert-witness') || TERMS_TEMPLATES[7];
+  }
+  if ((st.includes('level 3') || st.includes('l3')) && (st.includes('val') || st.includes('market'))) {
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3-val') || TERMS_TEMPLATES[3];
   }
   if (st.includes('level 3') || st.includes('l3') || st.includes('building survey') || st.includes('structural')) {
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3') || TERMS_TEMPLATES[1];
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3') || TERMS_TEMPLATES[2];
+  }
+  if ((st.includes('level 2') || st.includes('l2')) && (st.includes('val') || st.includes('market'))) {
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l2-val') || TERMS_TEMPLATES[1];
   }
   if (st.includes('valuation') || st.includes('red book') || st.includes('help to buy') || st.includes('probate')) {
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-valuation') || TERMS_TEMPLATES[3];
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-valuation') || TERMS_TEMPLATES[4];
   }
   if (st.includes('damp') || st.includes('timber') || st.includes('moisture') || st.includes('woodworm') || st.includes('rot')) {
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-damp') || TERMS_TEMPLATES[4];
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-damp') || TERMS_TEMPLATES[5];
   }
   if (st.includes('snagging') || st.includes('defect') || st.includes('new build')) {
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-snagging') || TERMS_TEMPLATES[2];
+    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-snagging') || TERMS_TEMPLATES[6];
   }
   // Default to Level 2
   return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l2') || TERMS_TEMPLATES[0];
@@ -467,10 +572,15 @@ export const createAutoFilledAgreement = ({
     isExpertWitness: isEW,
     hourlyRate: customFields.hourlyRate !== undefined ? customFields.hourlyRate : (ewDefaults.hourlyRate || 250.0),
     courtDailyFee: customFields.courtDailyFee !== undefined ? customFields.courtDailyFee : (ewDefaults.courtDailyFee || 1500.0),
+    courtHalfDayFee: customFields.courtHalfDayFee !== undefined ? customFields.courtHalfDayFee : Math.round((customFields.courtDailyFee || ewDefaults.courtDailyFee || 1500.0) / 2),
     instructingSolicitor: customFields.instructingSolicitor || ewDefaults.instructingSolicitor || '',
     courtClaimNumber: customFields.courtClaimNumber || ewDefaults.courtClaimNumber || '',
     courtForum: customFields.courtForum || ewDefaults.courtForum || 'County Court at Central London',
     appointmentRoute: customFields.appointmentRoute || ewDefaults.appointmentRoute || 'Single Joint Expert (SJE)',
+    disputeScope: customFields.disputeScope || '',
+    declaredPurpose: customFields.declaredPurpose || '',
+    specificFocusAreas: customFields.specificFocusAreas || '',
+    customClausesText: customFields.customClausesText || '',
     notes: customFields.notes || '',
   };
 };

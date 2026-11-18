@@ -16,7 +16,10 @@ import {
   Gavel,
   ShieldCheck,
   ChevronRight,
-  Info
+  Info,
+  Clock,
+  FileText,
+  Plus,
 } from 'lucide-react';
 import { useToast } from '../ToastContext';
 import { TERMS_TEMPLATES, getTemplateForService, createAutoFilledAgreement, useTerms } from '../../mock/terms';
@@ -33,7 +36,7 @@ export const SendTermsModal = ({
   const { jobs, updateJob } = useJobs();
   const { addAgreement } = useTerms();
 
-  const [activeTab, setActiveTab] = useState('particulars'); // 'particulars' | 'expert-witness' | 'preview'
+  const [activeTab, setActiveTab] = useState('particulars'); // 'particulars' | 'blanks' | 'preview'
   const [selectedJobId, setSelectedJobId] = useState(job ? job.id : '');
 
   // Active job reference (either passed via prop or picked from dropdown)
@@ -50,7 +53,7 @@ export const SendTermsModal = ({
   });
 
   const selectedTemplate = useMemo(() => {
-    return TERMS_TEMPLATES.find((t) => t.serviceKey === selectedTemplateKey) || TERMS_TEMPLATES[0];
+    return TERMS_TEMPLATES.find((t) => t.serviceKey === selectedTemplateKey || t.id === selectedTemplateKey) || TERMS_TEMPLATES[0];
   }, [selectedTemplateKey]);
 
   // Form Particulars
@@ -62,15 +65,23 @@ export const SendTermsModal = ({
   const [postcode, setPostcode] = useState('');
   const [baseFee, setBaseFee] = useState(700.0);
   const [selectedSurveyor, setSelectedSurveyor] = useState(SURVEYORS[0].name);
+  const [turnaroundTime, setTurnaroundTime] = useState('48 business hours from inspection');
   const [notes, setNotes] = useState('');
 
-  // Expert Witness Editable Blanks
+  // Expert Witness Editable Blanks (CPR Part 35)
   const [hourlyRate, setHourlyRate] = useState(250.0);
   const [courtDailyFee, setCourtDailyFee] = useState(1500.0);
+  const [courtHalfDayFee, setCourtHalfDayFee] = useState(750.0);
   const [instructingSolicitor, setInstructingSolicitor] = useState('');
   const [courtClaimNumber, setCourtClaimNumber] = useState('');
   const [courtForum, setCourtForum] = useState('County Court at Central London');
   const [appointmentRoute, setAppointmentRoute] = useState('Single Joint Expert (SJE)');
+  const [disputeScope, setDisputeScope] = useState('');
+
+  // Specialist Survey & Custom Bespoke Blanks
+  const [declaredPurpose, setDeclaredPurpose] = useState('Pre-acquisition Condition Assessment');
+  const [specificFocusAreas, setSpecificFocusAreas] = useState('');
+  const [customClausesText, setCustomClausesText] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,6 +107,9 @@ export const SendTermsModal = ({
       }
       if (currentJob.contacts?.solicitor?.ref) {
         setCourtClaimNumber(`Ref: ${currentJob.contacts.solicitor.ref}`);
+      }
+      if (currentJob.accessNotes) {
+        setNotes(currentJob.accessNotes);
       }
     }
   }, [currentJob, initialTemplateKey]);
@@ -137,13 +151,23 @@ export const SendTermsModal = ({
         title: 'Instructing Solicitor Required',
         message: 'CPR Part 35 Expert Witness Mandate requires the Instructing Solicitor Firm name.',
       });
-      setActiveTab('expert-witness');
+      setActiveTab('blanks');
+      return;
+    }
+
+    if (isEW && !courtClaimNumber.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Court & Claim Ref Required',
+        message: 'Please enter the Court Claim Number or Case Reference for the Expert Witness mandate.',
+      });
+      setActiveTab('blanks');
       return;
     }
 
     setIsSubmitting(true);
 
-    // Build complete agreement object
+    // Build complete agreement object with all manually edited blanks & custom clauses
     const agreement = createAutoFilledAgreement({
       job: {
         id: currentJob?.id || `JOB-2026-${Math.floor(100 + Math.random() * 900)}`,
@@ -162,10 +186,16 @@ export const SendTermsModal = ({
       customFields: {
         hourlyRate: Number(hourlyRate),
         courtDailyFee: Number(courtDailyFee),
+        courtHalfDayFee: Number(courtHalfDayFee || Math.round(courtDailyFee / 2)),
         instructingSolicitor,
         courtClaimNumber,
         courtForum,
         appointmentRoute,
+        disputeScope,
+        declaredPurpose,
+        specificFocusAreas,
+        customClausesText,
+        turnaroundTime,
         notes,
       },
     });
@@ -236,6 +266,11 @@ export const SendTermsModal = ({
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-400 text-[#0B1F4D]">
                   {selectedTemplate.shortName}
                 </span>
+                {isEW && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-amber-950">
+                    CPR Part 35
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
                 {selectedTemplate.governingBody} &bull; {selectedTemplate.version}
@@ -267,21 +302,23 @@ export const SendTermsModal = ({
             <span>1. Contract Particulars &amp; Auto-Fill</span>
           </button>
 
-          {isEW && (
-            <button
-              type="button"
-              onClick={() => setActiveTab('expert-witness')}
-              className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all -mb-px flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'expert-witness'
+          <button
+            type="button"
+            onClick={() => setActiveTab('blanks')}
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all -mb-px flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'blanks'
+                ? isEW
                   ? 'border-amber-500 text-amber-900 bg-white rounded-t-xl'
-                  : 'border-transparent text-amber-700 hover:text-amber-900'
-              }`}
-            >
-              <Scale className="w-3.5 h-3.5 text-amber-600" />
-              <span>2. CPR Part 35 Blanks &amp; Court Rates</span>
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            </button>
-          )}
+                  : 'border-[#2563EB] text-[#0B1F4D] bg-white rounded-t-xl'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Scale className={`w-3.5 h-3.5 ${isEW ? 'text-amber-600' : 'text-[#2563EB]'}`} />
+            <span>
+              {isEW ? '2. CPR Part 35 Rates & Court Blanks' : '2. Pre-Dispatch Blanks & Custom Clauses'}
+            </span>
+            {isEW && <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+          </button>
 
           <button
             type="button"
@@ -301,7 +338,7 @@ export const SendTermsModal = ({
         <div className="p-5 sm:p-6 overflow-y-auto flex-1 text-xs">
           {/* TAB 1: CONTRACT PARTICULARS & AUTO-FILL */}
           {activeTab === 'particulars' && (
-            <form onSubmit={handleSend} className="space-y-4">
+            <div className="space-y-4">
               {/* Linked Job Selection (if not locked to a specific job) */}
               {!job && (
                 <div>
@@ -322,10 +359,10 @@ export const SendTermsModal = ({
                 </div>
               )}
 
-              {/* Service Template Selector */}
+              {/* Service Template Selector (All 8 Official Templates) */}
               <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl">
                 <label className="block font-bold text-[#0B1F4D] mb-1">
-                  Active Legal Template (Exact Terms from Client Word Documents)
+                  Active Legal Template (All 8 Client Integrated Contracts)
                 </label>
                 <select
                   value={selectedTemplateKey}
@@ -347,7 +384,7 @@ export const SendTermsModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Client Full Legal Name * (Auto-filled)
+                    Client Full Legal Name * (Auto-filled / Editable)
                   </label>
                   <input
                     type="text"
@@ -405,7 +442,7 @@ export const SendTermsModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Base Professional Fee (£ excl. VAT) *
+                    Base Professional Fee (£ excl. VAT) * (Editable)
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
@@ -444,155 +481,326 @@ export const SendTermsModal = ({
                 </div>
               </div>
 
+              {/* Turnaround & SLA */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Client Telephone Contact
+                  </label>
+                  <input
+                    type="text"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Report Turnaround SLA Target
+                  </label>
+                  <input
+                    type="text"
+                    value={turnaroundTime}
+                    onChange={(e) => setTurnaroundTime(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
+                  />
+                </div>
+              </div>
+
               {/* Notes */}
               <div>
                 <label className="block font-bold text-slate-700 mb-1">
-                  Specific Inspection Instructions &amp; Caveats (Optional)
+                  Specific Property Access Instructions (Optional)
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. Sub-floor void access subject to vendor clearance. Report delivered within 48h."
+                  placeholder="e.g. Key collection with agent or vendor present on site. Full loft access cleared."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 resize-none"
                 />
               </div>
 
-              {isEW && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-amber-700 shrink-0" />
-                    <span className="text-amber-900 font-bold text-[11px]">
-                      Expert Witness Mandate selected: Please complete CPR Part 35 Court rates and Solicitor blanks.
+              {/* Callout to Tab 2 for blanks editing */}
+              <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
+                isEW ? 'bg-amber-50 border-amber-300' : 'bg-blue-50 border-blue-200'
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  <Scale className={`w-4 h-4 shrink-0 ${isEW ? 'text-amber-700' : 'text-blue-700'}`} />
+                  <div>
+                    <span className={`font-bold text-xs block ${isEW ? 'text-amber-950' : 'text-[#0B1F4D]'}`}>
+                      {isEW ? 'CPR Part 35 Rates & Court Blanks Required' : 'Pre-Dispatch Blanks & Custom Clauses Available'}
                     </span>
+                    <p className={`text-[11px] ${isEW ? 'text-amber-800' : 'text-slate-600'}`}>
+                      {isEW
+                        ? 'Enter hourly rate (£/hr), court daily fee (£/day), and solicitor particulars.'
+                        : 'You can customize valuation purpose, inspection focus, or add bespoke contract clauses.'}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('expert-witness')}
-                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shrink-0 transition-colors cursor-pointer"
-                  >
-                    Edit CPR Blanks &rarr;
-                  </button>
                 </div>
-              )}
-            </form>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('blanks')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-xs ${
+                    isEW ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white'
+                  }`}
+                >
+                  Edit Blanks &rarr;
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* TAB 2: CPR PART 35 EXPERT WITNESS EDITABLE BLANKS */}
-          {activeTab === 'expert-witness' && isEW && (
+          {/* TAB 2: PRE-DISPATCH EDITABLE BLANKS & BESPOKE CLAUSES */}
+          {activeTab === 'blanks' && (
             <div className="space-y-4">
-              <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-1">
-                <div className="flex items-center gap-2 font-bold text-amber-950 text-xs">
-                  <Gavel className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Civil Procedure Rules (CPR Part 35) Mandate Blanks</span>
+              {/* Header Box based on Template Type */}
+              {isEW ? (
+                <div className="p-3.5 bg-amber-50/90 border border-amber-300 rounded-2xl space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-amber-950 text-xs">
+                    <Gavel className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>CPR Part 35 Expert Witness Mandatory Litigation Blanks</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Under Civil Procedure Rules and client instructions, enter the specific hourly rates, court refresher fees, and litigation particulars before sending to the client.
+                  </p>
                 </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  As required by the client’s legal mandate, complete the litigation rates, instructing solicitor firm, and court claim details prior to issuing this contract.
-                </p>
-              </div>
+              ) : (
+                <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-[#0B1F4D] text-xs">
+                    <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
+                    <span>Specialist Service Particulars &amp; Bespoke Clauses</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Add specific instructions, declared valuation purpose, or custom bespoke clauses before dispatching the terms to {signerEmail}.
+                  </p>
+                </div>
+              )}
 
-              {/* Hourly Rate & Court Daily Refresher */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Expert Witness Hourly Rate (£/hr excl. VAT) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
-                    <input
-                      type="number"
-                      step="1"
-                      required
-                      value={hourlyRate}
-                      onChange={(e) => setHourlyRate(Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+              {/* EXPERT WITNESS FIELDS */}
+              {isEW && (
+                <>
+                  {/* Hourly Rate & Court Daily Refresher */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Hourly Rate (£/hr excl. VAT) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
+                        <input
+                          type="number"
+                          step="1"
+                          required
+                          value={hourlyRate}
+                          onChange={(e) => setHourlyRate(Number(e.target.value))}
+                          className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-500 mt-1 block">Default: £250.00/hr</span>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Court Daily Fee (£/day excl. VAT) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
+                        <input
+                          type="number"
+                          step="1"
+                          required
+                          value={courtDailyFee}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setCourtDailyFee(val);
+                            setCourtHalfDayFee(Math.round(val / 2));
+                          }}
+                          className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-500 mt-1 block">Default: £1,500.00/day</span>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Court Half-Day Fee (£/half-day) *
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
+                        <input
+                          type="number"
+                          step="1"
+                          required
+                          value={courtHalfDayFee}
+                          onChange={(e) => setCourtHalfDayFee(Number(e.target.value))}
+                          className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-500 mt-1 block">Auto: 50% of full day</span>
+                    </div>
+                  </div>
+
+                  {/* Instructing Solicitor & Claim Number */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Instructing Solicitor Firm &amp; Lead Solicitor *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Herbert Smith Freehills LLP (Lead: Sarah Jenkins)"
+                        value={instructingSolicitor}
+                        onChange={(e) => setInstructingSolicitor(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Court &amp; Claim / Case Reference Number *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. County Court at Central London, Claim No. F00CL891"
+                        value={courtClaimNumber}
+                        onChange={(e) => setCourtClaimNumber(e.target.value)}
+                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Court Forum & Appointment Route */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Court / Judicial Forum
+                      </label>
+                      <input
+                        type="text"
+                        value={courtForum}
+                        onChange={(e) => setCourtForum(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Appointment Route (CPR 35.7 / 35.8)
+                      </label>
+                      <select
+                        value={appointmentRoute}
+                        onChange={(e) => setAppointmentRoute(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      >
+                        <option value="Single Joint Expert (SJE)">Single Joint Expert (SJE) — Joint appointment</option>
+                        <option value="Party-Appointed Expert">Party-Appointed Expert (Instructed on behalf of Claimant/Defendant)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Scope of Dispute */}
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Dispute Issues &amp; Questions for the Expert (CPR 35 Mandate Scope)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Causation analysis of cracking to party wall, damp ingress through basement lightwell, and quantum assessment of remedial underpinning."
+                      value={disputeScope}
+                      onChange={(e) => setDisputeScope(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
                     />
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1 block">Default scale: £250.00/hr</span>
-                </div>
+                </>
+              )}
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Court Attendance Daily Refresher (£/day excl. VAT) *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">£</span>
+              {/* NON-EW SPECIALIST SERVICE FIELDS */}
+              {!isEW && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Declared Purpose of Report / Valuation
+                    </label>
                     <input
-                      type="number"
-                      step="1"
-                      required
-                      value={courtDailyFee}
-                      onChange={(e) => setCourtDailyFee(Number(e.target.value))}
-                      className="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                      type="text"
+                      placeholder="e.g. Help-to-Buy redemption, Probate / HMRC, Pre-acquisition condition audit"
+                      value={declaredPurpose}
+                      onChange={(e) => setDeclaredPurpose(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
                     />
                   </div>
-                  <span className="text-[10px] text-slate-500 mt-1 block">Default scale: £1,500.00/day</span>
-                </div>
-              </div>
 
-              {/* Instructing Solicitor & Claim Number */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Special Investigation Focus Areas
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Moisture readings behind kitchen extension, roof chimney stack, sub-floor crawl space"
+                      value={specificFocusAreas}
+                      onChange={(e) => setSpecificFocusAreas(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* BESPOKE ADDITIONAL CLAUSES (FOR ALL 8 TEMPLATES) */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Instructing Solicitor Firm &amp; Lead Solicitor *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Herbert Smith Freehills LLP (Lead: Sarah Jenkins)"
-                    value={instructingSolicitor}
-                    onChange={(e) => setInstructingSolicitor(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="block font-bold text-[#0B1F4D] text-xs">
+                      Additional Bespoke Clauses &amp; Custom Conditions (Optional)
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      Appended as Clause {selectedTemplate.clauses.length + 1}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Enter any tailored clauses, special access caveats, or bespoke payment terms. These will be officially incorporated into the legal agreement.
+                  </p>
                 </div>
 
+                <textarea
+                  rows={3}
+                  placeholder="e.g. 1. Client confirmed owner has cleared access to sub-floor void. 2. 50% deposit required prior to physical attendance. 3. Verbal debrief consultation included within 2 hours of site completion."
+                  value={customClausesText}
+                  onChange={(e) => setCustomClausesText(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 leading-relaxed font-sans resize-y min-h-[70px]"
+                />
+
+                {/* Quick Add Clause Chips */}
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Court &amp; Claim / Case Reference Number *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. County Court at Central London, Claim No. F00CL891"
-                    value={courtClaimNumber}
-                    onChange={(e) => setCourtClaimNumber(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                  />
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Quick Insert Standard Clauses:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      'Clear access to loft void & sub-floor required',
+                      'High-level drone roof inspection included',
+                      '50% advance booking deposit required',
+                      'Verbal post-inspection telephone debrief within 2 hours',
+                      'Re-inspection fee of £180 applies if property inaccessible',
+                    ].map((snippet) => (
+                      <button
+                        key={snippet}
+                        type="button"
+                        onClick={() => {
+                          setCustomClausesText((prev) =>
+                            prev ? `${prev.trim()}\n• ${snippet}` : `• ${snippet}`
+                          );
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-700 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                      >
+                        <span>+ {snippet}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Court Forum & Appointment Route */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Court / Judicial Forum
-                  </label>
-                  <input
-                    type="text"
-                    value={courtForum}
-                    onChange={(e) => setCourtForum(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Appointment Route (CPR 35.7 / 35.8)
-                  </label>
-                  <select
-                    value={appointmentRoute}
-                    onChange={(e) => setAppointmentRoute(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                  >
-                    <option value="Single Joint Expert (SJE)">Single Joint Expert (SJE) — Joint appointment</option>
-                    <option value="Party-Appointed Expert">Party-Appointed Expert (Instructed on behalf of Claimant/Defendant)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
-                <span className="font-bold text-[#0B1F4D] block mb-0.5">CPR 35.3 Statutory Overriding Duty:</span>
-                The expert witness’s overriding duty is to the Court and supersedes any private instruction or fee payment. By issuing this mandate, both NJS Property Group Ltd and the instructing solicitor confirm compliance.
               </div>
             </div>
           )}
@@ -613,13 +821,13 @@ export const SendTermsModal = ({
                 </p>
               </div>
 
-              {/* Auto-filled Order Particulars Table */}
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+              {/* Auto-filled & Edited Order Particulars Table */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2">
                 <span className="text-[10px] font-bold text-[#0B1F4D] uppercase tracking-wider block border-b border-slate-100 pb-1">
                   1. Order Particulars &amp; Instruction Schedule
                 </span>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-[11px]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px]">
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase">Client / Instructing Party:</span>
                     <span className="font-bold text-slate-900">{clientName || '[Client Name]'}</span>
@@ -650,6 +858,11 @@ export const SendTermsModal = ({
                     <span className="font-bold text-[#0B1F4D]">{selectedSurveyor}</span>
                   </div>
 
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase">Delivery SLA:</span>
+                    <span className="font-semibold text-slate-700">{turnaroundTime}</span>
+                  </div>
+
                   {isEW && (
                     <>
                       <div>
@@ -661,19 +874,50 @@ export const SendTermsModal = ({
                         <span className="font-mono font-bold text-slate-800">{courtClaimNumber || '[Claim Number]'}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase">Hourly / Daily Rates:</span>
-                        <span className="font-mono font-bold text-slate-900">£{hourlyRate}/hr &bull; £{courtDailyFee}/day</span>
+                        <span className="text-slate-400 block text-[10px] uppercase">Hourly Rate:</span>
+                        <span className="font-mono font-bold text-slate-900">£{hourlyRate}/hr + VAT</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase">Court Attendance:</span>
+                        <span className="font-mono font-bold text-slate-900">£{courtDailyFee}/day (Half: £{courtHalfDayFee})</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase">Appointment Route:</span>
                         <span className="font-bold text-slate-900">{appointmentRoute}</span>
                       </div>
+                      {disputeScope && (
+                        <div className="sm:col-span-3">
+                          <span className="text-slate-400 block text-[10px] uppercase">Dispute Scope:</span>
+                          <span className="text-slate-800 italic">{disputeScope}</span>
+                        </div>
+                      )}
                     </>
+                  )}
+
+                  {!isEW && declaredPurpose && (
+                    <div>
+                      <span className="text-slate-400 block text-[10px] uppercase">Declared Purpose:</span>
+                      <span className="font-semibold text-slate-800">{declaredPurpose}</span>
+                    </div>
+                  )}
+
+                  {!isEW && specificFocusAreas && (
+                    <div className="sm:col-span-2">
+                      <span className="text-slate-400 block text-[10px] uppercase">Inspection Focus:</span>
+                      <span className="font-semibold text-slate-800">{specificFocusAreas}</span>
+                    </div>
+                  )}
+
+                  {customClausesText && (
+                    <div className="sm:col-span-3 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200">
+                      <span className="text-amber-800 block text-[10px] uppercase font-bold">Bespoke Agreed Conditions:</span>
+                      <span className="text-slate-800 whitespace-pre-line text-[11px]">{customClausesText}</span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Exact Clauses List */}
+              {/* Exact Clauses List with live substitution */}
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-[#0B1F4D] uppercase tracking-wider block">
                   2. Terms of Engagement &amp; Statutory Clauses
@@ -692,14 +936,30 @@ export const SendTermsModal = ({
                         {clause.text
                           .replace('[HOURLY_RATE]', String(hourlyRate))
                           .replace('[COURT_DAILY_FEE]', String(courtDailyFee))
-                          .replace('[COURT_HALF_DAY]', String(Math.round(courtDailyFee / 2)))
+                          .replace('[COURT_HALF_DAY]', String(courtHalfDayFee || Math.round(courtDailyFee / 2)))
                           .replace('[INSTRUCTING_SOLICITOR]', instructingSolicitor || '[Instructing Solicitor Firm]')
                           .replace('[COURT_CLAIM_NUMBER]', courtClaimNumber || '[Court Claim No.]')
                           .replace('[COURT_FORUM]', courtForum)
-                          .replace('[APPOINTMENT_ROUTE]', appointmentRoute)}
+                          .replace('[APPOINTMENT_ROUTE]', appointmentRoute)
+                          .replace('[DISPUTE_SCOPE]', disputeScope || '[Agreed Scope of Expert Evidence]')}
                       </p>
                     </div>
                   ))}
+
+                  {/* Appended Bespoke Clause if Admin added custom conditions */}
+                  {customClausesText.trim() && (
+                    <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-300 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 font-mono">
+                          Clause {selectedTemplate.clauses.length + 1}
+                        </span>
+                        <span className="font-bold text-amber-950 text-xs">Special Agreed Conditions &amp; Bespoke Instructions</span>
+                      </div>
+                      <p className="text-amber-900 leading-relaxed text-[11px] whitespace-pre-line font-medium">
+                        {customClausesText}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -725,13 +985,23 @@ export const SendTermsModal = ({
           </button>
 
           <div className="flex items-center gap-2">
+            {activeTab === 'particulars' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('blanks')}
+                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <span>Edit Blanks &rarr;</span>
+              </button>
+            )}
+
             {activeTab !== 'preview' ? (
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
               >
-                <Eye className="w-3.5 h-3.5" />
+                <Eye className="w-3.5 h-3.5 text-sky-300" />
                 <span>Preview Legal Terms</span>
               </button>
             ) : (
@@ -740,7 +1010,7 @@ export const SendTermsModal = ({
                 onClick={() => setActiveTab('particulars')}
                 className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
               >
-                <span>Edit Particulars</span>
+                <span>&larr; Back to Particulars</span>
               </button>
             )}
 
@@ -748,9 +1018,9 @@ export const SendTermsModal = ({
               type="button"
               onClick={handleSend}
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-60 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-[#0B1F4D]/20 cursor-pointer transition-all"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
             >
-              <Send className="w-3.5 h-3.5 text-sky-400" />
+              <Send className="w-3.5 h-3.5 text-white" />
               <span>{isSubmitting ? 'Dispatching Terms...' : 'Dispatch Agreement Now'}</span>
             </button>
           </div>
