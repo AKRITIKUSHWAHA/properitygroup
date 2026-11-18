@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Mail,
@@ -14,6 +14,7 @@ import {
   Edit3,
   Sparkles,
   Tag,
+  RotateCcw,
 } from 'lucide-react';
 import { useToast } from '../ToastContext';
 
@@ -22,6 +23,7 @@ export const EmailTemplatePreviewModal = ({
   onClose,
   automation,
   onSave,
+  onReset,
   renderTemplate,
 }) => {
   const { addToast } = useToast();
@@ -32,7 +34,7 @@ export const EmailTemplatePreviewModal = ({
     preview: '',
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (automation) {
       setFormData({
         subject: automation.subject || '',
@@ -45,31 +47,49 @@ export const EmailTemplatePreviewModal = ({
 
   if (!isOpen || !automation) return null;
 
-  // Mock specimen data for preview
+  // Realistic UK specimen data for live email preview
   const specimenData = {
     customer: 'Emma Watson',
+    customerName: 'Emma Watson',
+    clientName: 'Emma Watson',
     customerEmail: 'customer@demo.com',
     property: '14 Mayfair Gate, Mayfair, London W1K 2PB',
+    propertyAddress: '14 Mayfair Gate, Mayfair, London W1K 2PB',
     surveyType: 'RICS Level 2 Home Survey',
+    serviceName: 'RICS Level 2 Home Survey',
     quoteTotal: '650.00',
+    totalAmount: '650.00',
+    price: '650.00',
     jobNo: 'JOB-2026-080',
+    reference: 'JOB-2026-080',
     surveyor: 'David Thorne MRICS',
+    surveyorName: 'David Thorne MRICS',
     date: 'Wednesday, 28 October 2026',
-    timeSlot: '09:30 AM - 11:30 AM',
+    inspectionDate: 'Wednesday, 28 October 2026',
+    timeSlot: '09:30 AM - 12:00 PM',
+    arrivalWindow: '09:30 AM - 12:00 PM',
+    actionLink: 'https://njspropertygroup.com/customer/portal',
+    bookingLink: 'https://njspropertygroup.com/customer/portal',
+    portalLink: 'https://njspropertygroup.com/customer/portal',
   };
 
-  const currentSubject = renderTemplate(formData.subject, specimenData);
-  const currentBody = renderTemplate(formData.templateBody, specimenData);
+  const currentSubject = renderTemplate ? renderTemplate(formData.subject, specimenData) : formData.subject;
+  const currentBody = renderTemplate ? renderTemplate(formData.templateBody, specimenData) : formData.templateBody;
 
-  const insertVariable = (varName) => {
+  const insertVariable = (varCode) => {
     setFormData((prev) => ({
       ...prev,
-      templateBody: prev.templateBody + ` {{${varName}}}`,
+      templateBody: prev.templateBody + ` {{${varCode}}}`,
     }));
+    addToast({
+      type: 'info',
+      title: 'Tag Inserted',
+      message: `Added {{${varCode}}} to email body.`,
+    });
   };
 
   const handleSave = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (onSave) {
       onSave(automation.id, formData);
     }
@@ -77,27 +97,29 @@ export const EmailTemplatePreviewModal = ({
     addToast({
       type: 'success',
       title: 'Email Automation Template Saved',
-      message: `Changes saved for ${automation.stageLabel}.`,
+      message: `Changes applied for ${automation.stageLabel}.`,
     });
   };
 
   const handleSendTest = () => {
     addToast({
       type: 'success',
-      title: 'Test Email Dispatched',
-      message: `Specimen automated email sent to admin@demo.com for review.`,
+      title: 'Specimen Test Email Dispatched',
+      message: `Formatted test email dispatched with official NJS logo to info@njspropertygroup.com.`,
     });
   };
 
   const availableVariables = [
-    { label: 'Customer Name', code: 'customer_name' },
-    { label: 'Property Address', code: 'property_address' },
-    { label: 'Survey Type', code: 'survey_type' },
-    { label: 'Total Fee', code: 'quote_total' },
-    { label: 'Job Ref No', code: 'job_no' },
-    { label: 'Surveyor Name', code: 'surveyor_name' },
-    { label: 'Inspection Date', code: 'inspection_date' },
-    { label: 'Arrival Window', code: 'time_slot' },
+    { label: 'Client Name', code: 'customer_name', tag: '{{customer_name}}' },
+    { label: 'Property Address', code: 'property_address', tag: '{{property_address}}' },
+    { label: 'Survey Type', code: 'survey_type', tag: '{{survey_type}}' },
+    { label: 'Total Fee (£)', code: 'quote_total', tag: '{{quote_total}}' },
+    { label: 'Job Ref No', code: 'job_no', tag: '{{job_no}}' },
+    { label: 'Surveyor Name', code: 'surveyor_name', tag: '{{surveyor_name}}' },
+    { label: 'Inspection Date', code: 'inspection_date', tag: '{{inspection_date}}' },
+    { label: 'Arrival Window', code: 'time_slot', tag: '{{time_slot}}' },
+    { label: 'Portal / Booking Link', code: 'action_link', tag: '{{action_link}}' },
+    { label: 'Company Phone', code: 'company_phone', tag: '{{company_phone}}' },
   ];
 
   return (
@@ -123,6 +145,7 @@ export const EmailTemplatePreviewModal = ({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setIsEditing(!isEditing)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 isEditing
@@ -135,6 +158,7 @@ export const EmailTemplatePreviewModal = ({
             </button>
 
             <button
+              type="button"
               onClick={onClose}
               className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer"
             >
@@ -149,6 +173,16 @@ export const EmailTemplatePreviewModal = ({
             /* EDIT FORM MODE */
             <form onSubmit={handleSave} className="space-y-4">
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-bold text-[#0B1F4D]">SurveyBooker Template Editor</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400">
+                    Paste your existing Survey Booker wording directly below
+                  </span>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Email Subject Line *
@@ -161,7 +195,7 @@ export const EmailTemplatePreviewModal = ({
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
                   <span className="text-[11px] text-slate-400 mt-1 block">
-                    Use placeholders like &#123;&#123;property_address&#125;&#125; or &#123;&#123;job_no&#125;&#125;
+                    Dynamic tags supported: &#123;&#123;property_address&#125;&#125;, &#123;&#123;job_no&#125;&#125;, &#123;&#123;customer_name&#125;&#125;
                   </span>
                 </div>
 
@@ -174,13 +208,14 @@ export const EmailTemplatePreviewModal = ({
                     value={formData.preview}
                     onChange={(e) => setFormData({ ...formData, preview: e.target.value })}
                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    placeholder="Short summary visible in customer email inbox before opening"
                   />
                 </div>
 
                 {/* Variable inserter chips */}
                 <div>
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                    Click to Insert Dynamic Placeholder Tag:
+                    Click to Insert Dynamic Merge Tag:
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {availableVariables.map((v) => (
@@ -189,10 +224,11 @@ export const EmailTemplatePreviewModal = ({
                         key={v.code}
                         onClick={() => insertVariable(v.code)}
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2563EB] text-[11px] font-semibold border border-blue-200/80 transition-colors cursor-pointer"
+                        title={`Insert ${v.tag}`}
                       >
                         <Tag className="w-2.5 h-2.5" />
                         <span>{v.label}</span>
-                        <span className="text-[10px] opacity-75 font-mono">&#123;&#123;{v.code}&#125;&#125;</span>
+                        <span className="text-[10px] opacity-75 font-mono">{v.tag}</span>
                       </button>
                     ))}
                   </div>
@@ -200,10 +236,10 @@ export const EmailTemplatePreviewModal = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Email Body Content (Markdown & Plain Text) *
+                    Email Body Content (Plain Text & Formatting) *
                   </label>
                   <textarea
-                    rows="9"
+                    rows="10"
                     required
                     value={formData.templateBody}
                     onChange={(e) => setFormData({ ...formData, templateBody: e.target.value })}
@@ -212,20 +248,40 @@ export const EmailTemplatePreviewModal = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold shadow-xs cursor-pointer"
-                >
-                  Save Template Changes
-                </button>
+              <div className="flex items-center justify-between pt-2">
+                <div>
+                  {onReset && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Reset this template to standard SurveyBooker default?')) {
+                          onReset(automation.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset Template to Default</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save Template Changes</span>
+                  </button>
+                </div>
               </div>
             </form>
           ) : (
@@ -263,7 +319,7 @@ export const EmailTemplatePreviewModal = ({
                 <div className="p-6 sm:p-8 bg-slate-50/60 flex justify-center">
                   <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md max-w-xl w-full overflow-hidden">
                     {/* Brand Banner with Official NJS Logo */}
-                    <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between">
+                    <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between border-b-2 border-amber-500/40">
                       <div className="flex items-center gap-3">
                         <img
                           src="/images/njs-logo-white.png"
@@ -336,6 +392,7 @@ export const EmailTemplatePreviewModal = ({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handleSendTest}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
@@ -344,6 +401,7 @@ export const EmailTemplatePreviewModal = ({
             </button>
 
             <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
             >
@@ -355,4 +413,3 @@ export const EmailTemplatePreviewModal = ({
     </div>
   );
 };
-

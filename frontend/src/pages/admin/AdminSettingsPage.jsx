@@ -12,12 +12,25 @@ import {
   ShieldCheck,
   Send,
   KeyRound,
+  Edit3,
+  Tag,
+  Sparkles,
+  SlidersHorizontal,
+  RotateCcw,
+  CheckCircle,
+  AlertCircle,
+  Filter,
+  ToggleLeft,
+  ToggleRight,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { adminSettingsApi } from '../../api/adminApi';
+import { useEmailAutomations } from '../../mock/emailAutomations';
+import { EmailTemplatePreviewModal } from '../../components/admin/EmailTemplatePreviewModal';
 
 // Standard UK Surveying Practice Default SMTP
 const DEFAULT_SMTP = {
@@ -119,8 +132,38 @@ export const AdminSettingsPage = () => {
       .catch(() => {});
   }, []);
 
+  // SurveyBooker Email Automations Hook
+  const {
+    automations,
+    toggleAutomation,
+    updateAutomation,
+    resetAutomations,
+    renderTemplate,
+  } = useEmailAutomations();
+
+  const [selectedAutomation, setSelectedAutomation] = useState(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+
+  const handleSaveTemplate = (id, fields) => {
+    updateAutomation(id, fields);
+    try {
+      const updated = automations.map((a) => (a.id === id ? { ...a, ...fields } : a));
+      adminSettingsApi
+        .updateSettings({
+          email_automations_json: JSON.stringify(updated),
+        })
+        .catch((err) => {
+          console.warn('Backend updateSettings automations non-blocking:', err);
+        });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const tabs = [
     { id: 'smtp', label: 'SMTP & Mail Server' },
+    { id: 'templates', label: 'SurveyBooker Automated Emails' },
     { id: 'pricing', label: 'Survey Types & Rate Cards' },
   ];
 
@@ -584,7 +627,190 @@ export const AdminSettingsPage = () => {
       )}
 
       {/* ========================================================= */}
-      {/* TAB 2: SURVEY TYPES & PRICING RATE CARD                   */}
+      {/* TAB 2: SURVEYBOOKER AUTOMATED EMAILS & TEMPLATE MANAGER   */}
+      {/* ========================================================= */}
+      {activeTab === 'templates' && (
+        <div className="space-y-6">
+          {/* Top Banner & Overview */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] shrink-0">
+                <Mail className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-bold text-[#0B1F4D]">
+                    SurveyBooker Automated Email System &amp; Customizer
+                  </h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    {automations.filter((a) => a.active).length} of {automations.length} Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+                  Replicating your complete Survey Booker automated email workflows. Every automated email includes your official NJS Property Group logo header, dynamic merge tags (e.g. &#123;&#123;customer_name&#125;&#125;, &#123;&#123;property_address&#125;&#125;), and customizable body text.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Reset all automated email templates to standard SurveyBooker defaults?')) {
+                    resetAutomations();
+                    addToast({
+                      type: 'info',
+                      title: 'Automations Reset',
+                      message: 'Restored default SurveyBooker email templates and triggers.',
+                    });
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Reset to Defaults</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex items-center justify-between gap-3 flex-wrap bg-white px-5 py-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mr-1">
+                <Filter className="w-3.5 h-3.5" />
+                <span>Lifecycle Category:</span>
+              </span>
+              {[
+                { id: 'ALL', label: `All Triggers (${automations.length})` },
+                { id: 'Pre-Inspection', label: `Pre-Inspection (${automations.filter((a) => a.category === 'Pre-Inspection').length})` },
+                { id: 'Logistics', label: `Logistics (${automations.filter((a) => a.category === 'Logistics').length})` },
+                { id: 'Post-Inspection', label: `Post-Inspection (${automations.filter((a) => a.category === 'Post-Inspection').length})` },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setCategoryFilter(cat.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    categoryFilter === cat.id
+                      ? 'bg-[#0B1F4D] text-white shadow-xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Official NJS Logo &amp; Trustpilot Embed Active</span>
+            </div>
+          </div>
+
+          {/* Automated Triggers Cards Grid */}
+          <div className="grid grid-cols-1 gap-4">
+            {automations
+              .filter((a) => categoryFilter === 'ALL' || a.category === categoryFilter)
+              .map((auto) => (
+                <div
+                  key={auto.id}
+                  className={`p-5 sm:p-6 rounded-3xl border transition-all space-y-4 bg-white ${
+                    auto.active
+                      ? 'border-slate-200/90 shadow-2xs hover:border-blue-200 hover:shadow-xs'
+                      : 'border-slate-200 opacity-75 bg-slate-50/60'
+                  }`}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-[#0B1F4D]/5 text-[#0B1F4D] border border-[#0B1F4D]/10">
+                        {auto.stageLabel}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                        ⚡ {auto.triggerEvent}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleAutomation(auto.id)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          auto.active
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${auto.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        <span>{auto.active ? 'Active & Auto-Sending' : 'Paused by Admin'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">{auto.title}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{auto.preview}</p>
+                  </div>
+
+                  {/* Subject Preview Box */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between gap-3">
+                    <div className="text-xs font-mono text-slate-700 truncate">
+                      <span className="font-semibold text-slate-400 select-none mr-2">Subject:</span>
+                      <span className="font-bold text-[#0B1F4D]">{auto.subject}</span>
+                    </div>
+                  </div>
+
+                  {/* Tags and Action Buttons */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {auto.tags?.map((t, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
+                        >
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAutomation(auto);
+                          setIsPreviewModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Customize Template &amp; Live Preview</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addToast({
+                            type: 'success',
+                            title: 'Specimen Test Dispatched',
+                            message: `Dispatched test for "${auto.title}" to info@njspropertygroup.com.`,
+                          });
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                        title="Send quick specimen test email to admin"
+                      >
+                        <Send className="w-3.5 h-3.5 text-[#2563EB]" />
+                        <span>Quick Test</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* TAB 3: SURVEY TYPES & PRICING RATE CARD                   */}
       {/* ========================================================= */}
       {activeTab === 'pricing' && (
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 space-y-6">
@@ -702,6 +928,25 @@ export const AdminSettingsPage = () => {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* MODAL: SurveyBooker Email Template Editor & Live Preview */}
+      {isPreviewModalOpen && selectedAutomation && (
+        <EmailTemplatePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setSelectedAutomation(null);
+          }}
+          automation={selectedAutomation}
+          onSave={handleSaveTemplate}
+          onReset={(id) => {
+            resetAutomations();
+            const refreshed = automations.find((a) => a.id === id);
+            if (refreshed) setSelectedAutomation(refreshed);
+          }}
+          renderTemplate={renderTemplate}
+        />
       )}
     </div>
   );

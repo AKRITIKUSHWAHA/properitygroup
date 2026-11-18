@@ -1,5 +1,6 @@
 // Customer Email Automation Store & Lifecycle Workflows
-// Provides automated customer email notifications triggered across all 6 SurveyBooker stages
+// Provides automated customer email notifications triggered across all SurveyBooker stages
+// Aligned with NJS Property Group RICS standards & SurveyBooker email replication
 
 import { useState, useEffect } from 'react';
 
@@ -11,10 +12,11 @@ export const DEFAULT_EMAIL_AUTOMATIONS = [
     id: 'step-1',
     stepIndex: 0,
     stepName: 'Quote',
-    stageLabel: 'Stage 1: Quotation Issued',
-    title: 'Quotation Proposal & Inclusions Scope',
-    triggerEvent: 'When quotation is created or sent to customer',
+    stageLabel: 'Stage 1: Quotation Issued (LSD & Web)',
+    title: 'Quotation Proposal & Inclusions Scope (New Enquiry Auto-Quote)',
+    triggerEvent: 'When quotation enquiry arrives from Local Surveyors Direct (LSD) or website calculator',
     active: true,
+    category: 'Pre-Inspection',
     subject: 'Your RICS Survey Quotation for {{property_address}} - Ref: {{job_no}}',
     preview: 'Formal fixed-fee proposal with 8-point inspection checklist, terms, and booking deposit option.',
     templateBody: `Dear {{customer_name}},
@@ -35,17 +37,79 @@ To accept this quotation and secure your priority inspection slot:
 {{action_link}}
 
 Warm regards,
-Client Services Team | NJS Property Group`,
-    tags: ['Quote Proposal', 'Fixed Fee', 'RICS Standards'],
+Client Services Team | NJS Property Group
+Direct Helpline: 0800 169 9661`,
+    tags: ['Auto-Quote', 'LSD Integration', 'Fixed Fee', 'RICS Standards'],
+  },
+  {
+    id: 'step-quote-accepted',
+    stepIndex: 10,
+    stepName: 'Quotation Accepted',
+    stageLabel: 'Stage 2: Quotation Accepted',
+    title: 'Quotation Acceptance & Next Steps Instruction',
+    triggerEvent: 'When client accepts quotation in portal or email link',
+    active: true,
+    category: 'Pre-Inspection',
+    subject: 'Quotation Accepted: Next Steps for {{property_address}} - Ref: {{job_no}}',
+    preview: 'Confirmation of quotation acceptance with links to sign terms and book appointment date.',
+    templateBody: `Dear {{customer_name}},
+
+Thank you for accepting your formal quotation for the {{survey_type}} at:
+{{property_address}}
+
+Your instruction (Ref: {{job_no}}) is now progressing through our operations desk.
+
+Next Steps to Finalize Your Inspection:
+1. Review & Digitally Sign your RICS Terms of Engagement:
+   {{action_link}}
+2. Confirm property access details and choose your preferred inspection window.
+
+If there are specific defect concerns or questions for your chartered surveyor, please reply directly to this email or leave a note on your client portal.
+
+Warm regards,
+Client Services Coordination Team | NJS Property Group
+Direct Helpline: 0800 169 9661 • Email: info@njspropertygroup.com`,
+    tags: ['Quote Accepted', 'SurveyBooker', 'Terms Signing', 'Booking Next Steps'],
+  },
+  {
+    id: 'step-unbooked-reminder',
+    stepIndex: 11,
+    stepName: 'Unbooked Chase',
+    stageLabel: 'Stage 3: Unbooked Follow-Up (2-3 Days)',
+    title: 'Unbooked Follow-Up Reminder (Chase Engine)',
+    triggerEvent: 'When quotation is accepted but inspection date remains unbooked after 48-72 hours',
+    active: true,
+    category: 'Pre-Inspection',
+    subject: 'Reminder: Select Your Inspection Date for {{property_address}} - NJS Property Group',
+    preview: 'Automated follow-up prompting customer to book their preferred surveyor appointment window.',
+    templateBody: `Dear {{customer_name}},
+
+We noticed you recently accepted your quotation for the {{survey_type}} at:
+{{property_address}} (Ref: {{job_no}}).
+
+However, your preferred inspection date has not yet been selected.
+
+Our surveyors' weekly inspection diaries in your area fill up quickly. To ensure you secure your preferred date and avoid delays to your property transaction, please take 60 seconds to lock in your appointment:
+
+Select Your Preferred Inspection Date:
+{{action_link}}
+
+If your purchase timeline has changed or you are waiting for the estate agent/vendor to grant access, simply let us know and we will coordinate key collection on your behalf.
+
+Warm regards,
+Bookings & Logistics Desk | NJS Property Group
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
+    tags: ['Chase Reminder', 'SurveyBooker', 'Calendar Booking', 'Unbooked Follow-Up'],
   },
   {
     id: 'step-2',
     stepIndex: 1,
     stepName: 'Paid',
-    stageLabel: 'Stage 2: Payment Cleared',
+    stageLabel: 'Stage 4: Payment Cleared',
     title: 'Payment Receipt & Client Onboarding Welcome Pack',
     triggerEvent: 'When client payment settles via Stripe or bank transfer',
     active: true,
+    category: 'Pre-Inspection',
     subject: 'Payment Confirmed & Welcome Pack: {{property_address}}',
     preview: 'Official UK VAT invoice receipt (£{{quote_total}} inc. 20% VAT) and terms instruction.',
     templateBody: `Dear {{customer_name}},
@@ -63,17 +127,18 @@ Your official VAT receipt is available in your Client Portal. Please proceed to 
 {{action_link}}
 
 Kind regards,
-Finance & Accounts Department`,
-    tags: ['VAT Receipt', 'Payment Cleared', 'Stripe'],
+Finance & Accounts Department | NJS Property Group`,
+    tags: ['VAT Receipt', 'Payment Cleared', 'Stripe', 'HMRC 20%'],
   },
   {
     id: 'step-3',
     stepIndex: 2,
     stepName: 'Accepted',
-    stageLabel: 'Stage 3: Terms Executed',
+    stageLabel: 'Stage 5: Terms Executed',
     title: 'Terms of Engagement Signed Confirmation',
     triggerEvent: 'When client digitally signs RICS contract mandate',
     active: true,
+    category: 'Pre-Inspection',
     subject: 'RICS Terms of Engagement Signed: {{property_address}}',
     preview: 'Digital contract execution confirmation and surveyor dispatch authorization.',
     templateBody: `Dear {{customer_name}},
@@ -88,17 +153,18 @@ We will notify you immediately once your surveyor's inspection window is confirm
 {{action_link}}
 
 Best regards,
-Operations Coordination Desk`,
+Operations Coordination Desk | NJS Property Group`,
     tags: ['RICS Terms', 'Digital Signature', 'Legal Mandate'],
   },
   {
     id: 'step-4',
     stepIndex: 3,
     stepName: 'Booked',
-    stageLabel: 'Stage 4: Inspection Booked',
+    stageLabel: 'Stage 6: Inspection Booked',
     title: 'Site Inspection Confirmed & Access Logistics',
     triggerEvent: 'When surveyor slot and arrival window are locked in calendar',
     active: true,
+    category: 'Logistics',
     subject: 'Site Inspection Confirmed: {{inspection_date}} with {{surveyor_name}}',
     preview: 'Confirmed inspection date, arrival window, surveyor credentials, and agent key access.',
     templateBody: `Dear {{customer_name}},
@@ -116,17 +182,18 @@ Your surveyor will carry verified RICS photo identification. If there are specif
 {{action_link}}
 
 Warm regards,
-Head of Residential Surveying`,
+Head of Residential Surveying | NJS Property Group`,
     tags: ['Appointment Confirmed', 'Key Logistics', 'Surveyor Allocated'],
   },
   {
     id: 'step-5',
     stepIndex: 4,
     stepName: 'Preparing report',
-    stageLabel: 'Stage 5: Survey Attended',
-    title: 'Site Inspection Completed & Report Drafting',
+    stageLabel: 'Stage 7: Survey Attended (Post-Survey)',
+    title: 'Site Inspection Completed & Report Drafting (Post-Survey)',
     triggerEvent: 'When surveyor finishes physical site survey and drafts findings',
     active: true,
+    category: 'Post-Inspection',
     subject: 'Site Inspection Completed at {{property_address}}',
     preview: 'On-site survey completed; surveyor drafting report and conducting quality review.',
     templateBody: `Dear {{customer_name}},
@@ -142,17 +209,18 @@ Track live preparation progress anytime in your Client Portal:
 {{action_link}}
 
 Kind regards,
-Surveyor Reporting Unit`,
-    tags: ['Inspection Done', 'Drafting Report', 'QA Protocol'],
+Surveyor Reporting Unit | NJS Property Group`,
+    tags: ['Inspection Done', 'Drafting Report', 'QA Protocol', '48h SLA'],
   },
   {
     id: 'step-6',
     stepIndex: 5,
     stepName: 'Complete',
-    stageLabel: 'Stage 6: Report Released & Trustpilot Trigger',
+    stageLabel: 'Stage 8: Report Released & Trustpilot Trigger',
     title: 'Final RICS Survey Report Ready & Trustpilot Review Request',
     triggerEvent: 'When signed RICS PDF survey report is uploaded and released',
     active: true,
+    category: 'Post-Inspection',
     subject: 'Your Official RICS Survey Report is Ready: {{property_address}}',
     preview: 'Download your official RICS survey report and share your feedback on Trustpilot.',
     templateBody: `Dear {{customer_name}},
@@ -173,10 +241,41 @@ https://www.trustpilot.com/review/njspropertygroup.com
 Thank you for choosing NJS Property Group.
 
 Best regards,
-Director of Professional Services`,
+Director of Professional Services | NJS Property Group`,
     tags: ['Final Report', 'PDF Download', 'Trustpilot Invite', 'Surveyor Debrief'],
   },
 ];
+
+// Helper to resolve template variables with actual job or quotation data
+export const renderEmailTemplate = (text, data = {}) => {
+  if (!text) return '';
+  const customerName = data.customer || data.customerName || data.clientName || 'Valued Client';
+  const propertyAddress = data.property || data.propertyAddress || data.location || '14 Mayfair Gate, Mayfair, London W1K 2PB';
+  const surveyType = data.surveyType || data.serviceName || 'RICS Level 2 Home Survey';
+  const quoteTotal = data.quoteTotal || data.totalAmount || data.price || '650.00';
+  const jobNo = data.jobNo || data.reference || data.lead_ref || data.jobRef || 'JOB-2026-080';
+  const surveyorName = data.surveyor || data.surveyorName || 'David Thorne MRICS';
+  const inspectionDate = data.date || data.inspectionDate || 'Wednesday, 28 October 2026';
+  const timeSlot = data.timeSlot || data.arrivalWindow || '09:30 AM - 12:00 PM';
+  const actionLink = data.actionLink || data.bookingLink || data.portalLink || 'https://njspropertygroup.com/customer/portal';
+  const companyName = 'NJS Property Group';
+  const companyPhone = '0800 169 9661';
+  const companyEmail = 'info@njspropertygroup.com';
+
+  return text
+    .replace(/\{{1,2}(customer_name|client_name|name)\}{1,2}/gi, customerName)
+    .replace(/\{{1,2}(property_address|property|address|location)\}{1,2}/gi, propertyAddress)
+    .replace(/\{{1,2}(survey_type|service|service_name)\}{1,2}/gi, surveyType)
+    .replace(/\{{1,2}(quote_total|total_fee|quote_price|fee|price|amount)\}{1,2}/gi, quoteTotal)
+    .replace(/\{{1,2}(job_no|reference|lead_ref|job_ref)\}{1,2}/gi, jobNo)
+    .replace(/\{{1,2}(surveyor_name|surveyor)\}{1,2}/gi, surveyorName)
+    .replace(/\{{1,2}(inspection_date|appointment_date|date)\}{1,2}/gi, inspectionDate)
+    .replace(/\{{1,2}(time_slot|arrival_window|slot)\}{1,2}/gi, timeSlot)
+    .replace(/\{{1,2}(action_link|booking_link|portal_link|review_link)\}{1,2}/gi, actionLink)
+    .replace(/\{{1,2}(company_name)\}{1,2}/gi, companyName)
+    .replace(/\{{1,2}(company_phone|phone)\}{1,2}/gi, companyPhone)
+    .replace(/\{{1,2}(company_email|email)\}{1,2}/gi, companyEmail);
+};
 
 export const useEmailAutomations = () => {
   const [automations, setAutomations] = useState(() => {
@@ -184,15 +283,16 @@ export const useEmailAutomations = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Ensure step-6 has Trustpilot review section updated
-        return DEFAULT_EMAIL_AUTOMATIONS.map((def) => {
+        // Ensure all default steps are present
+        const merged = DEFAULT_EMAIL_AUTOMATIONS.map((def) => {
           const match = parsed.find((p) => p.id === def.id);
-          if (!match) return def;
-          if (def.id === 'step-6' && !match.templateBody?.includes('Trustpilot')) {
-            return { ...match, templateBody: def.templateBody, tags: def.tags, title: def.title, stageLabel: def.stageLabel };
-          }
-          return match;
+          return match ? { ...def, ...match } : def;
         });
+        // Preserve any custom templates added by admin
+        const extraCustom = parsed.filter(
+          (p) => !DEFAULT_EMAIL_AUTOMATIONS.some((def) => def.id === p.id)
+        );
+        return [...merged, ...extraCustom];
       }
     } catch (e) {
       console.warn('Failed to parse email automations from storage', e);
@@ -243,24 +343,16 @@ export const useEmailAutomations = () => {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  // Helper to resolve template variables with actual job data
-  const renderTemplate = (text, data = {}) => {
-    if (!text) return '';
-    return text
-      .replace(/\{\{customer_name\}\}/g, data.customer || 'Valued Client')
-      .replace(/\{\{property_address\}\}/g, data.property || data.location || '14 Mayfair Gate, London')
-      .replace(/\{\{survey_type\}\}/g, data.surveyType || 'RICS Level 2 Home Survey')
-      .replace(/\{\{quote_total\}\}/g, data.quoteTotal || '650.00')
-      .replace(/\{\{job_no\}\}/g, data.jobNo || 'JOB-2026-080')
-      .replace(/\{\{surveyor_name\}\}/g, data.surveyor || 'David Thorne MRICS')
-      .replace(/\{\{inspection_date\}\}/g, data.date || 'Tomorrow, 10:00 AM')
-      .replace(/\{\{time_slot\}\}/g, data.timeSlot || '09:30 AM - 12:00 PM')
-      .replace(/\{\{action_link\}\}/g, 'https://njspropertygroup.com/customer/portal');
-  };
+  // Helper alias to resolve template variables with actual job data
+  const renderTemplate = (text, data = {}) => renderEmailTemplate(text, data);
 
   // Dispatch an automated step email
-  const dispatchStepEmail = (stepIndex, jobData = {}) => {
-    const automation = automations.find((a) => a.stepIndex === stepIndex);
+  const dispatchStepEmail = (stepIdentifier, jobData = {}) => {
+    const automation = automations.find((a) =>
+      typeof stepIdentifier === 'number'
+        ? a.stepIndex === stepIdentifier
+        : a.id === stepIdentifier || a.stepName === stepIdentifier
+    );
     if (!automation) return null;
 
     if (!automation.active) {
@@ -279,17 +371,17 @@ export const useEmailAutomations = () => {
 
     const emailRecord = {
       id: `EML-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      stepIndex,
+      stepIndex: automation.stepIndex,
       stepName: automation.stepName,
       stageLabel: automation.stageLabel,
       subject: resolvedSubject,
       to: recipientEmail,
-      recipientName: jobData.customer || 'Customer',
+      recipientName: jobData.customer || jobData.customerName || 'Customer',
       date: formattedDate,
       status: 'Delivered',
       body: resolvedBody,
       preview: automation.preview,
-      jobNo: jobData.jobNo || 'JOB-2026-080',
+      jobNo: jobData.jobNo || jobData.reference || 'JOB-2026-080',
     };
 
     setSentLogs((prev) => [emailRecord, ...prev.slice(0, 49)]);
@@ -311,4 +403,3 @@ export const useEmailAutomations = () => {
     dispatchStepEmail,
   };
 };
-
