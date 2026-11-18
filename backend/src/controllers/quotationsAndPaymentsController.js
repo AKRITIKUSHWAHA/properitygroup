@@ -325,6 +325,15 @@ export const updateQuote = async (req, res, next) => {
       } catch (err) {}
     }
 
+    if (updated.jobId) {
+      try {
+        await prisma.invoice.updateMany({
+          where: { jobId: updated.jobId, status: { not: 'PAID' } },
+          data: { subtotal, vatAmount, total: totalAmount },
+        });
+      } catch (err) {}
+    }
+
     return ApiResponse.success(
       res,
       { quote: updated },

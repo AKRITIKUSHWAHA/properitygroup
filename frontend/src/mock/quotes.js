@@ -162,7 +162,12 @@ export const useQuotes = () => {
   const updateQuote = (id, updatedFields) => {
     setQuotes((prev) =>
       prev.map((q) => {
-        if (q.id !== id && q.refNo !== id) return q;
+        const matches =
+          q.id === id ||
+          q.refNo === id ||
+          (id !== undefined && id !== null && String(q.id) === String(id)) ||
+          (id !== undefined && id !== null && q.dbId && String(q.dbId) === String(id));
+        if (!matches) return q;
         const currentFee = updatedFields.baseFee !== undefined ? parseFloat(updatedFields.baseFee) : (q.baseFee || 0);
         const currentDiscount = updatedFields.discount !== undefined ? parseFloat(updatedFields.discount) : (q.discount || 0);
         const extras = updatedFields.extras !== undefined ? updatedFields.extras : (q.extras || []);

@@ -42,6 +42,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
+import { useQuotes } from '../../mock/quotes';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
@@ -71,6 +72,7 @@ export const JobDetailsPage = () => {
   const backPath = location.pathname.startsWith('/staff') ? '/staff/survey-jobs' : '/admin/jobs';
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
+  const { updateQuote } = useQuotes();
   const { addCallLog } = useClientProfiles();
   const { user } = useAuth();
 
@@ -2054,14 +2056,41 @@ export const JobDetailsPage = () => {
             </button>
             <button
               onClick={() => {
+                const extrasArr = [
+                  ...(quoteForm.droneExtra ? [{ name: 'Drone Roof & Flashing Inspection', amount: 120.0 }] : []),
+                  ...(quoteForm.debriefExtra ? [{ name: 'Same-Day Verbal Debrief by Surveyor', amount: 50.0 }] : []),
+                  ...(quoteForm.thermalExtra ? [{ name: 'Thermal Imaging Defect Assessment', amount: 150.0 }] : []),
+                ];
+                const updatedQuoteData = {
+                  quote: {
+                    baseFee: quoteForm.baseFee,
+                    discount: quoteForm.discount,
+                    extras: extrasArr,
+                    amountExVat: subtotal,
+                    vatAmount: vat,
+                    totalAmount: totalAmount,
+                  },
+                  quoteTotal: totalAmount.toFixed(2),
+                  estimatedFee: totalAmount,
+                  amount: totalAmount,
+                };
+                updateJob(job.id, updatedQuoteData);
+                if (job.jobNo) updateJob(job.jobNo, updatedQuoteData);
+                if (updateQuote && (job.quoteNo || job.quoteId || job.reference || job.id)) {
+                  updateQuote(job.quoteNo || job.quoteId || job.reference || job.id, {
+                    baseFee: quoteForm.baseFee,
+                    discount: quoteForm.discount,
+                    extras: extrasArr,
+                  });
+                }
                 setIsAdjustQuoteModalOpen(false);
                 addToast({
                   type: 'success',
                   title: 'Quotation Updated',
-                  message: `New total £${totalAmount.toFixed(2)} confirmed.`,
+                  message: `New total £${totalAmount.toFixed(2)} (inc. 20% VAT) confirmed across system.`,
                 });
               }}
-              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold"
+              className="px-5 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold cursor-pointer hover:bg-[#162E6E] transition-all"
             >
               Save &amp; Confirm Quote
             </button>

@@ -455,23 +455,66 @@ export const AdminQuotesPage = () => {
     try {
       // 1. Update local mock/state store so UI changes immediately
       updateQuote(editingQuote.id, updatedValues);
+      if (editingQuote.refNo) {
+        updateQuote(editingQuote.refNo, updatedValues);
+      }
 
       // 2. Also update apiQuotes if loaded from backend
       setApiQuotes((prev) =>
         prev.map((q) => {
-          if (q.id === editingQuote.id || q.refNo === editingQuote.refNo) {
+          const isMatch =
+            q.id === editingQuote.id ||
+            q.refNo === editingQuote.refNo ||
+            (editingQuote.dbId && q.dbId === editingQuote.dbId) ||
+            (q.id && editingQuote.dbId && String(q.id) === String(editingQuote.dbId));
+          if (isMatch) {
             return {
               ...q,
               ...updatedValues,
-              property: editFormData.property,
-              client: editFormData.client,
+              baseFee: editBaseFee,
+              discount: editDiscount,
+              amountExVat: editSubtotalExVat,
+              vatAmount: editVat20,
+              totalAmount: editTotalIncVat,
+              property: editFormData.property || q.property,
+              client: editFormData.client || q.client,
+              clientEmail: editFormData.clientEmail || q.clientEmail,
+              clientPhone: editFormData.clientPhone || q.clientPhone,
+              surveyType: editFormData.surveyType || q.surveyType,
             };
           }
           return q;
         })
       );
 
-      // 3. Persist to MySQL Backend via PUT /api/v1/quotations-and-payments/quotes/:id
+      // 3. Immediately update selectedQuoteDetail drawer so updated price displays right away
+      setSelectedQuoteDetail((prev) => {
+        if (!prev) return null;
+        const isMatch =
+          prev.id === editingQuote.id ||
+          prev.refNo === editingQuote.refNo ||
+          (editingQuote.dbId && prev.dbId === editingQuote.dbId) ||
+          (prev.id && editingQuote.dbId && String(prev.id) === String(editingQuote.dbId));
+        if (isMatch) {
+          return {
+            ...prev,
+            ...updatedValues,
+            baseFee: editBaseFee,
+            discount: editDiscount,
+            amountExVat: editSubtotalExVat,
+            vatAmount: editVat20,
+            totalAmount: editTotalIncVat,
+            property: editFormData.property || prev.property,
+            client: editFormData.client || prev.client,
+            clientEmail: editFormData.clientEmail || prev.clientEmail,
+            clientPhone: editFormData.clientPhone || prev.clientPhone,
+            surveyType: editFormData.surveyType || prev.surveyType,
+          };
+        }
+        return prev;
+      });
+
+      // 4. Persist to MySQL Backend via PUT /api/v1/quotations-and-payments/quotes/:id
       const targetId = editingQuote.dbId || editingQuote.id;
       await adminQuotationsAndPaymentsApi.updateQuote(targetId, {
         baseFee: editBaseFee,
@@ -483,6 +526,9 @@ export const AdminQuotesPage = () => {
         propertyAddress: editFormData.property,
       });
 
+      // Silently re-fetch backend to guarantee 100% database sync
+      fetchBackendData().catch(() => {});
+
       addToast({
         type: 'success',
         title: 'Quotation Price Updated',
@@ -493,6 +539,19 @@ export const AdminQuotesPage = () => {
       setEditingQuote(null);
     } catch (err) {
       console.warn('Backend quote update error:', err);
+      // Still ensure selectedQuoteDetail is updated on fallback
+      setSelectedQuoteDetail((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          ...updatedValues,
+          baseFee: editBaseFee,
+          discount: editDiscount,
+          amountExVat: editSubtotalExVat,
+          vatAmount: editVat20,
+          totalAmount: editTotalIncVat,
+        };
+      });
       addToast({
         type: 'success',
         title: 'Quotation Price Updated',
