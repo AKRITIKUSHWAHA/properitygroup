@@ -72,6 +72,7 @@ import {
   customerPreviousSurveysApi,
 } from '../../api/customerApi';
 import { siteConfig } from '../../config/siteConfig';
+import { dispatchQuoteAcceptance } from '../../services/autoQuoteService';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -1248,10 +1249,30 @@ export const CustomerBookingsPage = () => {
 export const CustomerQuotationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToast } = useToast();
   const { jobs } = useJobs();
   const { quotes: storedQuotes = [] } = useQuotes();
   const { leads = [] } = useLeads();
   const [apiQuotes, setApiQuotes] = useState([]);
+  const [acceptingQuoteId, setAcceptingQuoteId] = useState(null);
+  const [confirmQuote, setConfirmQuote] = useState(null);
+  const [acceptedSuccessQuote, setAcceptedSuccessQuote] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Sync with live quote updates across tabs & local storage
+  useEffect(() => {
+    const handleSync = () => setRefreshKey((k) => k + 1);
+    window.addEventListener('propertygroup_quotes_updated', handleSync);
+    window.addEventListener('propertygroup_jobs_updated', handleSync);
+    window.addEventListener('propertygroup_leads_updated', handleSync);
+    window.addEventListener('property_group_sent_emails_updated', handleSync);
+    return () => {
+      window.removeEventListener('propertygroup_quotes_updated', handleSync);
+      window.removeEventListener('propertygroup_jobs_updated', handleSync);
+      window.removeEventListener('propertygroup_leads_updated', handleSync);
+      window.removeEventListener('property_group_sent_emails_updated', handleSync);
+    };
+  }, []);
 
   useEffect(() => {
     customerQuotationsApi.getQuotations()
@@ -1260,7 +1281,7 @@ export const CustomerQuotationsPage = () => {
         if (Array.isArray(list) && list.length > 0) setApiQuotes(list);
       })
       .catch(() => {});
-  }, []);
+  }, [refreshKey]);
 
   let userEmail = (user?.email || '').toLowerCase().trim();
   let userName = (user?.name || '').toLowerCase().trim();
@@ -1276,11 +1297,35 @@ export const CustomerQuotationsPage = () => {
 
   const isDemo = userEmail === 'customer@demo.com';
 
-  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  // Read latest quotes from localStorage for instant reactive feedback
+  let effectiveStoredQuotes = storedQuotes;
+  try {
+    const rawQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+    if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
+      effectiveStoredQuotes = rawQuotes;
+    }
+  } catch {}
+
+  let effectiveJobs = jobs;
+  try {
+    const rawJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    if (Array.isArray(rawJobs) && rawJobs.length > 0) {
+      effectiveJobs = rawJobs;
+    }
+  } catch {}
+
+  const myJobs = effectiveJobs.filter((j) => isJobForCustomer(j, user));
   const jobQuotes = myJobs.map((j) => {
     const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
     const vat = net * 0.2;
     const total = net + vat;
+    const isAccepted =
+      j.quoteStatus === 'Accepted' ||
+      j.status === 'Accepted' ||
+      j.stage === 'accepted' ||
+      j.termsStatus === 'Signed' ||
+      (j.timelineStep && j.timelineStep >= 3);
+
     return {
       id: `QUO-${j.id.replace('JOB-2026-', '')}`,
       jobId: j.id,
@@ -1290,14 +1335,16 @@ export const CustomerQuotationsPage = () => {
       vat: `£${vat.toFixed(2)}`,
       total: `£${total.toFixed(2)}`,
       date: j.date || '28/10/2026',
-      status: j.termsStatus === 'Signed' ? 'Accepted & Executed' : 'Open Proposal',
+      status: j.termsStatus === 'Signed' ? 'Terms Signed & Active' : isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+      isAccepted,
       termsStatus: j.termsStatus,
       validUntil: j.termsStatus === 'Signed' ? 'Confirmed' : '14 Days Remaining',
+      rawJob: j,
     };
   });
 
   // 1. Collect standalone quotes from quotes store for this customer
-  const userStoredQuotes = storedQuotes.filter((q) => {
+  const userStoredQuotes = effectiveStoredQuotes.filter((q) => {
     const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
     const qName = (q.client || q.customer || '').toLowerCase().trim();
     const matchesEmail = userEmail && (qEmail === userEmail || qEmail.includes(userEmail) || userEmail.includes(qEmail));
@@ -1311,6 +1358,12 @@ export const CustomerQuotationsPage = () => {
       const net = q.baseFee || q.amountExVat || 550.0;
       const vat = q.vatAmount || net * 0.2;
       const total = q.totalAmount || (net + vat);
+      const isAccepted =
+        q.status === 'Accepted' ||
+        q.status === 'ACCEPTED' ||
+        q.termsStatus === 'Signed' ||
+        q.acceptanceEmailSent;
+
       return {
         id: q.id,
         jobId: q.id,
@@ -1320,9 +1373,11 @@ export const CustomerQuotationsPage = () => {
         vat: `£${vat.toFixed(2)}`,
         total: `£${total.toFixed(2)}`,
         date: q.date || new Date().toLocaleDateString('en-GB'),
-        status: q.status === 'Accepted' || q.termsStatus === 'Signed' ? 'Accepted & Executed' : 'Open Proposal',
+        status: q.termsStatus === 'Signed' ? 'Terms Signed & Active' : isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+        isAccepted,
         termsStatus: q.termsStatus || 'Pending',
         validUntil: q.dueDate ? `Valid until ${q.dueDate}` : '14 Days Remaining',
+        rawQuote: q,
       };
     });
 
@@ -1332,7 +1387,10 @@ export const CustomerQuotationsPage = () => {
     const lName = (l.customerName || l.clientName || '').toLowerCase().trim();
     const matchesEmail = userEmail && (lEmail === userEmail || lEmail.includes(userEmail) || userEmail.includes(lEmail));
     const matchesName = userName && (lName === userName || lName.includes(userName) || userName.includes(lName));
-    const isQuoted = (l.status || '').toLowerCase() === 'quoted' || (l.status || '').toLowerCase() === 'quote_sent' || (l.estimatedValue && !l.estimatedValue.toLowerCase().includes('pending'));
+    const isQuoted =
+      (l.status || '').toLowerCase() === 'quoted' ||
+      (l.status || '').toLowerCase() === 'quote_sent' ||
+      (l.estimatedValue && !l.estimatedValue.toLowerCase().includes('pending'));
     return (matchesEmail || matchesName) && isQuoted;
   });
 
@@ -1343,6 +1401,8 @@ export const CustomerQuotationsPage = () => {
       const total = rawVal > 50 ? rawVal : 660.0;
       const net = Math.round((total / 1.2) * 100) / 100;
       const vat = Math.round((total - net) * 100) / 100;
+      const isAccepted = l.quoteAccepted || l.status === 'Converted';
+
       return {
         id: l.quoteRef || `QUO-${(l.id || '').replace(/[^0-9]/g, '') || '2026-880'}`,
         jobId: l.id,
@@ -1352,9 +1412,11 @@ export const CustomerQuotationsPage = () => {
         vat: `£${vat.toFixed(2)}`,
         total: `£${total.toFixed(2)}`,
         date: l.created || new Date().toLocaleDateString('en-GB'),
-        status: 'Open Proposal',
+        status: isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+        isAccepted,
         termsStatus: 'Pending',
         validUntil: '14 Days Remaining',
+        rawLead: l,
       };
     });
 
@@ -1371,7 +1433,7 @@ export const CustomerQuotationsPage = () => {
     let regCust = null;
     try {
       const regMap = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-      regCust = regMap[userEmail] || Object.values(regMap).find(c => (c.name || '').toLowerCase().trim() === userName);
+      regCust = regMap[userEmail] || Object.values(regMap).find((c) => (c.name || '').toLowerCase().trim() === userName);
     } catch {}
 
     const targetProp = regCust?.address
@@ -1379,6 +1441,14 @@ export const CustomerQuotationsPage = () => {
       : user?.address
       ? `${user.address}${user.postcode ? `, ${user.postcode}` : ''}`
       : 'HYDERABAD, GH12AA';
+
+    let isFallbackAccepted = false;
+    try {
+      const allQ = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      isFallbackAccepted = allQ.some(
+        (q) => (q.clientEmail || '').toLowerCase().trim() === userEmail && (q.status === 'Accepted' || q.status === 'ACCEPTED')
+      );
+    } catch {}
 
     quotes = [
       {
@@ -1390,7 +1460,8 @@ export const CustomerQuotationsPage = () => {
         vat: '£110.00',
         total: '£660.00',
         date: new Date().toLocaleDateString('en-GB'),
-        status: 'Open Proposal',
+        status: isFallbackAccepted ? 'Quotation Accepted' : 'Open Proposal',
+        isAccepted: isFallbackAccepted,
         termsStatus: 'Pending',
         validUntil: '14 Days Remaining',
       },
@@ -1399,7 +1470,7 @@ export const CustomerQuotationsPage = () => {
     // Persist into quotes store so all portal menus stay in sync
     try {
       const allQ = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      if (!allQ.some(q => (q.clientEmail || '').toLowerCase().trim() === userEmail)) {
+      if (!allQ.some((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail)) {
         allQ.unshift({
           id: 'QUO-2026-880',
           refNo: 'QUO-2026-880',
@@ -1410,7 +1481,7 @@ export const CustomerQuotationsPage = () => {
           baseFee: 550.0,
           vatAmount: 110.0,
           totalAmount: 660.0,
-          status: 'Sent',
+          status: isFallbackAccepted ? 'Accepted' : 'Sent',
           type: 'quotation',
           date: new Date().toLocaleDateString('en-GB'),
         });
@@ -1418,6 +1489,58 @@ export const CustomerQuotationsPage = () => {
       }
     } catch {}
   }
+
+  // SurveyBooker Trigger 2 Acceptance Handler
+  const handleAcceptQuote = async (targetQuote) => {
+    if (!targetQuote) return;
+    setAcceptingQuoteId(targetQuote.id);
+
+    try {
+      const rawTotal = parseFloat(String(targetQuote.total).replace(/[^0-9.]/g, '')) || 660.0;
+      const payload = {
+        id: targetQuote.id,
+        refNo: targetQuote.id,
+        client: user?.name || userName || 'Valued Client',
+        clientEmail: userEmail || user?.email || 'customer@demo.com',
+        customer: user?.name || userName || 'Valued Client',
+        customerEmail: userEmail || user?.email || 'customer@demo.com',
+        customerName: user?.name || userName || 'Valued Client',
+        property: targetQuote.property,
+        propertyAddress: targetQuote.property,
+        surveyType: targetQuote.surveyType,
+        totalAmount: rawTotal,
+        total: targetQuote.total,
+        ...(targetQuote.rawQuote || {}),
+        ...(targetQuote.rawJob || {}),
+        ...(targetQuote.rawLead || {}),
+      };
+
+      const result = await dispatchQuoteAcceptance(payload);
+
+      addToast({
+        type: 'success',
+        title: 'Quotation Accepted!',
+        message: `Quotation ${targetQuote.id} accepted. Automated confirmation email sent to ${userEmail || 'your email'}.`,
+      });
+
+      setConfirmQuote(null);
+      setAcceptedSuccessQuote({
+        ...targetQuote,
+        emailSentTo: userEmail || user?.email || 'customer@demo.com',
+        acceptedAt: result?.acceptedAt || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      });
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error('Failed to accept quotation', err);
+      addToast({
+        type: 'error',
+        title: 'Acceptance Error',
+        message: 'Could not complete quotation acceptance. Please try again or contact support.',
+      });
+    } finally {
+      setAcceptingQuoteId(null);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -1428,54 +1551,146 @@ export const CustomerQuotationsPage = () => {
       />
 
       <div className="space-y-4">
-        {quotes.map((q) => (
-          <div
-            key={q.id}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5"
-          >
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  q.termsStatus === 'Signed'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-blue-100 text-[#0B1F4D]'
-                }`}>
-                  {q.status}
-                </span>
-                <span className="font-mono text-xs text-slate-400 font-bold">{q.id}</span>
-              </div>
-              <h4 className="text-base font-bold text-slate-900">{q.property}</h4>
-              <p className="text-xs text-[#2563EB] font-semibold mt-0.5">{q.surveyType}</p>
-              <div className="text-xs text-slate-400 mt-2">
-                Valid: <strong>{q.validUntil}</strong> • Issued on {q.date}
-              </div>
-            </div>
+        {quotes.map((q) => {
+          const isAccepted = q.isAccepted || q.status === 'Quotation Accepted' || q.status === 'Accepted' || q.termsStatus === 'Signed';
+          const isSigned = q.termsStatus === 'Signed';
 
-            <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
-              <div className="text-left md:text-right">
-                <div className="text-xs text-slate-400 font-mono">Net: {q.net} + 20% VAT</div>
-                <div className="text-xl font-black text-[#0B1F4D] font-mono">{q.total}</div>
-                <span className="text-[11px] text-emerald-600 font-bold block">Fixed Fee Guaranteed</span>
+          return (
+            <div
+              key={q.id}
+              className={`bg-white p-6 rounded-3xl border transition-all shadow-xs flex flex-col gap-5 ${
+                isAccepted ? 'border-emerald-200/90' : 'border-slate-200/90 hover:border-blue-200'
+              }`}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span
+                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                        isSigned
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : isAccepted
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                          : 'bg-blue-50 text-[#0B1F4D] border border-blue-200'
+                      }`}
+                    >
+                      {isSigned ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Terms Signed &amp; Active</span>
+                        </>
+                      ) : isAccepted ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                          <span>Quotation Accepted</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3 h-3 text-[#2563EB]" />
+                          <span>Ready to Accept</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="font-mono text-xs text-slate-400 font-bold">{q.id}</span>
+                  </div>
+
+                  <h4 className="text-base font-bold text-slate-900">{q.property}</h4>
+                  <p className="text-xs text-[#2563EB] font-semibold mt-0.5">{q.surveyType}</p>
+                  <div className="text-xs text-slate-400 mt-2">
+                    Valid: <strong>{q.validUntil}</strong> • Issued on {q.date}
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <div className="text-left md:text-right">
+                    <div className="text-xs text-slate-400 font-mono">Net: {q.net} + 20% VAT</div>
+                    <div className="text-xl font-black text-[#0B1F4D] font-mono">{q.total}</div>
+                    <span className="text-[11px] text-emerald-600 font-bold block">Fixed Fee Guaranteed</span>
+                  </div>
+
+                  {isSigned ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => navigate('/customer/terms-to-sign')}
+                        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                      >
+                        View Signed Terms
+                      </button>
+                      <button
+                        onClick={() => navigate('/customer/my-bookings')}
+                        className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-all cursor-pointer"
+                      >
+                        Inspection Details
+                      </button>
+                    </div>
+                  ) : isAccepted ? (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <button
+                        onClick={() => navigate('/customer/terms-to-sign')}
+                        className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>1. Sign Terms of Engagement</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => navigate('/customer/my-bookings')}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <CalendarCheck className="w-3.5 h-3.5 text-[#2563EB]" />
+                        <span>2. Choose Date</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <button
+                        onClick={() => setConfirmQuote(q)}
+                        disabled={acceptingQuoteId !== null}
+                        className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4 stroke-[2.5]" />
+                        <span>Accept Quotation</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {q.termsStatus === 'Signed' ? (
-                <button
-                  onClick={() => navigate('/customer/terms-to-sign')}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-                >
-                  View Signed Terms
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigate('/customer/terms-to-sign')}
-                  className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs transition-all shadow-sm cursor-pointer"
-                >
-                  Review & Sign Terms
-                </button>
+              {/* Next Steps Guidance Banner if Accepted but Terms not signed */}
+              {isAccepted && !isSigned && (
+                <div className="p-3.5 bg-gradient-to-r from-emerald-50/80 via-blue-50/40 to-slate-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800">
+                        Quotation accepted! Automated confirmation email dispatched to {userEmail || 'your email'}.
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Please complete the 2 required next steps to proceed with your inspection booking:
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => navigate('/customer/terms-to-sign')}
+                      className="px-3 py-1.5 rounded-lg bg-[#0B1F4D] text-white text-[11px] font-bold hover:bg-[#162E6E] cursor-pointer flex items-center gap-1"
+                    >
+                      <span>Sign Terms</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => navigate('/customer/my-bookings')}
+                      className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-[11px] font-bold hover:bg-slate-50 cursor-pointer flex items-center gap-1"
+                    >
+                      <span>Choose Date</span>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {quotes.length === 0 && (
           <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
@@ -1483,6 +1698,163 @@ export const CustomerQuotationsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal before Acceptance */}
+      {confirmQuote && (
+        <Modal
+          isOpen={true}
+          onClose={() => setConfirmQuote(null)}
+          title="Accept Quotation & Confirm Instruction"
+          size="md"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-slate-500 font-bold">{confirmQuote.id}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                  Fixed Fee Proposal
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-slate-900">{confirmQuote.property}</h4>
+              <p className="text-slate-600 font-semibold">{confirmQuote.surveyType}</p>
+              <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between font-mono">
+                <span className="text-slate-500">Total Fixed Fee (Inc. 20% VAT):</span>
+                <span className="text-base font-black text-[#0B1F4D]">{confirmQuote.total}</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-slate-600">
+              <p className="font-bold text-slate-800">What happens when you accept:</p>
+              <ul className="space-y-1.5 list-disc list-inside text-[11.5px]">
+                <li>
+                  An official automated confirmation email will be dispatched immediately to <strong>{userEmail || 'your email'}</strong>.
+                </li>
+                <li>Your survey instruction moves to the next RICS stage in our system.</li>
+                <li>You will be prompted to electronically sign your RICS Terms of Engagement.</li>
+                <li>You will be able to select your preferred property inspection date &amp; time slot.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setConfirmQuote(null)}
+                disabled={acceptingQuoteId !== null}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAcceptQuote(confirmQuote)}
+                disabled={acceptingQuoteId !== null}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {acceptingQuoteId ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Processing Acceptance...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Confirm &amp; Accept Quotation</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Success Modal with direct Next Steps */}
+      {acceptedSuccessQuote && (
+        <Modal
+          isOpen={true}
+          onClose={() => setAcceptedSuccessQuote(null)}
+          title="Quotation Accepted Successfully"
+          size="md"
+        >
+          <div className="space-y-5 text-center py-2">
+            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center ring-8 ring-emerald-50">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-[#0B1F4D]">
+                Thank You for Instructing NJS Property Group!
+              </h3>
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
+                Your quotation for <strong>{acceptedSuccessQuote.property}</strong> has been accepted. An automated confirmation email has been dispatched to <strong>{acceptedSuccessQuote.emailSentTo}</strong>.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-3">
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Please Complete Your Next 2 Steps:
+              </p>
+
+              {/* Step 1 */}
+              <div
+                onClick={() => {
+                  setAcceptedSuccessQuote(null);
+                  navigate('/customer/terms-to-sign');
+                }}
+                className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#2563EB] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#0B1F4D] font-bold flex items-center justify-center shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
+                      Digitally Sign Terms of Engagement
+                    </h5>
+                    <p className="text-[11px] text-slate-400">
+                      Required by RICS regulations before surveyor physical inspection.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-x-1 transition-all" />
+              </div>
+
+              {/* Step 2 */}
+              <div
+                onClick={() => {
+                  setAcceptedSuccessQuote(null);
+                  navigate('/customer/my-bookings');
+                }}
+                className="p-3 bg-white rounded-xl border border-slate-200 hover:border-[#2563EB] shadow-2xs hover:shadow-xs transition-all cursor-pointer flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-900 group-hover:text-[#2563EB] transition-colors">
+                      Select Preferred Inspection Date
+                    </h5>
+                    <p className="text-[11px] text-slate-400">
+                      Choose your preferred inspection time slot with our surveyor.
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] group-hover:translate-x-1 transition-all" />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setAcceptedSuccessQuote(null)}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              >
+                Continue in Portal
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

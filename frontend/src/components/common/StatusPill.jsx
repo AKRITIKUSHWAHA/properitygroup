@@ -81,6 +81,13 @@ const STATUS_CONFIGS = {
     border: 'border-slate-300',
     dot: 'bg-slate-400',
   },
+  accepted: {
+    label: 'Accepted',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-800',
+    border: 'border-emerald-300',
+    dot: 'bg-emerald-500',
+  },
 };
 
 export const StatusPill = ({ status, customLabel, size = 'md' }) => {

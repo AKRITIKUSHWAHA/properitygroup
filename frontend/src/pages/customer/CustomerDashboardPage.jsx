@@ -282,10 +282,56 @@ export const CustomerDashboardPage = () => {
             ? 6
             : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
             ? 5
+            : (customerJob?.termsStatus === 'Signed' || (customerJob?.timelineStep || 0) >= 4)
+            ? 4
+            : (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) >= 3)
+            ? 3
             : 2
         }
         job={customerJob}
       />
+
+      {/* SurveyBooker Trigger 2 Next-Steps Prompt Banner (If Quote is Accepted but Terms Pending) */}
+      {(customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) === 3) && customerJob?.termsStatus !== 'Signed' && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-50 via-blue-50/40 to-slate-50 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shrink-0 shadow-2xs">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                  Stage 3 Active • Next Action Required
+                </span>
+                <span className="text-xs font-bold text-slate-700">Quotation Accepted</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Your quotation for {customerJob?.property || 'your property'} has been confirmed!
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                We have emailed your confirmation. Please electronically sign your RICS Terms of Engagement and select your preferred inspection slot.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate('/customer/terms-to-sign')}
+              className="px-4 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>1. Sign Terms</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => navigate('/customer/my-bookings')}
+              className="px-4 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <CalendarCheck className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>2. Choose Date</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
