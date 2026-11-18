@@ -601,12 +601,34 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                   <div><strong>From:</strong> NJS Property Group Chartered Surveyors &lt;quotes@njspropertygroup.com&gt;</div>
                 </div>
 
-                {/* Email Header Banner */}
-                <div className="bg-[#0B1F4D] p-5 text-white text-center">
-                  <div className="inline-block px-3 py-1 rounded-full bg-white/10 text-amber-300 font-bold text-[10px] tracking-wider uppercase mb-2">
-                    NJS PROPERTY GROUP &bull; RICS CHARTERED SURVEYORS
+                {/* Email Header Banner with Official NJS Logo */}
+                <div className="bg-[#0B1F4D] p-5 sm:p-6 text-white text-center flex flex-col items-center">
+                  {/* Official NJS Property Group Brand Logo */}
+                  <div className="mb-3 flex flex-col items-center justify-center">
+                    <img
+                      src="/images/njs-logo-white.png"
+                      alt="NJS Property Group"
+                      className="h-12 sm:h-14 w-auto object-contain mx-auto drop-shadow-md"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = document.getElementById('njs-logo-fallback-badge');
+                        if (fallback) fallback.style.display = 'inline-block';
+                      }}
+                    />
+                    <div
+                      id="njs-logo-fallback-badge"
+                      style={{ display: 'none' }}
+                      className="px-3 py-1 rounded-full bg-white/10 text-amber-300 font-bold text-[10px] tracking-wider uppercase"
+                    >
+                      NJS PROPERTY GROUP &bull; RICS CHARTERED SURVEYORS
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold text-white m-0">
+
+                  <div className="inline-block px-3 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold text-[10px] tracking-wider uppercase mb-2">
+                    RICS REGULATED CHARTERED SURVEYORS
+                  </div>
+
+                  <h3 className="text-lg sm:text-xl font-bold text-white m-0 tracking-tight">
                     Here is your official home survey quotation
                   </h3>
 

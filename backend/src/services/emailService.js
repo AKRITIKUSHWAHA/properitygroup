@@ -238,7 +238,8 @@ export const sendQuoteProposalEmail = async ({
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
       <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">NJS PROPERTY GROUP</h1>
+        <img src="https://njspropertygroup.com/images/njs-logo-white.png" alt="NJS Property Group" style="height: 44px; width: auto; max-width: 220px; display: block; margin-bottom: 8px;" />
+        <h1 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 800; letter-spacing: 0.5px;">NJS PROPERTY GROUP</h1>
         <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Independent RICS-Regulated Practice • Firm #084920</p>
       </div>
       

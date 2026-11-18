@@ -262,23 +262,35 @@ export const EmailTemplatePreviewModal = ({
                 {/* Branded Email Envelope Body */}
                 <div className="p-6 sm:p-8 bg-slate-50/60 flex justify-center">
                   <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md max-w-xl w-full overflow-hidden">
-                    {/* Brand Banner */}
+                    {/* Brand Banner with Official NJS Logo */}
                     <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
-                          NJS
-                        </div>
-                        <div>
-                          <div className="font-black text-xs tracking-tight uppercase">
-                            NJS Property Group
+                      <div className="flex items-center gap-3">
+                        <img
+                          src="/images/njs-logo-white.png"
+                          alt="NJS Property Group"
+                          className="h-10 w-auto object-contain drop-shadow-sm"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = document.getElementById('email-brand-fallback');
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div id="email-brand-fallback" style={{ display: 'none' }} className="items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
+                            NJS
                           </div>
-                          <div className="text-[10px] text-slate-300">
-                            Independent RICS-Aligned Chartered Surveyors
+                          <div>
+                            <div className="font-black text-xs tracking-tight uppercase">
+                              NJS Property Group
+                            </div>
+                            <div className="text-[10px] text-slate-300">
+                              Independent RICS-Aligned Chartered Surveyors
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 text-amber-400 text-[11px] font-bold">
+                      <div className="flex items-center gap-1 text-amber-400 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-full">
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span>4.8 Trustpilot</span>
                       </div>
