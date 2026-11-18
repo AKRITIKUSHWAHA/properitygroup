@@ -20,6 +20,9 @@ import {
   Image as ImageIcon,
   Check,
   AlertTriangle,
+  Smartphone,
+  Download,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
@@ -28,6 +31,12 @@ import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
 import { surveyorDashboardApi } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
+import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
+import {
+  generateGoogleCalendarUrl,
+  generateJobIcsContent,
+  downloadIcsFile,
+} from '../../utils/calendarSync';
 
 /**
  * Mobile-First Surveyor Field Portal Dashboard
@@ -258,15 +267,17 @@ export const SurveyorDashboardPage = () => {
     });
   };
 
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       <PageHeader
         title="Surveyor Mobile Field Portal"
         subtitle="Manage allocated appointments, log site arrival & completion, record defect photos, and submit reports for QA."
         breadcrumb={['Surveyor', 'Field Portal']}
-        actionLabel="Availability & Diary"
-        actionIcon={Calendar}
-        onAction={() => navigate('/surveyor/my-availability')}
+        actionLabel="📲 Sync Mobile Diary"
+        actionIcon={Smartphone}
+        onAction={() => setIsSyncModalOpen(true)}
       />
 
       {/* 1. URGENT 48-HOUR SLA COUNTDOWN BANNER (Client Point 14) */}
@@ -345,16 +356,64 @@ export const SurveyorDashboardPage = () => {
             </p>
           </div>
 
-          {/* Google Maps Link */}
-          <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(`${primaryJob.property} ${primaryJob.location || ''}`)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors shrink-0 self-start sm:self-auto cursor-pointer"
-          >
-            <Navigation className="w-4 h-4 text-[#2563EB]" />
-            <span>Open Navigation</span>
-          </a>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
+            {/* 1-Click Google Calendar */}
+            <a
+              href={generateGoogleCalendarUrl({
+                id: primaryJob.id,
+                type: primaryJob.surveyType,
+                property: primaryJob.property,
+                location: primaryJob.location,
+                time: primaryJob.timeSlot,
+                access: primaryJob.propertyDetails?.accessDetails || 'Keys with estate agent',
+                specialInstructions: 'Electronic damp testing and daylight protocol',
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 text-xs font-bold transition-colors cursor-pointer"
+              title="Add to Google Calendar"
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Google Cal</span>
+            </a>
+
+            {/* 1-Click Apple / Outlook .ICS */}
+            <button
+              type="button"
+              onClick={() => {
+                const content = generateJobIcsContent({
+                  id: primaryJob.id,
+                  type: primaryJob.surveyType,
+                  property: primaryJob.property,
+                  location: primaryJob.location,
+                  time: primaryJob.timeSlot,
+                  access: primaryJob.propertyDetails?.accessDetails || 'Keys with estate agent',
+                });
+                downloadIcsFile(`RICS-${primaryJob.id}.ics`, content);
+                addToast({
+                  type: 'success',
+                  title: 'Calendar Event Downloaded',
+                  message: `Inspection for ${primaryJob.property} downloaded. Tap to open in Apple Calendar or Outlook.`,
+                });
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/80 text-xs font-bold transition-colors cursor-pointer"
+              title="Download .ICS file"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600" />
+              <span>Apple / .ICS</span>
+            </button>
+
+            {/* Google Maps Link */}
+            <a
+              href={`https://maps.google.com/?q=${encodeURIComponent(`${primaryJob.property} ${primaryJob.location || ''}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors cursor-pointer"
+            >
+              <Navigation className="w-4 h-4 text-[#2563EB]" />
+              <span>Open Navigation</span>
+            </a>
+          </div>
         </div>
 
         {/* Access & Keyholder Logistics Box (Point 14) */}
@@ -616,6 +675,14 @@ export const SurveyorDashboardPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Mobile Calendar Synchronization Modal */}
+      <SurveyorCalendarSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        surveyor={user}
+        appointments={allocatedJobs}
+      />
     </div>
   );
 };

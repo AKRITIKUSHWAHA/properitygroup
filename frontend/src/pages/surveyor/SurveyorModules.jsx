@@ -26,6 +26,7 @@ import {
   Eye,
   ExternalLink,
   User,
+  Smartphone,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
@@ -42,6 +43,12 @@ import {
   surveyorAvailabilityApi,
 } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
+import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
+import {
+  generateGoogleCalendarUrl,
+  generateJobIcsContent,
+  downloadIcsFile,
+} from '../../utils/calendarSync';
 
 // ==========================================
 // 1. SURVEYOR CALENDAR PAGE (Dynamic Date Fix for Point 8)
@@ -126,6 +133,7 @@ export const SurveyorCalendarPage = () => {
   });
 
   const [selectedDay, setSelectedDay] = useState(dynamicDays[1].label);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -151,13 +159,23 @@ export const SurveyorCalendarPage = () => {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/surveyor/upload-reports')}
-          className="px-3.5 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] shrink-0 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-        >
-          <UploadCloud className="w-3.5 h-3.5" />
-          <span>Upload Report PDF</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsSyncModalOpen(true)}
+            className="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs hover:scale-[1.02]"
+          >
+            <Smartphone className="w-4 h-4 text-white" />
+            <span>📲 Sync Mobile Diary</span>
+          </button>
+          <button
+            onClick={() => navigate('/surveyor/upload-reports')}
+            className="px-3.5 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>Upload Report PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Week Day Pills with Real Computed Dates */}
@@ -243,7 +261,38 @@ export const SurveyorCalendarPage = () => {
                   Ref: {apt.jobNo}
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* 1-Click Sync to Google Calendar */}
+                  <a
+                    href={generateGoogleCalendarUrl(apt)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Add this inspection to Google Calendar"
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Google Cal</span>
+                  </a>
+
+                  {/* 1-Click Download .ICS for Apple / Outlook */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const content = generateJobIcsContent(apt);
+                      downloadIcsFile(`RICS-${apt.jobNo || apt.id}.ics`, content);
+                      addToast({
+                        type: 'success',
+                        title: 'Calendar Event Downloaded',
+                        message: `Inspection for ${apt.property} downloaded. Tap to open in Apple Calendar or Outlook.`,
+                      });
+                    }}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Download .ICS file for Apple Calendar or Outlook"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Apple / .ICS</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => handleCompleteAppointment(apt.id || apt.jobNo)}
@@ -295,6 +344,14 @@ export const SurveyorCalendarPage = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile Calendar Synchronization Modal */}
+      <SurveyorCalendarSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        surveyor={user}
+        appointments={appointments}
+      />
     </div>
   );
 };
