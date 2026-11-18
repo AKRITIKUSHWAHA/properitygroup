@@ -1,6 +1,10 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import {
+  sendClientMessageToAdminNotificationEmail,
+  sendAdminReplyToClientNotificationEmail,
+} from '../../services/emailService.js';
 
 /**
  * Customer & Surveyor Messages Controller
@@ -21,10 +25,18 @@ export const getMessageContacts = async (req, res, next) => {
     if (currentUserRole === 'CUSTOMER') {
       const customerConvId = `conv-user-${currentUserId}`;
 
-      const latestCustomerMsg = await prisma.message.findFirst({
-        where: { conversationId: customerConvId },
-        orderBy: { createdAt: 'desc' },
-      });
+      const [latestCustomerMsg, unreadCount] = await Promise.all([
+        prisma.message.findFirst({
+          where: { conversationId: customerConvId },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.message.count({
+          where: {
+            conversationId: customerConvId,
+            readByCustomer: false,
+          },
+        }),
+      ]);
 
       const lastTime = latestCustomerMsg ? latestCustomerMsg.createdAt : new Date();
       const isToday = new Date(lastTime).toDateString() === new Date().toDateString();
@@ -45,7 +57,8 @@ export const getMessageContacts = async (req, res, next) => {
           time: formattedTime,
           lastMessageTime: lastTime,
           online: true,
-          unread: false,
+          unread: unreadCount > 0,
+          unreadCount,
         },
       ];
 
@@ -63,15 +76,26 @@ export const getMessageContacts = async (req, res, next) => {
     if (currentUserRole === 'SURVEYOR') {
       const surveyorConvId = `conv-user-${currentUserId}`;
 
-      const latestDeskMsg = await prisma.message.findFirst({
-        where: {
-          OR: [
-            { conversationId: surveyorConvId },
-            { conversationId: `conv-usr_${currentUserId}` },
-          ],
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const [latestDeskMsg, unreadCount] = await Promise.all([
+        prisma.message.findFirst({
+          where: {
+            OR: [
+              { conversationId: surveyorConvId },
+              { conversationId: `conv-usr_${currentUserId}` },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.message.count({
+          where: {
+            OR: [
+              { conversationId: surveyorConvId },
+              { conversationId: `conv-usr_${currentUserId}` },
+            ],
+            readByCustomer: false,
+          },
+        }),
+      ]);
 
       const lastTime = latestDeskMsg ? latestDeskMsg.createdAt : new Date();
       const isToday = new Date(lastTime).toDateString() === new Date().toDateString();
@@ -92,7 +116,8 @@ export const getMessageContacts = async (req, res, next) => {
           time: formattedTime,
           lastMessageTime: lastTime,
           online: true,
-          unread: false,
+          unread: unreadCount > 0,
+          unreadCount,
         },
       ];
 
@@ -147,15 +172,26 @@ export const getMessageContacts = async (req, res, next) => {
       distinctUsers.map(async (u) => {
         const convId = `conv-user-${u.id}`;
 
-        const latestMsg = await prisma.message.findFirst({
-          where: {
-            OR: [
-              { conversationId: convId },
-              { conversationId: `conv-usr_${u.id}` },
-            ],
-          },
-          orderBy: { createdAt: 'desc' },
-        });
+        const [latestMsg, unreadCount] = await Promise.all([
+          prisma.message.findFirst({
+            where: {
+              OR: [
+                { conversationId: convId },
+                { conversationId: `conv-usr_${u.id}` },
+              ],
+            },
+            orderBy: { createdAt: 'desc' },
+          }),
+          prisma.message.count({
+            where: {
+              OR: [
+                { conversationId: convId },
+                { conversationId: `conv-usr_${u.id}` },
+              ],
+              readByAdmin: false,
+            },
+          }),
+        ]);
 
         const nameParts = u.name.trim().split(/\s+/);
         const initials =
@@ -190,7 +226,8 @@ export const getMessageContacts = async (req, res, next) => {
           time: formattedTime,
           lastMessageTime: lastTime,
           online: true,
-          unread: false,
+          unread: unreadCount > 0,
+          unreadCount,
         };
       })
     );
@@ -249,12 +286,24 @@ export const getCustomerMessages = async (req, res, next) => {
     // Mark unread messages as read
     if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
       await prisma.message.updateMany({
-        where: { conversationId, readByCustomer: false },
+        where: {
+          OR: [
+            { conversationId },
+            { conversationId: conversationId.replace('conv-user-', 'conv-usr_') },
+          ],
+          readByCustomer: false,
+        },
         data: { readByCustomer: true },
       });
     } else {
       await prisma.message.updateMany({
-        where: { conversationId, readByAdmin: false },
+        where: {
+          OR: [
+            { conversationId },
+            { conversationId: conversationId.replace('conv-user-', 'conv-usr_') },
+          ],
+          readByAdmin: false,
+        },
         data: { readByAdmin: true },
       });
     }
@@ -310,6 +359,82 @@ export const sendCustomerMessage = async (req, res, next) => {
         readByAdmin: userRole === 'ADMIN' || userRole === 'SUPER_ADMIN',
       },
     });
+
+    // ========================================================
+    // POINT 9 NOTIFICATIONS DISPATCH ENGINE
+    // ========================================================
+    if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
+      // 1. Gmail Alert to Admin Team (Natasha / info@njspropertygroup.com)
+      sendClientMessageToAdminNotificationEmail({
+        clientName: req.user.name || (userRole === 'SURVEYOR' ? 'Assigned Surveyor' : 'Client'),
+        clientEmail: req.user.email || 'customer@njspropertygroup.com',
+        messageContent: content.trim(),
+        conversationId,
+      }).catch((err) =>
+        console.error('[sendClientMessageToAdminNotificationEmail] error:', err.message)
+      );
+
+      // 2. In-App Notification for Admin Team
+      prisma.notification
+        .create({
+          data: {
+            role: 'ADMIN',
+            title: `New Message from ${req.user.name || (userRole === 'SURVEYOR' ? 'Surveyor' : 'Client')}`,
+            desc:
+              content.trim().length > 140
+                ? `${content.trim().slice(0, 140)}...`
+                : content.trim(),
+            type: 'message',
+            link: `/admin/messages?conversationId=${encodeURIComponent(conversationId)}`,
+          },
+        })
+        .catch((err) => console.error('[Notification Admin] error:', err.message));
+    } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+      // Admin replied -> Notify the customer or surveyor
+      let recipientUser = null;
+      const match =
+        conversationId.match(/conv-user-(\d+)/) ||
+        conversationId.match(/conv-usr_(\d+)/);
+      if (match && match[1]) {
+        const recipientId = parseInt(match[1], 10);
+        recipientUser = await prisma.user.findUnique({
+          where: { id: recipientId },
+          select: { id: true, name: true, email: true, role: true },
+        });
+      }
+
+      if (recipientUser) {
+        // 1. Email notification to the client/surveyor
+        sendAdminReplyToClientNotificationEmail({
+          to: recipientUser.email,
+          clientName: recipientUser.name,
+          adminSenderName: req.user.name || 'NJS Operations Desk',
+          messageSnippet: content.trim(),
+        }).catch((err) =>
+          console.error('[sendAdminReplyToClientNotificationEmail] error:', err.message)
+        );
+
+        // 2. In-App Notification for recipient
+        prisma.notification
+          .create({
+            data: {
+              userId: recipientUser.id,
+              role: recipientUser.role,
+              title: 'New Reply from NJS Operations Desk',
+              desc:
+                content.trim().length > 140
+                  ? `${content.trim().slice(0, 140)}...`
+                  : content.trim(),
+              type: 'message',
+              link:
+                recipientUser.role === 'SURVEYOR'
+                  ? '/surveyor/messages'
+                  : '/customer/messages',
+            },
+          })
+          .catch((err) => console.error('[Notification Recipient] error:', err.message));
+      }
+    }
 
     return ApiResponse.created(
       res,

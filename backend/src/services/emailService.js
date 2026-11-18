@@ -352,3 +352,125 @@ export const sendInvoiceReceiptEmail = async ({
   console.log(`[RESEND SIMULATION] Receipt email dispatched to ${to} for invoice ${invoiceRef}`);
   return { success: true, provider: 'simulated_fallback' };
 };
+
+/**
+ * Send operational Gmail notification to Admin desk when a client sends a message in the portal
+ * Client Requirement Point 9:
+ * "The customer sends a message through their portal. The admin team receives the message, including a Gmail notification, and replies."
+ */
+export const sendClientMessageToAdminNotificationEmail = async ({
+  clientName,
+  clientEmail,
+  messageContent,
+  conversationId,
+}) => {
+  const subject = `[New Client Message] ${clientName} (${clientEmail}) — NJS Property Group Portal`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">NJS PROPERTY GROUP</h1>
+        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Customer Portal Direct Communications Desk</p>
+      </div>
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <div style="display: inline-block; padding: 4px 10px; border-radius: 9999px; background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
+          New Client Message Received
+        </div>
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Message from ${escapeHtml(clientName)}</h2>
+        <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">
+          <strong>Sender:</strong> ${escapeHtml(clientName)} &lt;${escapeHtml(clientEmail)}&gt;<br/>
+          <strong>Thread Reference:</strong> ${escapeHtml(conversationId)}
+        </p>
+
+        <div style="background: #f8fafc; border-left: 4px solid #2563EB; padding: 16px; border-radius: 8px; margin: 20px 0; font-style: normal; color: #0f172a;">
+          <p style="margin: 0; white-space: pre-wrap; font-size: 14px;">"${escapeHtml(messageContent)}"</p>
+        </div>
+
+        <div style="margin-top: 24px; text-align: left;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/messages?conversationId=${encodeURIComponent(conversationId)}" 
+             style="display: inline-block; background: #0B1F4D; color: #ffffff; font-weight: 700; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 13px;">
+            Open Admin Inbox &amp; Reply &rarr;
+          </a>
+        </div>
+      </div>
+      <div style="background: #f8fafc; padding: 16px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+        This is an automated operational notification dispatched to ${ENQUIRY_INBOX}. All messages are stored securely under GDPR and RICS record-keeping rules.
+      </div>
+    </div>
+  `;
+
+  const resend = getResend();
+  if (resend) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend message alert error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Client message notification dispatched to ${ENQUIRY_INBOX} from ${clientEmail}`);
+  return { success: true, provider: 'simulated_fallback' };
+};
+
+/**
+ * Send email notification to client when Admin replies to their portal message
+ * Client Requirement Point 9:
+ * "The customer receives a notification of the reply."
+ */
+export const sendAdminReplyToClientNotificationEmail = async ({
+  to,
+  clientName,
+  adminSenderName = 'NJS Operations Desk',
+  messageSnippet,
+}) => {
+  const subject = `New Message from NJS Property Group regarding your Survey`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">NJS PROPERTY GROUP</h1>
+        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">RICS Regulated Surveying Practice</p>
+      </div>
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <p style="margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</p>
+        <p>You have received a new reply from <strong>${escapeHtml(adminSenderName)}</strong> regarding your survey instruction.</p>
+
+        <div style="background: #f8fafc; border-left: 4px solid #059669; padding: 16px; border-radius: 8px; margin: 20px 0; color: #0f172a;">
+          <p style="margin: 0; white-space: pre-wrap; font-size: 14px;">"${escapeHtml(messageSnippet)}"</p>
+        </div>
+
+        <div style="margin-top: 24px; text-align: left;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/customer/messages" 
+             style="display: inline-block; background: #0B1F4D; color: #ffffff; font-weight: 700; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 13px;">
+            Open Client Messages &amp; Reply &rarr;
+          </a>
+        </div>
+      </div>
+      <div style="background: #f8fafc; padding: 16px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+        NJS Property Group &bull; Direct Phone: 0800 169 9661 &bull; Email: info@njspropertygroup.com
+      </div>
+    </div>
+  `;
+
+  const resend = getResend();
+  if (resend) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend client reply email error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Admin reply notification dispatched to ${to}`);
+  return { success: true, provider: 'simulated_fallback' };
+};

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FileText,
   CalendarCheck,
@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Phone,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
   Receipt,
   FileSpreadsheet,
@@ -3145,10 +3146,25 @@ export const CustomerMessagesPage = () => {
     unread: false,
   };
 
+  const [searchParams] = useSearchParams();
+  const urlConvId = searchParams.get('conversationId');
+
   const [inputMessage, setInputMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeChannelId, setActiveChannelId] = useState(defaultConvId);
-  const [mobileView, setMobileView] = useState('chat'); // 'list' | 'chat'
+  const [activeChannelId, setActiveChannelId] = useState(() => {
+    if (urlConvId && !isCustomer && !isSurveyor) return urlConvId;
+    return defaultConvId;
+  });
+  const [mobileView, setMobileView] = useState(() => (urlConvId ? 'chat' : 'chat')); // 'list' | 'chat'
+  const [contactFilter, setContactFilter] = useState('all'); // 'all' | 'needs_reply'
+
+  // URL Query Sync (e.g. from Gmail alert click -> /admin/messages?conversationId=conv-user-123)
+  useEffect(() => {
+    if (urlConvId && !isCustomer && !isSurveyor) {
+      setActiveChannelId(urlConvId);
+      setMobileView('chat');
+    }
+  }, [urlConvId, isCustomer, isSurveyor]);
 
   // Initial Contacts strictly role-isolated (Customers see ONLY Admin Desk; Surveyors see Admin Desk; Admin sees All)
   const [people, setPeople] = useState(() => {
@@ -3267,8 +3283,10 @@ export const CustomerMessagesPage = () => {
           const serverContacts = res?.contacts || res?.data?.contacts || [];
           if (Array.isArray(serverContacts) && serverContacts.length > 0) {
             setPeople(serverContacts);
-            // If activeChannelId is not in contacts, select the first valid contact
-            if (!serverContacts.some((c) => c.id === activeChannelId)) {
+            // If activeChannelId is not in contacts, select urlConvId or the first valid contact
+            if (urlConvId && serverContacts.some((c) => c.id === urlConvId)) {
+              setActiveChannelId(urlConvId);
+            } else if (!serverContacts.some((c) => c.id === activeChannelId)) {
               setActiveChannelId(serverContacts[0].id);
             }
           }
@@ -3445,13 +3463,19 @@ export const CustomerMessagesPage = () => {
     });
   };
 
-  // Real-time search filter for People
-  const filteredPeople = people.filter(
-    (p) =>
+  const unreadCountTotal = people.filter((p) => p.unreadCount > 0 || p.unread).length;
+
+  // Real-time search & filter for People
+  const filteredPeople = people.filter((p) => {
+    if (contactFilter === 'needs_reply' && !(p.unreadCount > 0 || p.unread)) {
+      return false;
+    }
+    return (
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.lastMessage && p.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.roleTitle && p.roleTitle.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+    );
+  });
 
   return (
     <div className="max-w-6xl mx-auto w-full p-2 sm:p-4 flex flex-col h-[calc(100vh-120px)] min-h-[640px]">
@@ -3479,7 +3503,7 @@ export const CustomerMessagesPage = () => {
 
       {/* Main 2-Column Chat Layout Matching Reference Image */}
       <div className="flex flex-col md:flex-row gap-3.5 sm:gap-4 flex-1 min-h-0 overflow-hidden">
-        {/* Left Column: Search & People Directory */}
+        {/* Left Column: Search, Needs-Reply Filter & People Directory */}
         <div
           className={`w-full md:w-72 lg:w-80 flex flex-col gap-3 shrink-0 ${
             mobileView === 'list' ? 'flex' : 'hidden md:flex'
@@ -3499,6 +3523,47 @@ export const CustomerMessagesPage = () => {
             </div>
           )}
 
+          {/* 1.5. Admin Quick Filter Tabs: All vs Needs Reply */}
+          {!isCustomer && !isSurveyor && (
+            <div className="flex items-center gap-1.5 p-1 bg-white border border-slate-200/90 rounded-2xl shadow-2xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setContactFilter('all')}
+                className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all ${
+                  contactFilter === 'all'
+                    ? 'bg-[#0B1F4D] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                All ({people.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setContactFilter('needs_reply')}
+                className={`flex-1 py-1.5 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  contactFilter === 'needs_reply'
+                    ? 'bg-[#0B1F4D] text-white shadow-xs'
+                    : unreadCountTotal > 0
+                    ? 'text-rose-600 font-extrabold hover:bg-rose-50'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <span>Needs Reply</span>
+                {unreadCountTotal > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      contactFilter === 'needs_reply'
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-rose-100 text-rose-700'
+                    }`}
+                  >
+                    {unreadCountTotal}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
           {/* 2. People Card Container (All Contacts Strictly Role-Isolated) */}
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
             <div className="flex items-center justify-between mb-2 px-1">
@@ -3512,6 +3577,7 @@ export const CustomerMessagesPage = () => {
             <div className="space-y-1">
               {filteredPeople.map((person) => {
                 const isSelected = isCustomer || isSurveyor ? true : activeChannelId === person.id;
+                const hasUnread = person.unreadCount > 0 || person.unread;
                 return (
                   <button
                     key={person.id}
@@ -3519,12 +3585,20 @@ export const CustomerMessagesPage = () => {
                     onClick={() => {
                       if (!isCustomer && !isSurveyor) {
                         setActiveChannelId(person.id);
+                        // Optimistically clear unread badge for snappy UI
+                        setPeople((prev) =>
+                          prev.map((p) =>
+                            p.id === person.id ? { ...p, unread: false, unreadCount: 0 } : p
+                          )
+                        );
                       }
                       setMobileView('chat');
                     }}
                     className={`w-full p-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-slate-100/90 ring-1 ring-slate-200'
+                        : hasUnread
+                        ? 'bg-rose-50/40 hover:bg-rose-50/70 border border-rose-100'
                         : 'hover:bg-slate-50'
                     }`}
                   >
@@ -3538,7 +3612,7 @@ export const CustomerMessagesPage = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                           <span className="font-bold text-slate-900 text-xs truncate">
                             {person.name}
                           </span>
@@ -3553,6 +3627,11 @@ export const CustomerMessagesPage = () => {
                           >
                             {person.roleTitle || (person.role === 'SURVEYOR' ? 'RICS' : 'Client')}
                           </span>
+                          {!isCustomer && !isSurveyor && hasUnread && (
+                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-100 text-rose-700 border border-rose-200 shrink-0">
+                              Needs Reply
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
                           {person.lastMessage}
@@ -3560,12 +3639,14 @@ export const CustomerMessagesPage = () => {
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 flex flex-col items-end">
                       <span className="text-[10px] text-slate-400 block font-medium">
                         {person.time}
                       </span>
-                      {person.unread ? (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block mt-0.5" />
+                      {hasUnread ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-xs animate-pulse mt-0.5">
+                          {person.unreadCount || 1} new
+                        </span>
                       ) : (
                         <CheckCheck className="w-3.5 h-3.5 text-emerald-600 inline-block mt-0.5" />
                       )}
@@ -3586,6 +3667,16 @@ export const CustomerMessagesPage = () => {
           {/* Chat Window Header */}
           <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3 min-w-0">
+              {/* Back to conversations on mobile */}
+              <button
+                type="button"
+                onClick={() => setMobileView('list')}
+                className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors"
+                title="Back to conversations list"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+
               <div className="relative shrink-0">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                   {activeContact?.avatar || 'NJS'}
@@ -3620,7 +3711,26 @@ export const CustomerMessagesPage = () => {
                 </p>
               </div>
             </div>
+
+            {/* Admin indicator on top right */}
+            {!isCustomer && !isSurveyor && (activeContact?.unreadCount > 0 || activeContact?.unread) && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+                Needs Reply
+              </span>
+            )}
           </div>
+
+          {/* Admin Operational Alert Banner when client has sent unread message */}
+          {!isCustomer && !isSurveyor && (activeContact?.unreadCount > 0 || activeContact?.unread) && (
+            <div className="bg-amber-50/90 border-b border-amber-200/70 px-4 py-2 flex items-center justify-between text-xs text-amber-900 font-medium shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping shrink-0" />
+                <span>
+                  <strong>Action Required:</strong> Customer sent an unread message. Replying here sends a direct portal update and an automatic email notification to their inbox.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Message Thread Body */}
           <div className="flex-1 p-5 sm:p-6 overflow-y-auto min-h-0 space-y-4 bg-white overscroll-contain">
