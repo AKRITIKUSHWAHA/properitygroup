@@ -241,30 +241,34 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           </div>
         </div>
 
-        {/* Customer Portal Account Notice */}
-        <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '0.75rem', marginTop: '0.65rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
-          <CheckCircle2 size={18} style={{ color: '#16A34A', flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534', display: 'block' }}>
-              Customer Portal Account Active
-            </span>
-            <span style={{ fontSize: '0.76rem', color: '#15803D', lineHeight: 1.4, display: 'block' }}>
-              Your account is ready with email <strong>{data.customerEmail}</strong>. Use your password to log in, view quotes, and track your survey.
-            </span>
+        {/* Customer Portal Account Notice (Only when Client Portal Login is Active) */}
+        {siteConfig.features?.showPublicPortalLogin && (
+          <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '0.75rem', marginTop: '0.65rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
+            <CheckCircle2 size={18} style={{ color: '#16A34A', flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534', display: 'block' }}>
+                Customer Portal Account Active
+              </span>
+              <span style={{ fontSize: '0.76rem', color: '#15803D', lineHeight: 1.4, display: 'block' }}>
+                Your account is ready with email <strong>{data.customerEmail}</strong>. Use your password to log in, view quotes, and track your survey.
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="quote-success-actions" style={{ marginTop: '0.85rem' }}>
-          <Link
-            to="/login"
-            state={{ prefilledEmail: data.customerEmail }}
-            className="compact-submit-btn quote-success-action-btn"
-            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: '#0B1F4D', color: '#FFFFFF', fontWeight: 700 }}
-          >
-            <User size={15} />
-            <span>Login to Customer Dashboard &rarr;</span>
-          </Link>
+          {siteConfig.features?.showPublicPortalLogin && (
+            <Link
+              to="/login"
+              state={{ prefilledEmail: data.customerEmail }}
+              className="compact-submit-btn quote-success-action-btn"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: '#0B1F4D', color: '#FFFFFF', fontWeight: 700 }}
+            >
+              <User size={15} />
+              <span>Login to Customer Dashboard &rarr;</span>
+            </Link>
+          )}
 
           <button
             type="button"
@@ -495,56 +499,58 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         </div>
       </div>
 
-      {/* Row 6: Create Account Password (for Customer Portal) */}
-      <div className="form-group-compact" style={{ marginBottom: '0.55rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-          <label htmlFor="password" className="form-label-compact" style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <Lock size={12} style={{ color: '#0B1F4D' }} />
-            <span>Create Portal Password <span className="req">*</span></span>
-          </label>
-          <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 500 }}>
-            Min. 6 characters
+      {/* Row 6: Create Account Password (only displayed when Customer Portal is enabled) */}
+      {siteConfig.features?.showPublicPortalLogin && (
+        <div className="form-group-compact" style={{ marginBottom: '0.55rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <label htmlFor="password" className="form-label-compact" style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Lock size={12} style={{ color: '#0B1F4D' }} />
+              <span>Create Portal Password <span className="req">*</span></span>
+            </label>
+            <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 500 }}>
+              Min. 6 characters
+            </span>
+          </div>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              name="password"
+              placeholder="Choose a password (to log in and track survey)"
+              value={formData.password}
+              onChange={handleChange}
+              className={`form-input form-input-compact ${errors.password ? 'is-invalid' : ''}`}
+              aria-invalid={!!errors.password}
+              autoComplete="new-password"
+              style={{ paddingRight: '2.5rem' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '0.55rem',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748B',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px'
+              }}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          {errors.password && <span className="form-error-compact">{errors.password}</span>}
+          <span style={{ display: 'block', fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.3 }}>
+            Use this password with your email to log in to your dashboard to review quotes and download reports.
           </span>
         </div>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <input
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            name="password"
-            placeholder="Choose a password (to log in and track survey)"
-            value={formData.password}
-            onChange={handleChange}
-            className={`form-input form-input-compact ${errors.password ? 'is-invalid' : ''}`}
-            aria-invalid={!!errors.password}
-            autoComplete="new-password"
-            style={{ paddingRight: '2.5rem' }}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: 'absolute',
-              right: '0.55rem',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#64748B',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px'
-            }}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-            title={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        </div>
-        {errors.password && <span className="form-error-compact">{errors.password}</span>}
-        <span style={{ display: 'block', fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.3 }}>
-          Use this password with your email to log in to your dashboard to review quotes and download reports.
-        </span>
-      </div>
+      )}
 
       {/* Expandable Optional Notes Section */}
       <div style={{ marginBottom: '0.45rem' }}>

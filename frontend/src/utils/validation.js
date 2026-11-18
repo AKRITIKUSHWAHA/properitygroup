@@ -3,6 +3,8 @@
  * Master Specification Part 8.1 & 8.2
  */
 
+import { siteConfig } from '../config/siteConfig';
+
 // UK Postcode Regex Pattern
 const UK_POSTCODE_REGEX = /^([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}|GIR ?0AA)$/i;
 
@@ -73,9 +75,11 @@ export function validateQuoteForm(formData) {
     }
   }
 
-  // Account Password (for customer dashboard access)
-  if (!formData.password || formData.password.trim().length < 6) {
-    errors.password = "Please choose a password with at least 6 characters for your customer portal login.";
+  // Account Password (for customer dashboard access - only required when public client portal is active)
+  if (siteConfig?.features?.showPublicPortalLogin) {
+    if (!formData.password || formData.password.trim().length < 6) {
+      errors.password = "Please choose a password with at least 6 characters for your customer portal login.";
+    }
   }
 
   // Privacy Notice Consent
