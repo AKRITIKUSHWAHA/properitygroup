@@ -27,6 +27,7 @@ import {
   ChevronsUpDown,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -38,12 +39,14 @@ import { useToast } from '../../components/ToastContext';
 import { adminCrmAndLeadsApi } from '../../api/adminApi';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { LEAD_SOURCES, LEAD_STATUSES, useLeads, formatLeadReference } from '../../mock/leads';
+import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
 
 // 3-Dot Clean Action Dropdown Menu for each Lead
 const LeadRowActions = ({
   lead,
   onView,
   onQuote,
+  onAutoQuote,
   onConvert,
   onClientProfile,
   onStatusChange,
@@ -83,21 +86,35 @@ const LeadRowActions = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute right-0 top-full mt-1 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
           {/* Primary Action Based on State */}
           {!isQuoted && !isConverted && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsOpen(false);
-                onQuote(lead);
-              }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-950 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer text-left"
-            >
-              <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Send Fee Quote</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  if (onAutoQuote) onAutoQuote(lead);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-950 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>⚡ Auto-Dispatch Quote Email</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onQuote(lead);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-50/70 transition-colors cursor-pointer text-left"
+              >
+                <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Custom Fee Quote &amp; Terms</span>
+              </button>
+            </>
           )}
 
           {isQuoted && (
@@ -119,12 +136,24 @@ const LeadRowActions = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsOpen(false);
+                  if (onAutoQuote) onAutoQuote(lead);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+              >
+                <Send className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Resend Quote Email</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
                   onQuote(lead);
                 }}
                 className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
               >
                 <PoundSterling className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Adjust / Resend Quote</span>
+                <span>Adjust Quote Pricing</span>
               </button>
             </>
           )}
@@ -382,9 +411,34 @@ export const AdminLeadsPage = () => {
     addLead(newLead);
     addToast({
       type: 'success',
-      title: 'New Lead Registered',
-      message: `${newLead.customerName} (${newLead.id}) has been added to the CRM pipeline.`,
+      title: newLead.autoQuoteSent ? 'Lead Registered & Auto-Quote Sent' : 'New Lead Registered',
+      message: newLead.autoQuoteSent
+        ? `${newLead.customerName} (${newLead.id}) registered and quotation dispatched to ${newLead.customerEmail}.`
+        : `${newLead.customerName} (${newLead.id}) has been added to the CRM pipeline.`,
     });
+  };
+
+  // SurveyBooker Trigger 1: One-Click Auto-Quote Dispatch
+  const handleAutoQuote = async (targetLead) => {
+    try {
+      const result = await dispatchAutoQuoteForLead(targetLead);
+      if (result.success) {
+        addToast({
+          type: 'success',
+          title: 'SurveyBooker Auto-Quote Dispatched',
+          message: `Formal proposal for £${result.pricing.totalAmount.toFixed(2)} dispatched to ${targetLead.customerEmail} (${result.quoteRef}).`,
+        });
+        if (viewingLead && viewingLead.id === targetLead.id) {
+          setViewingLead(result.updatedLead);
+        }
+      }
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Auto-Quote Dispatch Failed',
+        message: err.message,
+      });
+    }
   };
 
   // Quick status update
@@ -992,6 +1046,19 @@ export const AdminLeadsPage = () => {
                       {/* 9. Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <StatusPill status={row.status} />
+                        {(row.autoQuoteSent || row.autoQuoteBadge) && (
+                          <div className="mt-1 flex flex-col items-start gap-0.5">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                              <span>Auto-Quote Sent</span>
+                            </span>
+                            {row.autoQuoteDispatchedAt && (
+                              <span className="text-[10px] font-mono text-slate-400 pl-0.5">
+                                {row.autoQuoteDispatchedAt}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* 10. Actions */}
@@ -1003,6 +1070,7 @@ export const AdminLeadsPage = () => {
                           lead={row}
                           onView={(l) => setViewingLead(l)}
                           onQuote={(l) => setQuotingLead(l)}
+                          onAutoQuote={handleAutoQuote}
                           onConvert={handleConvertDeal}
                           onClientProfile={(email, tab) => {
                             setSelectedClientEmail(email);
@@ -1132,6 +1200,38 @@ export const AdminLeadsPage = () => {
                 {viewingLead.estimatedValue}
               </div>
             </div>
+
+            {/* SurveyBooker Trigger 1: Auto-Quote Dispatched Banner */}
+            {viewingLead.autoQuoteSent && (
+              <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-emerald-950 text-xs">
+                        SurveyBooker Auto-Quotation Dispatched (Trigger 1)
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Delivered
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-emerald-800 block mt-0.5">
+                      Sent to: <strong>{viewingLead.customerEmail}</strong> • Time: <span className="font-mono">{viewingLead.autoQuoteDispatchedAt || viewingLead.created}</span> • Ref: <span className="font-mono font-bold">{viewingLead.quoteReference || viewingLead.id}</span>
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAutoQuote(viewingLead)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-100/70 text-emerald-900 text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0"
+                >
+                  <Send className="w-3 h-3 text-emerald-700" />
+                  <span>Resend Email</span>
+                </button>
+              </div>
+            )}
 
             {/* Quick Quotation Action Card */}
             {viewingLead.status.toLowerCase() !== 'quoted' &&

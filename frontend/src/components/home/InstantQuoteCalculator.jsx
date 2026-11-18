@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../common/Button';
 import { getStoredLeads, saveStoredLeads } from '../../mock/leads';
+import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
 
 export function InstantQuoteCalculator({ onComplete }) {
   // Step 1: Input details, Step 2: Instant price options, Step 3: Success confirmation
@@ -117,6 +118,8 @@ export function InstantQuoteCalculator({ onComplete }) {
       quotedAmount: `£${selectedPrice}.00`,
       quoteDate: new Date().toLocaleDateString('en-GB'),
       quoteReference: ref,
+      autoQuoteSent: true,
+      autoQuoteBadge: 'Auto-Quote Sent',
       notes: `Instant online quote generated for ${bedrooms} bed ${propertyType} in ${postcode}. Price bracket: ${approxValue}.`,
     };
 
@@ -126,6 +129,11 @@ export function InstantQuoteCalculator({ onComplete }) {
     } catch (err) {
       console.error('Error saving quote lead', err);
     }
+
+    // SurveyBooker Trigger 1: Auto-Dispatch Formal Quotation Email
+    dispatchAutoQuoteForLead(newLead, { price: selectedPrice }).catch((err) => {
+      console.warn('Auto-quote background dispatch:', err);
+    });
 
     setTimeout(() => {
       setQuoteReference(ref);
@@ -395,6 +403,11 @@ export function InstantQuoteCalculator({ onComplete }) {
         <div className="widget-success-view">
           <div className="success-icon-badge">
             <CheckCircle2 size={36} className="text-emerald-500" />
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 mb-2">
+            <Sparkles size={13} className="text-emerald-600" />
+            <span>SurveyBooker Auto-Quote Dispatched</span>
           </div>
 
           <h4 className="success-title">Your Quote is Ready!</h4>

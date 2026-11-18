@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Building2, PoundSterling, FileText, Send } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Building2, PoundSterling, FileText, Send, Sparkles } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { LEAD_SOURCES, LEAD_STATUSES } from '../../mock/leads';
+import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
 
 const OWNERS = [
   'Sarah Jenkins',
@@ -36,6 +37,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
     notes: '',
   });
 
+  const [autoDispatchQuote, setAutoDispatchQuote] = useState(true);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -66,6 +68,10 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
 
     const isLsd = (formData.source || '').toLowerCase().includes('local') || (formData.source || '').toLowerCase().includes('lsd');
     const prefix = isLsd ? 'LSD' : 'NJS';
+    const now = new Date();
+    const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
     const newLead = {
       id: `${prefix}-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: formData.customerName.trim(),
@@ -75,12 +81,23 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
       property: formData.property.trim(),
       location: formData.location.trim(),
       source: formData.source,
-      status: formData.status,
-      created: new Intl.DateTimeFormat('en-GB').format(new Date()),
+      status: autoDispatchQuote ? 'Quoted' : formData.status,
+      created: formattedDate,
       owner: formData.owner,
       estimatedValue: formattedValue,
+      quotedAmount: formattedValue,
+      quoteDate: autoDispatchQuote ? formattedDate : undefined,
+      autoQuoteSent: autoDispatchQuote,
+      autoQuoteBadge: autoDispatchQuote ? 'Auto-Quote Sent' : undefined,
+      autoQuoteDispatchedAt: autoDispatchQuote ? formattedTime : undefined,
       notes: formData.notes.trim() || 'No additional notes provided.',
     };
+
+    if (autoDispatchQuote) {
+      dispatchAutoQuoteForLead(newLead, { price: formData.estimatedValue }).catch((err) => {
+        console.warn('Auto-quote dispatch error:', err);
+      });
+    }
 
     onSubmit(newLead);
     onClose();
@@ -332,6 +349,26 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* SurveyBooker Trigger 1: Auto-Dispatch Option */}
+        <div className="p-3.5 bg-blue-50/80 border border-blue-200/90 rounded-2xl flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="auto-dispatch-quote"
+            checked={autoDispatchQuote}
+            onChange={(e) => setAutoDispatchQuote(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+          />
+          <label htmlFor="auto-dispatch-quote" className="text-xs cursor-pointer select-none">
+            <div className="font-bold text-[#0B1F4D] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Auto-Dispatch Instant Quotation Email via SurveyBooker (Trigger 1)</span>
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Automatically dispatches formal RICS quotation email with official NJS logo, fixed fee + 20% UK VAT breakdown, and portal review link to <strong>{formData.customerEmail || 'client'}</strong>.
+            </div>
+          </label>
         </div>
 
         {/* Notes */}
