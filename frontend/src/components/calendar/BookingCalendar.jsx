@@ -870,7 +870,16 @@ export const BookingCalendar = () => {
           job={selectedEvent}
           onRescheduled={(updated) => {
             setJobs((prev) =>
-              prev.map((j) => (j.id === updated.id || j.jobNo === updated.jobNo ? { ...j, ...updated } : j))
+              prev.map((j) => {
+                const isMatch =
+                  j.id === updated.id ||
+                  String(j.id) === String(updated.id) ||
+                  j.jobNo === updated.jobNo ||
+                  String(j.jobNo) === String(updated.jobNo) ||
+                  (updated.reference && j.reference === updated.reference) ||
+                  (updated.dbId && j.dbId === updated.dbId);
+                return isMatch ? { ...j, ...updated } : j;
+              })
             );
             setSelectedEvent(null);
             setIsRescheduleModalOpen(false);

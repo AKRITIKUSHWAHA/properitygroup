@@ -77,7 +77,7 @@ export const JobDetailsPage = () => {
   const { user } = useAuth();
 
   // Find job from persistent jobs collection, fallback to first available or dynamically reconstructed real job
-  const job = useMemo(() => {
+  const baseJob = useMemo(() => {
     const matched = jobs.find(
       (j) =>
         String(j.id) === String(jobId) ||
@@ -126,6 +126,12 @@ export const JobDetailsPage = () => {
       timelineStep: 9,
     };
   }, [jobs, jobId]);
+
+  const [localJobOverrides, setLocalJobOverrides] = useState({});
+  const job = useMemo(() => ({
+    ...baseJob,
+    ...localJobOverrides,
+  }), [baseJob, localJobOverrides]);
 
   // Surveyor Privacy Lockdown: surveyors should only see their diary and upload reports, not CRM/financial jobs
   useEffect(() => {
@@ -2227,7 +2233,12 @@ export const JobDetailsPage = () => {
         isOpen={isRescheduleModalOpen}
         onClose={() => setIsRescheduleModalOpen(false)}
         job={job}
-        onRescheduled={(updated) => updateJob(job.id, updated)}
+        onRescheduled={(updated) => {
+          setLocalJobOverrides((prev) => ({ ...prev, ...updated }));
+          updateJob(job.id, updated);
+          if (job.jobNo && job.jobNo !== job.id) updateJob(job.jobNo, updated);
+          if (job.reference && job.reference !== job.id) updateJob(job.reference, updated);
+        }}
       />
     </div>
   );

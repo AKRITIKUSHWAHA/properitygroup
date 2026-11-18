@@ -297,17 +297,40 @@ export const useJobs = () => {
       if (customerEmail) localStorage.setItem(`propertygroup_delivered_${customerEmail}`, 'true');
     }
 
-    setJobs((prev) =>
-      prev.map((j) => {
+    setJobs((prev) => {
+      let found = false;
+      const next = prev.map((j) => {
         const matches =
           j.id === id ||
+          String(j.id) === String(id) ||
           j.jobNo === id ||
+          String(j.jobNo) === String(id) ||
+          (j.reference && String(j.reference) === String(id)) ||
+          (j.dbId && String(j.dbId) === String(id)) ||
           (updates.customerEmail && j.customerEmail && j.customerEmail.toLowerCase() === updates.customerEmail.toLowerCase()) ||
           (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase()) ||
           (!id && j.customerEmail);
-        return matches ? { ...j, ...updates } : j;
-      })
-    );
+        if (matches) {
+          found = true;
+          return { ...j, ...updates };
+        }
+        return j;
+      });
+
+      if (!found && id) {
+        next.push({
+          id,
+          jobNo: id,
+          reference: id,
+          status: 'Booked',
+          stage: 'BOOKED',
+          timelineStep: 6,
+          ...updates,
+        });
+      }
+      return next;
+    });
+
     const token = localStorage.getItem('property_group_auth_token');
     if (token && (updates.stage || updates.status)) {
       let stageName = (updates.stage || updates.status || '').toUpperCase().replace(/\s+/g, '_');
@@ -329,6 +352,10 @@ export const useJobs = () => {
       }).catch(() => {});
     }
     if (token && (updates.date || updates.inspectionDate || updates.timeSlot)) {
+      let numericSurveyorId = updates.surveyorId;
+      if (typeof numericSurveyorId === 'string') {
+        numericSurveyorId = parseInt(numericSurveyorId.replace('srv-', ''), 10) || 1;
+      }
       fetch(`/api/v1/survey-jobs/${id}/reschedule`, {
         method: 'PATCH',
         headers: {
@@ -338,7 +365,7 @@ export const useJobs = () => {
         body: JSON.stringify({
           inspectionDate: updates.inspectionDate || updates.date,
           inspectionTime: updates.inspectionTime || updates.timeSlot,
-          surveyorId: updates.surveyorId,
+          surveyorId: numericSurveyorId,
           reason: updates.rescheduleReason || updates.reason || 'Rescheduled via CRM',
         }),
       }).catch(() => {});

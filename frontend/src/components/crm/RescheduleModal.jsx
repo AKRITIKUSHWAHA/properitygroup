@@ -104,6 +104,12 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
 
     // 1. Update local mock jobs state
     updateJob(job.id, updates);
+    if (job.jobNo && job.jobNo !== job.id) {
+      updateJob(job.jobNo, updates);
+    }
+    if (job.reference && job.reference !== job.id) {
+      updateJob(job.reference, updates);
+    }
 
     // 2. Log in client profiles call log
     const clientEmail = job.customerEmail || job.clientEmail;
@@ -123,16 +129,25 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
 
     // 3. Persist to MySQL Backend via PUT/PATCH /api/v1/survey-jobs/:id/reschedule
     try {
-      const jobId = job.dbId || job.id;
+      const jobId = job.dbId || job.reference || job.id;
+      const srvNumericId = parseInt(String(targetSurveyorObj.id || '1').replace('srv-', ''), 10) || 1;
       await adminSurveyJobsApi.rescheduleJob(jobId, {
         inspectionDate: newDate,
         inspectionTime: selectedSlot,
-        surveyorId: targetSurveyorObj.id.replace('srv-', ''),
+        surveyorId: srvNumericId,
         reason: `${reason}${additionalNotes ? ` - ${additionalNotes}` : ''}`,
+        propertyAddress: job.property || job.location,
+        clientName: job.customer || job.clientName,
+        clientEmail: clientEmail,
       });
     } catch (err) {
       console.warn('Backend reschedule warning:', err.message);
     }
+
+    // 4. Dispatch global event to notify calendar and dashboard listeners
+    try {
+      window.dispatchEvent(new CustomEvent('propertygroup_jobs_updated', { detail: { id: job.id, updates } }));
+    } catch (e) {}
 
     addToast({
       type: 'success',
