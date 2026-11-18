@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Login handler with real backend API authentication & graceful fallback
-  const login = async (email, password, rememberMe = false, redirectTo = null) => {
+  const login = async (email, password, rememberMe = false, redirectTo = null, expectedRole = null) => {
     setIsLoading(true);
 
     const trimmedEmail = (email || '').trim().toLowerCase();
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     let authToken = null;
 
     try {
-      const res = await authApi.login(trimmedEmail, password);
+      const res = await authApi.login(trimmedEmail, password, expectedRole);
       if (res?.token && res?.user) {
         authToken = res.token;
         backendUser = res.user;
@@ -120,6 +120,14 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (apiErr) {
       console.warn('Real backend authentication attempt:', apiErr.message);
+      if (
+        apiErr.message?.includes('Access Denied') ||
+        apiErr.message?.includes('strictly reserved') ||
+        apiErr.message?.includes('strictly for')
+      ) {
+        setIsLoading(false);
+        throw apiErr;
+      }
     }
 
     let matchedUser = null;
@@ -191,6 +199,32 @@ export const AuthProvider = ({ children }) => {
     if (!matchedUser) {
       setIsLoading(false);
       throw new Error('Invalid email or password. Please verify your credentials.');
+    }
+
+    // ========================================================
+    // STRICT PORTAL ROLE ISOLATION
+    // Ensures Admin logs in from Admin, Surveyor from Surveyor, Customer from Customer
+    // ========================================================
+    if (expectedRole) {
+      const exp = String(expectedRole).toLowerCase();
+      if ((exp === 'super_admin' || exp === 'admin') && matchedUser.role !== 'super_admin' && matchedUser.role !== 'admin') {
+        setIsLoading(false);
+        throw new Error(
+          'Access Denied: This login portal is strictly reserved for NJS Operations & Administrative personnel. Customers please use the Client Portal, and Surveyors use the Surveyor Portal.'
+        );
+      }
+      if (exp === 'surveyor' && matchedUser.role !== 'surveyor') {
+        setIsLoading(false);
+        throw new Error(
+          'Access Denied: This login portal is strictly reserved for RICS Field Surveyors. Customers please use the Client Portal, and Staff use the Admin Portal.'
+        );
+      }
+      if (exp === 'customer' && matchedUser.role !== 'customer' && matchedUser.role !== 'client') {
+        setIsLoading(false);
+        throw new Error(
+          'Access Denied: This portal is strictly for Property Clients. Staff and surveyors please use the Staff Back-Office.'
+        );
+      }
     }
 
     if (matchedUser.role === 'customer' && !isClientPortalEnabled()) {

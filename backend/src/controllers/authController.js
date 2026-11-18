@@ -61,7 +61,7 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, portalRole } = req.body;
 
     if (!email || !password) {
       throw ApiError.badRequest('Email and password are required');
@@ -90,6 +90,32 @@ export const login = async (req, res, next) => {
 
     if (!isMatch) {
       throw ApiError.unauthorized('Invalid email or password');
+    }
+
+    // ========================================================
+    // STRICT ROLE ISOLATION PER LOGIN ENTRANCE
+    // ========================================================
+    if (portalRole) {
+      const pRole = String(portalRole).toUpperCase();
+      if (pRole === 'ADMIN' || pRole === 'SUPER_ADMIN') {
+        if (user.role !== 'ADMIN') {
+          throw ApiError.forbidden(
+            'Access Denied: This login portal is strictly reserved for NJS Operations & Administrative personnel. Customers please use the Client Portal, and Surveyors use the Surveyor Portal.'
+          );
+        }
+      } else if (pRole === 'SURVEYOR') {
+        if (user.role !== 'SURVEYOR') {
+          throw ApiError.forbidden(
+            'Access Denied: This login portal is strictly reserved for RICS Field Surveyors. Customers please use the Client Portal, and Staff use the Admin Portal.'
+          );
+        }
+      } else if (pRole === 'CUSTOMER' || pRole === 'CLIENT') {
+        if (user.role !== 'CUSTOMER') {
+          throw ApiError.forbidden(
+            'Access Denied: This portal is strictly for Property Clients. Staff and surveyors please use the Staff Back-Office.'
+          );
+        }
+      }
     }
 
     if (user.role === 'CUSTOMER' && !env.ENABLE_CLIENT_PORTAL_LOGIN) {

@@ -14,7 +14,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
-import { DEFAULT_DEMO_PASSWORD } from '../../mock/users';
 import { siteConfig } from '../../config/siteConfig';
 
 // Dedicated, executive portal configurations for Customer, Surveyor, and Admin
@@ -134,35 +133,10 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const currentRoleConfig = ROLES_CONFIG[activeRoleKey] || ROLES_CONFIG.customer;
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
-  const getInitialEmail = (roleKey) => {
-    if (urlEmail) return urlEmail;
-    const config = ROLES_CONFIG[roleKey] || ROLES_CONFIG.customer;
-    const remembered = getRememberedEmail ? getRememberedEmail(roleKey) : '';
-    if (roleKey === 'customer') {
-      if (remembered && !remembered.includes('surveyor') && !remembered.includes('admin') && remembered !== 'surveyor@demo.com' && remembered !== 'admin@demo.com') {
-        return remembered;
-      }
-      return config.defaultEmail;
-    }
-    if (roleKey === 'surveyor') {
-      if (remembered && !remembered.includes('customer') && !remembered.includes('admin') && remembered !== 'customer@demo.com' && remembered !== 'admin@demo.com') {
-        return remembered;
-      }
-      return config.defaultEmail;
-    }
-    if (roleKey === 'super_admin' || roleKey === 'admin') {
-      if (remembered && !remembered.includes('customer') && !remembered.includes('surveyor') && remembered !== 'customer@demo.com' && remembered !== 'surveyor@demo.com') {
-        return remembered;
-      }
-      return config.defaultEmail;
-    }
-    return config.defaultEmail;
-  };
-
-  const [email, setEmail] = useState(() => urlEmail || location.state?.prefilledEmail || getInitialEmail(activeRoleKey));
-  const [password, setPassword] = useState(() => (location.state?.prefilledEmail ? '' : DEFAULT_DEMO_PASSWORD));
+  const [email, setEmail] = useState(() => urlEmail || location.state?.prefilledEmail || '');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -216,8 +190,8 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
       setEmail(location.state.prefilledEmail);
       setPassword('');
     } else {
-      setEmail(getInitialEmail(activeRoleKey));
-      setPassword(DEFAULT_DEMO_PASSWORD);
+      setEmail('');
+      setPassword('');
     }
     setErrorMessage('');
   }, [activeRoleKey, location.state, urlEmail]);
@@ -229,7 +203,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
 
     try {
       const returnUrl = location.state?.from?.pathname;
-      await login(email, password, rememberMe, returnUrl);
+      await login(email, password, rememberMe, returnUrl, activeRoleKey);
     } catch (err) {
       setErrorMessage(
         err.message || 'Authentication failed. Please verify your email and password.'
@@ -300,7 +274,13 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
-                  placeholder="e.g. name@njspropertygroup.com"
+                  placeholder={
+                    activeRoleKey === 'super_admin'
+                      ? 'Enter administrator email'
+                      : activeRoleKey === 'surveyor'
+                      ? 'Enter surveyor email'
+                      : 'Enter customer email'
+                  }
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all disabled:opacity-50"
                 />
               </div>

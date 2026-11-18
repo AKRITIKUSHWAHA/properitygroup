@@ -1,8 +1,8 @@
 import { api } from './apiClient';
 
 export const authApi = {
-  login: async (email, password) => {
-    return api.post('/auth/login', { email, password });
+  login: async (email, password, portalRole = null) => {
+    return api.post('/auth/login', { email, password, portalRole });
   },
 
   register: async (userData) => {
