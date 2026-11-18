@@ -322,6 +322,8 @@ function AppRoutes() {
             <Route path="/surveyor/dashboard" element={<SurveyorDashboardPage />} />
             <Route path="/surveyor/my-calendar" element={<SurveyorCalendarPage />} />
             <Route path="/surveyor/my-jobs" element={<SurveyorJobsPage />} />
+            <Route path="/surveyor/jobs" element={<Navigate to="/surveyor/my-jobs" replace />} />
+            <Route path="/surveyor/jobs/:jobId" element={<SurveyorJobsPage />} />
             <Route path="/surveyor/site-visits" element={<SurveyorSiteVisitsPage />} />
             <Route path="/surveyor/upload-reports" element={<SurveyorUploadReportsPage />} />
             <Route path="/surveyor/my-availability" element={<SurveyorAvailabilityPage />} />

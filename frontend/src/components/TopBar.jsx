@@ -160,10 +160,11 @@ export const TopBar = ({ onToggleSidebar }) => {
     if (type === 'page' && item?.path) {
       navigate(item.path);
     } else if (type === 'job') {
-      if (user?.role === 'ADMIN') {
+      const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
+      if (isSurveyor) {
+        navigate(`/surveyor/my-jobs?viewJob=${item?.reference || item?.jobNo || item?.id || ''}`);
+      } else if (user?.role === 'ADMIN' || user?.role === 'super_admin' || user?.role === 'admin_staff') {
         navigate('/admin/jobs');
-      } else if (user?.role === 'SURVEYOR') {
-        navigate('/surveyor/jobs');
       } else {
         navigate('/customer/track-survey');
       }
@@ -344,8 +345,8 @@ export const TopBar = ({ onToggleSidebar }) => {
                       </div>
                     )}
 
-                    {/* 3. Leads Category */}
-                    {searchResults.results?.leads?.length > 0 && (
+                    {/* 3. Leads Category (Admin/Staff Only) */}
+                    {(user?.role || '').toLowerCase() !== 'surveyor' && searchResults.results?.leads?.length > 0 && (
                       <div className="p-2">
                         <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                           CRM Leads ({searchResults.results.leads.length})
@@ -377,8 +378,8 @@ export const TopBar = ({ onToggleSidebar }) => {
                       </div>
                     )}
 
-                    {/* 4. Clients & Users Category */}
-                    {searchResults.results?.clients?.length > 0 && (
+                    {/* 4. Clients & Users Category (Admin/Staff Only) */}
+                    {(user?.role || '').toLowerCase() !== 'surveyor' && searchResults.results?.clients?.length > 0 && (
                       <div className="p-2">
                         <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                           Users & Clients ({searchResults.results.clients.length})
@@ -408,8 +409,8 @@ export const TopBar = ({ onToggleSidebar }) => {
                       </div>
                     )}
 
-                    {/* 5. Quotes Category */}
-                    {searchResults.results?.quotes?.length > 0 && (
+                    {/* 5. Quotes Category (Admin/Staff Only - Strictly Isolated from Surveyor) */}
+                    {(user?.role || '').toLowerCase() !== 'surveyor' && searchResults.results?.quotes?.length > 0 && (
                       <div className="p-2">
                         <div className="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                           Quotations ({searchResults.results.quotes.length})
@@ -639,7 +640,7 @@ export const TopBar = ({ onToggleSidebar }) => {
                   </span>
                 </div>
               ))}
-              {searchResults.results?.leads?.map((lead) => (
+              {(user?.role || '').toLowerCase() !== 'surveyor' && searchResults.results?.leads?.map((lead) => (
                 <div
                   key={`m-lead-${lead.id}`}
                   onClick={() => handleSelectResult('lead', lead)}

@@ -53,7 +53,36 @@ export const NotificationDropdown = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
+
+  // Strict Privacy Shield: Hide payments, receipts, invoices, and terms signatures from surveyors
+  const visibleNotifications = notifications.filter((item) => {
+    if (!isSurveyor) return true;
+    if (item.type === 'payment') return false;
+    if (item.amount) return false;
+    const title = (item.title || '').toLowerCase();
+    const desc = (item.desc || '').toLowerCase();
+    if (
+      title.includes('payment') ||
+      desc.includes('payment') ||
+      title.includes('invoice') ||
+      desc.includes('invoice') ||
+      title.includes('paid') ||
+      title.includes('£') ||
+      desc.includes('£')
+    ) {
+      return false;
+    }
+    if (
+      (title.includes('terms') || title.includes('contract')) &&
+      (title.includes('signed') || desc.includes('signed'))
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const unreadCount = visibleNotifications.filter((n) => !n.read).length;
 
   const markAllAsRead = async () => {
     try {
@@ -115,19 +144,19 @@ export const NotificationDropdown = () => {
 
           {/* Notifications List */}
           <div className="divide-y divide-slate-100 max-h-[360px] overflow-y-auto">
-            {isLoading && notifications.length === 0 ? (
+            {isLoading && visibleNotifications.length === 0 ? (
               <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                 <span className="text-xs font-medium">Checking live notifications...</span>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : visibleNotifications.length === 0 ? (
               <div className="p-8 text-center text-slate-400">
                 <Check className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
                 <p className="text-xs font-medium text-slate-600">All caught up!</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">No notifications for your account.</p>
               </div>
             ) : (
-              notifications.map((item) => (
+              visibleNotifications.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => markSingle(item.id)}
@@ -171,7 +200,7 @@ export const NotificationDropdown = () => {
                     <p className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
                       {item.desc}
                     </p>
-                    {item.amount && (
+                    {!isSurveyor && item.amount && (
                       <span className="inline-block mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                         Amount: {item.amount}
                       </span>

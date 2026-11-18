@@ -134,16 +134,17 @@ export const JobDetailsPage = () => {
   }), [baseJob, localJobOverrides]);
 
   // Surveyor Privacy Lockdown: surveyors should only see their diary and upload reports, not CRM/financial jobs
+  const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
   useEffect(() => {
-    if (user?.role === 'surveyor') {
+    if (isSurveyor) {
       addToast({
         type: 'info',
-        title: 'Privacy Lockdown Active',
-        message: 'Surveyors cannot view client financial details, terms signatures, or CRM job logs. Redirected to Report Upload.',
+        title: 'Assigned Survey Job',
+        message: 'Redirected to your assigned job inspection details & report upload workspace.',
       });
       navigate(`/surveyor/upload-reports?jobId=${job?.jobNo || jobId || ''}`, { replace: true });
     }
-  }, [user, navigate, job?.jobNo, jobId, addToast]);
+  }, [isSurveyor, navigate, job?.jobNo, jobId, addToast]);
 
   const [activeTab, setActiveTab] = useState('job-details'); // 'job-details', 'notes-calls', 'tasks', 'documents', 'emails', 'activity-log'
 

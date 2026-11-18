@@ -74,7 +74,7 @@ async function seedDefaultNotificationsForRole(user) {
         role: 'SURVEYOR',
         title: 'Keyholder Access Logistics',
         desc: 'Access confirmed: Keys with Foxtons Mayfair Branch (Ref #FX-402). Concierge code available in job file.',
-        type: 'terms',
+        type: 'booking',
         read: false,
       },
       {
@@ -171,7 +171,9 @@ export const getNotifications = async (req, res, next) => {
       take: 40,
     });
 
-    const formatted = notifications.map((n) => {
+    const isSurveyor = (user.role || '').toLowerCase() === 'surveyor';
+
+    let formatted = notifications.map((n) => {
       const d = new Date(n.createdAt);
       const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
       return {
@@ -181,10 +183,37 @@ export const getNotifications = async (req, res, next) => {
         time: timeStr,
         read: n.read,
         type: n.type,
-        amount: n.amount,
+        amount: isSurveyor ? null : n.amount,
         link: n.link,
       };
     });
+
+    // Privacy Shield for Surveyors: Block payments and terms signature notices
+    if (isSurveyor) {
+      formatted = formatted.filter((n) => {
+        if (n.type === 'payment') return false;
+        const title = (n.title || '').toLowerCase();
+        const desc = (n.desc || '').toLowerCase();
+        if (
+          title.includes('payment') ||
+          desc.includes('payment') ||
+          title.includes('invoice') ||
+          desc.includes('invoice') ||
+          title.includes('paid') ||
+          title.includes('£') ||
+          desc.includes('£')
+        ) {
+          return false;
+        }
+        if (
+          (title.includes('terms') || title.includes('contract')) &&
+          (title.includes('signed') || desc.includes('signed'))
+        ) {
+          return false;
+        }
+        return true;
+      });
+    }
 
     const unreadCount = formatted.filter((n) => !n.read).length;
 

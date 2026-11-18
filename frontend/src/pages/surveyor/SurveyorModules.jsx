@@ -23,6 +23,9 @@ import {
   Trash2,
   AlertCircle,
   Sparkles,
+  Eye,
+  ExternalLink,
+  User,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
@@ -264,6 +267,15 @@ export const SurveyorCalendarPage = () => {
                   </a>
 
                   <button
+                    type="button"
+                    onClick={() => navigate(`/surveyor/my-jobs?viewJob=${apt.jobNo || apt.id}`)}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-[#0B1F4D] rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <span>View Job Details</span>
+                  </button>
+
+                  <button
                     onClick={() => navigate(`/surveyor/upload-reports?jobId=${apt.jobNo}`)}
                     className="px-3.5 py-1.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
@@ -291,8 +303,11 @@ export const SurveyorCalendarPage = () => {
 // ==========================================
 export const SurveyorJobsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const viewJobId = searchParams.get('viewJob');
   const { user } = useAuth();
   const { jobs, updateJob } = useJobs();
+  const [viewingJob, setViewingJob] = useState(null);
 
   // Fetch surveyor jobs API
   useEffect(() => {
@@ -308,6 +323,18 @@ export const SurveyorJobsPage = () => {
     (surveyorId && j.surveyorId === surveyorId) ||
     (surveyorName && j.surveyor === surveyorName)
   );
+
+  // Auto-open modal if viewJob query param provided
+  useEffect(() => {
+    if (viewJobId) {
+      const found =
+        myJobs.find((j) => (j.jobNo || j.id || '').toLowerCase() === viewJobId.toLowerCase()) ||
+        jobs.find((j) => (j.jobNo || j.id || '').toLowerCase() === viewJobId.toLowerCase());
+      if (found) {
+        setViewingJob(found);
+      }
+    }
+  }, [viewJobId, myJobs, jobs]);
 
   const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
   const completedJobs = myJobs.filter((j) => j.status === 'Completed');
@@ -406,14 +433,22 @@ export const SurveyorJobsPage = () => {
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => setViewingJob(j)}
+                  className="px-3 py-1.5 bg-[#0B1F4D] text-white rounded-xl font-bold text-xs hover:bg-[#162E6E] cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>View Job & Site Access</span>
+                </button>
+                <button
                   onClick={() => navigate('/surveyor/dashboard')}
-                  className="px-3 py-1.5 bg-[#0B1F4D] text-white rounded-xl font-bold text-xs hover:bg-[#162E6E] cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-200 cursor-pointer"
                 >
                   On-Site Portal
                 </button>
                 <button
                   onClick={() => navigate(`/surveyor/upload-reports?jobId=${j.jobNo || j.id}`)}
-                  className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-200 cursor-pointer"
+                  className="px-3 py-1.5 bg-blue-50 text-[#2563EB] border border-blue-200 rounded-xl font-bold text-xs hover:bg-blue-100 cursor-pointer"
                 >
                   Upload Draft
                 </button>
@@ -428,6 +463,178 @@ export const SurveyorJobsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Dedicated Assigned Job & Site Access Modal (Strict Privacy Protection) */}
+      {viewingJob && (
+        <Modal
+          isOpen={Boolean(viewingJob)}
+          onClose={() => setViewingJob(null)}
+          title={`Assigned Survey Job: ${viewingJob.jobNo || viewingJob.id}`}
+          size="lg"
+        >
+          <div className="space-y-5">
+            {/* Privacy Shield Banner */}
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-blue-900">
+              <ShieldCheck className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block text-[#0B1F4D]">Surveyor Privacy Shield Enforced</span>
+                <p className="text-slate-600 mt-0.5">
+                  Client quotation pricing, card payments, BACS bank transfers, VAT invoices, and signed terms timestamps are strictly restricted to Central Administration.
+                </p>
+              </div>
+            </div>
+
+            {/* Scope & Status Header */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block">
+                  Service Scope
+                </span>
+                <span className="text-sm font-bold text-[#0B1F4D]">
+                  {viewingJob.surveyType || viewingJob.type || 'RICS Level 2 Home Survey'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  viewingJob.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-[#0B1F4D]'
+                }`}>
+                  {viewingJob.status}
+                </span>
+                <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  {viewingJob.countdown || '48h SLA Target'}
+                </span>
+              </div>
+            </div>
+
+            {/* Property Address & Maps Navigation */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
+                Inspection Property Address
+              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-base font-bold text-slate-900">
+                    {viewingJob.property}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    Postcode / Location: {viewingJob.location || viewingJob.postcode || 'Surrey / London'}
+                  </p>
+                </div>
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(`${viewingJob.property} ${viewingJob.location || viewingJob.postcode || ''}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-[#2563EB] hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-xs"
+                >
+                  <Navigation className="w-3.5 h-3.5" />
+                  <span>Google Maps Navigation</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Inspection Date & Assigned Time Window */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                  <CalendarIcon className="w-3.5 h-3.5 text-[#2563EB]" />
+                  Scheduled Inspection Date
+                </span>
+                <p className="text-sm font-bold text-slate-900">{viewingJob.date || 'Pending Allocation'}</p>
+                <p className="text-xs text-slate-500 font-mono">Arrival Window: {viewingJob.timeSlot || '10:00 AM - 01:00 PM'}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-slate-600" />
+                  Assigned Lead Surveyor
+                </span>
+                <p className="text-sm font-bold text-slate-900">{viewingJob.surveyor || user?.name || 'David Thorne MRICS'}</p>
+                <p className="text-xs text-slate-500">Accredited RICS Assessor on Record</p>
+              </div>
+            </div>
+
+            {/* Key Access & Site Entry Logistics (Top Priority for Surveyor) */}
+            <div className="p-4 bg-amber-50/80 rounded-2xl border border-amber-200/90 space-y-2">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-700" />
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  Key Access & Property Entry Instructions
+                </span>
+              </div>
+              <p className="text-xs font-medium text-slate-800 leading-relaxed bg-white/80 p-3 rounded-xl border border-amber-200/60">
+                {viewingJob.accessNotes || viewingJob.propertyDetails?.accessDetails || 'Keys held with local estate agency branch. Call branch 30 mins prior to arrival or verify vendor access on site.'}
+              </p>
+            </div>
+
+            {/* Client / Vendor On-Site Debrief Contact */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                On-Site Client / Vendor Contact (Debrief Only)
+              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <span className="font-bold text-slate-900 text-sm block">
+                    {viewingJob.customer || viewingJob.client || 'Client On Record'}
+                  </span>
+                  <span className="text-slate-500">Contact Number: </span>
+                  <strong className="text-slate-800 font-mono">{viewingJob.customerPhone || '020 8944 4000'}</strong>
+                </div>
+                <span className="text-[11px] text-slate-400 italic">
+                  * For on-site arrival verification & verbal debrief
+                </span>
+              </div>
+            </div>
+
+            {/* Specific Technical Notes & Focus Areas */}
+            <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200/70 space-y-2 text-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] block">
+                Technical Instructions & Defect Focus Areas
+              </span>
+              <ul className="list-disc list-inside space-y-1 text-slate-700 leading-relaxed">
+                <li>Execute full RICS condition assessment according to Level 2/3 Home Survey standards.</li>
+                <li>Inspect accessible roof space, loft insulation, party walls, and external chimney flashings.</li>
+                <li>Take calibrated electronic moisture meter readings on ground-floor structural walls.</li>
+                <li>Verify boundaries, outbuildings, external drainage gullies, and tree proximity risks.</li>
+              </ul>
+            </div>
+
+            {/* Action buttons */}
+            <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setViewingJob(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewingJob(null);
+                  navigate('/surveyor/dashboard');
+                }}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Open On-Site Checklist
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const jobRef = viewingJob.jobNo || viewingJob.id;
+                  setViewingJob(null);
+                  navigate(`/surveyor/upload-reports?jobId=${jobRef}`);
+                }}
+                className="px-4 py-2 bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Upload Draft Report</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
@@ -625,6 +832,12 @@ export const SurveyorUploadReportsPage = () => {
 
   const [selectedJob, setSelectedJob] = useState(defaultJobId);
 
+  const currentJobObj =
+    myJobs.find((j) => (j.jobNo || j.id) === selectedJob) ||
+    jobs.find((j) => (j.jobNo || j.id) === selectedJob) ||
+    myJobs[0] ||
+    jobs[0];
+
   useEffect(() => {
     if (queryJobId) {
       setSelectedJob(queryJobId);
@@ -808,6 +1021,84 @@ export const SurveyorUploadReportsPage = () => {
             </select>
           </div>
         </div>
+
+        {/* Assigned Property & Access Details Summary Card (Fix for Client Point 5) */}
+        {currentJobObj && (
+          <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-200/90 rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs font-black text-[#0B1F4D] bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+                    {currentJobObj.jobNo || currentJobObj.id}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full">
+                    {currentJobObj.status || 'Active Inspection'}
+                  </span>
+                  <span className="text-xs font-semibold text-blue-700 bg-blue-100/70 px-2.5 py-0.5 rounded-full">
+                    {currentJobObj.surveyType || 'RICS Level 2 Home Survey'}
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 mt-2 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-[#2563EB] shrink-0" />
+                  <span>{currentJobObj.property}, {currentJobObj.location || currentJobObj.postcode || 'UK'}</span>
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://maps.google.com/?q=${encodeURIComponent(`${currentJobObj.property} ${currentJobObj.location || ''}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-2xs"
+                >
+                  <Navigation className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Google Map</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/surveyor/my-jobs?viewJob=${currentJobObj.jobNo || currentJobObj.id}`)}
+                  className="px-3 py-1.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors shadow-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Full Job Specs</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              {/* Inspection Schedule */}
+              <div className="bg-white/95 p-3.5 rounded-xl border border-slate-200/90 space-y-1 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1">
+                  <CalendarIcon className="w-3 h-3 text-[#2563EB]" />
+                  Scheduled Inspection
+                </span>
+                <p className="font-bold text-slate-900">{currentJobObj.date || 'Pending Allocation'}</p>
+                <p className="text-[11px] text-slate-500 font-mono">Slot: {currentJobObj.timeSlot || '10:00 AM - 01:00 PM'}</p>
+              </div>
+
+              {/* Key Access & Protocol */}
+              <div className="bg-amber-50/90 p-3.5 rounded-xl border border-amber-200 space-y-1 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block flex items-center gap-1">
+                  <Key className="w-3 h-3 text-amber-600" />
+                  Key Access & Entry Protocol
+                </span>
+                <p className="font-semibold text-slate-800 text-[11px] leading-relaxed">
+                  {currentJobObj.accessNotes || currentJobObj.propertyDetails?.accessDetails || 'Keys held with local estate agency branch or direct vendor access.'}
+                </p>
+              </div>
+
+              {/* Client / Site Debrief Contact */}
+              <div className="bg-white/95 p-3.5 rounded-xl border border-slate-200/90 space-y-1 shadow-2xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-emerald-600" />
+                  On-Site Client Contact
+                </span>
+                <p className="font-bold text-slate-900">{currentJobObj.customer || currentJobObj.client || 'Client On Record'}</p>
+                <p className="text-[11px] text-slate-600 font-mono">Tel: {currentJobObj.customerPhone || '020 8944 4000'}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Dropzone */}
         <div
