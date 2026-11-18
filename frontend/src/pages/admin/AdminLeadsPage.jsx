@@ -37,7 +37,7 @@ import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useToast } from '../../components/ToastContext';
 import { adminCrmAndLeadsApi } from '../../api/adminApi';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
-import { LEAD_SOURCES, LEAD_STATUSES, useLeads } from '../../mock/leads';
+import { LEAD_SOURCES, LEAD_STATUSES, useLeads, formatLeadReference } from '../../mock/leads';
 
 // 3-Dot Clean Action Dropdown Menu for each Lead
 const LeadRowActions = ({
@@ -237,7 +237,7 @@ export const AdminLeadsPage = () => {
         const mapped = rawLeads.map((l) => {
           const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
           return {
-            id: l.reference || `LEAD-${l.id}`,
+            id: formatLeadReference(l.reference || l.id, l.source),
             dbId: l.id,
             created: dateObj.toLocaleDateString('en-GB', {
               day: '2-digit',

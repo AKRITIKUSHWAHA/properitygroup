@@ -64,8 +64,10 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
       ? formData.estimatedValue
       : `£${parseFloat(formData.estimatedValue || 0).toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
 
+    const isLsd = (formData.source || '').toLowerCase().includes('local') || (formData.source || '').toLowerCase().includes('lsd');
+    const prefix = isLsd ? 'LSD' : 'NJS';
     const newLead = {
-      id: `LD-${Math.floor(1050 + Math.random() * 900)}`,
+      id: `${prefix}-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: formData.customerName.trim(),
       customerEmail: formData.customerEmail.trim(),
       customerPhone: formData.customerPhone.trim() || '+44 7700 900000',

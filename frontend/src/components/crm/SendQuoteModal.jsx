@@ -29,6 +29,7 @@ import { useQuotes } from '../../mock/quotes';
 import { useJobs } from '../../mock/jobs';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { adminQuotationsAndPaymentsApi } from '../../api/adminApi';
+import { formatLeadReference } from '../../mock/leads';
 
 // Standard recommended RICS guide fees (ex. VAT)
 const STANDARD_FEES = {
@@ -307,7 +308,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1">
-                Lead Reference: <strong className="text-white font-mono">{lead.id}</strong> &bull; Channel:{' '}
+                Lead Reference: <strong className="text-white font-mono">{formatLeadReference(lead.id, lead.source)}</strong> &bull; Channel:{' '}
                 <strong className="text-amber-300">{lead.source || 'Website'}</strong>
               </p>
             </div>

@@ -48,7 +48,8 @@ export const submitPublicEnquiry = async (req, res, next) => {
       throw ApiError.badRequest('Property address or UK postcode is required.');
     }
 
-    const referenceId = `ENQ-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const prefix = enquiryCategory === 'SURVEY_QUOTE' ? 'NJS' : 'ENQ';
+    const referenceId = `${prefix}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Create or synchronize customer user account if password is provided
     let accountCreated = false;

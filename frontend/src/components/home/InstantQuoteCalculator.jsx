@@ -100,9 +100,9 @@ export function InstantQuoteCalculator({ onComplete }) {
         ? prices.level3
         : prices.valuation;
 
-    // Create new lead in CRM
+    // Create new lead in CRM with professional NJS reference
     const newLead = {
-      id: `LD-${Math.floor(1050 + Math.random() * 900)}`,
+      id: `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: customerName.trim(),
       customerEmail: customerEmail.trim(),
       customerPhone: customerPhone.trim(),

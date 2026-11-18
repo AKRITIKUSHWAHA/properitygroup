@@ -23,6 +23,18 @@ export const LEAD_STATUSES = [
   'Lost',
 ];
 
+export const formatLeadReference = (id, source) => {
+  if (!id) return `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  const strId = String(id).trim();
+  if (strId.startsWith('LSD-') || strId.startsWith('NJS-') || strId.startsWith('JOB-')) {
+    return strId;
+  }
+  const isLsd = (source || '').toLowerCase().includes('lsd') || (source || '').toLowerCase().includes('local');
+  const numPart = strId.replace(/[^0-9]/g, '') || String(Math.floor(1000 + Math.random() * 9000));
+  const prefix = isLsd ? 'LSD' : 'NJS';
+  return `${prefix}-2026-${String(numPart).padStart(4, '0').slice(-4)}`;
+};
+
 export const INITIAL_LEADS = [];
 
 const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
@@ -37,7 +49,12 @@ export const getStoredLeads = () => {
     const raw = localStorage.getItem(LEADS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((l) => ({
+          ...l,
+          id: formatLeadReference(l.id, l.source),
+        }));
+      }
     }
   } catch (e) {
     console.error('Failed reading leads from storage', e);

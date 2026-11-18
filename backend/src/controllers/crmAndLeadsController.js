@@ -80,7 +80,9 @@ export const createLead = async (req, res, next) => {
     }
 
     const count = await prisma.lead.count();
-    const reference = `LEAD-2026-${String(count + 101).padStart(3, '0')}`;
+    const isLsd = String(source || '').toUpperCase().includes('LSD') || String(source || '').toUpperCase().includes('LOCAL');
+    const prefix = isLsd ? 'LSD' : 'NJS';
+    const reference = `${prefix}-2026-${String(count + 101).padStart(4, '0')}`;
 
     const lead = await prisma.lead.create({
       data: {
