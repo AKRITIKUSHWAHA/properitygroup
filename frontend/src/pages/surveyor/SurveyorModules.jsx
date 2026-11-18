@@ -41,6 +41,7 @@ import {
   surveyorUploadReportsApi,
   surveyorAvailabilityApi,
 } from '../../api/surveyorApi';
+import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
 
 // ==========================================
 // 1. SURVEYOR CALENDAR PAGE (Dynamic Date Fix for Point 8)
@@ -928,6 +929,10 @@ export const SurveyorUploadReportsPage = () => {
         stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
       });
+      const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
+      if (activeJobObj) {
+        dispatchPostInspectionUpdate({ ...activeJobObj, customerEmail: targetEmail }).catch(() => {});
+      }
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));

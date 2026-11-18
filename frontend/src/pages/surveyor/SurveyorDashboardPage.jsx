@@ -27,6 +27,7 @@ import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
 import { surveyorDashboardApi } from '../../api/surveyorApi';
+import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
 
 /**
  * Mobile-First Surveyor Field Portal Dashboard
@@ -219,6 +220,8 @@ export const SurveyorDashboardPage = () => {
         timelineStep: 8,
         customerEmail: targetEmail,
       });
+      // SurveyBooker Trigger 4 (Part A): Dispatch post-inspection update email
+      dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetEmail }).catch(() => {});
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));

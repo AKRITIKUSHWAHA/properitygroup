@@ -54,6 +54,10 @@ import { RescheduleModal } from '../../components/crm/RescheduleModal';
 import { SendTermsModal } from '../../components/crm/SendTermsModal';
 import { useMessages } from '../../mock/messages';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
+import {
+  dispatchFinalReportReadyEmail,
+  dispatchPostInspectionUpdate,
+} from '../../services/autoQuoteService';
 
 // Canonical 6-Step SurveyBooker Pipeline (From Video 1)
 const STATUS_TIMELINE_STEPS = [
@@ -201,7 +205,7 @@ export const JobDetailsPage = () => {
   const totalAmount = subtotal + vat;
 
   // QA and BACS handlers
-  const handleApproveQaReport = () => {
+  const handleApproveQaReport = async () => {
     setQaStatus('Approved');
     handleStepClick(5); // Complete stage
     const targetEmail = job?.customerEmail || 'astp750@gmail.com';
@@ -222,10 +226,13 @@ export const JobDetailsPage = () => {
     });
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
 
+    // SurveyBooker Trigger 4 (Part B): Dispatch final report ready email with download & Trustpilot review link
+    await dispatchFinalReportReadyEmail(job).catch(() => {});
+
     addToast({
       type: 'success',
       title: 'QA Approved & Report Released',
-      message: `Final RICS report released to ${job.customer}'s portal. Review invite email triggered.`,
+      message: `Final RICS report released to ${job.customer}'s portal. Automated delivery & Trustpilot review email sent.`,
     });
   };
 

@@ -196,22 +196,25 @@ Head of Residential Surveying | NJS Property Group`,
     triggerEvent: 'When surveyor finishes physical site survey and drafts findings',
     active: true,
     category: 'Post-Inspection',
-    subject: 'Site Inspection Completed at {{property_address}}',
+    subject: 'Site Inspection Attended: Your RICS Report is in Preparation for {{property_address}} - Ref: {{job_no}}',
     preview: 'On-site survey completed; surveyor drafting report and conducting quality review.',
     templateBody: `Dear {{customer_name}},
 
-We are pleased to inform you that {{surveyor_name}} has completed the physical on-site inspection of {{property_address}} today.
+Site inspection attended today by your surveyor, {{surveyor_name}}. Findings and photos are currently being compiled into your formal RICS report.
 
-Next Steps:
-• Surveyor is compiling photo defect evidence, moisture readings, and structural notes.
-• The draft document will pass through our mandatory peer-review Quality Assurance protocol.
-• Target Release SLA: Within 48 business hours.
+What happens next:
+• Your surveyor is compiling detailed element observations, photographic defect evidence, and moisture readings.
+• The report will undergo our mandatory peer-review RICS Quality Assurance (QA) check.
+• Standard Delivery SLA: Your certified report will be released within 48 business hours.
 
-Track live preparation progress anytime in your Client Portal:
+Track your report status in real time:
 {{action_link}}
 
-Kind regards,
-Surveyor Reporting Unit | NJS Property Group`,
+If you have urgent queries regarding immediate transaction deadlines, please reply to this message.
+
+Warm regards,
+Operations & Survey Logistics Desk | NJS Property Group
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
     tags: ['Inspection Done', 'Drafting Report', 'QA Protocol', '48h SLA'],
   },
   {
@@ -223,27 +226,27 @@ Surveyor Reporting Unit | NJS Property Group`,
     triggerEvent: 'When signed RICS PDF survey report is uploaded and released',
     active: true,
     category: 'Post-Inspection',
-    subject: 'Your Official RICS Survey Report is Ready: {{property_address}}',
+    subject: 'Your Official RICS Survey Report is Ready: {{property_address}} - Ref: {{job_no}}',
     preview: 'Download your official RICS survey report and share your feedback on Trustpilot.',
     templateBody: `Dear {{customer_name}},
 
-Your finalized, peer-reviewed RICS Survey Report for {{property_address}} is complete and ready for immediate download.
+Your formal RICS {{survey_type}} report for {{property_address}} (Ref: {{job_no}}) has passed Quality Assurance and is now certified and available for immediate download.
 
-Download Report:
-Please log in to your secure client portal below to download your full signed PDF report:
+Download Your Official RICS Report:
 {{action_link}}
 
-Post-Inspection Surveyor Consultation:
-Your surveyor {{surveyor_name}} is available to discuss any urgent Condition 3 defects or valuation notes with you over the phone.
+Post-Inspection Advice:
+If you would like to discuss any findings or urgent Condition 3 items with your surveyor {{surveyor_name}}, please call our team or book a consultation via your portal.
 
-⭐ Share Your Experience on Trustpilot:
-As an independent RICS practice, honest feedback helps home buyers make confident decisions. Please take 30 seconds to rate your experience with {{surveyor_name}} on our verified Trustpilot profile:
+Share Your Experience with NJS Property Group:
+As an independent RICS practice, we value your feedback. Please take 30 seconds to review your experience on Trustpilot:
 https://www.trustpilot.com/review/njspropertygroup.com
 
 Thank you for choosing NJS Property Group.
 
-Best regards,
-Director of Professional Services | NJS Property Group`,
+Warm regards,
+David Thorne MRICS & The NJS Property Group Team
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
     tags: ['Final Report', 'PDF Download', 'Trustpilot Invite', 'Surveyor Debrief'],
   },
 ];

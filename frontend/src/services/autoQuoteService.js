@@ -728,3 +728,338 @@ export const scanAndDispatchUnbookedReminders = async (options = { maxReminders:
     dispatchedJobs: dispatchedList,
   };
 };
+
+/**
+ * SurveyBooker Trigger 4 (Part A): Dispatch Post-Inspection Update Email
+ * Client Requirement:
+ * "Inspection Complete Update: Jaise hi surveyor physical site inspection karke job ko 'Attended / Drafting' mark karta hai,
+ * customer ko auto-update email: 'Site inspection attended today by your surveyor [Surveyor Name]. Findings and photos are currently being compiled into your formal RICS report.'"
+ */
+export const dispatchPostInspectionUpdate = async (jobOrRecord, customOverrides = {}) => {
+  if (!jobOrRecord) return { success: false, reason: 'Missing job data' };
+
+  const now = new Date();
+  const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+  const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const clientEmail = (
+    jobOrRecord.customerEmail ||
+    jobOrRecord.clientEmail ||
+    'customer@demo.com'
+  ).toLowerCase().trim();
+  const clientName =
+    jobOrRecord.customer ||
+    jobOrRecord.customerName ||
+    jobOrRecord.client ||
+    'Valued Client';
+  const propertyAddress =
+    jobOrRecord.property ||
+    jobOrRecord.propertyAddress ||
+    jobOrRecord.location ||
+    'Subject Property, London';
+  const surveyorName =
+    jobOrRecord.surveyor ||
+    jobOrRecord.surveyorName ||
+    'David Thorne MRICS';
+  const surveyType =
+    jobOrRecord.surveyType ||
+    jobOrRecord.enquiry ||
+    'RICS Level 2 Home Survey';
+  const jobNo = jobOrRecord.jobNo || jobOrRecord.id || 'JOB-2026-080';
+
+  // 1. Fetch active email automations (step-5)
+  let automations = DEFAULT_EMAIL_AUTOMATIONS;
+  try {
+    const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+    if (rawAutomations) {
+      automations = JSON.parse(rawAutomations);
+    }
+  } catch (e) {
+    console.warn('Error reading automations storage', e);
+  }
+
+  const inspectionAutomation =
+    automations.find((a) => a.id === 'step-5' || a.stepIndex === 4) ||
+    DEFAULT_EMAIL_AUTOMATIONS.find((a) => a.id === 'step-5');
+
+  const templateData = {
+    customer: clientName,
+    customerName: clientName,
+    clientName: clientName,
+    property: propertyAddress,
+    propertyAddress: propertyAddress,
+    surveyor: surveyorName,
+    surveyorName: surveyorName,
+    surveyType: surveyType,
+    quoteTotal: jobOrRecord.total ? String(jobOrRecord.total).replace('£', '') : '660.00',
+    jobNo: jobNo,
+    reference: jobNo,
+    date: formattedDate,
+    actionLink: `${window.location.origin}/customer/track-survey`,
+    portalLink: `${window.location.origin}/customer/track-survey`,
+    companyName: 'NJS Property Group',
+    companyPhone: '0800 169 9661',
+    companyEmail: 'info@njspropertygroup.com',
+  };
+
+  const defaultSubject = `Site Inspection Attended: Your RICS Report is in Preparation for {{property_address}} - Ref: {{job_no}}`;
+  const resolvedSubject = renderEmailTemplate(
+    inspectionAutomation?.subject || defaultSubject,
+    templateData
+  );
+
+  const defaultBody = `Dear {{customer_name}},
+
+Site inspection attended today by your surveyor, {{surveyor_name}}. Findings and photos are currently being compiled into your formal RICS report.
+
+What happens next:
+• Your surveyor is compiling detailed element observations, photographic defect evidence, and moisture readings.
+• The report will undergo our mandatory peer-review RICS Quality Assurance (QA) check.
+• Standard Delivery SLA: Your certified report will be released within 48 business hours.
+
+Track your report status in real time:
+{{action_link}}
+
+Warm regards,
+Operations & Survey Logistics Desk | NJS Property Group
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+
+  const resolvedBody = renderEmailTemplate(
+    inspectionAutomation?.templateBody || defaultBody,
+    templateData
+  );
+
+  // 2. Append Sent Email Log
+  const emailLogRecord = {
+    id: `EML-INSP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    stepIndex: 4,
+    stepName: 'Preparing report',
+    stageLabel: 'Stage 7: Survey Attended (Post-Survey)',
+    subject: resolvedSubject,
+    to: clientEmail,
+    recipientName: clientName,
+    date: formattedTime,
+    status: 'Delivered',
+    body: resolvedBody,
+    preview: `Site inspection attended today by ${surveyorName}. Report compiling (48h turnaround SLA).`,
+    jobNo: jobNo,
+  };
+
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+    localStorage.setItem(
+      'property_group_sent_emails_v1',
+      JSON.stringify([emailLogRecord, ...existingLogs.slice(0, 49)])
+    );
+    window.dispatchEvent(new Event('property_group_sent_emails_updated'));
+  } catch (err) {
+    console.warn('Error saving sent email log', err);
+  }
+
+  // 3. Update Jobs Storage: set inspectionEmailSent: true & timelineStep: 8 (Drafting)
+  try {
+    const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    const updatedJobs = storedJobs.map((j) => {
+      const match =
+        j.id === jobOrRecord.id ||
+        j.jobNo === jobOrRecord.jobNo ||
+        j.jobNo === jobOrRecord.id ||
+        (j.customerEmail && j.customerEmail.toLowerCase().trim() === clientEmail);
+      if (match) {
+        return {
+          ...j,
+          status: j.status === 'Completed' ? 'Completed' : 'Drafting',
+          stage: 'PREPARING_REPORT',
+          timelineStep: Math.max(j.timelineStep || 0, 8),
+          inspectionEmailSent: true,
+          inspectionEmailSentAt: formattedTime,
+        };
+      }
+      return j;
+    });
+    localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+  } catch (err) {
+    console.warn('Error updating jobs storage on post-inspection', err);
+  }
+
+  return {
+    success: true,
+    dispatchedAt: formattedTime,
+    resolvedSubject,
+    emailLogRecord,
+  };
+};
+
+/**
+ * SurveyBooker Trigger 4 (Part B): Dispatch Final Report Ready & Trustpilot Review Email
+ * Client Requirement:
+ * "Final Report Ready Email: Jab admin QA pass karke PDF report upload karta hai:
+ * Customer ko final delivery email with 'Download Your RICS Report' button.
+ * Sath me Trustpilot review link: 'Share your experience with NJS Property Group'."
+ */
+export const dispatchFinalReportReadyEmail = async (jobOrRecord, customOverrides = {}) => {
+  if (!jobOrRecord) return { success: false, reason: 'Missing job data' };
+
+  const now = new Date();
+  const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+  const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const clientEmail = (
+    jobOrRecord.customerEmail ||
+    jobOrRecord.clientEmail ||
+    'customer@demo.com'
+  ).toLowerCase().trim();
+  const clientName =
+    jobOrRecord.customer ||
+    jobOrRecord.customerName ||
+    jobOrRecord.client ||
+    'Valued Client';
+  const propertyAddress =
+    jobOrRecord.property ||
+    jobOrRecord.propertyAddress ||
+    jobOrRecord.location ||
+    'Subject Property, London';
+  const surveyorName =
+    jobOrRecord.surveyor ||
+    jobOrRecord.surveyorName ||
+    'David Thorne MRICS';
+  const surveyType =
+    jobOrRecord.surveyType ||
+    jobOrRecord.enquiry ||
+    'RICS Level 2 Home Survey';
+  const jobNo = jobOrRecord.jobNo || jobOrRecord.id || 'JOB-2026-080';
+
+  // 1. Fetch active email automations (step-6)
+  let automations = DEFAULT_EMAIL_AUTOMATIONS;
+  try {
+    const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+    if (rawAutomations) {
+      automations = JSON.parse(rawAutomations);
+    }
+  } catch (e) {
+    console.warn('Error reading automations storage', e);
+  }
+
+  const reportReadyAutomation =
+    automations.find((a) => a.id === 'step-6' || a.stepIndex === 5) ||
+    DEFAULT_EMAIL_AUTOMATIONS.find((a) => a.id === 'step-6');
+
+  const templateData = {
+    customer: clientName,
+    customerName: clientName,
+    clientName: clientName,
+    property: propertyAddress,
+    propertyAddress: propertyAddress,
+    surveyor: surveyorName,
+    surveyorName: surveyorName,
+    surveyType: surveyType,
+    jobNo: jobNo,
+    reference: jobNo,
+    date: formattedDate,
+    actionLink: `${window.location.origin}/customer/reports`,
+    downloadLink: `${window.location.origin}/customer/reports`,
+    reviewLink: `${window.location.origin}/customer/leave-review`,
+    trustpilotUrl: 'https://www.trustpilot.com/review/njspropertygroup.com',
+    companyName: 'NJS Property Group',
+    companyPhone: '0800 169 9661',
+    companyEmail: 'info@njspropertygroup.com',
+  };
+
+  const defaultSubject = `Your Official RICS Survey Report is Ready: {{property_address}} - Ref: {{job_no}}`;
+  const resolvedSubject = renderEmailTemplate(
+    reportReadyAutomation?.subject || defaultSubject,
+    templateData
+  );
+
+  const defaultBody = `Dear {{customer_name}},
+
+Your formal RICS {{survey_type}} report for {{property_address}} (Ref: {{job_no}}) has passed Quality Assurance and is now certified and available for immediate download.
+
+Download Your Official RICS Report:
+{{action_link}}
+
+Post-Inspection Advice:
+If you would like to discuss any findings or urgent Condition 3 items with your surveyor {{surveyor_name}}, please call our team or book a consultation via your portal.
+
+Share Your Experience with NJS Property Group:
+As an independent RICS practice, we value your feedback. Please take 30 seconds to review your experience on Trustpilot:
+https://www.trustpilot.com/review/njspropertygroup.com
+
+Thank you for choosing NJS Property Group.
+
+Warm regards,
+David Thorne MRICS & The NJS Property Group Team
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+
+  const resolvedBody = renderEmailTemplate(
+    reportReadyAutomation?.templateBody || defaultBody,
+    templateData
+  );
+
+  // 2. Append Sent Email Log
+  const emailLogRecord = {
+    id: `EML-REP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    stepIndex: 5,
+    stepName: 'Complete',
+    stageLabel: 'Stage 8: Report Released & Trustpilot Trigger',
+    subject: resolvedSubject,
+    to: clientEmail,
+    recipientName: clientName,
+    date: formattedTime,
+    status: 'Delivered',
+    body: resolvedBody,
+    preview: `Certified RICS report released with download button and verified Trustpilot review invite.`,
+    jobNo: jobNo,
+  };
+
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+    localStorage.setItem(
+      'property_group_sent_emails_v1',
+      JSON.stringify([emailLogRecord, ...existingLogs.slice(0, 49)])
+    );
+    window.dispatchEvent(new Event('property_group_sent_emails_updated'));
+  } catch (err) {
+    console.warn('Error saving sent email log', err);
+  }
+
+  // 3. Mark delivery in localStorage flags
+  localStorage.setItem('propertygroup_delivered', 'true');
+  localStorage.setItem(`propertygroup_delivered_${clientEmail}`, 'true');
+
+  // 4. Update Jobs Storage: set status: 'Completed', timelineStep: 10
+  try {
+    const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    const updatedJobs = storedJobs.map((j) => {
+      const match =
+        j.id === jobOrRecord.id ||
+        j.jobNo === jobOrRecord.jobNo ||
+        j.jobNo === jobOrRecord.id ||
+        (j.customerEmail && j.customerEmail.toLowerCase().trim() === clientEmail);
+      if (match) {
+        return {
+          ...j,
+          status: 'Completed',
+          stage: 'COMPLETE',
+          timelineStep: 10,
+          reportReadyEmailSent: true,
+          reportReadyEmailSentAt: formattedTime,
+          deliveredAt: formattedTime,
+        };
+      }
+      return j;
+    });
+    localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+  } catch (err) {
+    console.warn('Error updating jobs storage on report release', err);
+  }
+
+  return {
+    success: true,
+    dispatchedAt: formattedTime,
+    resolvedSubject,
+    emailLogRecord,
+  };
+};

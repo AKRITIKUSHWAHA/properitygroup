@@ -41,6 +41,8 @@ import { adminSurveyJobsApi } from '../../api/adminApi';
 import {
   dispatchUnbookedBookingReminder,
   scanAndDispatchUnbookedReminders,
+  dispatchPostInspectionUpdate,
+  dispatchFinalReportReadyEmail,
 } from '../../services/autoQuoteService';
 
 // Mapper from Backend Job model to Frontend Job state
@@ -98,7 +100,15 @@ const mapBackendJobToFrontend = (bj) => {
 };
 
 // 3-Dot Clean Action Dropdown Menu for each Survey Job
-const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule, onSendBookingReminder }) => {
+const JobRowActions = ({
+  job,
+  baseJobsPath,
+  onOpenClientProfile,
+  onReschedule,
+  onSendBookingReminder,
+  onSendPostInspectionUpdate,
+  onSendReportReadyEmail,
+}) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -289,6 +299,34 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule, o
               <span>Send Booking Chase ({job.bookingReminderCount || 0}/2)</span>
             </button>
           )}
+
+          {/* Trigger 4 Part A: Send Post-Inspection Update Email */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              if (onSendPostInspectionUpdate) onSendPostInspectionUpdate(job);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer text-left"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span>Send Post-Survey Update</span>
+          </button>
+
+          {/* Trigger 4 Part B: Release Final Report & Send Email */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              if (onSendReportReadyEmail) onSendReportReadyEmail(job);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Send Final Report Email</span>
+          </button>
 
           {/* Reschedule Inspection Action */}
           <button
@@ -485,6 +523,46 @@ export const AdminJobsPage = () => {
       });
     } finally {
       setIsScanningReminders(false);
+    }
+  };
+
+  // Trigger 4 Part A: Send Post-Inspection Update Email
+  const handleSendPostInspectionUpdate = async (targetJob) => {
+    try {
+      const res = await dispatchPostInspectionUpdate(targetJob);
+      if (res.success) {
+        addToast({
+          type: 'success',
+          title: 'Post-Inspection Update Dispatched',
+          message: `Update email sent to ${targetJob.customerEmail || 'client'}. Report status: Drafting (48h SLA).`,
+        });
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Dispatch Failed',
+        message: 'Could not send post-inspection update email.',
+      });
+    }
+  };
+
+  // Trigger 4 Part B: Send Final Report Ready Email with Download & Trustpilot
+  const handleSendReportReadyEmail = async (targetJob) => {
+    try {
+      const res = await dispatchFinalReportReadyEmail(targetJob);
+      if (res.success) {
+        addToast({
+          type: 'success',
+          title: 'Final Report Email Dispatched',
+          message: `Download link & Trustpilot review invite sent to ${targetJob.customerEmail || 'client'}.`,
+        });
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Dispatch Failed',
+        message: 'Could not send final report email.',
+      });
     }
   };
 
@@ -934,6 +1012,8 @@ export const AdminJobsPage = () => {
                             }}
                             onReschedule={(targetJob) => setSelectedRescheduleJob(targetJob)}
                             onSendBookingReminder={handleSendBookingReminder}
+                            onSendPostInspectionUpdate={handleSendPostInspectionUpdate}
+                            onSendReportReadyEmail={handleSendReportReadyEmail}
                           />
                         </td>
                       </tr>
