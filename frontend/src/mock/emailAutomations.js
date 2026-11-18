@@ -80,21 +80,23 @@ Direct Helpline: 0800 169 9661 • Email: info@njspropertygroup.com`,
     triggerEvent: 'When quotation is accepted but inspection date remains unbooked after 48-72 hours',
     active: true,
     category: 'Pre-Inspection',
-    subject: 'Reminder: Select Your Inspection Date for {{property_address}} - NJS Property Group',
+    subject: 'Gentle Reminder: Secure your surveyor inspection slot for {{property_address}} - Ref: {{job_no}}',
     preview: 'Automated follow-up prompting customer to book their preferred surveyor appointment window.',
     templateBody: `Dear {{customer_name}},
+
+Gentle Reminder: Secure your surveyor inspection slot for {{property_address}}. Surveyor diaries for next week are filling up fast.
 
 We noticed you recently accepted your quotation for the {{survey_type}} at:
 {{property_address}} (Ref: {{job_no}}).
 
 However, your preferred inspection date has not yet been selected.
 
-Our surveyors' weekly inspection diaries in your area fill up quickly. To ensure you secure your preferred date and avoid delays to your property transaction, please take 60 seconds to lock in your appointment:
+To avoid delays to your property transaction and secure your preferred date, please click the link below:
 
-Select Your Preferred Inspection Date:
+Click Here to Select Your Date:
 {{action_link}}
 
-If your purchase timeline has changed or you are waiting for the estate agent/vendor to grant access, simply let us know and we will coordinate key collection on your behalf.
+If your purchase timeline has changed or you are waiting for the estate agent/vendor to grant access, simply reply to this email and our operations team will coordinate key collection on your behalf.
 
 Warm regards,
 Bookings & Logistics Desk | NJS Property Group

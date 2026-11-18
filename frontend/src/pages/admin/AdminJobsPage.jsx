@@ -25,6 +25,9 @@ import {
   ChevronsUpDown,
   ChevronLeft,
   CalendarClock,
+  Mail,
+  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -35,6 +38,10 @@ import { RescheduleModal } from '../../components/crm/RescheduleModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useToast } from '../../components/ToastContext';
 import { adminSurveyJobsApi } from '../../api/adminApi';
+import {
+  dispatchUnbookedBookingReminder,
+  scanAndDispatchUnbookedReminders,
+} from '../../services/autoQuoteService';
 
 // Mapper from Backend Job model to Frontend Job state
 const mapBackendJobToFrontend = (bj) => {
@@ -91,7 +98,7 @@ const mapBackendJobToFrontend = (bj) => {
 };
 
 // 3-Dot Clean Action Dropdown Menu for each Survey Job
-const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule }) => {
+const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule, onSendBookingReminder }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -267,6 +274,22 @@ const JobRowActions = ({ job, baseJobsPath, onOpenClientProfile, onReschedule })
 
           <div className="h-px bg-slate-100 my-1" />
 
+          {/* Trigger 3: Send Booking Chase Reminder */}
+          {job.status !== 'Booked' && job.status !== 'Scheduled' && job.status !== 'Completed' && job.status !== 'Survey done' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                if (onSendBookingReminder) onSendBookingReminder(job);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-[#2563EB] hover:bg-blue-50 transition-colors cursor-pointer text-left"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>Send Booking Chase ({job.bookingReminderCount || 0}/2)</span>
+            </button>
+          )}
+
           {/* Reschedule Inspection Action */}
           <button
             type="button"
@@ -412,6 +435,57 @@ export const AdminJobsPage = () => {
         ? `Job ${newJob.jobNo} created and scheduled with ${newJob.surveyor}.`
         : `Job ${newJob.jobNo} placed on hold. Waiting for terms and advance payment.`,
     });
+  };
+
+  // Trigger 3: Send single booking chase reminder
+  const handleSendBookingReminder = async (targetJob) => {
+    try {
+      const res = await dispatchUnbookedBookingReminder(targetJob);
+      if (res.success) {
+        addToast({
+          type: 'success',
+          title: 'Booking Reminder Sent',
+          message: `Chase email (${res.reminderCount}/2) dispatched to ${targetJob.customerEmail || 'client'}.`,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to dispatch unbooked reminder', err);
+      addToast({
+        type: 'error',
+        title: 'Dispatch Failed',
+        message: 'Could not send booking reminder.',
+      });
+    }
+  };
+
+  // Trigger 3: Scan all active instructions unbooked after 48h
+  const [isScanningReminders, setIsScanningReminders] = useState(false);
+  const handleScanUnbookedReminders = async () => {
+    setIsScanningReminders(true);
+    try {
+      const res = await scanAndDispatchUnbookedReminders({ maxReminders: 2, hoursThreshold: 48, forceAll: true });
+      if (res.dispatched > 0) {
+        addToast({
+          type: 'success',
+          title: 'Automated Chase Complete',
+          message: `${res.dispatched} unbooked reminder email(s) dispatched to pending clients.`,
+        });
+      } else {
+        addToast({
+          type: 'info',
+          title: 'Unbooked Check Complete',
+          message: 'All unbooked instructions are up-to-date. No follow-ups needed.',
+        });
+      }
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Scan Error',
+        message: 'Could not run automated unbooked chase check.',
+      });
+    } finally {
+      setIsScanningReminders(false);
+    }
   };
 
   // Filtered dataset
@@ -620,6 +694,16 @@ export const AdminJobsPage = () => {
               Reset Filters
             </button>
           )}
+
+          <button
+            onClick={handleScanUnbookedReminders}
+            disabled={isScanningReminders}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 min-h-[40px]"
+            title="Scan unbooked instructions and dispatch Trigger 3 automated reminders"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
+            <span>{isScanningReminders ? 'Checking...' : 'Run Unbooked Chase (Trigger 3)'}</span>
+          </button>
         </div>
       </div>
 
@@ -813,6 +897,15 @@ export const AdminJobsPage = () => {
                         <td className="py-3.5 px-4 min-w-[170px] whitespace-nowrap">
                           <div className="space-y-1">
                             <StatusPill status={row.status} />
+                            {row.bookingReminderCount ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-[#0B1F4D] border border-blue-200 block w-fit"
+                                title={`Booking chase reminder sent on ${row.bookingReminderSentAt || 'recently'}`}
+                              >
+                                <Mail className="w-2.5 h-2.5 text-[#2563EB]" />
+                                <span>Reminder Sent ({row.bookingReminderCount}/2)</span>
+                              </span>
+                            ) : null}
                             {isWaiting ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200 block w-fit">
                                 <Lock className="w-2.5 h-2.5 text-amber-700" />
@@ -840,6 +933,7 @@ export const AdminJobsPage = () => {
                               setClientModalTab(tab);
                             }}
                             onReschedule={(targetJob) => setSelectedRescheduleJob(targetJob)}
+                            onSendBookingReminder={handleSendBookingReminder}
                           />
                         </td>
                       </tr>

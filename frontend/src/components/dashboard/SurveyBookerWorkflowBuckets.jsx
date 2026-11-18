@@ -30,12 +30,19 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
     (j) => j.status === 'Quote sent' || j.status === 'Accepted' || j.termsStatus === 'Not Sent'
   ).length;
 
-  const jobsToBook = jobs.filter(
-    (j) => (j.termsStatus === 'Signed' || j.paymentStatus === 'Paid') && j.status !== 'Booked' && j.status !== 'Survey done' && j.status !== 'Closed'
-  ).length;
+  const unbookedJobs = jobs.filter(
+    (j) =>
+      (j.termsStatus === 'Signed' || j.paymentStatus === 'Paid' || j.status === 'Accepted' || j.quoteStatus === 'Accepted') &&
+      j.status !== 'Booked' &&
+      j.status !== 'Scheduled' &&
+      j.status !== 'Survey done' &&
+      j.status !== 'Closed'
+  );
+  const jobsToBook = unbookedJobs.length;
+  const remindersSentCount = unbookedJobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
 
   const appointments = jobs.filter(
-    (j) => j.status === 'Booked' || j.timelineStep === 7
+    (j) => j.status === 'Booked' || j.status === 'Scheduled' || j.timelineStep === 7
   ).length;
 
   const reportsToUpload = jobs.filter(
@@ -82,12 +89,12 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       id: 'jobs-to-book',
       title: 'Jobs to book',
       count: jobsToBook || 3,
-      badgeNote: 'Deposit cleared',
+      badgeNote: remindersSentCount > 0 ? `${remindersSentCount} Chased (1/2)` : 'Awaiting Booking',
       icon: Calendar,
       color: 'bg-amber-50/70 text-amber-700 border-amber-200/80',
       activeColor: 'bg-amber-600 text-white border-amber-600',
-      targetRoute: '/admin/jobs?filter=Payment received',
-      desc: 'Settled payments ready for vendor access liaising',
+      targetRoute: '/admin/jobs?filter=Action Required',
+      desc: 'Accepted proposals awaiting inspection booking',
     },
     {
       id: 'appointments',

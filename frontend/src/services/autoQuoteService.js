@@ -446,3 +446,285 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
     emailLogRecord,
   };
 };
+
+/**
+ * SurveyBooker Trigger 3: Dispatch Unbooked Follow-Up Reminder (Chase Engine)
+ * Client Requirement:
+ * "Booking reminders: If a client accepts a quotation but has not booked after a few days, an automated reminder email should be sent."
+ * 
+ * When a quote is accepted but inspection appointment is unconfirmed after 48-72 hours:
+ * 1. Dispatches branded chase email:
+ *    "Gentle Reminder: Secure your surveyor inspection slot for [Property Address]. Surveyor diaries for next week are filling up fast."
+ *    Direct link: "Click Here to Select Your Date" -> /customer/my-bookings
+ * 2. Logs email record to property_group_sent_emails_v1
+ * 3. Updates job with bookingReminderSent: true, bookingReminderCount: (count + 1), bookingReminderSentAt
+ * 4. Displays "Reminder Sent (1/2)" badge in admin "Jobs to Book" bucket and Jobs Table
+ */
+export const dispatchUnbookedBookingReminder = async (jobOrQuote, customOverrides = {}) => {
+  if (!jobOrQuote) return { success: false, reason: 'Missing job or quote data' };
+
+  const now = new Date();
+  const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+  const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const clientEmail = (
+    jobOrQuote.customerEmail ||
+    jobOrQuote.clientEmail ||
+    'customer@demo.com'
+  ).toLowerCase().trim();
+  const clientName =
+    jobOrQuote.customer ||
+    jobOrQuote.customerName ||
+    jobOrQuote.client ||
+    'Valued Client';
+  const propertyAddress =
+    jobOrQuote.property ||
+    jobOrQuote.propertyAddress ||
+    jobOrQuote.location ||
+    'Subject Property, London';
+  const surveyType =
+    jobOrQuote.surveyType ||
+    jobOrQuote.enquiry ||
+    'RICS Level 2 Home Survey';
+  const jobNo = jobOrQuote.jobNo || jobOrQuote.id || 'JOB-2026-080';
+  const currentCount = jobOrQuote.bookingReminderCount || 0;
+  const newCount = currentCount + 1;
+
+  // 1. Fetch active email automations to check Trigger 3 (step-unbooked-reminder)
+  let automations = DEFAULT_EMAIL_AUTOMATIONS;
+  try {
+    const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+    if (rawAutomations) {
+      automations = JSON.parse(rawAutomations);
+    }
+  } catch (e) {
+    console.warn('Error reading automations storage', e);
+  }
+
+  const reminderAutomation =
+    automations.find((a) => a.id === 'step-unbooked-reminder' || a.stepIndex === 11) ||
+    automations[2] ||
+    DEFAULT_EMAIL_AUTOMATIONS[2];
+
+  const templateData = {
+    customer: clientName,
+    customerName: clientName,
+    clientName: clientName,
+    property: propertyAddress,
+    propertyAddress: propertyAddress,
+    surveyType: surveyType,
+    quoteTotal: jobOrQuote.total ? String(jobOrQuote.total).replace('£', '') : '660.00',
+    jobNo: jobNo,
+    reference: jobNo,
+    date: formattedDate,
+    actionLink: `${window.location.origin}/customer/my-bookings`,
+    bookingLink: `${window.location.origin}/customer/my-bookings`,
+    portalLink: `${window.location.origin}/customer/my-dashboard`,
+    companyName: 'NJS Property Group',
+    companyPhone: '0800 169 9661',
+    companyEmail: 'info@njspropertygroup.com',
+  };
+
+  const defaultSubject = `Gentle Reminder: Secure your surveyor inspection slot for {{property_address}} - Ref: {{job_no}}`;
+  const resolvedSubject = renderEmailTemplate(
+    reminderAutomation?.subject || defaultSubject,
+    templateData
+  );
+
+  const defaultBody = `Dear {{customer_name}},
+
+Gentle Reminder: Secure your surveyor inspection slot for {{property_address}}. Surveyor diaries for next week are filling up fast.
+
+We noticed you recently accepted your quotation for the {{survey_type}} at:
+{{property_address}} (Ref: {{job_no}}).
+
+However, your preferred inspection date has not yet been selected.
+
+To avoid delays to your property transaction and secure your preferred date, please click the link below:
+
+Click Here to Select Your Date:
+{{action_link}}
+
+If your purchase timeline has changed or you are waiting for the estate agent/vendor to grant access, simply reply to this email and our operations team will coordinate key collection on your behalf.
+
+Warm regards,
+Bookings & Logistics Desk | NJS Property Group
+Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+
+  const resolvedBody = renderEmailTemplate(
+    reminderAutomation?.templateBody || defaultBody,
+    templateData
+  );
+
+  // 2. Append Sent Email Log
+  const emailLogRecord = {
+    id: `EML-REM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    stepIndex: 11,
+    stepName: 'Unbooked Chase',
+    stageLabel: 'Stage 3: Unbooked Follow-Up (2-3 Days)',
+    subject: resolvedSubject,
+    to: clientEmail,
+    recipientName: clientName,
+    date: formattedTime,
+    status: 'Delivered',
+    body: resolvedBody,
+    preview: `Gentle reminder (${newCount}/2) prompting customer to book surveyor appointment window for ${propertyAddress}.`,
+    jobNo: jobNo,
+  };
+
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+    localStorage.setItem(
+      'property_group_sent_emails_v1',
+      JSON.stringify([emailLogRecord, ...existingLogs.slice(0, 49)])
+    );
+    window.dispatchEvent(new Event('property_group_sent_emails_updated'));
+  } catch (err) {
+    console.warn('Error saving sent email log', err);
+  }
+
+  // 3. Update Jobs Storage: mark bookingReminderSent: true & count
+  try {
+    const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    const updatedJobs = storedJobs.map((j) => {
+      const match =
+        j.id === jobOrQuote.id ||
+        j.jobNo === jobOrQuote.jobNo ||
+        j.jobNo === jobOrQuote.id ||
+        (j.customerEmail && j.customerEmail.toLowerCase().trim() === clientEmail);
+      if (match) {
+        return {
+          ...j,
+          bookingReminderSent: true,
+          bookingReminderCount: newCount,
+          bookingReminderSentAt: formattedTime,
+          lastFollowUpDate: formattedDate,
+        };
+      }
+      return j;
+    });
+    localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+  } catch (err) {
+    console.warn('Error updating jobs storage on booking reminder', err);
+  }
+
+  // 4. Update CRM Leads: append note if exists
+  try {
+    const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+    const updatedLeads = storedLeads.map((l) => {
+      const match =
+        l.id === jobOrQuote.id ||
+        (l.customerEmail && l.customerEmail.toLowerCase().trim() === clientEmail);
+      if (match) {
+        return {
+          ...l,
+          bookingReminderSent: true,
+          bookingReminderCount: newCount,
+          notes: l.notes
+            ? `${l.notes} • [Unbooked chase reminder (${newCount}/2) sent on ${formattedTime}]`
+            : `Unbooked chase reminder (${newCount}/2) sent on ${formattedTime}`,
+        };
+      }
+      return l;
+    });
+    localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+    window.dispatchEvent(new Event('propertygroup_leads_updated'));
+  } catch (err) {
+    console.warn('Error updating leads storage on booking reminder', err);
+  }
+
+  return {
+    success: true,
+    reminderCount: newCount,
+    dispatchedAt: formattedTime,
+    resolvedSubject,
+    emailLogRecord,
+  };
+};
+
+/**
+ * Scan all active accepted instructions and auto-dispatch booking reminders
+ * for jobs unbooked after 48-72 hours (SurveyBooker Trigger 3 Engine)
+ */
+export const scanAndDispatchUnbookedReminders = async (options = { maxReminders: 2, hoursThreshold: 48, forceAll: false }) => {
+  let storedJobs = [];
+  try {
+    storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+  } catch {
+    return { scanned: 0, dispatched: 0, jobs: [] };
+  }
+
+  const now = Date.now();
+  const dispatchedList = [];
+
+  for (const job of storedJobs) {
+    // Check if job is accepted or in "Jobs to Book" stage
+    const isAccepted =
+      job.status === 'Accepted' ||
+      job.quoteStatus === 'Accepted' ||
+      job.stage === 'accepted' ||
+      job.termsStatus === 'Signed' ||
+      (job.timelineStep && job.timelineStep >= 3);
+
+    // Check if not yet booked/scheduled/done
+    const isUnbooked =
+      job.status !== 'Booked' &&
+      job.status !== 'Scheduled' &&
+      job.status !== 'Survey done' &&
+      job.status !== 'Completed' &&
+      job.status !== 'Closed' &&
+      !job.bookedDate &&
+      !job.appointmentDate;
+
+    const reminderCount = job.bookingReminderCount || 0;
+    const canSendMore = reminderCount < (options.maxReminders || 2);
+
+    if (isAccepted && isUnbooked && canSendMore) {
+      let shouldSend = options.forceAll === true;
+
+      if (!shouldSend) {
+        // Check time difference (default 48 hours = 48 * 3600 * 1000 ms)
+        let acceptedTime = null;
+        if (job.acceptedAt) {
+          const parsed = Date.parse(job.acceptedAt);
+          if (!isNaN(parsed)) acceptedTime = parsed;
+        }
+        if (!acceptedTime && job.date) {
+          // If UK format DD/MM/YYYY
+          const parts = String(job.date).split('/');
+          if (parts.length === 3) {
+            acceptedTime = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+          }
+        }
+
+        if (acceptedTime) {
+          const elapsedHours = (now - acceptedTime) / (1000 * 60 * 60);
+          if (elapsedHours >= (options.hoursThreshold || 48)) {
+            shouldSend = true;
+          }
+        } else {
+          // If no timestamp, eligible on 2nd day
+          shouldSend = true;
+        }
+      }
+
+      if (shouldSend) {
+        const result = await dispatchUnbookedBookingReminder(job);
+        if (result.success) {
+          dispatchedList.push({
+            jobNo: job.jobNo || job.id,
+            property: job.property,
+            reminderCount: result.reminderCount,
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    scanned: storedJobs.length,
+    dispatched: dispatchedList.length,
+    dispatchedJobs: dispatchedList,
+  };
+};
