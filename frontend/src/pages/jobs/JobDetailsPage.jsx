@@ -716,47 +716,49 @@ export const JobDetailsPage = () => {
         </div>
 
         {/* Stepper Bar */}
-        <div className="flex items-center justify-between relative px-2 sm:px-6">
-          {/* Background Connecting Bar */}
-          <div className="absolute top-4 left-6 right-6 h-1 bg-slate-700/80 -z-0" />
+        <div className="overflow-x-auto pb-2 scrollbar-none">
+          <div className="flex items-center justify-between relative px-2 sm:px-6 min-w-[580px] lg:min-w-0">
+            {/* Background Connecting Bar */}
+            <div className="absolute top-4 left-6 right-6 h-1 bg-slate-700/80 -z-0" />
 
-          {STATUS_TIMELINE_STEPS.map((stepName, idx) => {
-            const stepNumber = idx + 1;
-            const isPast = idx < currentStepIndex;
-            const isCurrent = idx === currentStepIndex;
+            {STATUS_TIMELINE_STEPS.map((stepName, idx) => {
+              const stepNumber = idx + 1;
+              const isPast = idx < currentStepIndex;
+              const isCurrent = idx === currentStepIndex;
 
-            return (
-              <div
-                key={stepName}
-                onClick={() => handleStepClick(idx)}
-                className="flex flex-col items-center cursor-pointer group relative z-10"
-              >
+              return (
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
-                    isPast
-                      ? 'bg-emerald-500 text-white shadow-sm'
-                      : isCurrent
-                      ? 'bg-[#0284C7] text-white ring-4 ring-sky-400/30 shadow-md scale-110'
-                      : 'bg-[#1E293B] border-2 border-slate-600 text-slate-400 group-hover:border-slate-400'
-                  }`}
+                  key={stepName}
+                  onClick={() => handleStepClick(idx)}
+                  className="flex flex-col items-center cursor-pointer group relative z-10"
                 >
-                  {isPast ? <Check className="w-4 h-4 stroke-[3]" /> : stepNumber}
-                </div>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                      isPast
+                        ? 'bg-emerald-500 text-white shadow-sm'
+                        : isCurrent
+                        ? 'bg-[#0284C7] text-white ring-4 ring-sky-400/30 shadow-md scale-110'
+                        : 'bg-[#1E293B] border-2 border-slate-600 text-slate-400 group-hover:border-slate-400'
+                    }`}
+                  >
+                    {isPast ? <Check className="w-4 h-4 stroke-[3]" /> : stepNumber}
+                  </div>
 
-                <span
-                  className={`text-[11px] text-center font-bold mt-2 max-w-[85px] leading-tight transition-colors ${
-                    isCurrent
-                      ? 'text-sky-300'
-                      : isPast
-                      ? 'text-slate-200'
-                      : 'text-slate-400 group-hover:text-slate-300'
-                  }`}
-                >
-                  {stepName}
-                </span>
-              </div>
-            );
-          })}
+                  <span
+                    className={`text-[11px] text-center font-bold mt-2 max-w-[85px] leading-tight transition-colors ${
+                      isCurrent
+                        ? 'text-sky-300'
+                        : isPast
+                        ? 'text-slate-200'
+                        : 'text-slate-400 group-hover:text-slate-300'
+                    }`}
+                  >
+                    {stepName}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Live Email Automation Indicator */}
@@ -771,101 +773,110 @@ export const JobDetailsPage = () => {
         </div>
       </div>
 
-      {/* HEADER: Job Title, Customer, Survey Booker ID, Badges */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-3 mb-2">
-            <span className="font-mono text-sm font-black px-3 py-1 rounded-xl bg-[#0B1F4D] text-white tracking-wide">
+      {/* HEADER: Job Title, Customer, Survey Booker ID, Badges & Action Buttons */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
+        {/* Row 1: Top Bar with Job No, Customer, Status Badges & Action Buttons */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <span className="font-mono text-sm font-black px-3 py-1 rounded-xl bg-[#0B1F4D] text-white tracking-wide shadow-2xs">
               {job.jobNo}
             </span>
-            <span className="text-base font-extrabold text-slate-900">
+            <span className="text-base sm:text-lg font-extrabold text-slate-900">
               {job.customer}
             </span>
 
             {/* Terms status badge */}
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shrink-0 ${
                 job.termsStatus === 'Signed'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   : 'bg-amber-50 text-amber-800 border-amber-200'
               }`}
             >
-              <FileSignature className="w-3.5 h-3.5 text-current" />
+              <FileSignature className="w-3.5 h-3.5 text-current shrink-0" />
               Terms: {job.termsStatus}
             </span>
 
             {/* Payment status badge */}
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
+              className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shrink-0 ${
                 job.paymentStatus === 'Paid'
                   ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   : 'bg-rose-50 text-rose-800 border-rose-200'
               }`}
             >
-              <CreditCard className="w-3.5 h-3.5 text-current" />
+              <CreditCard className="w-3.5 h-3.5 text-current shrink-0" />
               Payment: {job.paymentStatus}
             </span>
 
             <StatusPill status={job.status} />
           </div>
 
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
-            <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>
-              {job.property}, {job.location}
-            </span>
-            <span className="text-slate-300">•</span>
-            <span className="text-[#2563EB] font-bold">{job.surveyType}</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-xs font-mono text-slate-500">Booker ID: 1826303</span>
+          {/* Action Buttons: "Record BACS Payment", "Client Messages", "Confirm/Adjust quote", "Reschedule", "Send terms" */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {job.paymentStatus !== 'Paid' && (
+              <button
+                onClick={() => setIsBacsModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                title="Record offline bank transfer settlement"
+              >
+                <PoundSterling className="w-4 h-4 shrink-0" />
+                <span>Record BACS Payment</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setActiveTab('messages')}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-[#0B1F4D] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4 text-[#2563EB] shrink-0" />
+              <span>Client Messages</span>
+            </button>
+
+            <button
+              onClick={() => setIsAdjustQuoteModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 hover:border-[#2563EB] bg-white text-slate-700 hover:text-[#2563EB] text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            >
+              <SlidersHorizontal className="w-4 h-4 shrink-0" />
+              <span>Confirm/Adjust quote</span>
+            </button>
+
+            <button
+              onClick={() => setIsRescheduleModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              title="Reschedule on-site survey inspection"
+            >
+              <Calendar className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>Reschedule</span>
+            </button>
+
+            <button
+              onClick={() => setIsSendTermsModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 cursor-pointer"
+            >
+              <Send className="w-4 h-4 shrink-0" />
+              <span>Send terms</span>
+            </button>
           </div>
         </div>
 
-        {/* Action Buttons: "Record BACS Payment", "Client Messages", "Confirm/Adjust quote", "Send terms" */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          {job.paymentStatus !== 'Paid' && (
-            <button
-              onClick={() => setIsBacsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
-              title="Record offline bank transfer settlement"
-            >
-              <PoundSterling className="w-4 h-4" />
-              <span>Record BACS Payment</span>
-            </button>
-          )}
+        {/* Row 2: Full-width Property Address & Meta Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 bg-slate-50/90 rounded-2xl border border-slate-200/70">
+          <div className="flex items-start sm:items-center gap-2.5 text-xs sm:text-sm font-semibold text-slate-700 min-w-0">
+            <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5 sm:mt-0" />
+            <span className="text-slate-800 font-bold leading-snug">
+              {job.property}{job.location ? `, ${job.location}` : ''}
+            </span>
+          </div>
 
-          <button
-            onClick={() => setActiveTab('messages')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-[#0B1F4D] text-xs font-bold transition-all shadow-2xs cursor-pointer"
-          >
-            <MessageSquare className="w-4 h-4 text-[#2563EB]" />
-            <span>Client Messages</span>
-          </button>
-
-          <button
-            onClick={() => setIsAdjustQuoteModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 hover:border-[#2563EB] bg-white text-slate-700 hover:text-[#2563EB] text-xs font-bold transition-all shadow-2xs cursor-pointer"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Confirm/Adjust quote</span>
-          </button>
-
-          <button
-            onClick={() => setIsRescheduleModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all shadow-2xs cursor-pointer"
-            title="Reschedule on-site survey inspection"
-          >
-            <Calendar className="w-4 h-4 text-rose-600" />
-            <span>Reschedule</span>
-          </button>
-
-          <button
-            onClick={() => setIsSendTermsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 cursor-pointer"
-          >
-            <Send className="w-4 h-4" />
-            <span>Send terms</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 text-xs shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60">
+            <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#2563EB] font-bold border border-blue-200/70">
+              {job.surveyType}
+            </span>
+            <span className="px-2.5 py-1 rounded-lg bg-white text-slate-600 font-mono font-medium border border-slate-200 shadow-2xs">
+              Booker ID: 1826303
+            </span>
+          </div>
         </div>
       </div>
 
