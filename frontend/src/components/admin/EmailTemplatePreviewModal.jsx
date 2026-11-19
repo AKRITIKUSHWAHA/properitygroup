@@ -319,35 +319,29 @@ export const EmailTemplatePreviewModal = ({
                 <div className="p-6 sm:p-8 bg-slate-50/60 flex justify-center">
                   <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md max-w-xl w-full overflow-hidden">
                     {/* Brand Banner with Official NJS Logo */}
-                    <div className="bg-[#0B1F4D] text-white p-5 flex items-center justify-between border-b-2 border-amber-500/40">
+                    <div className="bg-white p-5 flex items-center justify-between border-b border-slate-200">
                       <div className="flex items-center gap-3">
                         <img
-                          src="/images/njs-logo-white.png"
+                          src="/images/njs-official-logo.png"
                           alt="NJS Property Group"
-                          className="h-10 w-auto object-contain drop-shadow-sm"
+                          className="h-11 w-auto object-contain"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            const fallback = document.getElementById('email-brand-fallback');
-                            if (fallback) fallback.style.display = 'flex';
+                            e.currentTarget.src = '/images/njs-logo.png';
                           }}
                         />
-                        <div id="email-brand-fallback" style={{ display: 'none' }} className="items-center gap-2.5">
-                          <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm">
-                            NJS
-                          </div>
-                          <div>
-                            <div className="font-black text-xs tracking-tight uppercase">
-                              NJS Property Group
-                            </div>
-                            <div className="text-[10px] text-slate-300">
-                              Independent RICS-Aligned Chartered Surveyors
-                            </div>
-                          </div>
-                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1 text-amber-400 text-[11px] font-bold bg-white/10 px-2.5 py-1 rounded-full">
-                        <Star className="w-3.5 h-3.5 fill-current" />
+                      <div className="flex items-center gap-1.5 text-slate-700 text-[11px] font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>RICS Regulated Firm #084920</span>
+                      </div>
+                    </div>
+                    <div className="bg-[#0B1F4D] px-5 py-2.5 flex items-center justify-between border-b-2 border-[#C5A059]">
+                      <span className="text-white text-xs font-bold uppercase tracking-wider">
+                        {automation.stageLabel || 'Chartered Surveyors • Expert Witness'}
+                      </span>
+                      <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold bg-white/10 px-2 py-0.5 rounded-full">
+                        <Star className="w-3 h-3 fill-current" />
                         <span>4.8 Trustpilot</span>
                       </div>
                     </div>

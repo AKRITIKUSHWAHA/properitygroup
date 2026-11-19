@@ -18,16 +18,24 @@ const drawNJSHeader = (doc, title, subtitle) => {
   doc.setFillColor(197, 160, 89); // Gold #C5A059
   doc.rect(0, 24, 210, 1.5, 'F');
 
+  // NJS Brand Roof & Chimney Icon
+  doc.setFillColor(197, 160, 89); // Gold chimney
+  doc.rect(18.5, 6, 1.8, 5, 'F');
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.9);
+  doc.line(13, 14, 20.5, 7); // Left roof
+  doc.line(20.5, 7, 28, 14); // Right roof
+
   // Company Brand text
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('NJS PROPERTY GROUP', 15, 13);
+  doc.setFontSize(13.5);
+  doc.text('NJS PROPERTY GROUP', 32, 13);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(210, 220, 240);
-  doc.text('RICS Regulated Practice • Reg No: 849201', 15, 19);
+  doc.text('RICS Regulated Practice • Reg No: 849201', 32, 19);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);

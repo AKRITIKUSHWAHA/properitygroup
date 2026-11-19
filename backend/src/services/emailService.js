@@ -11,6 +11,10 @@ const getResend = () => {
 const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
 const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
 
+export const NJS_OFFICIAL_LOGO_URL =
+  process.env.NJS_LOGO_URL ||
+  'https://raw.githubusercontent.com/AKRITIKUSHWAHA/properitygroup/main/frontend/public/images/njs-official-logo.png';
+
 const escapeHtml = (value = '') =>
   String(value)
     .replace(/&/g, '&amp;')
@@ -18,6 +22,35 @@ const escapeHtml = (value = '') =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+
+export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Independent RICS-Regulated Practice • Firm #084920') => `
+  <div style="background: #ffffff; padding: 20px 26px; border-bottom: 1px solid #e2e8f0; text-align: left;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td align="left" style="vertical-align: middle; padding: 0;">
+          <img src="${NJS_OFFICIAL_LOGO_URL}" alt="NJS Property Group" width="220" style="width: 220px; max-width: 240px; height: auto; display: block; border: 0;" />
+        </td>
+        <td align="right" style="vertical-align: middle; padding: 0; text-align: right;">
+          <div style="display: inline-block; font-size: 11px; font-weight: 700; color: #0B1F4D; background: #f8fafc; border: 1px solid #cbd5e1; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.3px;">
+            RICS Regulated Firm #084920
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div style="background: #0B1F4D; padding: 13px 26px; text-align: left; border-bottom: 3px solid #C5A059;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 16px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">${escapeHtml(title)}</h1>
+    ${subtitle ? `<p style="color: #cbd5e1; margin: 3px 0 0 0; font-size: 11.5px;">${escapeHtml(subtitle)}</p>` : ''}
+  </div>
+`;
+
+export const buildEmailFooter = () => `
+  <div style="background: #f8fafc; padding: 18px 26px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.6;">
+    <div style="font-weight: 700; color: #0B1F4D; margin-bottom: 4px;">NJS Property Group Ltd &bull; Independent Chartered Surveyors</div>
+    <div>Regulated by RICS &bull; Firm #084920 &bull; Phone: 0800 169 9661 &bull; Email: info@njspropertygroup.com</div>
+    <div style="color: #94a3b8; font-size: 10.5px; margin-top: 6px;">&copy; ${new Date().getFullYear()} NJS Property Group. All rights reserved under UK Law.</div>
+  </div>
+`;
 
 /**
  * Send instant website enquiry / quotation notification to info@njspropertygroup.com
@@ -79,11 +112,8 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
     .join('');
 
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 19px; font-weight: 800; letter-spacing: 0.4px;">NJS PROPERTY GROUP — NEW WEBSITE ENQUIRY</h1>
-        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Submitted via ${escapeHtml(sourcePage || 'Website Contact / Quote Form')}</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — NEW WEBSITE ENQUIRY', `Submitted via ${escapeHtml(sourcePage || 'Website Contact / Quote Form')}`)}
       <div style="padding: 26px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <p style="margin-top: 0;">A visitor has submitted an enquiry requesting a formal survey quotation or consultation. Details below:</p>
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0;">
@@ -101,6 +131,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
         }
         <p style="font-size: 12px; color: #64748b; margin: 18px 0 0 0;">Reply directly to this email to respond to <strong>${escapeHtml(customerName)}</strong> (${escapeHtml(customerEmail)}).</p>
       </div>
+      ${buildEmailFooter()}
     </div>
   `;
 
@@ -123,11 +154,8 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
       if (customerEmail && customerEmail.includes('@')) {
         try {
           const customerHtml = `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-              <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">NJS PROPERTY GROUP</h1>
-                <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Independent RICS-Regulated Practice • Firm #084920</p>
-              </div>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+              ${buildEmailHeader('NJS PROPERTY GROUP', 'Official Quotation Request Acknowledgment')}
               
               <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
                 <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(customerName || 'Valued Client')},</h2>
@@ -174,9 +202,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
                 </p>
               </div>
               
-              <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
-                &copy; ${new Date().getFullYear()} NJS Property Group Ltd. Independent Chartered Surveyors. Regulated by RICS.
-              </div>
+              ${buildEmailFooter()}
             </div>
           `;
 
@@ -236,30 +262,26 @@ export const sendQuoteProposalEmail = async ({
 }) => {
   const subject = `Your Formal RICS Survey Proposal: ${surveyType} — NJS Property Group`;
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <img src="https://njspropertygroup.com/images/njs-logo-white.png" alt="NJS Property Group" style="height: 44px; width: auto; max-width: 220px; display: block; margin-bottom: 8px;" />
-        <h1 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 800; letter-spacing: 0.5px;">NJS PROPERTY GROUP</h1>
-        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Independent RICS-Regulated Practice • Firm #084920</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — FORMAL SURVEY PROPOSAL', `RICS Practice Reference • ${escapeHtml(surveyType || 'RICS Home Survey')}`)}
       
       <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
-        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${clientName || 'Valued Client'},</h2>
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</h2>
         <p>Thank you for instructing NJS Property Group. We have prepared your comprehensive fee proposal for the property inspection below:</p>
         
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <tr>
               <td style="padding: 6px 0; color: #64748b;">Property:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${propertyAddress || 'Subject Property'}</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #64748b;">Survey Standard:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; text-align: right;">${surveyType || 'RICS Level 2 Home Survey'}</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; text-align: right;">${escapeHtml(surveyType || 'RICS Level 2 Home Survey')}</td>
             </tr>
             <tr>
               <td style="padding: 6px 0; color: #64748b;">Fixed Fee (inc. 20% VAT):</td>
-              <td style="padding: 6px 0; font-weight: 900; color: #059669; font-size: 16px; text-align: right;">£${quoteAmount || '770.00'}</td>
+              <td style="padding: 6px 0; font-weight: 900; color: #059669; font-size: 16px; text-align: right;">£${escapeHtml(quoteAmount || '770.00')}</td>
             </tr>
           </table>
         </div>
@@ -275,9 +297,7 @@ export const sendQuoteProposalEmail = async ({
         </p>
       </div>
       
-      <div style="background: #f8fafc; padding: 16px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
-        &copy; ${new Date().getFullYear()} NJS Property Group Ltd. Regulated by RICS. All rights reserved.
-      </div>
+      ${buildEmailFooter()}
     </div>
   `;
 
@@ -322,17 +342,30 @@ export const sendInvoiceReceiptEmail = async ({
 }) => {
   const subject = `Payment Confirmation & Official VAT Receipt: ${invoiceRef} — NJS Property Group`;
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">NJS PROPERTY GROUP</h1>
-        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Official HMRC VAT Invoice Receipt</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — OFFICIAL VAT RECEIPT', 'HMRC-Compliant Invoice Settlement')}
       <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <h2 style="color: #059669; font-size: 18px; margin-top: 0;">✓ Payment Confirmed</h2>
-        <p>Dear ${clientName || 'Valued Client'}, thank you for settling your survey invoice. Your payment has been received and verified.</p>
-        <p><strong>Receipt Reference:</strong> ${invoiceRef}<br/><strong>Total Settled:</strong> £${amount}<br/><strong>Method:</strong> ${paymentMethod}</p>
-        <p>Your allocated chartered surveyor will proceed with the site inspection as scheduled.</p>
+        <p>Dear ${escapeHtml(clientName || 'Valued Client')}, thank you for settling your survey invoice. Your payment has been received and verified.</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Receipt Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(invoiceRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Total Settled (inc. VAT):</td>
+              <td style="padding: 6px 0; font-weight: 900; color: #059669; font-size: 15px; text-align: right;">£${escapeHtml(amount)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Settlement Method:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(paymentMethod)}</td>
+            </tr>
+          </table>
+        </div>
+        <p style="font-size: 13px; color: #334155;">Your allocated chartered surveyor will proceed with the site inspection as scheduled. You can download your official PDF VAT receipt directly from your Customer Portal.</p>
       </div>
+      ${buildEmailFooter()}
     </div>
   `;
 
@@ -366,11 +399,8 @@ export const sendClientMessageToAdminNotificationEmail = async ({
 }) => {
   const subject = `[New Client Message] ${clientName} (${clientEmail}) — NJS Property Group Portal`;
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">NJS PROPERTY GROUP</h1>
-        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">Customer Portal Direct Communications Desk</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP', 'Customer Portal Direct Communications Desk')}
       <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <div style="display: inline-block; padding: 4px 10px; border-radius: 9999px; background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
           New Client Message Received
@@ -395,6 +425,7 @@ export const sendClientMessageToAdminNotificationEmail = async ({
       <div style="background: #f8fafc; padding: 16px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
         This is an automated operational notification dispatched to ${ENQUIRY_INBOX}. All messages are stored securely under GDPR and RICS record-keeping rules.
       </div>
+      ${buildEmailFooter()}
     </div>
   `;
 
@@ -430,11 +461,8 @@ export const sendAdminReplyToClientNotificationEmail = async ({
 }) => {
   const subject = `New Message from NJS Property Group regarding your Survey`;
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-      <div style="background: #0B1F4D; padding: 24px; text-align: left; border-bottom: 3px solid #C5A059;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">NJS PROPERTY GROUP</h1>
-        <p style="color: #cbd5e1; margin: 4px 0 0 0; font-size: 12px;">RICS Regulated Surveying Practice</p>
-      </div>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP', 'RICS Regulated Surveying Practice • Message Update')}
       <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <p style="margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</p>
         <p>You have received a new reply from <strong>${escapeHtml(adminSenderName)}</strong> regarding your survey instruction.</p>
@@ -450,9 +478,7 @@ export const sendAdminReplyToClientNotificationEmail = async ({
           </a>
         </div>
       </div>
-      <div style="background: #f8fafc; padding: 16px 28px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
-        NJS Property Group &bull; Direct Phone: 0800 169 9661 &bull; Email: info@njspropertygroup.com
-      </div>
+      ${buildEmailFooter()}
     </div>
   `;
 
