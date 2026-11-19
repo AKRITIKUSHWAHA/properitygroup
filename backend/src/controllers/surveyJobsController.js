@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendInspectionBookedEmail, sendReportReadyEmail } from '../services/emailService.js';
 
 const STAGE_ORDER = ['QUOTE', 'PAID', 'ACCEPTED', 'BOOKED', 'PREPARING_REPORT', 'COMPLETE'];
 
@@ -236,6 +237,23 @@ export const updateJobStage = async (req, res, next) => {
       });
     } catch {}
 
+    // Dispatch Report Ready email if stage transitioned to COMPLETE
+    if (targetStage === 'COMPLETE' && job.stage !== 'COMPLETE') {
+      try {
+        const clientEmail = job.clientEmail || updated.clientEmail;
+        if (clientEmail && clientEmail.includes('@')) {
+          sendReportReadyEmail({
+            to: clientEmail,
+            clientName: job.clientName || updated.clientName || 'Valued Client',
+            jobRef: job.reference || updated.reference,
+            propertyAddress: job.propertyAddress || updated.propertyAddress || 'Subject Property',
+            surveyType: job.serviceType || updated.serviceType || 'RICS Level 2 Home Survey',
+            reportPdfUrl: job.reportPdfUrl || updated.reportPdfUrl,
+          }).catch((e) => console.warn('[sendReportReadyEmail] background error:', e.message));
+        }
+      } catch (err) {}
+    }
+
     return ApiResponse.success(res, { job: updated }, `Stage updated to ${targetStage}`);
   } catch (error) {
     next(error);
@@ -269,6 +287,22 @@ export const assignSurveyor = async (req, res, next) => {
         details: `Assigned surveyor ID ${surveyorId} on ${inspectionDate} (${inspectionTime})`,
       },
     });
+
+    // Dispatch Inspection Booked Email to Customer & CC Admin
+    try {
+      if (job.clientEmail && job.clientEmail.includes('@') && inspectionDate) {
+        sendInspectionBookedEmail({
+          to: job.clientEmail,
+          clientName: job.clientName || 'Valued Client',
+          jobRef: job.reference,
+          propertyAddress: job.propertyAddress || 'Subject Property',
+          surveyType: job.serviceType || 'RICS Level 2 Home Survey',
+          inspectionDate: job.inspectionDate || inspectionDate,
+          inspectionTime: job.inspectionTime || inspectionTime,
+          surveyorName: job.surveyor?.name || 'RICS Chartered Surveyor',
+        }).catch((e) => console.warn('[sendInspectionBookedEmail] background error:', e.message));
+      }
+    } catch (emailErr) {}
 
     return ApiResponse.success(res, { job }, 'Surveyor assigned successfully');
   } catch (error) {
@@ -397,6 +431,23 @@ export const rescheduleSurveyJob = async (req, res, next) => {
         });
       } catch (e) {}
     }
+
+    // Dispatch Rescheduled/Updated Inspection Booked Email to Customer & CC Admin
+    try {
+      if (updated.clientEmail && updated.clientEmail.includes('@') && updated.inspectionDate) {
+        sendInspectionBookedEmail({
+          to: updated.clientEmail,
+          clientName: updated.clientName || 'Valued Client',
+          jobRef: updated.reference,
+          propertyAddress: updated.propertyAddress || 'Subject Property',
+          surveyType: updated.serviceType || 'RICS Level 2 Home Survey',
+          inspectionDate: updated.inspectionDate,
+          inspectionTime: updated.inspectionTime,
+          surveyorName: updated.surveyor?.name || 'RICS Chartered Surveyor',
+          surveyorPhone: updated.surveyor?.phone,
+        }).catch((e) => console.warn('[sendInspectionBookedEmail Reschedule] background error:', e.message));
+      }
+    } catch (emailErr) {}
 
     return ApiResponse.success(
       res,

@@ -1,6 +1,7 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import { sendInvoiceReceiptEmail } from '../../services/emailService.js';
 
 /**
  * Customer Menu 8: Invoices & Payments (/customer/invoices-and-payments)
@@ -91,6 +92,23 @@ export const payInvoiceWithCard = async (req, res, next) => {
         details: `Customer settled £${invoice.total} via ${paymentMethod} for invoice ${invoice.invoiceNumber}`,
       },
     });
+
+    // Dispatch Official HMRC-compliant VAT Receipt Email to Customer & CC Admin
+    try {
+      const recipientEmail = req.user.email || invoice.clientEmail || invoice.job?.clientEmail || userEmail;
+      if (recipientEmail && recipientEmail.includes('@')) {
+        sendInvoiceReceiptEmail({
+          to: recipientEmail,
+          clientName: req.user.name || invoice.clientName || invoice.job?.clientName || 'Valued Client',
+          invoiceRef: invoice.invoiceNumber,
+          amount: invoice.total,
+          paymentMethod: 'Online Card (Stripe Gateway)',
+          propertyAddress: invoice.job?.propertyAddress || 'Subject Property',
+        }).catch((e) => console.warn('[sendInvoiceReceiptEmail] background error:', e.message));
+      }
+    } catch (emailErr) {
+      console.warn('[sendInvoiceReceiptEmail] warning:', emailErr.message);
+    }
 
     return ApiResponse.success(
       res,

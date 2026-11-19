@@ -1,6 +1,7 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import { sendQuoteAcceptedEmail } from '../../services/emailService.js';
 
 /**
  * Customer Menu 2: My Quotations (/customer/quotations)
@@ -68,6 +69,23 @@ export const acceptCustomerQuotation = async (req, res, next) => {
         acceptedAt: new Date(),
       },
     });
+
+    // Dispatch Quotation Acceptance Email to Customer & CC Admin
+    try {
+      const recipientEmail = req.user.email || quote.job?.clientEmail || userEmail;
+      if (recipientEmail && recipientEmail.includes('@')) {
+        sendQuoteAcceptedEmail({
+          to: recipientEmail,
+          clientName: req.user.name || quote.job?.clientName || 'Valued Client',
+          quoteRef: quote.reference || `QUO-${quote.id}`,
+          surveyType: quote.job?.serviceType || 'RICS Level 2 Home Survey',
+          propertyAddress: quote.job?.propertyAddress || 'Subject Property',
+          totalAmount: quote.totalAmount,
+        }).catch((e) => console.warn('[sendQuoteAcceptedEmail] background error:', e.message));
+      }
+    } catch (emailErr) {
+      console.warn('[sendQuoteAcceptedEmail] warning:', emailErr.message);
+    }
 
     // Ensure invoice is generated
     if (quote.jobId) {

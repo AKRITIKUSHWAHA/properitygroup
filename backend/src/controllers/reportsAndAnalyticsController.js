@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendReportReadyEmail } from '../services/emailService.js';
 
 /**
  * Superadmin Menu 10: Reports & Analytics (RICS Final Reports, QA Audit, Metrics)
@@ -99,6 +100,20 @@ export const approveQaReport = async (req, res, next) => {
         details: `RICS Report approved by ${req.user.name} and released to customer portal.`,
       },
     });
+
+    // Dispatch Official Final Report Ready Email to Customer & CC Admin
+    try {
+      if (job.clientEmail && job.clientEmail.includes('@')) {
+        sendReportReadyEmail({
+          to: job.clientEmail,
+          clientName: job.clientName || 'Valued Client',
+          jobRef: job.reference,
+          propertyAddress: job.propertyAddress || 'Subject Property',
+          surveyType: job.serviceType || 'RICS Level 2 Home Survey',
+          reportPdfUrl: job.reportPdfUrl,
+        }).catch((e) => console.warn('[sendReportReadyEmail QA] background error:', e.message));
+      }
+    } catch (emailErr) {}
 
     return ApiResponse.success(res, { job }, 'RICS report passed QA audit and released to customer');
   } catch (error) {

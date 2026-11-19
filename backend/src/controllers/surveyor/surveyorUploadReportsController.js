@@ -1,6 +1,7 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import { sendReportReadyEmail } from '../../services/emailService.js';
 
 /**
  * Surveyor Menu 5: Upload Reports (/surveyor/upload-reports)
@@ -77,6 +78,20 @@ export const submitDraftReport = async (req, res, next) => {
         details: `Draft report (${req.file ? req.file.originalname : 'PDF file'}) uploaded and submitted by surveyor ${req.user.name}.`,
       },
     });
+
+    // If marked completed directly, notify customer
+    try {
+      if (job.clientEmail && job.clientEmail.includes('@')) {
+        sendReportReadyEmail({
+          to: job.clientEmail,
+          clientName: job.clientName || 'Valued Client',
+          jobRef: job.reference,
+          propertyAddress: job.propertyAddress || 'Subject Property',
+          surveyType: job.serviceType || 'RICS Level 2 Home Survey',
+          reportPdfUrl,
+        }).catch((e) => console.warn('[sendReportReadyEmail Surveyor] background error:', e.message));
+      }
+    } catch (emailErr) {}
 
     return ApiResponse.success(
       res,

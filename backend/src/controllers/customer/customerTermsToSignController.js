@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import { sendTermsSignedEmail } from '../../services/emailService.js';
 
 /**
  * Customer Menu 7: Terms to Sign (/customer/terms-to-sign)
@@ -109,6 +110,25 @@ export const executeDigitalSignature = async (req, res, next) => {
         ipAddress: signerIp,
       },
     });
+
+    // Dispatch Terms Signed Confirmation Email to Customer & CC Admin
+    try {
+      const recipientEmail = req.user.email || term.clientEmail || term.job?.clientEmail || userEmail;
+      if (recipientEmail && recipientEmail.includes('@')) {
+        sendTermsSignedEmail({
+          to: recipientEmail,
+          clientName: req.user.name || term.clientName || term.job?.clientName || 'Valued Client',
+          jobRef: term.job?.reference || `TRM-${term.id}`,
+          surveyType: term.job?.serviceType || 'RICS Level 2 Home Survey',
+          propertyAddress: term.job?.propertyAddress || 'Subject Property',
+          signedAt,
+          signerIp,
+          tamperAuditHash,
+        }).catch((e) => console.warn('[sendTermsSignedEmail] background error:', e.message));
+      }
+    } catch (emailErr) {
+      console.warn('[sendTermsSignedEmail] warning:', emailErr.message);
+    }
 
     return ApiResponse.success(
       res,

@@ -339,6 +339,7 @@ export const sendInvoiceReceiptEmail = async ({
   invoiceRef,
   amount,
   paymentMethod = 'Online Card (Stripe)',
+  propertyAddress,
 }) => {
   const subject = `Payment Confirmation & Official VAT Receipt: ${invoiceRef} — NJS Property Group`;
   const html = `
@@ -353,6 +354,14 @@ export const sendInvoiceReceiptEmail = async ({
               <td style="padding: 6px 0; color: #64748b; width: 42%;">Receipt Reference:</td>
               <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(invoiceRef)}</td>
             </tr>
+            ${
+              propertyAddress
+                ? `<tr>
+              <td style="padding: 6px 0; color: #64748b;">Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress)}</td>
+            </tr>`
+                : ''
+            }
             <tr>
               <td style="padding: 6px 0; color: #64748b;">Total Settled (inc. VAT):</td>
               <td style="padding: 6px 0; font-weight: 900; color: #059669; font-size: 15px; text-align: right;">£${escapeHtml(amount)}</td>
@@ -364,6 +373,9 @@ export const sendInvoiceReceiptEmail = async ({
           </table>
         </div>
         <p style="font-size: 13px; color: #334155;">Your allocated chartered surveyor will proceed with the site inspection as scheduled. You can download your official PDF VAT receipt directly from your Customer Portal.</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/invoices-and-payments" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View VAT Receipt in Portal &rarr;</a>
+        </div>
       </div>
       ${buildEmailFooter()}
     </div>
@@ -375,14 +387,374 @@ export const sendInvoiceReceiptEmail = async ({
 
   if (resend) {
     try {
-      const res = await resend.emails.send({ from: SENDER_EMAIL, to: [to], subject, html });
-      return { success: true, messageId: res.id, provider: 'resend_live' };
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        cc: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend receipt error:', err.message);
     }
   }
 
   console.log(`[RESEND SIMULATION] Receipt email dispatched to ${to} for invoice ${invoiceRef}`);
+  return { success: true, provider: 'simulated_fallback' };
+};
+
+/**
+ * Dispatch Quote Acceptance Email to Customer & CC Admin
+ */
+export const sendQuoteAcceptedEmail = async ({
+  to,
+  clientName,
+  quoteRef,
+  surveyType,
+  propertyAddress,
+  totalAmount,
+}) => {
+  const subject = `Survey Quotation Accepted (Ref: ${quoteRef}) — NJS Property Group`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — QUOTATION ACCEPTED', 'RICS Chartered Surveying Instruction Confirmed')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</h2>
+        <p>Thank you for accepting your formal quotation with NJS Property Group. Your instruction is now officially registered in our system.</p>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Quotation Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(quoteRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Survey Standard:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(surveyType || 'RICS Survey')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+            </tr>
+            ${
+              totalAmount
+                ? `<tr>
+              <td style="padding: 6px 0; color: #64748b;">Agreed Fee (inc. VAT):</td>
+              <td style="padding: 6px 0; font-weight: 800; color: #059669; text-align: right;">£${escapeHtml(totalAmount)}</td>
+            </tr>`
+                : ''
+            }
+          </table>
+        </div>
+
+        <div style="background: #eff6ff; border-left: 4px solid #2563EB; padding: 14px 16px; border-radius: 8px; margin: 18px 0;">
+          <strong style="color: #1e40af; font-size: 13px; display: block; margin-bottom: 4px;">Next Steps to Lock in Inspection:</strong>
+          <ol style="margin: 0; padding-left: 18px; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
+            <li>Review &amp; Digitally Sign your <strong>RICS Terms of Engagement</strong> in your client portal.</li>
+            <li>Settle invoice securely to lock in your priority surveyor inspection slot.</li>
+          </ol>
+        </div>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/terms-to-sign" style="background: #2563EB; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Sign Terms &amp; Proceed &rarr;</a>
+        </div>
+
+        <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+          Questions? Reply directly to this email or speak with our operations desk at <strong>0800 169 9661</strong>.
+        </p>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+  if (resend && to && to.includes('@')) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        cc: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend quote accepted email error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Quote accepted email dispatched to ${to} for ref ${quoteRef}`);
+  return { success: true, provider: 'simulated_fallback' };
+};
+
+/**
+ * Dispatch Terms of Engagement Signed Confirmation Email to Customer & CC Admin
+ */
+export const sendTermsSignedEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  surveyType,
+  propertyAddress,
+  signedAt,
+  signerIp,
+  tamperAuditHash,
+}) => {
+  const formattedDate = signedAt ? new Date(signedAt).toLocaleString('en-GB') : new Date().toLocaleString('en-GB');
+  const subject = `RICS Terms of Engagement Signed & Confirmed: ${propertyAddress || jobRef} — NJS Property Group`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — TERMS EXECUTED', 'Legally Binding RICS Mandate Completed')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #059669; font-size: 18px; margin-top: 0;">✓ Terms of Engagement Signed</h2>
+        <p>Dear ${escapeHtml(clientName || 'Valued Client')}, thank you for executing your RICS Terms of Engagement. Your mandatory legal contract requirements are now 100% satisfied.</p>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Instruction Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(jobRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Execution Timestamp:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(formattedDate)}</td>
+            </tr>
+            ${
+              tamperAuditHash
+                ? `<tr>
+              <td style="padding: 6px 0; color: #64748b;">Digital Audit Hash:</td>
+              <td style="padding: 6px 0; font-family: monospace; font-size: 11px; color: #64748b; text-align: right;">${escapeHtml(tamperAuditHash.slice(0, 16))}...</td>
+            </tr>`
+                : ''
+            }
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #334155;">
+          Our logistics coordinator is now finalizing surveyor scheduling and estate agent key access for your site visit. You can monitor your survey progress at any time:
+        </p>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/track-survey" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Track Survey Status &rarr;</a>
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+  if (resend && to && to.includes('@')) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        cc: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend terms signed email error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Terms signed email dispatched to ${to} for ref ${jobRef}`);
+  return { success: true, provider: 'simulated_fallback' };
+};
+
+/**
+ * Dispatch Inspection Confirmed Email to Customer & CC Admin
+ */
+export const sendInspectionBookedEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  propertyAddress,
+  surveyType,
+  inspectionDate,
+  inspectionTime,
+  surveyorName,
+  surveyorPhone,
+}) => {
+  const formattedDate = inspectionDate
+    ? new Date(inspectionDate).toLocaleDateString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : 'Scheduled Date';
+  const subject = `Site Inspection Confirmed: ${formattedDate} — NJS Property Group`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — INSPECTION CONFIRMED', 'Surveyor Allocation & Key Logistics Locked')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</h2>
+        <p>Your property inspection appointment has been locked in the calendar with chartered surveyor <strong>${escapeHtml(surveyorName || 'RICS Chartered Surveyor')}</strong>.</p>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(jobRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Confirmed Inspection Date:</td>
+              <td style="padding: 6px 0; font-weight: 800; color: #059669; font-size: 14px; text-align: right;">${escapeHtml(formattedDate)}</td>
+            </tr>
+            ${
+              inspectionTime
+                ? `<tr>
+              <td style="padding: 6px 0; color: #64748b;">Arrival Window:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(inspectionTime)}</td>
+            </tr>`
+                : ''
+            }
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Assigned Surveyor:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; text-align: right;">${escapeHtml(surveyorName || 'RICS Chartered Surveyor')}</td>
+            </tr>
+            ${
+              surveyorPhone
+                ? `<tr>
+              <td style="padding: 6px 0; color: #64748b;">Surveyor Contact:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(surveyorPhone)}</td>
+            </tr>`
+                : ''
+            }
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #334155;">
+          Your chartered surveyor carries verified RICS photo identification. If you have any specific defect concerns or questions to raise before the inspection, you can leave a note directly in your portal:
+        </p>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/my-bookings" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">View Booking &amp; Add Notes &rarr;</a>
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+  if (resend && to && to.includes('@')) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        cc: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend booking email error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Inspection confirmed email dispatched to ${to} for date ${formattedDate}`);
+  return { success: true, provider: 'simulated_fallback' };
+};
+
+/**
+ * Dispatch Final RICS Report Ready Email to Customer & CC Admin
+ */
+export const sendReportReadyEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  propertyAddress,
+  surveyType,
+  reportPdfUrl,
+}) => {
+  const downloadUrl = reportPdfUrl?.startsWith('http')
+    ? reportPdfUrl
+    : `${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/reports`;
+  const subject = `Your Official RICS Survey Report is Ready for Download: ${propertyAddress || jobRef} — NJS Property Group`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — FINAL REPORT READY', 'Quality Assured (QA) RICS Report Published')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #059669; font-size: 18px; margin-top: 0;">✓ Your Survey Report is Ready</h2>
+        <p>Dear ${escapeHtml(clientName || 'Valued Client')}, we are pleased to inform you that your formal ${escapeHtml(surveyType || 'RICS Survey Report')} has completed technical Quality Assurance and is now ready for download.</p>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Instruction Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(jobRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Report Standard:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(surveyType || 'RICS Chartered Home Survey')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Status:</td>
+              <td style="padding: 6px 0; font-weight: 800; color: #059669; text-align: right;">QA Signed Off &bull; Official PDF</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #334155;">
+          You can download your full color, high-resolution PDF report and photographic appendices directly from your customer portal:
+        </p>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${downloadUrl}" style="background: #059669; color: #ffffff; padding: 14px 30px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px; box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);">Download RICS Report (PDF) &rarr;</a>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin: 20px 0; font-size: 12.5px; color: #475569;">
+          <strong style="color: #0B1F4D; display: block; margin-bottom: 3px;">Post-Survey Consultation:</strong>
+          As part of our standard service, you are entitled to a direct post-inspection debrief with your chartered surveyor to discuss findings, defect recommendations, and next steps.
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+  if (resend && to && to.includes('@')) {
+    try {
+      const res = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [to],
+        cc: [ENQUIRY_INBOX],
+        subject,
+        html,
+      });
+      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+    } catch (err) {
+      console.warn('Resend report ready email error:', err.message);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Report ready email dispatched to ${to} for ref ${jobRef}`);
   return { success: true, provider: 'simulated_fallback' };
 };
 
