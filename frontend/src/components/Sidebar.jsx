@@ -98,28 +98,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     let isMounted = true;
-    const checkUnread = async () => {
-      try {
-        const token = localStorage.getItem('property_group_auth_token');
-        if (token) {
-          const res = await fetch('/api/v1/messages/contacts', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const contacts = data?.contacts || data?.data?.contacts || [];
-            let count = 0;
-            contacts.forEach((c) => {
-              if (c.unread || c.unreadCount > 0) {
-                count += c.unreadCount || 1;
-              }
-            });
-            if (isMounted) setUnreadMsgCount(count);
-            return;
-          }
-        }
-      } catch {}
-
+    const checkUnread = () => {
       try {
         const raw = localStorage.getItem('propertygroup_conversations_v1');
         if (raw) {

@@ -16,48 +16,6 @@ export const NotificationDropdown = () => {
     try {
       const res = await apiRequest('/notifications');
       let notifs = res?.data?.notifications || [];
-
-      // Query unread messages so the Bell immediately alerts about incoming messages
-      try {
-        const token = localStorage.getItem('property_group_auth_token');
-        if (token) {
-          const mRes = await fetch('/api/v1/messages/contacts', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (mRes.ok) {
-            const mData = await mRes.json();
-            const contacts = mData?.contacts || mData?.data?.contacts || [];
-            const userRole = (user?.role || '').toLowerCase();
-            const msgLink =
-              userRole === 'customer'
-                ? '/customer/messages'
-                : userRole === 'surveyor'
-                ? '/surveyor/messages'
-                : '/admin/messages';
-
-            contacts.forEach((c) => {
-              if (c.unread || c.unreadCount > 0) {
-                const existingIdx = notifs.findIndex((n) => n.id === `msg-${c.id}`);
-                const msgNotif = {
-                  id: `msg-${c.id}`,
-                  title: `💬 New Message from ${c.name || 'Operations'}`,
-                  desc: c.lastMessage || 'You have an unread message.',
-                  time: c.time || 'Today',
-                  read: false,
-                  type: 'message',
-                  link: msgLink,
-                };
-                if (existingIdx >= 0) {
-                  notifs[existingIdx] = msgNotif;
-                } else {
-                  notifs.unshift(msgNotif);
-                }
-              }
-            });
-          }
-        }
-      } catch {}
-
       setNotifications(notifs);
     } catch (err) {
       console.warn('Could not load notifications from API:', err?.message || err);
