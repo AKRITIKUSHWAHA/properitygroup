@@ -5,8 +5,8 @@
 
 import { siteConfig } from '../config/siteConfig';
 
-// UK Postcode Regex Pattern
-const UK_POSTCODE_REGEX = /^([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}|GIR ?0AA)$/i;
+// UK Postcode or 6-digit PIN Code Pattern (supports UK postcodes & Indian PIN codes for testing)
+const UK_POSTCODE_REGEX = /^([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}|GIR ?0AA|\d{6})$/i;
 
 // Email Regex Pattern
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
