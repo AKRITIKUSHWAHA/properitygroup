@@ -25,7 +25,7 @@ export const siteConfig = {
 
   // Feature Toggles (Phase 1 Public Website Launch vs Phase 2 CRM Activation)
   features: {
-    showPublicPortalLogin: false,
+    showPublicPortalLogin: true,
     showSampleReports: false
   },
 

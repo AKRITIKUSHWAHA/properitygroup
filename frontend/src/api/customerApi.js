@@ -55,12 +55,12 @@ export const customerReportsApi = {
   getReports: () => api.get('/customer/reports'),
 };
 
-// Menu 10: Messages
+// Menu 10 & Real-Time Chat Hub: Messages (Shared across Admin, Surveyor, Customer)
 export const customerMessagesApi = {
-  getContacts: () => api.get('/customer/messages/contacts'),
-  getMessages: (params = {}) => api.get('/customer/messages', { params }),
+  getContacts: () => api.get('/messages/contacts'),
+  getMessages: (params = {}) => api.get('/messages', { params }),
   sendMessage: (payload) =>
-    api.post('/customer/messages', typeof payload === 'string' ? { content: payload } : payload),
+    api.post('/messages', typeof payload === 'string' ? { content: payload } : payload),
 };
 
 // Menu 11: Leave a Review

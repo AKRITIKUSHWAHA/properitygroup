@@ -103,7 +103,7 @@ export const verifyJWT = async (req, res, next) => {
       }
     }
 
-    if (user.role === 'CUSTOMER' && !env.ENABLE_CLIENT_PORTAL_LOGIN) {
+    if (user.role === 'CUSTOMER' && !env.ENABLE_CLIENT_PORTAL_LOGIN && !req.originalUrl?.includes('/messages')) {
       throw ApiError.forbidden('Client portal access is currently deactivated');
     }
 

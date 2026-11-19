@@ -18,8 +18,11 @@ import { ApiError } from '../../utils/ApiError.js';
 
 const router = Router();
 
-// Gate all customer portal endpoints behind ENABLE_CLIENT_PORTAL_LOGIN toggle
+// Gate customer portal endpoints behind ENABLE_CLIENT_PORTAL_LOGIN toggle (never block messages)
 router.use((req, res, next) => {
+  if (req.path.startsWith('/messages')) {
+    return next();
+  }
   if (!env.ENABLE_CLIENT_PORTAL_LOGIN) {
     return next(ApiError.forbidden('Client portal endpoints are currently deactivated.'));
   }

@@ -3104,6 +3104,9 @@ export const CustomerMessagesPage = () => {
     if (user.email === 'customer2@demo.com') return 26;
     if (user.email === 'surveyor@demo.com' || user.email === 'david@njspropertygroup.com') return 22;
     if (user.email === 'oliver@njspropertygroup.com' || user.email === 'oliver@demo.com') return 23;
+    if (user.email === 'njsadmin@gmail.com') return 29;
+    if (user.email === 'njssurveyor@gmail.com') return 30;
+    if (user.email === 'admin@demo.com') return 20;
     const digits = String(user.id || '').replace(/\D/g, '');
     return digits ? parseInt(digits, 10) : user.id;
   };
@@ -3252,26 +3255,40 @@ export const CustomerMessagesPage = () => {
 
   // Thread Messages mapping per conversation
   const [threadsMap, setThreadsMap] = useState({});
+  const fetchContactsRef = useRef(null);
+  const fetchMsgsRef = useRef(null);
+
+  // Cross-tab instantaneous synchronizer (BroadcastChannel + localStorage storage event)
+  useEffect(() => {
+    let bc;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('njs_chat_sync');
+        bc.onmessage = () => {
+          fetchMsgsRef.current?.();
+          fetchContactsRef.current?.();
+        };
+      }
+    } catch {}
+
+    const handleStorage = (e) => {
+      if (e.key === 'njs_last_chat_dispatch') {
+        fetchMsgsRef.current?.();
+        fetchContactsRef.current?.();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      try { bc?.close(); } catch {}
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   // Fetch role-isolated contacts from Backend Database API with live periodic polling
   useEffect(() => {
     let isMounted = true;
     const fetchContacts = () => {
-      if (isCustomer) {
-        // STRICT PERSONAL CHAT: Customer ONLY talks to NJS Operations & Admin Desk!
-        // Never allow other customers or surveyors to leak or appear!
-        setPeople([customerAdminContact]);
-        setActiveChannelId(myConvId);
-        return;
-      }
-      if (isSurveyor) {
-        // STRICT PERSONAL CHAT: Surveyor ONLY talks to NJS Operations Desk!
-        setPeople([surveyorAdminContact]);
-        setActiveChannelId(myConvId);
-        return;
-      }
-
-      // Admin fetches all active customers & surveyors from backend
       customerMessagesApi
         .getContacts()
         .then((res) => {
@@ -3279,26 +3296,45 @@ export const CustomerMessagesPage = () => {
           const serverContacts = res?.contacts || res?.data?.contacts || [];
           if (Array.isArray(serverContacts) && serverContacts.length > 0) {
             setPeople(serverContacts);
-            // If activeChannelId is not in contacts, select urlConvId or the first valid contact
-            if (urlConvId && serverContacts.some((c) => c.id === urlConvId)) {
-              setActiveChannelId(urlConvId);
-            } else if (!serverContacts.some((c) => c.id === activeChannelId)) {
-              setActiveChannelId(serverContacts[0].id);
+            if (isCustomer || isSurveyor) {
+              setActiveChannelId(serverContacts[0].id || myConvId);
+            } else {
+              if (urlConvId && serverContacts.some((c) => c.id === urlConvId)) {
+                setActiveChannelId(urlConvId);
+              } else if (!serverContacts.some((c) => c.id === activeChannelId)) {
+                setActiveChannelId(serverContacts[0].id);
+              }
+            }
+          } else {
+            if (isCustomer) {
+              setPeople([customerAdminContact]);
+              setActiveChannelId(myConvId);
+            } else if (isSurveyor) {
+              setPeople([surveyorAdminContact]);
+              setActiveChannelId(myConvId);
             }
           }
         })
         .catch((err) => {
           console.warn('Contacts API sync notice:', err);
+          if (isCustomer) {
+            setPeople([customerAdminContact]);
+            setActiveChannelId(myConvId);
+          } else if (isSurveyor) {
+            setPeople([surveyorAdminContact]);
+            setActiveChannelId(myConvId);
+          }
         });
     };
 
+    fetchContactsRef.current = fetchContacts;
     fetchContacts();
     const interval = setInterval(fetchContacts, 4000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [userRole, user?.email, user?.id, effectiveUserId]);
+  }, [userRole, user?.email, user?.id, effectiveUserId, myConvId, isCustomer, isSurveyor, urlConvId]);
 
   // Fetch remote messages for active channel from Database with strict isolation & live polling
   useEffect(() => {
@@ -3334,6 +3370,7 @@ export const CustomerMessagesPage = () => {
         .catch(() => {});
     };
 
+    fetchMsgsRef.current = fetchMsgs;
     fetchMsgs();
     const interval = setInterval(fetchMsgs, 3000);
     return () => {
@@ -3404,7 +3441,7 @@ export const CustomerMessagesPage = () => {
       createdAt: nowIso,
     };
 
-    // 1. Update active thread messages
+    // 1. Update active thread messages optimistically
     setThreadsMap((prev) => ({
       ...prev,
       [targetId]: [...(prev[targetId] || []), newMsg],
@@ -3436,9 +3473,23 @@ export const CustomerMessagesPage = () => {
           recipientId: activeContact.userId,
           content: textToSend,
         })
+        .then(() => {
+          // Immediately fetch fresh DB state to get exact server IDs and sync
+          fetchMsgsRef.current?.();
+          fetchContactsRef.current?.();
+          // Broadcast to other open browser tabs
+          try {
+            const bc = new BroadcastChannel('njs_chat_sync');
+            bc.postMessage({ type: 'CHAT_UPDATED', conversationId: targetId });
+            bc.close();
+          } catch {}
+          try {
+            localStorage.setItem('njs_last_chat_dispatch', String(Date.now()));
+          } catch {}
+        })
         .catch((err) => console.warn('Message API send failed:', err));
 
-      // 4. Cross-tab sync
+      // 4. Cross-tab legacy sync fallback
       try {
         sendMessage(activeContact.id, textToSend, user?.name || 'Client', senderRole, false);
       } catch {}
@@ -3731,14 +3782,12 @@ export const CustomerMessagesPage = () => {
           {/* Message Thread Body */}
           <div className="flex-1 p-4 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-white overscroll-contain scroll-smooth">
             {displayMessages.map((m) => {
-              const isOutgoing =
-                m.senderId && effectiveUserId
-                  ? Number(m.senderId) === Number(effectiveUserId)
-                  : isCustomer
-                  ? m.role === 'customer' || m.role === 'client'
-                  : isSurveyor
-                  ? m.role === 'surveyor'
-                  : m.role === 'admin';
+              const msgRole = (m.role || '').toLowerCase();
+              const isOutgoing = isAdmin
+                ? (msgRole === 'admin' || msgRole === 'super_admin' || (m.senderId && Number(m.senderId) === Number(effectiveUserId)))
+                : isSurveyor
+                ? (msgRole === 'surveyor' || (m.senderId && Number(m.senderId) === Number(effectiveUserId)))
+                : (msgRole === 'customer' || msgRole === 'client' || (m.senderId && Number(m.senderId) === Number(effectiveUserId)));
 
               const cleanTime = m.time?.includes(',')
                 ? m.time.split(',')[1].trim()
