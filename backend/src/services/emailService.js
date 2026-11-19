@@ -198,7 +198,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
                 </div>
 
                 <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                  For urgent questions, contact our London operations desk at <strong>020 7946 0912</strong> or reply directly to this email.
+                  For urgent questions, contact our operations desk at <strong>0800 169 9661</strong> or reply directly to this email.
                 </p>
               </div>
               
@@ -293,7 +293,7 @@ export const sendQuoteProposalEmail = async ({
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-          Need assistance? Our operations team is available at <strong>020 7946 0912</strong> or reply directly to this email.
+          Need assistance? Our operations team is available at <strong>0800 169 9661</strong> or reply directly to this email.
         </p>
       </div>
       
