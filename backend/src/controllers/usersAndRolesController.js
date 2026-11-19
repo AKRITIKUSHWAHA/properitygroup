@@ -12,7 +12,11 @@ export const getUsersAndRoles = async (req, res, next) => {
     const where = {};
 
     if (role) where.role = role.toUpperCase();
-    if (status) where.status = status.toUpperCase();
+    if (status) {
+      where.status = status.toUpperCase();
+    } else {
+      where.status = 'ACTIVE';
+    }
     if (search) {
       where.OR = [
         { name: { contains: search } },
@@ -172,12 +176,18 @@ export const deleteUser = async (req, res, next) => {
       throw ApiError.badRequest('You cannot delete your own administrative account');
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { status: 'INACTIVE' },
-    });
+    try {
+      await prisma.surveyorProfile.deleteMany({ where: { userId } });
+      await prisma.notification.deleteMany({ where: { userId } });
+      await prisma.user.delete({ where: { id: userId } });
+    } catch {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { status: 'INACTIVE' },
+      });
+    }
 
-    return ApiResponse.success(res, null, 'User account deactivated successfully');
+    return ApiResponse.success(res, null, 'User account removed successfully');
   } catch (error) {
     next(error);
   }

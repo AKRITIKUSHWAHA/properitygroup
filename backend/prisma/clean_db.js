@@ -23,14 +23,9 @@ async function cleanDatabase() {
 
   console.log('✅ Cleared: leads, jobs, quotes, invoices, terms, messages, notifications, reviews, logs');
 
-  // 2. Retain only the essential portal login accounts for testing
+  // 2. Retain ONLY 1 primary Admin account
   const keepEmails = [
     'njsadmin@gmail.com',
-    'admin@demo.com',
-    'surveyor@demo.com',
-    'njssurveyor@gmail.com',
-    'david.thorne@njspropertygroup.com',
-    'customer@demo.com',
   ];
 
   await prisma.surveyorProfile.deleteMany({

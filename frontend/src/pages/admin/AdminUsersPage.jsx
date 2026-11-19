@@ -34,13 +34,14 @@ export const AdminUsersPage = () => {
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
-  // Sync users with backend API
-  useEffect(() => {
+  // Sync users with backend API (Single Source of Truth)
+  const fetchUsers = () => {
     adminUsersAndRolesApi.getUsers()
       .then((res) => {
-        if (res?.data && res.data.length > 0) {
+        const rawUsers = res?.data?.users || res?.users || (Array.isArray(res?.data) ? res.data : []);
+        if (Array.isArray(rawUsers)) {
           const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Surveyor', CUSTOMER: 'Customer' };
-          const mapped = res.data.map((u) => ({
+          const mapped = rawUsers.map((u) => ({
             id: `USR-${String(u.id).padStart(2, '0')}`,
             dbId: u.id,
             name: u.name,
@@ -51,74 +52,30 @@ export const AdminUsersPage = () => {
             status: u.status === 'ACTIVE' ? 'Active' : 'Inactive',
             phone: u.phone || '',
           }));
-          setUsers(mapped);
+          if (mapped.length > 0) {
+            setUsers(mapped);
+          }
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Backend users fetch error:', err);
+      });
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
+  // Initial state: Only 1 primary Admin account
   const [users, setUsers] = useState([
     {
       id: 'USR-01',
-      name: 'Alexander Sterling',
-      email: 'admin@demo.com',
+      dbId: 29,
+      name: 'admin',
+      email: 'njsadmin@gmail.com',
       role: 'super_admin',
       roleLabel: 'Admin',
       org: 'NJS Property Group HQ',
-      status: 'Active',
-    },
-    {
-      id: 'USR-02',
-      name: 'David Thorne MRICS',
-      email: 'surveyor@demo.com',
-      role: 'surveyor',
-      roleLabel: 'Surveyor',
-      org: 'Thorne Chartered Surveyors',
-      status: 'Active',
-    },
-    {
-      id: 'USR-03',
-      name: 'Oliver Hughes MRICS',
-      email: 'oliver.hughes@njspropertygroup.com',
-      role: 'surveyor',
-      roleLabel: 'Surveyor',
-      org: 'Hughes Building Surveyors',
-      status: 'Active',
-    },
-    {
-      id: 'USR-04',
-      name: 'Claire Bennet AssocRICS',
-      email: 'claire.bennet@njspropertygroup.com',
-      role: 'surveyor',
-      roleLabel: 'Surveyor',
-      org: 'Bennet Defect Specialists',
-      status: 'Active',
-    },
-    {
-      id: 'USR-05',
-      name: 'Emma Watson',
-      email: 'customer@demo.com',
-      role: 'customer',
-      roleLabel: 'Customer',
-      org: 'Watson Holdings UK',
-      status: 'Active',
-    },
-    {
-      id: 'USR-06',
-      name: 'Lord Gregory Cavendish',
-      email: 'cavendish.holdings@uknet.co.uk',
-      role: 'customer',
-      roleLabel: 'Customer',
-      org: 'Private Client',
-      status: 'Active',
-    },
-    {
-      id: 'USR-07',
-      name: 'Sarah Croft',
-      email: 'partner@demo.com',
-      role: 'partner',
-      roleLabel: 'Estate Agent Partner',
-      org: 'Foxtons Mayfair Branch',
       status: 'Active',
     },
   ]);
@@ -182,6 +139,7 @@ export const AdminUsersPage = () => {
       };
 
       setUsers((prev) => [newUser, ...prev]);
+      fetchUsers();
       setIsAddModalOpen(false);
       setFormData({ name: '', email: '', password: '', role: 'surveyor', org: '' });
 
@@ -271,7 +229,7 @@ export const AdminUsersPage = () => {
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (userId === 'USR-01' || userName === 'Alexander Sterling' || userId === 6) {
+    if (userName === 'admin' || userName === 'Alexander Sterling' || userId === 29 || userId === 'USR-01') {
       addToast({
         type: 'warning',
         title: 'Action Protected',
@@ -280,14 +238,13 @@ export const AdminUsersPage = () => {
       return;
     }
 
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    setUsers((prev) => prev.filter((u) => u.id !== userId && u.dbId !== userId));
 
-    if (typeof userId === 'number' || /^\d+$/.test(userId)) {
-      try {
-        await adminUsersAndRolesApi.deleteUser(userId);
-      } catch (err) {
-        console.warn('Backend delete error:', err?.message || err);
-      }
+    try {
+      await adminUsersAndRolesApi.deleteUser(userId);
+      fetchUsers();
+    } catch (err) {
+      console.warn('Backend delete error:', err?.message || err);
     }
 
     addToast({
@@ -422,10 +379,10 @@ export const AdminUsersPage = () => {
           {/* 3. Delete User */}
           <button
             type="button"
-            onClick={() => handleDeleteUser(row.id, row.name)}
-            disabled={row.id === 'USR-01' || row.email === 'admin@demo.com'}
+            onClick={() => handleDeleteUser(row.dbId || row.id, row.name)}
+            disabled={row.email === 'njsadmin@gmail.com' || row.email === 'admin@demo.com'}
             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors cursor-pointer"
-            title={row.id === 'USR-01' || row.email === 'admin@demo.com' ? 'Primary admin cannot be deleted' : 'Delete User'}
+            title={row.email === 'njsadmin@gmail.com' || row.email === 'admin@demo.com' ? 'Primary admin cannot be deleted' : 'Delete User'}
             aria-label="Delete user"
           >
             <Trash2 className="w-4 h-4" />
