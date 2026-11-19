@@ -5,7 +5,7 @@ import {
   sendClientMessageToAdminNotificationEmail,
   sendAdminReplyToClientNotificationEmail,
 } from '../../services/emailService.js';
-import { checkIsUserOnline } from '../../services/userPresenceService.js';
+import { checkIsUserOnline, getUserLastSeen } from '../../services/userPresenceService.js';
 
 /**
  * Customer & Surveyor Messages Controller
@@ -206,16 +206,25 @@ export const getMessageContacts = async (req, res, next) => {
             ? 'RICS survey protocol & inspection'
             : 'Survey instruction & quote assistance';
 
-        const lastTime = latestMsg ? latestMsg.createdAt : u.createdAt;
-        const isToday = new Date(lastTime).toDateString() === new Date().toDateString();
-        const formattedTime = isToday
-          ? new Date(lastTime).toLocaleTimeString('en-GB', {
+        const lastMsgTime = latestMsg ? latestMsg.createdAt : u.createdAt;
+        const isMsgToday = new Date(lastMsgTime).toDateString() === new Date().toDateString();
+        const formattedMsgTime = isMsgToday
+          ? new Date(lastMsgTime).toLocaleTimeString('en-GB', {
               hour: '2-digit',
               minute: '2-digit',
             })
           : 'Yesterday';
 
         const isOnline = checkIsUserOnline(u.id, u.email);
+        const presenceLastSeen = getUserLastSeen(u.id, u.email);
+        const lastActiveDate = presenceLastSeen || lastMsgTime;
+        const isSeenToday = new Date(lastActiveDate).toDateString() === new Date().toDateString();
+        const formattedLastSeen = isSeenToday
+          ? new Date(lastActiveDate).toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'Yesterday';
 
         return {
           id: convId,
@@ -226,8 +235,9 @@ export const getMessageContacts = async (req, res, next) => {
           roleTitle,
           avatar: initials,
           lastMessage: latestMsg ? latestMsg.content : defaultSnippet,
-          time: formattedTime,
-          lastMessageTime: lastTime,
+          time: formattedMsgTime,
+          lastSeen: formattedLastSeen,
+          lastMessageTime: lastMsgTime,
           online: isOnline,
           unread: unreadCount > 0,
           unreadCount,
