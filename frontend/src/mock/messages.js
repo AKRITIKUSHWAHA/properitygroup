@@ -66,7 +66,10 @@ export const useMessages = () => {
       role: role,
       text: text,
       time: timeString,
-      readByCustomer: role === 'customer',
+      read: false,
+      isRead: false,
+      readByAdmin: role === 'admin' || role === 'super_admin',
+      readByCustomer: role === 'client' || role === 'customer' || role === 'surveyor',
     };
 
     let updatedList = null;
@@ -154,6 +157,13 @@ export const useMessages = () => {
           return {
             ...c,
             [readerRole === 'admin' ? 'unreadAdmin' : 'unreadClient']: 0,
+            messages: (c.messages || []).map((m) => ({
+              ...m,
+              read: true,
+              isRead: true,
+              readByAdmin: readerRole === 'admin' ? true : m.readByAdmin,
+              readByCustomer: readerRole !== 'admin' ? true : m.readByCustomer,
+            })),
           };
         }
         return c;

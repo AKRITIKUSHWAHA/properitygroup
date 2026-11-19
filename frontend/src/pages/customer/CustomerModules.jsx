@@ -3396,6 +3396,10 @@ export const CustomerMessagesPage = () => {
               role: m.role || 'customer',
               text: m.content || '',
               time: timeStr,
+              readByCustomer: Boolean(m.readByCustomer),
+              readByAdmin: Boolean(m.readByAdmin),
+              read: Boolean(m.read || m.isRead),
+              isRead: Boolean(m.isRead || m.read),
             };
           });
 
@@ -3851,6 +3855,11 @@ export const CustomerMessagesPage = () => {
 
               if (isOutgoing) {
                 // Outgoing Message (Current User - Right aligned, Deep Navy theme)
+                // Read receipt logic: blue double tick only if recipient has opened and read it
+                const isRead = isAdmin
+                  ? Boolean(m.readByCustomer || m.read || m.isRead)
+                  : Boolean(m.readByAdmin || m.read || m.isRead);
+
                 return (
                   <div key={m.id} className="flex flex-col items-end max-w-[85%] sm:max-w-md ml-auto">
                     <div className="flex items-center gap-2 flex-row-reverse">
@@ -3861,7 +3870,11 @@ export const CustomerMessagesPage = () => {
                     </div>
                     <div className="flex items-center gap-1 text-[10.5px] text-slate-400 mt-1 pr-3 font-medium">
                       <span>{cleanTime}</span>
-                      <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                      {isRead ? (
+                        <CheckCheck className="w-3.5 h-3.5 text-blue-500" title="Read by recipient" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-slate-400" title="Sent (Delivered, Unread)" />
+                      )}
                     </div>
                   </div>
                 );

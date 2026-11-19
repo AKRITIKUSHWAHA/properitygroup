@@ -93,6 +93,64 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const allMenuItems = roleConfig.items || [];
   const menuItems = allMenuItems.filter((item) => isMenuPermitted(activeRole, item.id));
 
+  // Live Unread Messages counter for the sidebar navigation badge
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkUnread = async () => {
+      try {
+        const token = localStorage.getItem('property_group_auth_token');
+        if (token) {
+          const res = await fetch('/api/v1/messages/contacts', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const contacts = data?.contacts || data?.data?.contacts || [];
+            let count = 0;
+            contacts.forEach((c) => {
+              if (c.unread || c.unreadCount > 0) {
+                count += c.unreadCount || 1;
+              }
+            });
+            if (isMounted) setUnreadMsgCount(count);
+            return;
+          }
+        }
+      } catch {}
+
+      try {
+        const raw = localStorage.getItem('propertygroup_conversations_v1');
+        if (raw) {
+          const convs = JSON.parse(raw);
+          const isAdm = activeRole === 'super_admin' || activeRole === 'admin';
+          let count = 0;
+          convs.forEach((c) => {
+            if (isAdm && c.unreadAdmin > 0) count += c.unreadAdmin;
+            if (!isAdm && c.unreadClient > 0) count += c.unreadClient;
+          });
+          if (isMounted) setUnreadMsgCount(count);
+        }
+      } catch {}
+    };
+
+    checkUnread();
+    const interval = setInterval(checkUnread, 4000);
+    const handleSync = () => checkUnread();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('njs_new_message_notification', handleSync);
+    window.addEventListener('propertygroup_conversations_updated', handleSync);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('njs_new_message_notification', handleSync);
+      window.removeEventListener('propertygroup_conversations_updated', handleSync);
+    };
+  }, [activeRole]);
+
   // Close mobile drawer on route change
   useEffect(() => {
     if (isOpen) {
@@ -229,8 +287,16 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   </span>
                 </div>
 
-                {/* Badge */}
-                {item.badge && (
+                {/* Dynamic Message Badge or standard badge */}
+                {item.id === 'messages' && unreadMsgCount > 0 ? (
+                  <span
+                    className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 transition-opacity bg-blue-600 text-white animate-pulse ${
+                      isHovered ? 'md:inline' : 'md:hidden lg:inline'
+                    }`}
+                  >
+                    {unreadMsgCount}
+                  </span>
+                ) : item.badge ? (
                   <span
                     className={`ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0 transition-opacity ${
                       isActive
@@ -240,7 +306,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                   >
                     {item.badge}
                   </span>
-                )}
+                ) : null}
 
                 {/* Active indicator bar */}
                 {isActive && (

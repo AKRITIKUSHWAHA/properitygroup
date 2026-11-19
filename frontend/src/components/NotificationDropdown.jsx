@@ -15,25 +15,75 @@ export const NotificationDropdown = () => {
     if (!silent) setIsLoading(true);
     try {
       const res = await apiRequest('/notifications');
-      if (res?.data?.notifications) {
-        setNotifications(res.data.notifications);
-      }
+      let notifs = res?.data?.notifications || [];
+
+      // Query unread messages so the Bell immediately alerts about incoming messages
+      try {
+        const token = localStorage.getItem('property_group_auth_token');
+        if (token) {
+          const mRes = await fetch('/api/v1/messages/contacts', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (mRes.ok) {
+            const mData = await mRes.json();
+            const contacts = mData?.contacts || mData?.data?.contacts || [];
+            const userRole = (user?.role || '').toLowerCase();
+            const msgLink =
+              userRole === 'customer'
+                ? '/customer/messages'
+                : userRole === 'surveyor'
+                ? '/surveyor/messages'
+                : '/admin/messages';
+
+            contacts.forEach((c) => {
+              if (c.unread || c.unreadCount > 0) {
+                const existingIdx = notifs.findIndex((n) => n.id === `msg-${c.id}`);
+                const msgNotif = {
+                  id: `msg-${c.id}`,
+                  title: `💬 New Message from ${c.name || 'Operations'}`,
+                  desc: c.lastMessage || 'You have an unread message.',
+                  time: c.time || 'Today',
+                  read: false,
+                  type: 'message',
+                  link: msgLink,
+                };
+                if (existingIdx >= 0) {
+                  notifs[existingIdx] = msgNotif;
+                } else {
+                  notifs.unshift(msgNotif);
+                }
+              }
+            });
+          }
+        }
+      } catch {}
+
+      setNotifications(notifs);
     } catch (err) {
       console.warn('Could not load notifications from API:', err?.message || err);
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, []);
+  }, [user?.role]);
 
   // Initial fetch on mount & whenever user changes
   useEffect(() => {
     fetchNotifications();
-    // Auto-poll every 30 seconds for live updates
+    // Auto-poll every 10 seconds for live updates
     const interval = setInterval(() => {
       fetchNotifications(true);
-    }, 30000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [fetchNotifications, user?.id]);
+
+  // Listen for instant message notifications dispatched by AppLayout
+  useEffect(() => {
+    const handleNewMessage = () => {
+      fetchNotifications(true);
+    };
+    window.addEventListener('njs_new_message_notification', handleNewMessage);
+    return () => window.removeEventListener('njs_new_message_notification', handleNewMessage);
+  }, [fetchNotifications]);
 
   // Refetch when dropdown opens
   useEffect(() => {
