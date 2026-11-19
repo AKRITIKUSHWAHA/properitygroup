@@ -426,6 +426,7 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-user-email': clientEmail,
         },
       }).catch(() => {});
       fetch(`/api/v1/quotations-and-payments/quotes/${quoteId}/status`, {
@@ -433,6 +434,7 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-user-email': clientEmail,
         },
         body: JSON.stringify({ status: 'ACCEPTED' }),
       }).catch(() => {});

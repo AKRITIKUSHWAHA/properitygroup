@@ -8,7 +8,7 @@ import { verifyJWT, authorizeRoles } from '../../middlewares/authMiddleware.js';
 const router = Router();
 
 router.use(verifyJWT);
-router.use(authorizeRoles('CUSTOMER'));
+router.use(authorizeRoles('CUSTOMER', 'ADMIN', 'SUPER_ADMIN'));
 
 // Customer Menu 2: My Quotations
 router.get('/', getCustomerQuotations);
