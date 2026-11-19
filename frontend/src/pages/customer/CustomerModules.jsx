@@ -2677,7 +2677,13 @@ export const CustomerTrackSurveyPage = () => {
   const userEmail = (user?.email || '').toLowerCase().trim();
   const isDemo = userEmail === 'customer@demo.com';
 
-  const myJob = jobs.find((j) => isJobForCustomer(j, user));
+  const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const [activeJobId, setActiveJobId] = useState(() => {
+    return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
+  });
+  const myJob = myCustomerJobs.find((j) => j.id === activeJobId) || myCustomerJobs[0] || null;
+  const historyJobs = myCustomerJobs.filter((j) => j.id !== myJob?.id);
+
   const myQuote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail);
   const myLead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail);
   const myAgreement = agreements.find((a) => {
@@ -2692,7 +2698,7 @@ export const CustomerTrackSurveyPage = () => {
   } catch {}
 
   const propertyAddress = myJob?.property
-    ? `${myJob.property}, ${myJob.location || ''}`
+    ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}`
     : myQuote?.property
     ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}`
     : myLead?.property
@@ -2701,11 +2707,12 @@ export const CustomerTrackSurveyPage = () => {
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
     : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
 
-  const refNo = myJob?.id || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
-  const surveyorName = myJob?.surveyor || 'David Thorne MRICS';
+  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
+  const surveyorName = myJob?.surveyor || (myJob?.id === 'QUO-2026-126' ? 'David Thorne MRICS' : 'Pending Allocation');
 
-  // Calculate live dynamic step (1 to 10) based on client lifecycle (Direct reactive calculation without stale useMemo caching)
+  // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
   const targetEmail = userEmail || 'astp750@gmail.com';
+  const isHistoricalJob = myJob?.id === 'QUO-2026-126' || (!myJob?.isNewInstruction && (myJob?.timelineStep || 0) >= 6);
   const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
   const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
   const isUniversalDrafting = localStorage.getItem('propertygroup_drafting') === 'true';
@@ -2717,31 +2724,33 @@ export const CustomerTrackSurveyPage = () => {
   const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
   const jStatus = (myJob?.status || '').toLowerCase().trim();
-  const timelineStep = myJob?.timelineStep || 0;
+  const timelineStep = myJob?.timelineStep || (jStatus === 'enquiry' || jStatus === 'new' ? 1 : 0);
   const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
   const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || timelineStep >= 6;
 
   let currentStep = 1;
   if (isDemo) {
     currentStep = 7;
-  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || isLocalDelivered || jStatus === 'completed') {
+  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || (isHistoricalJob && isLocalDelivered) || jStatus === 'completed') {
     currentStep = 10;
-  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || isLocalQA || jStatus === 'qa_review' || jStatus === 'qa review') {
+  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || (isHistoricalJob && isLocalQA) || jStatus === 'qa_review' || jStatus === 'qa review') {
     currentStep = 9;
-  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || isLocalDrafting || jStatus === 'drafting' || jStatus === 'preparing report') {
+  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || (isHistoricalJob && isLocalDrafting) || jStatus === 'drafting' || jStatus === 'preparing report') {
     currentStep = 8;
-  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || isLocalInspected || jStatus === 'inspected') {
+  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || (isHistoricalJob && isLocalInspected) || jStatus === 'inspected') {
     currentStep = 7;
   } else if (isBookedOrScheduled) {
     currentStep = 6;
-  } else if (myJob?.paymentStatus === 'Paid' || myQuote?.status === 'Paid' || timelineStep >= 5) {
+  } else if (myJob?.paymentStatus === 'Paid' || timelineStep >= 5) {
     currentStep = 5;
-  } else if (myJob?.termsStatus === 'Signed' || myQuote?.termsStatus === 'Signed' || myAgreement?.status === 'Signed') {
+  } else if (myJob?.termsStatus === 'Signed' || timelineStep >= 4) {
     currentStep = 4;
-  } else if (myJob?.status === 'Accepted' || myQuote?.status === 'Accepted') {
+  } else if (myJob?.status === 'Accepted' || timelineStep >= 3) {
     currentStep = 3;
-  } else if (myJob?.status === 'Quoted' || myQuote || myLead?.status?.toLowerCase() === 'quoted') {
+  } else if (myJob?.status === 'Quoted' || timelineStep >= 2) {
     currentStep = 2;
+  } else {
+    currentStep = 1;
   }
 
   const milestone = React.useMemo(() => {
@@ -2832,6 +2841,48 @@ export const CustomerTrackSurveyPage = () => {
         breadcrumb={['Customer Portal', 'Track My Survey']}
       />
 
+      {/* Instruction Switcher if Customer has multiple instructions (Active vs History) */}
+      {myCustomerJobs.length > 1 && (
+        <div className="bg-white border border-slate-200/90 rounded-3xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+              {myCustomerJobs.length}
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Tracking Instruction ({myCustomerJobs.indexOf(myJob) + 1} of {myCustomerJobs.length})
+              </div>
+              <div className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <span>{myJob?.surveyType || 'Survey'} &bull; {myJob?.property || myJob?.location}</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase">
+                  {myJob?.status || 'Active'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="track-job-select" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+              Switch Survey:
+            </label>
+            <select
+              id="track-job-select"
+              value={myJob?.id || ''}
+              onChange={(e) => {
+                setActiveJobId(e.target.value);
+                localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
+              }}
+              className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              {myCustomerJobs.map((j, idx) => (
+                <option key={j.id} value={j.id}>
+                  {idx === 0 ? '★ Active Request: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id}) [{j.status}]
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       <SurveyProgressTracker currentStep={currentStep} job={myJob || { property: propertyAddress, surveyor: surveyorName }} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -2889,6 +2940,62 @@ export const CustomerTrackSurveyPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Instruction History & Previous Surveys Card */}
+      {historyJobs.length > 0 && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div>
+              <h3 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#2563EB]" />
+                <span>Instruction History &amp; Previous Surveys</span>
+              </h3>
+              <p className="text-xs text-slate-500">Your previously completed instructions and finalized reports remain accessible below</p>
+            </div>
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+              {historyJobs.length} {historyJobs.length === 1 ? 'Record in History' : 'Records in History'}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {historyJobs.map((hj) => (
+              <div
+                key={hj.id}
+                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-blue-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900 text-xs truncate">{hj.surveyType}</span>
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-200 text-slate-700 uppercase font-mono">
+                      Ref: {hj.id}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{hj.property || hj.location}</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Status: <strong className="text-emerald-700">{hj.status}</strong> &bull; Assigned: {hj.surveyor || 'David Thorne MRICS'}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveJobId(hj.id);
+                      localStorage.setItem(`propertygroup_active_job_${userEmail}`, hj.id);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    Switch to this Survey &rarr;
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

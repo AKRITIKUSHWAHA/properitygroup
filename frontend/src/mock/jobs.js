@@ -98,99 +98,173 @@ export const syncRealCustomerJobs = (existingJobs = []) => {
       if (isDummyEmail(email)) return;
 
       const reg = registered[email] || {};
-      const lead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === email) || {};
-      const quote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === email) || {};
-
-      const existing = existingJobs.find(
+      const customerLeads = leads.filter((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === email);
+      const customerQuotes = quotes.filter((q) => (q.clientEmail || '').toLowerCase().trim() === email);
+      const customerExistingJobs = existingJobs.filter(
         (j) => (j.customerEmail || j.clientEmail || '').toLowerCase().trim() === email
       );
 
-      const jobNo = existing?.jobNo || quote.id || (lead.id ? `JOB-${lead.id.replace('LED-', '')}` : 'JOB-2026-880');
-      const property = existing?.property || reg.address || lead.property || quote.property || 'HYDERABAD';
-      const postcode = existing?.postcode || reg.postcode || lead.location || quote.location || 'GH12AA';
-      const customer = existing?.customer || reg.name || lead.customer || quote.clientName || 'abc';
-      const customerPhone = existing?.customerPhone || reg.phone || lead.customerPhone || '1234560789';
-      const surveyType = existing?.surveyType || reg.serviceType || lead.surveyType || quote.surveyType || 'RICS Level 2 Home Survey';
+      // If customer has no existing jobs and no leads/quotes, create a fallback job
+      if (customerExistingJobs.length === 0 && customerLeads.length === 0 && customerQuotes.length === 0) {
+        const jobNo = 'JOB-2026-880';
+        const property = reg.address || 'HYDERABAD';
+        const postcode = reg.postcode || 'GH12AA';
+        const customer = reg.name || 'abc';
+        const customerPhone = reg.phone || '1234560789';
+        const surveyType = reg.serviceType || 'RICS Level 2 Home Survey';
 
-      // When customer signs terms & pays, they are fully verified
-      const isPaid = true;
-      const isSigned = true;
-
-      const hasSurveyor = existing?.surveyor && existing.surveyor !== 'Pending Allocation';
-      const assignedSurveyor = hasSurveyor ? existing.surveyor : 'David Thorne MRICS';
-      const assignedDate = existing?.date && existing.date !== 'Pending Allocation' ? existing.date : '16 Nov 2026';
-
-      const isInspected =
-        existing?.status?.toLowerCase() === 'inspected' ||
-        (existing?.timelineStep || 0) >= 7 ||
-        localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-        localStorage.getItem(`propertygroup_inspection_completed_${email}`) === 'true';
-
-      const isDrafting =
-        existing?.status?.toLowerCase() === 'drafting' ||
-        (existing?.timelineStep || 0) >= 8 ||
-        localStorage.getItem('propertygroup_drafting') === 'true' ||
-        localStorage.getItem(`propertygroup_drafting_${email}`) === 'true';
-
-      const isQAReview =
-        existing?.status?.toLowerCase() === 'qa_review' ||
-        existing?.status?.toLowerCase() === 'qa review' ||
-        (existing?.timelineStep || 0) >= 9 ||
-        localStorage.getItem('propertygroup_qareview') === 'true' ||
-        localStorage.getItem(`propertygroup_qareview_${email}`) === 'true';
-
-      const isCompleted =
-        existing?.status?.toLowerCase() === 'completed' ||
-        (existing?.timelineStep || 0) >= 10 ||
-        localStorage.getItem('propertygroup_delivered') === 'true' ||
-        localStorage.getItem(`propertygroup_delivered_${email}`) === 'true';
-
-      let currentJobStatus = 'Booked';
-      let currentTimelineStep = 6;
-
-      if (isCompleted) {
-        currentJobStatus = 'Completed';
-        currentTimelineStep = 10;
-      } else if (isQAReview) {
-        currentJobStatus = 'QA_Review';
-        currentTimelineStep = 9;
-      } else if (isDrafting) {
-        currentJobStatus = 'Drafting';
-        currentTimelineStep = 8;
-      } else if (isInspected) {
-        currentJobStatus = 'Inspected';
-        currentTimelineStep = 7;
-      } else if (existing?.status && existing.status !== 'Booked') {
-        currentJobStatus = existing.status;
-        currentTimelineStep = existing.timelineStep || 6;
+        realJobs.push({
+          id: jobNo,
+          jobNo,
+          date: '16 Nov 2026',
+          timeSlot: '10:00 AM - 01:00 PM',
+          customer,
+          customerEmail: email,
+          customerPhone,
+          surveyType,
+          property,
+          location: postcode,
+          postcode,
+          surveyor: 'David Thorne MRICS',
+          surveyorId: 'srv-1',
+          status: 'Booked',
+          stage: 'BOOKED',
+          termsStatus: 'Signed',
+          paymentStatus: 'Paid',
+          canBook: true,
+          timelineStep: 6,
+          accessNotes: 'Customer direct instruction via portal',
+          backendSynced: false,
+        });
+        return;
       }
 
-      const realJob = {
-        id: existing?.id || jobNo,
-        jobNo: jobNo,
-        date: assignedDate,
-        timeSlot: existing?.timeSlot || '10:00 AM - 01:00 PM',
-        customer,
-        customerEmail: email,
-        customerPhone,
-        surveyType,
-        property,
-        location: postcode,
-        postcode,
-        surveyor: assignedSurveyor,
-        surveyorId: existing?.surveyorId || 'srv-1',
-        status: currentJobStatus,
-        stage: currentJobStatus === 'Completed' ? 'COMPLETE' : (currentJobStatus === 'Inspected' || currentJobStatus === 'Drafting' ? 'PREPARING_REPORT' : 'BOOKED'),
-        termsStatus: 'Signed',
-        paymentStatus: 'Paid',
-        canBook: true,
-        timelineStep: currentTimelineStep,
-        accessNotes: existing?.accessNotes || 'Customer direct instruction via portal',
-        backendSynced: false,
-      };
+      // Map all existing jobs for this customer
+      customerExistingJobs.forEach((existing) => {
+        const isHistoricalJob =
+          existing.id === 'QUO-2026-126' ||
+          existing.jobNo === 'QUO-2026-126' ||
+          (!existing.isNewInstruction && (existing.timelineStep || 0) >= 6);
 
-      realJobs.push(realJob);
+        let currentJobStatus = existing.status || 'Booked';
+        let currentTimelineStep = existing.timelineStep || (existing.status === 'Enquiry' ? 1 : 6);
+
+        if (isHistoricalJob) {
+          const isInspected =
+            existing?.status?.toLowerCase() === 'inspected' ||
+            (existing?.timelineStep || 0) >= 7 ||
+            localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
+            localStorage.getItem(`propertygroup_inspection_completed_${email}`) === 'true';
+
+          const isDrafting =
+            existing?.status?.toLowerCase() === 'drafting' ||
+            (existing?.timelineStep || 0) >= 8 ||
+            localStorage.getItem('propertygroup_drafting') === 'true' ||
+            localStorage.getItem(`propertygroup_drafting_${email}`) === 'true';
+
+          const isQAReview =
+            existing?.status?.toLowerCase() === 'qa_review' ||
+            existing?.status?.toLowerCase() === 'qa review' ||
+            (existing?.timelineStep || 0) >= 9 ||
+            localStorage.getItem('propertygroup_qareview') === 'true' ||
+            localStorage.getItem(`propertygroup_qareview_${email}`) === 'true';
+
+          const isCompleted =
+            existing?.status?.toLowerCase() === 'completed' ||
+            (existing?.timelineStep || 0) >= 10 ||
+            localStorage.getItem('propertygroup_delivered') === 'true' ||
+            localStorage.getItem(`propertygroup_delivered_${email}`) === 'true';
+
+          if (isCompleted) {
+            currentJobStatus = 'Completed';
+            currentTimelineStep = 10;
+          } else if (isQAReview) {
+            currentJobStatus = 'QA_Review';
+            currentTimelineStep = 9;
+          } else if (isDrafting) {
+            currentJobStatus = 'Drafting';
+            currentTimelineStep = 8;
+          } else if (isInspected) {
+            currentJobStatus = 'Inspected';
+            currentTimelineStep = 7;
+          }
+        }
+
+        realJobs.push({
+          ...existing,
+          id: existing.id,
+          jobNo: existing.jobNo || existing.id,
+          customer: existing.customer || reg.name || 'Client',
+          customerEmail: email,
+          customerPhone: existing.customerPhone || reg.phone || '',
+          surveyType: existing.surveyType || 'RICS Level 2 Home Survey',
+          property: existing.property || reg.address || 'Specified Property',
+          location: existing.location || existing.postcode || reg.postcode || '',
+          postcode: existing.postcode || existing.location || '',
+          surveyor: existing.surveyor || (isHistoricalJob ? 'David Thorne MRICS' : 'Pending Allocation'),
+          surveyorId: existing.surveyorId || 'srv-1',
+          status: currentJobStatus,
+          stage:
+            currentJobStatus === 'Completed'
+              ? 'COMPLETE'
+              : currentJobStatus === 'Inspected' || currentJobStatus === 'Drafting'
+              ? 'PREPARING_REPORT'
+              : currentJobStatus === 'QA_Review'
+              ? 'QA_REVIEW'
+              : currentTimelineStep <= 2
+              ? 'ENQUIRY'
+              : 'BOOKED',
+          termsStatus: existing.termsStatus || (isHistoricalJob ? 'Signed' : 'Pending'),
+          paymentStatus: existing.paymentStatus || (isHistoricalJob ? 'Paid' : 'Pending'),
+          canBook: true,
+          timelineStep: currentTimelineStep,
+          accessNotes: existing.accessNotes || 'Customer direct instruction via portal',
+          backendSynced: false,
+        });
+      });
+
+      // Also incorporate any fresh leads that don't have an existing job yet
+      customerLeads.forEach((lead) => {
+        const alreadyInJobs = realJobs.some((rj) => rj.id === lead.id || rj.jobNo === lead.id);
+        if (!alreadyInJobs) {
+          realJobs.push({
+            id: lead.id,
+            jobNo: lead.id,
+            date: 'Pending Allocation',
+            timeSlot: 'Pending Allocation',
+            customer: lead.customer || lead.clientName || reg.name || 'Client',
+            customerEmail: email,
+            customerPhone: lead.customerPhone || lead.clientPhone || reg.phone || '',
+            surveyType: lead.surveyType || lead.serviceType || 'Property Survey',
+            property: lead.property || 'Specified Property',
+            location: lead.location || lead.postcode || '',
+            postcode: lead.postcode || lead.location || '',
+            surveyor: 'Pending Allocation',
+            surveyorId: 'srv-1',
+            status: lead.status === 'New' ? 'Enquiry' : lead.status || 'Enquiry',
+            stage: 'ENQUIRY',
+            termsStatus: 'Pending',
+            paymentStatus: 'Pending',
+            canBook: false,
+            timelineStep: 1,
+            accessNotes: lead.accessNotes || 'Customer website quote enquiry',
+            backendSynced: false,
+            isNewInstruction: true,
+          });
+        }
+      });
     });
+
+    if (sessionEmail) {
+      const activeId = localStorage.getItem(`propertygroup_active_job_${sessionEmail}`);
+      if (activeId) {
+        realJobs.sort((a, b) => {
+          if (a.id === activeId) return -1;
+          if (b.id === activeId) return 1;
+          return 0;
+        });
+      }
+    }
 
     return realJobs;
   } catch (e) {

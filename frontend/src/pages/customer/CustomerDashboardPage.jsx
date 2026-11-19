@@ -65,7 +65,14 @@ export const CustomerDashboardPage = () => {
   const { jobs } = useJobs();
 
   const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
-  const customerJob = myCustomerJobs[0] || null;
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const [selectedJobId, setSelectedJobId] = useState(() => {
+    return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
+  });
+
+  const activeJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || null;
+  const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
+  const customerJob = activeJob;
 
   // Sync Customer Dashboard from backend API
   useEffect(() => {
@@ -267,18 +274,60 @@ export const CustomerDashboardPage = () => {
         })}
       </div>
 
+      {/* Multi-Instruction Switcher (Active Request vs History) */}
+      {myCustomerJobs.length > 1 && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+              {myCustomerJobs.length}
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Instruction Details ({myCustomerJobs.indexOf(customerJob) + 1} of {myCustomerJobs.length})
+              </div>
+              <div className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
+                <span>{customerJob?.surveyType} &bull; {customerJob?.property || customerJob?.location}</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase">
+                  {customerJob?.status || 'Active'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="dash-job-select" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+              Switch Survey:
+            </label>
+            <select
+              id="dash-job-select"
+              value={customerJob?.id || ''}
+              onChange={(e) => {
+                setSelectedJobId(e.target.value);
+                localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
+              }}
+              className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+            >
+              {myCustomerJobs.map((j, idx) => (
+                <option key={j.id} value={j.id}>
+                  {idx === 0 ? '★ Active Request: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id}) [{j.status}]
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
       <SurveyProgressTracker
         currentStep={
-          (customerJob?.status === 'Completed' || localStorage.getItem('propertygroup_delivered') === 'true' || (customerJob?.timelineStep || 0) >= 10)
+          (customerJob?.status === 'Completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || (customerJob?.timelineStep || 0) >= 10)
             ? 10
-            : (customerJob?.status === 'QA_Review' || localStorage.getItem('propertygroup_qareview') === 'true' || customerJob?.timelineStep === 9)
+            : (customerJob?.status === 'QA_Review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || customerJob?.timelineStep === 9)
             ? 9
-            : (customerJob?.status === 'Drafting' || localStorage.getItem('propertygroup_drafting') === 'true' || customerJob?.timelineStep === 8)
+            : (customerJob?.status === 'Drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || customerJob?.timelineStep === 8)
             ? 8
-            : (customerJob?.status === 'Inspected' || localStorage.getItem('propertygroup_inspection_completed') === 'true' || customerJob?.timelineStep === 7)
+            : (customerJob?.status === 'Inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || customerJob?.timelineStep === 7)
             ? 7
-            : (customerJob?.surveyor || (customerJob?.timelineStep || 0) >= 6)
+            : (customerJob?.surveyor && customerJob?.surveyor !== 'Pending Allocation') || (customerJob?.timelineStep || 0) >= 6
             ? 6
             : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
             ? 5
@@ -286,7 +335,9 @@ export const CustomerDashboardPage = () => {
             ? 4
             : (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) >= 3)
             ? 3
-            : 2
+            : (customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) >= 2)
+            ? 2
+            : 1
         }
         job={customerJob}
       />

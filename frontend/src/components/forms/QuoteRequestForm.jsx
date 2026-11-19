@@ -106,26 +106,89 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
       });
 
       // Cache customer profile in local storage for instantaneous portal access
+      const cleanEmail = formData.customerEmail.toLowerCase().trim();
+      const generatedRef = res?.referenceId || `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+
       try {
         const storedCustomers = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        storedCustomers[formData.customerEmail.toLowerCase().trim()] = {
-          id: `usr_client_${Date.now()}`,
-          email: formData.customerEmail.toLowerCase().trim(),
-          name: formData.customerName,
+        const existingCust = storedCustomers[cleanEmail] || {};
+        storedCustomers[cleanEmail] = {
+          id: existingCust.id || `usr_client_${Date.now()}`,
+          email: cleanEmail,
+          name: formData.customerName || existingCust.name,
           role: 'customer',
           roleLabel: 'Property Client',
           company: 'NJS Property Group',
-          phone: formData.customerPhone || '',
-          address: formData.propertyAddress || '',
-          city: formData.city || formData.propertyLocation || '',
-          postcode: formData.propertyPostcode || '',
+          phone: formData.customerPhone || existingCust.phone || '',
+          address: formData.propertyAddress || existingCust.address || '',
+          city: formData.city || formData.propertyLocation || existingCust.city || '',
+          postcode: formData.propertyPostcode || existingCust.postcode || '',
         };
         localStorage.setItem('property_group_registered_customers', JSON.stringify(storedCustomers));
       } catch {}
 
+      // Save new distinct lead into CRM leads storage
+      try {
+        const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+        const newLeadEntry = {
+          id: generatedRef,
+          reference: generatedRef,
+          customer: formData.customerName,
+          clientName: formData.customerName,
+          customerEmail: cleanEmail,
+          clientEmail: cleanEmail,
+          customerPhone: formData.customerPhone || '',
+          property: formData.propertyAddress || formData.propertyLocation || '',
+          location: formData.propertyPostcode || '',
+          postcode: formData.propertyPostcode || '',
+          surveyType: serviceName,
+          serviceType: serviceName,
+          propertyType: formData.propertyType || '',
+          status: 'New',
+          stage: 'NEW',
+          source: 'Website Quote Form',
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter(l => l.id !== generatedRef)]));
+        window.dispatchEvent(new Event('propertygroup_leads_updated'));
+      } catch {}
+
+      // Create new fresh job entry (Step 1 Enquiry) in customer jobs storage
+      try {
+        const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+        const newJobEntry = {
+          id: generatedRef,
+          jobNo: generatedRef,
+          customer: formData.customerName,
+          customerEmail: cleanEmail,
+          customerPhone: formData.customerPhone || '',
+          surveyType: serviceName,
+          property: formData.propertyAddress || formData.propertyLocation || '',
+          location: formData.propertyPostcode || '',
+          postcode: formData.propertyPostcode || '',
+          surveyor: 'Pending Allocation',
+          surveyorId: 'srv-1',
+          status: 'Enquiry',
+          stage: 'ENQUIRY',
+          termsStatus: 'Pending',
+          paymentStatus: 'Pending',
+          timelineStep: 1,
+          date: 'Pending Allocation',
+          timeSlot: 'Pending Allocation',
+          accessNotes: formData.additionalNotes || 'Customer online quote enquiry',
+          createdAt: new Date().toISOString(),
+          isNewInstruction: true,
+        };
+        // Prepend new job so it is the active one, keeping previous jobs in history
+        const updatedJobs = [newJobEntry, ...storedJobs.filter(j => j.id !== generatedRef)];
+        localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+        localStorage.setItem(`propertygroup_active_job_${cleanEmail}`, generatedRef);
+        window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+      } catch {}
+
       const receipt = {
         timestamp: res?.timestamp || new Date().toISOString(),
-        referenceId: res?.referenceId || `ENQ-${Math.floor(100000 + Math.random() * 900000)}`,
+        referenceId: generatedRef,
         emailNotification: res?.emailNotification || { recipient: siteConfig.contact.email, emailSent: false },
         data: {
           ...formData,
