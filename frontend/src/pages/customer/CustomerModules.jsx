@@ -33,18 +33,14 @@ import {
   UserCheck,
   Star,
   History,
-  Paperclip,
   Image,
   Award,
   CheckCircle,
   Eye,
   Video,
-  Smile,
-  Camera,
   CheckCheck,
   Search,
   MoreVertical,
-  Mic,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useAuth } from '../../auth/AuthContext';
@@ -3784,63 +3780,31 @@ export const CustomerMessagesPage = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Bottom Chat Input Bar Matching Reference Design */}
+          {/* Bottom Chat Input Bar - Clean Text & Send */}
           <form
             onSubmit={handleSendMessage}
             className="p-3 sm:p-4 bg-white border-t border-slate-100 flex items-center gap-2 sm:gap-2.5 shrink-0"
           >
-            {/* Paperclip Attachment */}
-            <button
-              type="button"
-              onClick={handleAttach}
-              className="p-2 text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 rounded-full transition-colors cursor-pointer shrink-0"
-              title="Attach document or photo"
-            >
-              <Paperclip className="w-4 h-4 -rotate-45" />
-            </button>
-
-            {/* Pill Message Input */}
+            {/* Message Input */}
             <div className="flex-1 relative flex items-center">
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type your message here..."
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-full pl-4 sm:pl-5 pr-16 py-2.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
+                className="w-full bg-slate-50 border border-slate-200/80 rounded-full px-4 sm:px-5 py-2.5 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]/20 focus:border-[#0B1F4D] transition-all"
               />
-
-              <div className="absolute right-2.5 flex items-center gap-1 text-slate-400">
-                <button
-                  type="button"
-                  onClick={() => setInputMessage((prev) => prev + ' 😊')}
-                  className="p-1 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
-                  title="Emoji"
-                >
-                  <Smile className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAttach}
-                  className="p-1 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
-                  title="Take photo / Camera"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-              </div>
             </div>
 
-            {/* Mic / Send Button in Deep Navy Theme */}
+            {/* Direct Send Button */}
             <button
               type="submit"
               disabled={!inputMessage.trim()}
-              className="w-10 h-10 rounded-2xl bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:hover:bg-[#0B1F4D] text-white flex items-center justify-center transition-all shadow-sm hover:scale-105 shrink-0 cursor-pointer"
-              title={inputMessage.trim() ? 'Send message' : 'Voice note'}
+              className="h-10 px-4 rounded-full bg-[#0B1F4D] hover:bg-[#162E6E] disabled:opacity-40 disabled:hover:bg-[#0B1F4D] text-white flex items-center justify-center gap-1.5 transition-all shadow-sm hover:scale-[1.02] shrink-0 cursor-pointer text-xs font-bold"
+              title="Send message"
             >
-              {inputMessage.trim() ? (
-                <Send className="w-4 h-4 ml-0.5" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
+              <span>Send</span>
+              <Send className="w-3.5 h-3.5 ml-0.5" />
             </button>
           </form>
         </div>
