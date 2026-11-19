@@ -11,7 +11,9 @@ export const AppLayout = () => {
 
   const isMessagesPage =
     location.pathname.startsWith('/admin/messages') ||
-    location.pathname.startsWith('/admin/message');
+    location.pathname.startsWith('/admin/message') ||
+    location.pathname.startsWith('/surveyor/messages') ||
+    location.pathname.startsWith('/customer/messages');
 
   return (
     <div
@@ -37,7 +39,7 @@ export const AppLayout = () => {
         <main
           className={
             isMessagesPage
-              ? 'flex-1 min-h-0 p-3 sm:p-4 lg:p-5 max-w-7xl w-full mx-auto flex flex-col overflow-hidden'
+              ? 'flex-1 min-h-0 p-2 sm:p-3 lg:p-3.5 max-w-7xl w-full mx-auto flex flex-col overflow-hidden'
               : 'flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8'
           }
         >

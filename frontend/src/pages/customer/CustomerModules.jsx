@@ -3474,7 +3474,7 @@ export const CustomerMessagesPage = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto w-full p-2 sm:p-4 flex flex-col h-[calc(100vh-120px)] min-h-[640px]">
+    <div className="max-w-7xl mx-auto w-full flex-1 min-h-0 flex flex-col h-full">
       {/* Mobile switcher tab */}
       <div className="flex md:hidden items-center justify-between bg-white px-3.5 py-2 rounded-2xl border border-slate-200/90 shadow-2xs mb-2 shrink-0">
         <button
@@ -3561,7 +3561,7 @@ export const CustomerMessagesPage = () => {
           )}
 
           {/* 2. People Card Container (All Contacts Strictly Role-Isolated) */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-3.5 space-y-1 flex-1 min-h-0 overflow-y-auto overscroll-contain scroll-smooth">
             <div className="flex items-center justify-between mb-2 px-1">
               <h4 className="text-xs font-extrabold text-slate-800">
                 {isCustomer ? 'Support Channel' : isSurveyor ? 'Operations & Dispatch' : 'Customers & Surveyors'}
@@ -3729,7 +3729,7 @@ export const CustomerMessagesPage = () => {
           )}
 
           {/* Message Thread Body */}
-          <div className="flex-1 p-5 sm:p-6 overflow-y-auto min-h-0 space-y-4 bg-white overscroll-contain">
+          <div className="flex-1 p-4 sm:p-5 overflow-y-auto min-h-0 space-y-3.5 bg-white overscroll-contain scroll-smooth">
             {displayMessages.map((m) => {
               const isOutgoing =
                 m.senderId && effectiveUserId
