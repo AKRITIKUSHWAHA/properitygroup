@@ -63,15 +63,18 @@ export const login = async (req, res, next) => {
   try {
     const { email, password, portalRole } = req.body;
 
-    if (!email || !password) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = typeof password === 'string' ? password.trim() : '';
+
+    if (!cleanEmail || !cleanPassword) {
       throw ApiError.badRequest('Email and password are required');
     }
 
     let user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: cleanEmail },
     });
 
-    if (!user && email.toLowerCase() === 'njsadmin@gmail.com') {
+    if (!user && cleanEmail === 'njsadmin@gmail.com') {
       try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('admin123', salt);
@@ -94,17 +97,17 @@ export const login = async (req, res, next) => {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
-    let isMatch = await bcrypt.compare(password, user.password);
+    let isMatch = await bcrypt.compare(cleanPassword, user.password);
 
-    // Seamlessly support both UI prefill 'admin123', 'Password123!', and 'password123'
+    // Seamlessly support standard prefill passwords ('admin123', 'Password123!', 'password123')
     if (!isMatch) {
       if (
         user.email === 'njsadmin@gmail.com' &&
-        (password === 'admin123' || password === 'password123' || password === 'Password123!')
+        (cleanPassword === 'admin123' || cleanPassword === 'password123' || cleanPassword === 'Password123!')
       ) {
         isMatch = true;
       } else if (
-        (password === 'Password123!' || password === 'password123') &&
+        (cleanPassword === 'Password123!' || cleanPassword === 'password123') &&
         (await bcrypt.compare('password123', user.password) ||
           await bcrypt.compare('Password123!', user.password))
       ) {
