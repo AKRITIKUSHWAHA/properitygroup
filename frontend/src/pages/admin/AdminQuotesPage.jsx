@@ -303,7 +303,11 @@ export const AdminQuotesPage = () => {
 
       adminQuotationsAndPaymentsApi.getMetrics().catch(() => {});
 
-      if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
+      if (Array.isArray(rawQuotes)) {
+        if (rawQuotes.length === 0) {
+          setApiQuotes([]);
+          return;
+        }
         const invoiceMap = new Map();
         rawInvoices.forEach((inv) => {
           if (inv.jobId) invoiceMap.set(inv.jobId, inv);

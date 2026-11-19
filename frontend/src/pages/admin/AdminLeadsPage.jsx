@@ -245,7 +245,11 @@ export const AdminLeadsPage = () => {
       setIsLoadingLeads(true);
       const res = await adminCrmAndLeadsApi.getLeads();
       const rawLeads = res?.leads || res?.data?.leads || (Array.isArray(res) ? res : []);
-      if (Array.isArray(rawLeads) && rawLeads.length > 0) {
+      if (Array.isArray(rawLeads)) {
+        if (rawLeads.length === 0) {
+          if (setLeads) setLeads([]);
+          return;
+        }
         const statusMap = {
           NEW: 'New',
           CONTACTED: 'Contacted',
