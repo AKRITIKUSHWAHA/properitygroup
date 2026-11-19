@@ -283,6 +283,7 @@ export const AdminQuotesPage = () => {
   const { quotes, addQuote, updateQuote, updateQuoteStatus } = useQuotes();
 
   const [apiQuotes, setApiQuotes] = useState([]);
+  const [apiLoaded, setApiLoaded] = useState(false);
 
   // Sync quotations & invoices from backend API (MySQL)
   const fetchBackendData = async () => {
@@ -304,6 +305,7 @@ export const AdminQuotesPage = () => {
       adminQuotationsAndPaymentsApi.getMetrics().catch(() => {});
 
       if (Array.isArray(rawQuotes)) {
+        setApiLoaded(true);
         if (rawQuotes.length === 0) {
           setApiQuotes([]);
           return;
@@ -386,7 +388,7 @@ export const AdminQuotesPage = () => {
     fetchBackendData();
   }, []);
 
-  const displayQuotes = apiQuotes.length > 0 ? apiQuotes : quotes;
+  const displayQuotes = apiLoaded ? apiQuotes : (quotes || []);
 
   // Tabs: Quotations, Invoices, Payments, Outstanding
   const [activeTab, setActiveTab] = useState('Quotations');

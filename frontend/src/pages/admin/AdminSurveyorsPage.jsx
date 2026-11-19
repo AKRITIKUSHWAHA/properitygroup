@@ -40,17 +40,7 @@ const DEFAULT_AVATARS = [
 export const AdminSurveyorsPage = () => {
   const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [surveyorsList, setSurveyorsList] = useState([
-    ...SURVEYORS.map((s, idx) => ({
-      ...s,
-      piiExpiry: idx % 2 === 0 ? '15/12/2026' : '22/01/2027',
-      assignedJobs: 12 + idx * 3,
-      status: 'Active Field',
-      phone: `+44 7700 900${idx + 1}84`,
-      email: `${s.name.toLowerCase().split(' ')[0]}@njspropertygroup.com`,
-      specialism: idx === 0 ? 'Valuation & Level 2' : idx === 1 ? 'Period Structures & Level 3' : 'Damp, Timber & Defects',
-    })),
-  ]);
+  const [surveyorsList, setSurveyorsList] = useState([]);
 
   // Sync surveyors from backend API
   useEffect(() => {
@@ -58,32 +48,36 @@ export const AdminSurveyorsPage = () => {
     adminSurveyorsApi.getSurveyors()
       .then((res) => {
         const raw = res?.surveyors || res?.data?.surveyors || (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []));
-        if (isMounted && raw && raw.length > 0) {
-          setSurveyorsList(raw.map((s, idx) => ({
-            id: `srv-${s.id}`,
-            dbId: s.id,
-            name: s.name,
-            credentials: s.surveyorProfile?.accreditation
-              ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
-              : 'MRICS Chartered Surveyor',
-            postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
-              ? s.surveyorProfile.postcodesCovered
-              : (s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W']),
-            activeJobs: s.surveyorProfile?.activeLoad || s.assignedJobs?.length || 4,
-            maxJobs: s.surveyorProfile?.maxLoad || 8,
-            piiExpiry: s.surveyorProfile?.piiExpiryDate || (idx % 2 === 0 ? '15/12/2026' : '22/01/2027'),
-            assignedJobs: s.assignedJobs?.length ? s.assignedJobs.length * 4 : (s.surveyorProfile?.activeLoad || (12 + idx * 3)),
-            status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
-            phone: s.phone || `+44 7700 900${idx + 1}84`,
-            email: s.email,
-            avatar: s.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
-            specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
-              ? 'Dispute & Expert Witness'
-              : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
-              ? 'Residential Defect Specialist'
-              : 'RICS Valuation, Level 2 & Level 3'),
-            color: '#2563EB',
-          })));
+        if (isMounted && Array.isArray(raw)) {
+          if (raw.length === 0) {
+            setSurveyorsList([]);
+          } else {
+            setSurveyorsList(raw.map((s, idx) => ({
+              id: `srv-${s.id}`,
+              dbId: s.id,
+              name: s.name,
+              credentials: s.surveyorProfile?.accreditation
+                ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
+                : 'MRICS Chartered Surveyor',
+              postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
+                ? s.surveyorProfile.postcodesCovered
+                : (s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W']),
+              activeJobs: s.surveyorProfile?.activeLoad || s.assignedJobs?.length || 0,
+              maxJobs: s.surveyorProfile?.maxLoad || 8,
+              piiExpiry: s.surveyorProfile?.piiExpiryDate || (idx % 2 === 0 ? '15/12/2026' : '22/01/2027'),
+              assignedJobs: s.assignedJobs?.length ? s.assignedJobs.length * 4 : (s.surveyorProfile?.activeLoad || 0),
+              status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
+              phone: s.phone || `+44 7700 900${idx + 1}84`,
+              email: s.email,
+              avatar: s.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
+              specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
+                ? 'Dispute & Expert Witness'
+                : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
+                ? 'Residential Defect Specialist'
+                : 'RICS Valuation, Level 2 & Level 3'),
+              color: '#2563EB',
+            })));
+          }
         }
       })
       .catch((err) => {

@@ -305,57 +305,58 @@ export const AdminTermsPage = () => {
           adminTermsAndDocumentsApi.getMetrics(),
         ]);
 
-        if (termsRes.status === 'fulfilled' && termsRes.value?.data?.data?.terms) {
-          const apiTerms = termsRes.value.data.data.terms;
-          if (Array.isArray(apiTerms) && apiTerms.length > 0 && isMounted) {
-            const mapped = apiTerms.map((t) => {
-              let matchedServiceKey = 'Homebuyer L2';
-              const title = t.documentTitle || '';
-              if (title.includes('Level 3') || title.includes('Building')) {
-                matchedServiceKey = 'Building L3';
-              } else if (title.includes('Snagging')) {
-                matchedServiceKey = 'Snagging';
-              } else if (title.includes('Valuation') || title.includes('Red Book')) {
-                matchedServiceKey = 'Valuation';
-              } else if (title.includes('Damp') || title.includes('Moisture')) {
-                matchedServiceKey = 'Damp';
-              } else if (title.includes('Expert Witness') || title.includes('CPR')) {
-                matchedServiceKey = 'Expert Witness';
-              }
+        if (termsRes.status === 'fulfilled' && isMounted) {
+          const apiTerms = termsRes.value?.data?.data?.terms || termsRes.value?.terms || [];
+          if (Array.isArray(apiTerms)) {
+            if (apiTerms.length === 0) {
+              setAgreements([]);
+            } else {
+              const mapped = apiTerms.map((t) => {
+                let matchedServiceKey = 'Homebuyer L2';
+                const title = t.documentTitle || '';
+                if (title.includes('Level 3') || title.includes('Building')) {
+                  matchedServiceKey = 'Building L3';
+                } else if (title.includes('Snagging')) {
+                  matchedServiceKey = 'Snagging';
+                } else if (title.includes('Valuation') || title.includes('Red Book')) {
+                  matchedServiceKey = 'Valuation';
+                } else if (title.includes('Damp') || title.includes('Moisture')) {
+                  matchedServiceKey = 'Damp';
+                } else if (title.includes('Expert Witness') || title.includes('CPR')) {
+                  matchedServiceKey = 'Expert Witness';
+                }
 
-              const matchedTemplate =
-                TERMS_TEMPLATES.find((tmpl) => tmpl.serviceKey === matchedServiceKey) ||
-                TERMS_TEMPLATES[0];
+                const matchedTemplate =
+                  TERMS_TEMPLATES.find((tmpl) => tmpl.serviceKey === matchedServiceKey) ||
+                  TERMS_TEMPLATES[0];
 
-              return {
-                id: t.reference || `TRM-${t.id}`,
-                dbId: t.id,
-                refNo: t.reference || `TRM-${t.id}`,
-                jobNo: t.job?.reference || (t.jobId ? `JOB-${t.jobId}` : null),
-                client: t.clientName || t.job?.clientName || 'Client',
-                signerEmail: t.clientEmail || t.job?.clientEmail || 'client@example.com',
-                property: t.job?.propertyAddress || '14 Mayfair Gate, London',
-                location: 'London, UK',
-                serviceKey: matchedServiceKey,
-                templateName: t.documentTitle || matchedTemplate.name,
-                versionYear: `${matchedTemplate.version} / ${matchedTemplate.year}`,
-                status: t.signed ? 'Signed' : 'Sent',
-                sentDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-GB') : 'Recent',
-                signedDate: t.signedAt
-                  ? `${new Date(t.signedAt).toLocaleDateString('en-GB')}, ${new Date(t.signedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
-                  : null,
-                signerIp: t.signerIp || (t.signed ? '86.142.19.45 (London, UK)' : null),
-                auditCode: t.tamperAuditHash || (t.signed ? `DOC-ESIGN-${t.id}-VERIFIED` : `DOC-SENT-${t.id}-DISPATCHED`),
-                signatureType: 'drawn',
-                signatureValue: t.signatureData || t.clientName,
-                backendSynced: true,
-              };
-            });
+                return {
+                  id: t.reference || `TRM-${t.id}`,
+                  dbId: t.id,
+                  refNo: t.reference || `TRM-${t.id}`,
+                  jobNo: t.job?.reference || (t.jobId ? `JOB-${t.jobId}` : null),
+                  client: t.clientName || t.job?.clientName || 'Client',
+                  signerEmail: t.clientEmail || t.job?.clientEmail || 'client@example.com',
+                  property: t.job?.propertyAddress || '14 Mayfair Gate, London',
+                  location: 'London, UK',
+                  serviceKey: matchedServiceKey,
+                  templateName: t.documentTitle || matchedTemplate.name,
+                  versionYear: `${matchedTemplate.version} / ${matchedTemplate.year}`,
+                  status: t.signed ? 'Signed' : 'Sent',
+                  sentDate: t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-GB') : 'Recent',
+                  signedDate: t.signedAt
+                    ? `${new Date(t.signedAt).toLocaleDateString('en-GB')}, ${new Date(t.signedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                    : null,
+                  signerIp: t.signerIp || (t.signed ? '86.142.19.45 (London, UK)' : null),
+                  auditCode: t.tamperAuditHash || (t.signed ? `DOC-ESIGN-${t.id}-VERIFIED` : `DOC-SENT-${t.id}-DISPATCHED`),
+                  signatureType: 'drawn',
+                  signatureValue: t.signatureData || t.clientName,
+                  backendSynced: true,
+                };
+              });
 
-            setAgreements((prev) => {
-              const prevNonApi = prev.filter((p) => !mapped.some((m) => m.refNo === p.refNo));
-              return [...mapped, ...prevNonApi];
-            });
+              setAgreements(mapped);
+            }
           }
         }
 

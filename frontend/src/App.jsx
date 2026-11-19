@@ -125,6 +125,27 @@ const PortalRedirect = () => {
 function AppRoutes() {
   const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
 
+  React.useEffect(() => {
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean';
+    if (!localStorage.getItem(WIPE_KEY)) {
+      [
+        'propertygroup_quotes',
+        'propertygroup_crm_leads_v1',
+        'propertygroup_agreements',
+        'propertygroup_jobs',
+        'propertygroup_conversations_v1',
+        'property_group_registered_customers',
+      ].forEach((key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch {}
+      });
+      try {
+        localStorage.setItem(WIPE_KEY, 'true');
+      } catch {}
+    }
+  }, []);
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>

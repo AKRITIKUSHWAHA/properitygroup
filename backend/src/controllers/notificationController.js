@@ -157,8 +157,8 @@ export const getNotifications = async (req, res, next) => {
       });
     }
 
-    // Ensure role-based notifications exist
-    await seedDefaultNotificationsForRole(user);
+    // Fetch clean real notifications without injecting artificial demo data
+    // await seedDefaultNotificationsForRole(user);
 
     const notifications = await prisma.notification.findMany({
       where: {

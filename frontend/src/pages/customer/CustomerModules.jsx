@@ -3113,7 +3113,7 @@ export const CustomerMessagesPage = () => {
 
   const effectiveUserId = getEffectiveUserId();
   const myConvId = `conv-user-${effectiveUserId}`;
-  const defaultConvId = (isCustomer || isSurveyor) ? myConvId : 'conv-user-25';
+  const defaultConvId = (isCustomer || isSurveyor) ? myConvId : null;
 
   const customerAdminContact = {
     id: myConvId,
@@ -3173,84 +3173,8 @@ export const CustomerMessagesPage = () => {
     if (isSurveyor) {
       return [surveyorAdminContact];
     }
-    // Admin sees customers and surveyors
-    return [
-      {
-        id: 'conv-user-25',
-        userId: 25,
-        name: 'Emma Watson',
-        email: 'customer@demo.com',
-        role: 'CUSTOMER',
-        roleTitle: 'Client',
-        avatar: 'EW',
-        lastMessage: 'hii',
-        time: 'Today, 11:30am',
-        lastMessageTime: '2026-11-14T11:49:11.000Z',
-        unread: false,
-        online: true,
-        lastSeen: '11:30am',
-      },
-      {
-        id: 'conv-user-22',
-        userId: 22,
-        name: 'David Thorne MRICS',
-        email: 'surveyor@demo.com',
-        role: 'SURVEYOR',
-        roleTitle: 'RICS Surveyor',
-        avatar: 'DT',
-        lastMessage: 'hi',
-        time: 'Today, 2:02pm',
-        lastMessageTime: '2026-11-14T12:13:43.000Z',
-        unread: false,
-        online: true,
-        lastSeen: '2:02pm',
-      },
-      {
-        id: 'conv-user-26',
-        userId: 26,
-        name: 'Harrison Sterling',
-        email: 'customer2@demo.com',
-        role: 'CUSTOMER',
-        roleTitle: 'Client',
-        avatar: 'HS',
-        lastMessage: 'Property plans uploaded for inspection',
-        time: 'Yesterday',
-        lastMessageTime: '2026-11-13T10:00:00.000Z',
-        unread: false,
-        online: false,
-        lastSeen: 'Yesterday',
-      },
-      {
-        id: 'conv-user-28',
-        userId: 28,
-        name: 'Test Customer',
-        email: 'testak89193@gmail.com',
-        role: 'CUSTOMER',
-        roleTitle: 'Client',
-        avatar: 'TC',
-        lastMessage: 'Key collection instructions confirmed',
-        time: 'Wed, 9:12am',
-        lastMessageTime: '2026-11-12T09:12:00.000Z',
-        unread: false,
-        online: false,
-        lastSeen: 'Wednesday',
-      },
-      {
-        id: 'conv-user-23',
-        userId: 23,
-        name: 'Oliver Hughes MRICS',
-        email: 'oliver.hughes@njspropertygroup.com',
-        role: 'SURVEYOR',
-        roleTitle: 'RICS Surveyor',
-        avatar: 'OH',
-        lastMessage: 'Structural defect review',
-        time: 'Yesterday',
-        lastMessageTime: '2026-11-13T14:15:00.000Z',
-        unread: false,
-        online: false,
-        lastSeen: 'Yesterday',
-      },
-    ];
+    // Admin sees only real registered contacts from database
+    return [];
   });
 
   // Thread Messages mapping per conversation
@@ -3312,6 +3236,9 @@ export const CustomerMessagesPage = () => {
             } else if (isSurveyor) {
               setPeople([surveyorAdminContact]);
               setActiveChannelId(myConvId);
+            } else {
+              setPeople([]);
+              setActiveChannelId(null);
             }
           }
         })
@@ -3323,6 +3250,9 @@ export const CustomerMessagesPage = () => {
           } else if (isSurveyor) {
             setPeople([surveyorAdminContact]);
             setActiveChannelId(myConvId);
+          } else {
+            setPeople([]);
+            setActiveChannelId(null);
           }
         });
     };
@@ -3385,15 +3315,16 @@ export const CustomerMessagesPage = () => {
       ? (people[0] || customerAdminContact)
       : isSurveyor
       ? (people[0] || surveyorAdminContact)
-      : (people.find((c) => c.id === activeChannelId) || people[0]);
+      : (people.find((c) => c.id === activeChannelId) || people[0] || null);
 
   const activeId = isCustomer || isSurveyor ? myConvId : activeChannelId;
-  const currentMessages = threadsMap[activeId] || [];
+  const currentMessages = (activeId && threadsMap[activeId]) || [];
 
   const displayMessages =
     currentMessages.length > 0
       ? currentMessages
-      : [
+      : activeContact
+      ? [
           {
             id: 'default-intro',
             sender: activeContact?.name || 'Contact',
@@ -3405,7 +3336,8 @@ export const CustomerMessagesPage = () => {
               : `Direct communications channel with ${activeContact?.name || 'Client'}. You can send updates or respond to customer queries here.`,
             time: 'Today',
           },
-        ];
+        ]
+      : [];
 
   // Auto-scroll chat to bottom whenever messages change
   useEffect(() => {
@@ -3622,6 +3554,11 @@ export const CustomerMessagesPage = () => {
               </span>
             </div>
             <div className="space-y-1">
+              {filteredPeople.length === 0 && (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  No active contacts yet
+                </div>
+              )}
               {filteredPeople.map((person) => {
                 const isSelected = isCustomer || isSurveyor ? true : activeChannelId === person.id;
                 const hasUnread = person.unreadCount > 0 || person.unread;
@@ -3711,6 +3648,18 @@ export const CustomerMessagesPage = () => {
             mobileView === 'chat' ? 'flex' : 'hidden md:flex'
           }`}
         >
+          {!activeContact ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 shadow-inner">
+                <MessageSquare className="w-7 h-7 text-slate-400" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-700 mb-1">No Active Conversation</h3>
+              <p className="text-xs text-slate-400 max-w-xs">
+                As customers and surveyors register and initiate messages, their direct conversation channels will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
           {/* Chat Window Header */}
           <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
             <div className="flex items-center gap-3 min-w-0">
@@ -3856,6 +3805,8 @@ export const CustomerMessagesPage = () => {
               <Send className="w-3.5 h-3.5 ml-0.5" />
             </button>
           </form>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -184,22 +184,26 @@ export const AdminCompaniesPage = () => {
     adminCompaniesApi.getCompanies()
       .then((res) => {
         const raw = res?.companies || res?.data?.companies || (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []));
-        if (isMounted && raw && raw.length > 0) {
-          setCompanies(raw.map((c) => ({
-            id: `CMP-${String(c.id).padStart(2, '0')}`,
-            dbId: c.id,
-            name: c.name,
-            code: (c.name || 'AG').slice(0, 2).toUpperCase(),
-            branch: c.branchName || 'London HQ',
-            address: c.address || 'London, UK',
-            contact: c.contactName || 'Branch Contact',
-            role: 'Partner Contact & Keyholder',
-            phone: c.contactPhone || '+44 20 7946 0888',
-            email: c.contactEmail || 'office@partner.com',
-            leads: c.totalInstructions || c._count?.jobs || 0,
-            status: c.status === 'ACTIVE' ? 'Active Partner' : (c.status || 'Active Partner'),
-            keyHolding: c.keyCollectionProtocol || 'Key protocol on file',
-          })));
+        if (isMounted && Array.isArray(raw)) {
+          if (raw.length === 0) {
+            setCompanies([]);
+          } else {
+            setCompanies(raw.map((c) => ({
+              id: `CMP-${String(c.id).padStart(2, '0')}`,
+              dbId: c.id,
+              name: c.name,
+              code: (c.name || 'AG').slice(0, 2).toUpperCase(),
+              branch: c.branchName || 'London HQ',
+              address: c.address || 'London, UK',
+              contact: c.contactName || 'Branch Contact',
+              role: 'Partner Contact & Keyholder',
+              phone: c.contactPhone || '+44 20 7946 0888',
+              email: c.contactEmail || 'office@partner.com',
+              leads: c.totalInstructions || c._count?.jobs || 0,
+              status: c.status === 'ACTIVE' ? 'Active Partner' : (c.status || 'Active Partner'),
+              keyHolding: c.keyCollectionProtocol || 'Key protocol on file',
+            })));
+          }
         }
       })
       .catch((err) => {

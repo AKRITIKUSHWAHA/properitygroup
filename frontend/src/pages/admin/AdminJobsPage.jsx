@@ -366,18 +366,17 @@ export const AdminJobsPage = () => {
           adminSurveyJobsApi.getMetrics(),
         ]);
 
-        if (jobsRes.status === 'fulfilled' && jobsRes.value?.data?.data?.jobs && isMounted) {
-          const apiJobs = jobsRes.value.data.data.jobs;
-          if (Array.isArray(apiJobs) && apiJobs.length > 0) {
-            const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
-              const email = (bj.customerEmail || '').toLowerCase().trim();
-              return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
-            });
-            if (mapped.length > 0) {
-              setJobs((prev) => {
-                const prevFiltered = prev.filter((p) => !mapped.some((m) => m.jobNo === p.jobNo));
-                return [...prevFiltered, ...mapped];
+        if (jobsRes.status === 'fulfilled' && isMounted) {
+          const apiJobs = jobsRes.value?.data?.data?.jobs || jobsRes.value?.jobs || [];
+          if (Array.isArray(apiJobs)) {
+            if (apiJobs.length === 0) {
+              setJobs([]);
+            } else {
+              const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
+                const email = (bj.customerEmail || '').toLowerCase().trim();
+                return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
               });
+              setJobs(mapped);
             }
           }
         }
