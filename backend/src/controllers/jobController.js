@@ -252,9 +252,6 @@ export const updateJobStage = async (req, res, next) => {
     next(error);
   }
 };
-    next(error);
-  }
-};
 
 export const assignSurveyor = async (req, res, next) => {
   try {

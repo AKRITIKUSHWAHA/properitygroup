@@ -240,6 +240,7 @@ function AppRoutes() {
             <Route path="/admin/leads" element={<AdminLeadsPage />} />
             <Route path="/admin/lead" element={<AdminLeadsPage />} />
             <Route path="/admin/crm-and-leads" element={<AdminLeadsPage />} />
+            <Route path="/admin/leads/enquiries" element={<Navigate to="/admin/leads" replace />} />
 
             {/* Survey Jobs + Friendly Aliases */}
             <Route path="/admin/jobs" element={<AdminJobsPage />} />
@@ -252,11 +253,14 @@ function AppRoutes() {
             {/* Booking Calendar + Friendly Aliases */}
             <Route path="/admin/calendar" element={<StaffCalendarPage />} />
             <Route path="/admin/booking-calendar" element={<StaffCalendarPage />} />
+            <Route path="/admin/surveys/schedule" element={<Navigate to="/admin/calendar" replace />} />
 
             {/* Quotations & Payments + Friendly Aliases */}
             <Route path="/admin/quotes" element={<AdminQuotesPage />} />
             <Route path="/admin/quote" element={<AdminQuotesPage />} />
             <Route path="/admin/quotations-and-payments" element={<AdminQuotesPage />} />
+            <Route path="/admin/finance/quotations" element={<Navigate to="/admin/quotes" replace />} />
+            <Route path="/admin/finance/invoices" element={<Navigate to="/admin/quotes" replace />} />
 
             {/* Terms & Documents + Friendly Aliases */}
             <Route path="/admin/terms" element={<AdminTermsPage />} />
@@ -267,6 +271,7 @@ function AppRoutes() {
             <Route path="/admin/reports" element={<AdminReportsPage />} />
             <Route path="/admin/report" element={<AdminReportsPage />} />
             <Route path="/admin/reports-and-analytics" element={<AdminReportsPage />} />
+            <Route path="/admin/reports/qa-review" element={<Navigate to="/admin/reports" replace />} />
 
             {/* Users & Roles + Friendly Aliases */}
             <Route path="/admin/users" element={<AdminUsersPage />} />
@@ -355,14 +360,20 @@ function AppRoutes() {
           {/* Customer Routes (14 menus per Client Requirement Point 12) */}
           <Route element={<ProtectedRoute allowedRoles={['customer', 'super_admin']} />}>
             <Route path="/customer/my-dashboard" element={<CustomerDashboardPage />} />
+            <Route path="/customer/dashboard" element={<Navigate to="/customer/my-dashboard" replace />} />
             <Route path="/customer/quotations" element={<CustomerQuotationsPage />} />
+            <Route path="/customer/my-quotations" element={<Navigate to="/customer/quotations" replace />} />
             <Route path="/customer/my-bookings" element={<CustomerBookingsPage />} />
+            <Route path="/customer/bookings" element={<Navigate to="/customer/my-bookings" replace />} />
             <Route path="/customer/track-my-survey" element={<CustomerTrackSurveyPage />} />
+            <Route path="/customer/track-survey" element={<Navigate to="/customer/track-my-survey" replace />} />
             <Route path="/customer/appointment-details" element={<CustomerAppointmentDetailsPage />} />
             <Route path="/customer/assigned-surveyor" element={<CustomerAssignedSurveyorPage />} />
             <Route path="/customer/terms-to-sign" element={<CustomerTermsPage />} />
             <Route path="/customer/invoices-and-payments" element={<CustomerInvoicesPage />} />
+            <Route path="/customer/invoices" element={<Navigate to="/customer/invoices-and-payments" replace />} />
             <Route path="/customer/reports" element={<CustomerReportsPage />} />
+            <Route path="/customer/my-reports" element={<Navigate to="/customer/reports" replace />} />
             <Route path="/customer/messages" element={<CustomerMessagesPage />} />
             <Route path="/customer/leave-review" element={<CustomerReviewPage />} />
             <Route path="/customer/support" element={<CustomerSupportPage />} />
