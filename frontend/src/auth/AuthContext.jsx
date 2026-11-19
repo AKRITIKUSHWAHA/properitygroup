@@ -182,12 +182,17 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!matchedUser && trimmedEmail.includes('@')) {
+        const isStaffPortal = expectedRole === 'admin' || expectedRole === 'super_admin' || trimmedEmail.includes('admin');
+        const isSurveyorPortal = expectedRole === 'surveyor' || trimmedEmail.includes('surveyor');
+        const assignedRole = isStaffPortal ? 'super_admin' : isSurveyorPortal ? 'surveyor' : 'customer';
+        const assignedRoleLabel = isStaffPortal ? 'Admin' : isSurveyorPortal ? 'Chartered Surveyor' : 'Property Client';
+
         matchedUser = {
-          id: `usr_client_${Date.now()}`,
+          id: `usr_${assignedRole}_${Date.now()}`,
           email: trimmedEmail,
           name: trimmedEmail.split('@')[0],
-          role: 'customer',
-          roleLabel: 'Property Client',
+          role: assignedRole,
+          roleLabel: assignedRoleLabel,
           company: 'NJS Property Group',
           phone: '',
           address: '',

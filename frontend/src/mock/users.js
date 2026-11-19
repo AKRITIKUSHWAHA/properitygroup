@@ -1,5 +1,19 @@
 // Mock users and roles for NJS Property Group
 export const DEMO_USERS = {
+  'njsadmin@gmail.com': {
+    id: 'usr_super_admin_njs',
+    email: 'njsadmin@gmail.com',
+    name: 'NJS Operations Admin',
+    role: 'super_admin',
+    roleLabel: 'Admin',
+    department: 'Executive Operations',
+    company: 'NJS Property Group HQ',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+    phone: '+44 20 7946 0912',
+    currency: 'GBP',
+    dateJoined: '12/01/2024',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+  },
   'admin@demo.com': {
     id: 'usr_super_admin',
     email: 'admin@demo.com',
