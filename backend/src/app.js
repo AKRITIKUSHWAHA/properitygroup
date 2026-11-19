@@ -48,9 +48,16 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging in dev
+// Request logging in dev - skip repetitive polling pings so terminal stays clean
 if (env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+  app.use(
+    morgan('dev', {
+      skip: (req) =>
+        req.url.includes('/messages/contacts') ||
+        req.url.includes('/notifications') ||
+        req.url.includes('/dashboard/action-buckets'),
+    })
+  );
 }
 
 // API Routes

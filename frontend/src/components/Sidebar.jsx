@@ -136,7 +136,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 4000);
+    const interval = setInterval(checkUnread, 30000);
     const handleSync = () => checkUnread();
     window.addEventListener('storage', handleSync);
     window.addEventListener('njs_new_message_notification', handleSync);

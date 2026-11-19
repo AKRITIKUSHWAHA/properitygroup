@@ -77,8 +77,12 @@ export const AppLayout = () => {
     // Initial check
     checkIncomingMessages();
 
-    // Fast 3-second poll for snappy notification alerts
-    const interval = setInterval(checkIncomingMessages, 3000);
+    // Calm 30-second poll for background message notifications (synced instantaneously via BroadcastChannel)
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        checkIncomingMessages();
+      }
+    }, 30000);
 
     // Cross-tab broadcast channel for instantaneous 0-delay sync
     let bc = null;
