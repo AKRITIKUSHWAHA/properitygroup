@@ -45,20 +45,6 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  // Ensure active user has a live backend JWT stored for reliable API operations
-  useEffect(() => {
-    if (user && user.email) {
-      const email = user.email.toLowerCase();
-      authApi.login(email, 'password123')
-        .then((res) => {
-          if (res?.token) {
-            localStorage.setItem(AUTH_TOKEN_KEY, res.token);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [user?.email]);
-
   // Fast role switcher for development/testing if needed
   const switchRole = useCallback((newRole) => {
     if (newRole === 'customer' && !isClientPortalEnabled()) {
@@ -75,16 +61,6 @@ export const AuthProvider = ({ children }) => {
     if (targetUser) {
       setUser(targetUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(targetUser));
-
-      // Auto-fetch real backend JWT in background matching the switched role
-      authApi.login(targetEmail, 'password123')
-        .then((res) => {
-          if (res?.token) {
-            localStorage.setItem(AUTH_TOKEN_KEY, res.token);
-          }
-        })
-        .catch(() => {});
-
       return targetUser;
     }
   }, []);
