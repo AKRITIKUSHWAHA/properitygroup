@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { NJS_LOGO_BASE64 } from './njsLogoBase64';
 
 /**
  * NJS Property Group - Client-Side Real PDF Generator Utility
@@ -11,71 +12,77 @@ import { jsPDF } from 'jspdf';
 // Helper to draw standard NJS Property Group header on any document
 const drawNJSHeader = (doc, title, subtitle) => {
   // Top primary banner
+  const bannerHeight = 26;
   doc.setFillColor(11, 31, 77); // #0B1F4D (Navy)
-  doc.rect(0, 0, 210, 24, 'F');
+  doc.rect(0, 0, 210, bannerHeight, 'F');
 
   // Gold accent line
   doc.setFillColor(197, 160, 89); // Gold #C5A059
-  doc.rect(0, 24, 210, 1.5, 'F');
+  doc.rect(0, bannerHeight, 210, 1.5, 'F');
 
-  // NJS Brand Roof & Chimney Icon
-  doc.setFillColor(197, 160, 89); // Gold chimney
-  doc.rect(18.5, 6, 1.8, 5, 'F');
-  doc.setDrawColor(255, 255, 255);
-  doc.setLineWidth(0.9);
-  doc.line(13, 14, 20.5, 7); // Left roof
-  doc.line(20.5, 7, 28, 14); // Right roof
+  // Official NJS Brand Logo (white emblem on navy banner)
+  // Aspect ratio is 380 / 222 = 1.71
+  const logoH = 20;
+  const logoW = logoH * 1.71; // 34.2mm
+  try {
+    if (NJS_LOGO_BASE64) {
+      doc.addImage(NJS_LOGO_BASE64, 'PNG', 14, 3, logoW, logoH);
+    }
+  } catch (err) {
+    console.warn('PDF logo render fallback:', err);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(255, 255, 255);
+    doc.text('NJS PROPERTY GROUP', 15, 15);
+  }
 
-  // Company Brand text
-  doc.setTextColor(255, 255, 255);
+  // Header Right Side: Credentials & Direct Contact
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13.5);
-  doc.text('NJS PROPERTY GROUP', 32, 13);
+  doc.setFontSize(8.5);
+  doc.setTextColor(255, 255, 255);
+  doc.text('njspropertygroup.com', 195, 9.5, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(210, 220, 240);
-  doc.text('RICS Regulated Practice • Reg No: 849201', 32, 19);
+  doc.text('RICS Regulated Practice • Reg No: 849201', 195, 14.5, { align: 'right' });
+  doc.text('Direct: 0333 305 2777 | info@njspropertygroup.com', 195, 19.5, { align: 'right' });
+  doc.text('Chartered Surveyors • Expert Witness Specialists', 195, 24, { align: 'right' });
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text('njspropertygroup.com', 195, 13, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.text('Tel: 0333 305 2777', 195, 19, { align: 'right' });
-
-  // Document Title
+  // Document Title (Dynamic Font Sizing to ensure 0 clipping on right margin)
   doc.setTextColor(11, 31, 77);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(title, 15, 36);
+
+  const titleText = (title || '').toUpperCase();
+  const titleFontSize = titleText.length > 50 ? 12 : titleText.length > 36 ? 13.5 : 15;
+  doc.setFontSize(titleFontSize);
+  doc.text(titleText, 15, 36.5);
 
   if (subtitle) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(100, 116, 139);
-    doc.text(subtitle, 15, 42);
+    doc.text(subtitle, 15, 42.5);
   }
 
-  // Thin separator
+  // Thin separator rule
   doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.5);
-  doc.line(15, 46, 195, 46);
+  doc.setLineWidth(0.4);
+  doc.line(15, 46.5, 195, 46.5);
 };
 
 // Helper to draw standard footer
 const drawNJSFooter = (doc, pageNum = 1, totalPages = 1) => {
   const y = 285;
   doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.4);
   doc.line(15, y, 195, y);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(148, 163, 184);
-  doc.text('NJS Property Group Ltd • Registered in England & Wales • Reg Office: Belmont House, Uxbridge, UB8 1QS', 15, y + 5);
-  doc.text(`Page ${pageNum} of ${totalPages}`, 195, y + 5, { align: 'right' });
+  doc.text('NJS Property Group Ltd • Registered in England & Wales • Reg Office: Belmont House, Uxbridge, UB8 1QS', 15, y + 4.5);
+  doc.text(`Page ${pageNum} of ${totalPages}`, 195, y + 4.5, { align: 'right' });
 };
 
 /**
@@ -110,7 +117,25 @@ export const downloadTermsPDF = ({
 
   drawNJSHeader(doc, docTitle, `Instruction Ref: ${jobNo} • Legally Binding Contract`);
 
-  // Instruction Summary Box (Expanded height for EW)
+  // Sanitize date and time cleanly to prevent duplicate '16:16 at 16:16'
+  let cleanDate = '';
+  let cleanTime = '';
+  if (signedDate && typeof signedDate === 'string' && signedDate.includes(',')) {
+    const parts = signedDate.split(',');
+    cleanDate = parts[0].trim();
+    cleanTime = (parts[1] || '').trim();
+  } else {
+    cleanDate = signedDate || new Date().toLocaleDateString('en-GB');
+  }
+  if (!cleanTime && signedTime) {
+    cleanTime = signedTime.trim();
+  } else if (!cleanTime) {
+    cleanTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+  const executionDisplay = cleanTime ? `${cleanDate} at ${cleanTime}` : cleanDate;
+  const signingTimestampDisplay = `${cleanDate}, ${cleanTime} UTC`;
+
+  // Instruction Summary Box (Expanded height for EW or long addresses)
   const boxHeight = isEW ? 44 : 36;
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
@@ -125,25 +150,29 @@ export const downloadTermsPDF = ({
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
 
+  // Left Column
   doc.text(`Instructing Party:`, 20, 63);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(clientName, 55, 63);
+  doc.text(clientName, 52, 63);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text(`Subject Property:`, 20, 70);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(property, 55, 70);
+  // Auto-wrap property address so it never overlaps right column
+  const propertyLines = doc.splitTextToSize(property || 'Property to be inspected', 65);
+  doc.text(propertyLines, 52, 70);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text(`Service Ordered:`, 20, 77);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(11, 31, 77);
-  doc.text(surveyType, 55, 77);
+  doc.text(surveyType, 52, 77);
 
+  // Right Column
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text(`Agreed Fee:`, 120, 63);
@@ -154,7 +183,9 @@ export const downloadTermsPDF = ({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text(`Execution Date:`, 120, 70);
-  doc.text(`${signedDate} at ${signedTime}`, 145, 70);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text(executionDisplay, 145, 70);
 
   if (isEW) {
     doc.setFont('helvetica', 'normal');
@@ -162,7 +193,7 @@ export const downloadTermsPDF = ({
     doc.text(`Solicitor / Claim:`, 20, 84);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(146, 64, 14); // Amber-800
-    doc.text(`${instructingSolicitor || 'Herbert Smith Freehills LLP'} • ${courtClaimNumber || 'Claim No. F00CL891'}`, 55, 84);
+    doc.text(`${instructingSolicitor || 'Herbert Smith Freehills LLP'} • ${courtClaimNumber || 'Claim No. F00CL891'}`, 52, 84);
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(71, 85, 105);
@@ -170,6 +201,13 @@ export const downloadTermsPDF = ({
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(11, 31, 77);
     doc.text(`£${hourlyRate}/hr • £${courtDailyFee}/day`, 145, 77);
+  } else {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Survey Practice:`, 120, 77);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(11, 31, 77);
+    doc.text('NJS Property Group Ltd', 145, 77);
   }
 
   // Contract Terms Clauses (Dynamically Tailored to Service)
@@ -371,7 +409,7 @@ export const downloadTermsPDF = ({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
   doc.text('Signing Timestamp:', 20, curY + 34);
-  doc.text(`${signedDate} ${signedTime} UTC`, 65, curY + 34);
+  doc.text(signingTimestampDisplay, 65, curY + 34);
 
   doc.text('Audit Verification Hash:', 20, curY + 41);
   doc.setFont('courier', 'normal');
@@ -437,7 +475,8 @@ export const downloadInvoicePDF = ({
   doc.text(clientName, 45, 57);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text(property, 45, 63);
+  const invProp = doc.splitTextToSize(property || 'Property address', 70);
+  doc.text(invProp, 45, 63);
 
   doc.setTextColor(71, 85, 105);
   doc.text('Invoice Date:', 125, 57);
@@ -623,7 +662,8 @@ export const downloadReportPDF = ({
   doc.text('Property Address:', 20, 63);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(property, 55, 63);
+  const repProp = doc.splitTextToSize(property || 'Property address', 65);
+  doc.text(repProp, 55, 63);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
