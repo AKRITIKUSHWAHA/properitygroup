@@ -176,8 +176,13 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
             company: 'NJS Property Group',
           };
         }
-        setUser(matchedCustomer);
+        if (setUser) {
+          setUser(matchedCustomer);
+        }
         localStorage.setItem('property_group_user_session', JSON.stringify(matchedCustomer));
+        navigate('/customer/my-dashboard', { replace: true });
+        return;
+      } else if (user && user.email?.toLowerCase().trim() === cleanEmail && user.role === 'customer') {
         navigate('/customer/my-dashboard', { replace: true });
         return;
       }
