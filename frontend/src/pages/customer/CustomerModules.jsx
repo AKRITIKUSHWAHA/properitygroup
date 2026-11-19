@@ -1258,6 +1258,15 @@ export const CustomerQuotationsPage = () => {
 
   // Sync with live quote updates across tabs & local storage
   useEffect(() => {
+    // Clean up any stale dummy fallback quotes from localStorage
+    try {
+      const rawQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      if (Array.isArray(rawQuotes) && rawQuotes.some((q) => q.id === 'QUO-2026-880')) {
+        const cleaned = rawQuotes.filter((q) => q.id !== 'QUO-2026-880');
+        localStorage.setItem('propertygroup_quotes', JSON.stringify(cleaned));
+      }
+    } catch {}
+
     const handleSync = () => setRefreshKey((k) => k + 1);
     window.addEventListener('propertygroup_quotes_updated', handleSync);
     window.addEventListener('propertygroup_jobs_updated', handleSync);
@@ -1342,6 +1351,7 @@ export const CustomerQuotationsPage = () => {
 
   // 1. Collect standalone quotes from quotes store for this customer
   const userStoredQuotes = effectiveStoredQuotes.filter((q) => {
+    if (q.id === 'QUO-2026-880') return false; // Ignore legacy dummy fallback
     const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
     const qName = (q.client || q.customer || '').toLowerCase().trim();
     const matchesEmail = userEmail && (qEmail === userEmail || qEmail.includes(userEmail) || userEmail.includes(qEmail));
@@ -1401,7 +1411,7 @@ export const CustomerQuotationsPage = () => {
       const isAccepted = l.quoteAccepted || l.status === 'Converted';
 
       return {
-        id: l.quoteRef || `QUO-${(l.id || '').replace(/[^0-9]/g, '') || '2026-880'}`,
+        id: l.quoteRef || `QUO-${(l.id || '').replace(/[^0-9]/g, '') || '2026-328'}`,
         jobId: l.id,
         property: `${l.property || ''}${l.location ? `, ${l.location}` : ''}`,
         surveyType: l.enquiry || 'RICS Level 2 Home Survey (Homebuyer)',
@@ -1417,16 +1427,51 @@ export const CustomerQuotationsPage = () => {
       };
     });
 
-  // Final quotes list
-  let quotes = [];
-  if (isDemo) {
-    quotes = jobQuotes;
-  } else {
-    quotes = [...standAloneQuotes, ...leadQuotes, ...jobQuotes];
+  // Combine and deduplicate quotes per unique property instruction
+  const rawCombined = isDemo ? jobQuotes : [...jobQuotes, ...standAloneQuotes, ...leadQuotes];
+
+  const normalizeAddress = (addr) =>
+    (addr || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
+  const deduplicatedQuotes = [];
+  const seenProperties = new Map();
+
+  for (const candidate of rawCombined) {
+    if (candidate.id === 'QUO-2026-880' && rawCombined.length > 1) continue;
+    const key = normalizeAddress(candidate.property);
+    if (!key) {
+      deduplicatedQuotes.push(candidate);
+      continue;
+    }
+
+    if (!seenProperties.has(key)) {
+      seenProperties.set(key, candidate);
+      deduplicatedQuotes.push(candidate);
+    } else {
+      const existing = seenProperties.get(key);
+      const isCandidateBetter =
+        (!existing.isAccepted && candidate.isAccepted) ||
+        (existing.id === 'QUO-2026-880' && candidate.id !== 'QUO-2026-880') ||
+        (existing.id.startsWith('QUO-20266') && !candidate.id.startsWith('QUO-20266')) ||
+        (Boolean(candidate.rawJob) && !existing.rawJob) ||
+        (Boolean(candidate.rawQuote) && !existing.rawQuote);
+
+      if (isCandidateBetter) {
+        const idx = deduplicatedQuotes.indexOf(existing);
+        if (idx !== -1) {
+          deduplicatedQuotes[idx] = candidate;
+        }
+        seenProperties.set(key, candidate);
+      }
+    }
   }
 
+  let quotes = deduplicatedQuotes;
+
   // Fallback: If no quote card resolved yet for this client, extract from registered client profile or lead request
-  if (quotes.length === 0 && !isDemo && (userEmail || userName)) {
+  if (quotes.length === 0 && !isDemo && (userEmail || userName) && leads.length === 0 && effectiveJobs.length === 0) {
     let regCust = null;
     try {
       const regMap = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
