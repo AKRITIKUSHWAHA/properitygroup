@@ -293,6 +293,27 @@ export const CustomerTermsPage = () => {
       return;
     }
 
+    // Call backend API to record execution and trigger Terms Signed confirmation email
+    try {
+      const token = localStorage.getItem('property_group_auth_token');
+      const userEmail = (user?.email || '').toLowerCase().trim();
+      const termNumericId = parseInt(String(currentAgreement?.id || currentJob?.id || '328').replace(/\D/g, ''), 10) || 7;
+      fetch(`/api/v1/customer/terms-to-sign/${termNumericId}/sign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-user-email': userEmail,
+        },
+        body: JSON.stringify({
+          signatureData: signatureType === 'drawn' ? 'Drawn Signature' : typedName,
+          clientName: user?.name || typedName,
+          property: propertyAddress,
+          surveyType: surveyType,
+        }),
+      }).catch((e) => console.warn('Backend terms sign notification error:', e));
+    } catch {}
+
     addToast({
       type: 'success',
       title: 'Agreement Digitally Executed',
@@ -421,6 +442,27 @@ export const CustomerTermsPage = () => {
           return l;
         });
         localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+      } catch {}
+
+      // Call backend API to record payment and trigger VAT receipt / payment confirmation email
+      try {
+        const token = localStorage.getItem('property_group_auth_token');
+        const userEmail = (user?.email || '').toLowerCase().trim();
+        const invoiceNumericId = parseInt(String(currentJob?.id || '328').replace(/\D/g, ''), 10) || 7;
+        fetch(`/api/v1/customer/invoices-and-payments/${invoiceNumericId}/pay`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'x-user-email': userEmail,
+          },
+          body: JSON.stringify({
+            paymentMethod: paymentMethod === 'bacs' ? 'Direct Bank Transfer (Metro Bank BACS)' : 'Online Card (Stripe Gateway)',
+            amount: grossTotal,
+            property: propertyAddress,
+            clientName: user?.name || currentJob?.customer || typedName,
+          }),
+        }).catch((e) => console.warn('Backend payment record error:', e));
       } catch {}
 
       setIsProcessingPayment(false);

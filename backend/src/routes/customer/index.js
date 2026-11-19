@@ -53,6 +53,7 @@ router.use('/terms-to-sign', customerTermsToSignRoutes);
 
 // 8. Invoices & Payments
 router.use('/invoices-and-payments', customerInvoicesAndPaymentsRoutes);
+router.use('/invoices', customerInvoicesAndPaymentsRoutes);
 
 // 9. My Reports
 router.use('/reports', customerReportsRoutes);
