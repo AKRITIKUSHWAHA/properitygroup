@@ -35,6 +35,7 @@ import {
 import { useAuth } from '../auth/AuthContext';
 import { ROLE_NAVIGATION } from '../mock/navigation';
 import { useRolePermissions } from '../mock/permissions';
+import { customerMessagesApi } from '../api/customerApi';
 
 // Icon map for dynamically rendering Lucide icons by string name
 const ICON_MAP = {
@@ -98,20 +99,32 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     let isMounted = true;
-    const checkUnread = () => {
+    const checkUnread = async () => {
       try {
-        const raw = localStorage.getItem('propertygroup_conversations_v1');
-        if (raw) {
-          const convs = JSON.parse(raw);
-          const isAdm = activeRole === 'super_admin' || activeRole === 'admin';
-          let count = 0;
-          convs.forEach((c) => {
-            if (isAdm && c.unreadAdmin > 0) count += c.unreadAdmin;
-            if (!isAdm && c.unreadClient > 0) count += c.unreadClient;
-          });
-          if (isMounted) setUnreadMsgCount(count);
-        }
-      } catch {}
+        const res = await customerMessagesApi.getContacts();
+        const contacts = res?.data?.contacts || res?.contacts || [];
+        let count = 0;
+        contacts.forEach((c) => {
+          if (c.unread || c.unreadCount > 0) {
+            count += c.unreadCount || 1;
+          }
+        });
+        if (isMounted) setUnreadMsgCount(count);
+      } catch (e) {
+        try {
+          const raw = localStorage.getItem('propertygroup_conversations_v1');
+          if (raw && isMounted) {
+            const convs = JSON.parse(raw);
+            const isAdm = activeRole === 'super_admin' || activeRole === 'admin';
+            let count = 0;
+            convs.forEach((c) => {
+              if (isAdm && c.unreadAdmin > 0) count += c.unreadAdmin;
+              if (!isAdm && c.unreadClient > 0) count += c.unreadClient;
+            });
+            setUnreadMsgCount(count);
+          }
+        } catch {}
+      }
     };
 
     checkUnread();
@@ -120,8 +133,15 @@ export const Sidebar = ({ isOpen, onClose }) => {
     window.addEventListener('njs_new_message_notification', handleSync);
     window.addEventListener('propertygroup_conversations_updated', handleSync);
 
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        checkUnread();
+      }
+    }, 20000);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('njs_new_message_notification', handleSync);
       window.removeEventListener('propertygroup_conversations_updated', handleSync);

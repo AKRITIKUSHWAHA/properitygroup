@@ -43,6 +43,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(sessionUser?.email ? { 'x-user-email': sessionUser.email } : {}),
       ...headers,
     },
   };

@@ -215,6 +215,68 @@ export const getNotifications = async (req, res, next) => {
       });
     }
 
+    // Live Unread Messages from Chat Hub - Ensure incoming messages alert the bell instantly
+    try {
+      const userRole = (user.role || 'CUSTOMER').toUpperCase();
+      let unreadMessages = [];
+
+      if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
+        const convId = `conv-user-${user.id}`;
+        unreadMessages = await prisma.message.findMany({
+          where: {
+            OR: [
+              { conversationId: convId },
+              { conversationId: `conv-usr_${user.id}` },
+            ],
+            readByCustomer: false,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        });
+      } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        unreadMessages = await prisma.message.findMany({
+          where: {
+            readByAdmin: false,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        });
+      }
+
+      const existingNotifDescs = new Set(
+        formatted
+          .filter((n) => n.type === 'message')
+          .map((n) => (n.desc || '').trim())
+      );
+
+      for (const msg of unreadMessages) {
+        const cleanContent = (msg.content || '').trim();
+        const snippet = cleanContent.length > 140 ? `${cleanContent.slice(0, 140)}...` : cleanContent;
+        if (!existingNotifDescs.has(cleanContent) && !existingNotifDescs.has(snippet)) {
+          const d = new Date(msg.createdAt);
+          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const msgLink =
+            userRole === 'SURVEYOR'
+              ? '/surveyor/messages'
+              : userRole === 'ADMIN'
+              ? `/admin/messages?conversationId=${msg.conversationId}`
+              : '/customer/messages';
+
+          formatted.unshift({
+            id: `msg-${msg.id}`,
+            title: `💬 New Message from ${msg.senderName || 'Operations Desk'}`,
+            desc: snippet || 'You have an unread message.',
+            time: timeStr,
+            read: false,
+            type: 'message',
+            link: msgLink,
+          });
+        }
+      }
+    } catch (msgErr) {
+      console.warn('Unread messages query in notifications notice:', msgErr.message);
+    }
+
     const unreadCount = formatted.filter((n) => !n.read).length;
 
     return ApiResponse.success(res, {
@@ -233,6 +295,22 @@ export const getNotifications = async (req, res, next) => {
  */
 export const markAsRead = async (req, res, next) => {
   try {
+    const rawId = String(req.params.id);
+
+    if (rawId.startsWith('msg-')) {
+      const msgId = parseInt(rawId.replace('msg-', ''), 10);
+      if (!isNaN(msgId)) {
+        await prisma.message.updateMany({
+          where: { id: msgId },
+          data: {
+            readByCustomer: true,
+            readByAdmin: req.user.role === 'ADMIN',
+          },
+        });
+      }
+      return ApiResponse.success(res, null, 'Message notification marked as read');
+    }
+
     const id = parseInt(req.params.id, 10);
     if (!id || isNaN(id)) {
       throw ApiError.badRequest('Invalid notification ID');
@@ -280,6 +358,28 @@ export const markAllAsRead = async (req, res, next) => {
       },
       data: { read: true },
     });
+
+    try {
+      const userRole = (user.role || 'CUSTOMER').toUpperCase();
+      if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
+        const convId = `conv-user-${user.id}`;
+        await prisma.message.updateMany({
+          where: {
+            OR: [
+              { conversationId: convId },
+              { conversationId: `conv-usr_${user.id}` },
+            ],
+            readByCustomer: false,
+          },
+          data: { readByCustomer: true },
+        });
+      } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
+        await prisma.message.updateMany({
+          where: { readByAdmin: false },
+          data: { readByAdmin: true },
+        });
+      }
+    } catch {}
 
     return ApiResponse.success(res, null, 'All notifications marked as read');
   } catch (error) {

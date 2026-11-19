@@ -398,10 +398,11 @@ export const sendCustomerMessage = async (req, res, next) => {
       const match =
         conversationId.match(/conv-user-(\d+)/) ||
         conversationId.match(/conv-usr_(\d+)/);
-      if (match && match[1]) {
-        const recipientId = parseInt(match[1], 10);
+      const targetRecipientId = req.body.recipientId || (match && match[1] ? parseInt(match[1], 10) : null);
+
+      if (targetRecipientId) {
         recipientUser = await prisma.user.findUnique({
-          where: { id: recipientId },
+          where: { id: parseInt(targetRecipientId, 10) },
           select: { id: true, name: true, email: true, role: true },
         });
       }
@@ -418,12 +419,12 @@ export const sendCustomerMessage = async (req, res, next) => {
         );
 
         // 2. In-App Notification for recipient
-        prisma.notification
-          .create({
+        try {
+          await prisma.notification.create({
             data: {
               userId: recipientUser.id,
               role: recipientUser.role,
-              title: 'New Reply from NJS Operations Desk',
+              title: `💬 New Message from ${req.user.name || 'NJS Operations Desk'}`,
               desc:
                 content.trim().length > 140
                   ? `${content.trim().slice(0, 140)}...`
@@ -434,8 +435,10 @@ export const sendCustomerMessage = async (req, res, next) => {
                   ? '/surveyor/messages'
                   : '/customer/messages',
             },
-          })
-          .catch((err) => console.error('[Notification Recipient] error:', err.message));
+          });
+        } catch (nErr) {
+          console.error('[Notification Recipient] error:', nErr.message);
+        }
       }
     }
 

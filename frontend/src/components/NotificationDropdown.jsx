@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, Loader2, MessageSquare } from 'lucide-react';
 import { apiRequest } from '../api/apiClient';
 import { useAuth } from '../auth/AuthContext';
 
 export const NotificationDropdown = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,9 +26,15 @@ export const NotificationDropdown = () => {
     }
   }, [user?.role]);
 
-  // Fetch notifications on mount & whenever user changes (no background polling loop)
+  // Fetch notifications on mount & periodically when document is visible
   useEffect(() => {
     fetchNotifications();
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchNotifications(true);
+      }
+    }, 20000);
+    return () => clearInterval(interval);
   }, [fetchNotifications, user?.id]);
 
   // Listen for instant message notifications dispatched by AppLayout
@@ -96,14 +104,26 @@ export const NotificationDropdown = () => {
     }
   };
 
-  const markSingle = async (id) => {
+  const markSingle = async (id, link) => {
     try {
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
-      await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+      if (typeof id === 'number') {
+        await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+      } else if (typeof id === 'string' && id.startsWith('msg-')) {
+        await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+      }
+      if (link) {
+        navigate(link);
+        setIsOpen(false);
+      }
     } catch (err) {
       console.error('Error toggling notification read status:', err);
+      if (link) {
+        navigate(link);
+        setIsOpen(false);
+      }
     }
   };
 
@@ -162,14 +182,16 @@ export const NotificationDropdown = () => {
               visibleNotifications.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => markSingle(item.id)}
+                  onClick={() => markSingle(item.id, item.link)}
                   className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer hover:bg-slate-50 ${
                     !item.read ? 'bg-blue-50/60' : 'bg-white'
                   }`}
                 >
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      item.type === 'payment'
+                      item.type === 'message'
+                        ? 'bg-blue-100 text-blue-700'
+                        : item.type === 'payment'
                         ? 'bg-emerald-100 text-emerald-700'
                         : item.type === 'booking'
                         ? 'bg-blue-100 text-blue-700'
@@ -180,11 +202,12 @@ export const NotificationDropdown = () => {
                         : 'bg-slate-100 text-slate-700'
                     }`}
                   >
+                    {item.type === 'message' && <MessageSquare className="w-4 h-4" />}
                     {item.type === 'payment' && <PoundSterling className="w-4 h-4" />}
                     {item.type === 'booking' && <Clock className="w-4 h-4" />}
                     {item.type === 'terms' && <FileText className="w-4 h-4" />}
                     {item.type === 'report' && <FileText className="w-4 h-4" />}
-                    {!['payment', 'booking', 'terms', 'report'].includes(item.type) && (
+                    {!['message', 'payment', 'booking', 'terms', 'report'].includes(item.type) && (
                       <Bell className="w-4 h-4" />
                     )}
                   </div>
