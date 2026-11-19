@@ -113,7 +113,6 @@ export const AdminUsersPage = () => {
       super_admin: 'Admin',
       surveyor: 'Surveyor',
       customer: 'Customer',
-      partner: 'Estate Agent Partner',
     };
 
     setIsSubmitting(true);
@@ -190,7 +189,6 @@ export const AdminUsersPage = () => {
       super_admin: 'Admin',
       surveyor: 'Surveyor',
       customer: 'Customer',
-      partner: 'Estate Agent Partner',
     };
 
     setUsers((prev) =>
@@ -260,7 +258,6 @@ export const AdminUsersPage = () => {
       { id: 'super_admin', label: 'Admins', count: users.filter((u) => u.role === 'super_admin').length },
       { id: 'surveyor', label: 'Surveyors', count: users.filter((u) => u.role === 'surveyor').length },
       { id: 'customer', label: 'Customers', count: users.filter((u) => u.role === 'customer').length },
-      { id: 'partner', label: 'Estate Agents', count: users.filter((u) => u.role === 'partner').length },
     ];
   }, [users]);
 
@@ -584,7 +581,6 @@ export const AdminUsersPage = () => {
                 <option value="super_admin">Admin</option>
                 <option value="surveyor">Surveyor</option>
                 <option value="customer">Customer</option>
-                <option value="partner">Estate Agent / Referral Partner</option>
               </select>
             </div>
 
@@ -745,7 +741,6 @@ export const AdminUsersPage = () => {
                   <option value="super_admin">Admin</option>
                   <option value="surveyor">Surveyor</option>
                   <option value="customer">Customer</option>
-                  <option value="partner">Estate Agent / Referral Partner</option>
                 </select>
               </div>
 

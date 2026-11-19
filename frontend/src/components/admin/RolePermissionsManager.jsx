@@ -100,14 +100,6 @@ const ROLES_LIST = [
     icon: User,
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   },
-  {
-    id: 'partner',
-    name: 'Estate Agent / Partner',
-    badge: 'Referral Partner Portal (Point 29)',
-    description: 'Estate agency branches (Foxtons, Savills, Dexters) submitting buyer survey referrals, tracking milestones, and monitoring £50 BACS commissions.',
-    icon: Handshake,
-    badgeColor: 'bg-amber-100 text-amber-900 border-amber-200',
-  },
 ];
 
 export const RolePermissionsManager = () => {
@@ -122,8 +114,7 @@ export const RolePermissionsManager = () => {
     // Prevent disabling primary dashboard / home landing view
     if (
       menuItem.id === 'dashboard' ||
-      menuItem.id === 'my-dashboard' ||
-      (selectedRole === 'partner' && menuItem.id === 'partner-portal')
+      menuItem.id === 'my-dashboard'
     ) {
       addToast({
         type: 'warning',
@@ -292,8 +283,7 @@ export const RolePermissionsManager = () => {
             const isPermitted = isMenuPermitted(selectedRole, item.id);
             const isCore =
               item.id === 'dashboard' ||
-              item.id === 'my-dashboard' ||
-              (selectedRole === 'partner' && item.id === 'partner-portal');
+              item.id === 'my-dashboard';
             const Icon = ICON_MAP[item.icon] || LayoutDashboard;
             const desc = MENU_DESCRIPTIONS[item.id] || 'Core surveying platform module';
 
