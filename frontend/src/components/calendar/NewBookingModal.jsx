@@ -1,24 +1,121 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Clock, MapPin, User, ShieldCheck, AlertCircle, Building2, Send, Key, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  ShieldCheck,
+  AlertCircle,
+  Building2,
+  Send,
+  Key,
+  AlertTriangle,
+  Sparkles,
+  CheckCircle2,
+  ChevronDown,
+  Search,
+} from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
-import { adminSurveyorsApi } from '../../api/adminApi';
+import { useLeads } from '../../mock/leads';
+import { adminSurveyorsApi, adminCrmAndLeadsApi } from '../../api/adminApi';
 
 export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   const { jobs } = useJobs();
+  const { leads: localLeads } = useLeads();
   const [activeSurveyors, setActiveSurveyors] = useState([]);
+  const [backendLeads, setBackendLeads] = useState([]);
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState('');
+  const [autoFilledNotice, setAutoFilledNotice] = useState(null);
+  const customerDropdownRef = useRef(null);
 
+  // Load live surveyors from backend API
   useEffect(() => {
     adminSurveyorsApi
       .getSurveyors()
       .then((res) => {
-        const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+        const raw =
+          res?.surveyors ||
+          res?.data?.surveyors ||
+          res?.data?.data?.surveyors ||
+          (Array.isArray(res) ? res : []);
         if (Array.isArray(raw) && raw.length > 0) {
           setActiveSurveyors(raw);
         }
       })
       .catch(() => {});
   }, []);
+
+  // Load CRM leads from backend API
+  useEffect(() => {
+    if (!isOpen) return;
+    adminCrmAndLeadsApi
+      .getLeads()
+      .then((res) => {
+        const raw = res?.leads || res?.data?.leads || (Array.isArray(res) ? res : []);
+        if (Array.isArray(raw)) {
+          setBackendLeads(raw);
+        }
+      })
+      .catch((err) => console.warn('Could not load CRM leads for booking modal:', err));
+  }, [isOpen]);
+
+  // Combine and deduplicate leads from Backend API, local storage, and previous jobs
+  const availableLeads = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    const addEntry = (item) => {
+      if (!item) return;
+      const name = (item.clientName || item.customerName || item.customer || '').trim();
+      const email = (item.clientEmail || item.customerEmail || '').trim().toLowerCase();
+      const property = (item.propertyAddress || item.property || '').trim();
+      if (!name && !email && !property) return;
+
+      const key = `${name.toLowerCase()}_${email}_${property.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      const rawService = item.serviceType || item.enquiry || item.surveyType || '';
+      let normalizedService = 'RICS Level 2 Home Survey';
+      const sLower = rawService.toLowerCase();
+      if (sLower.includes('level 3') || sLower.includes('building')) {
+        normalizedService = 'RICS Level 3 Building Survey';
+      } else if (sLower.includes('valuation') || sLower.includes('red book')) {
+        normalizedService = 'Residential Red Book Valuation';
+      } else if (sLower.includes('defect') || sLower.includes('structural') || sLower.includes('damp')) {
+        normalizedService = 'Specific Structural Defect Survey';
+      } else if (sLower.includes('level 2') || sLower.includes('homebuyer')) {
+        if (sLower.includes('valuation')) {
+          normalizedService = 'RICS Level 2 Home Survey (with Valuation)';
+        } else {
+          normalizedService = 'RICS Level 2 Home Survey';
+        }
+      }
+
+      list.push({
+        id: item.reference || item.id || `lead-${list.length + 1}`,
+        reference: item.reference || item.id || '',
+        name: name || 'Private Client',
+        email: item.clientEmail || item.customerEmail || '',
+        phone: item.clientPhone || item.customerPhone || '',
+        property: property || '',
+        location: item.postcode || item.location || '',
+        surveyType: normalizedService,
+        source: item.source || 'Website',
+        status: item.status || 'New',
+        termsSigned: Boolean(item.termsSigned || item.termsStatus === 'Signed'),
+        paymentReceived: Boolean(item.paymentReceived || item.paymentStatus === 'Paid'),
+      });
+    };
+
+    backendLeads.forEach(addEntry);
+    (localLeads || []).forEach(addEntry);
+    (jobs || []).forEach(addEntry);
+
+    return list;
+  }, [backendLeads, localLeads, jobs]);
 
   const surveyorList = useMemo(() => {
     if (activeSurveyors.length > 0) {
@@ -52,10 +149,30 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   });
 
   useEffect(() => {
-    if (surveyorList.length > 0 && (!formData.surveyorId || !surveyorList.some(s => s.id === formData.surveyorId))) {
+    if (surveyorList.length > 0 && (!formData.surveyorId || !surveyorList.some((s) => s.id === formData.surveyorId))) {
       setFormData((prev) => ({ ...prev, surveyorId: surveyorList[0].id }));
     }
   }, [surveyorList]);
+
+  // Click outside to close customer autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Reset modal search state on close
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCustomerDropdownOpen(false);
+      setAutoFilledNotice(null);
+      setSelectedLeadId('');
+    }
+  }, [isOpen]);
 
   const [error, setError] = useState('');
 
@@ -77,6 +194,50 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
+  // Auto-fill full customer information when a lead is chosen
+  const handleSelectLead = (leadOrId) => {
+    const lead =
+      typeof leadOrId === 'object'
+        ? leadOrId
+        : availableLeads.find((l) => l.id === leadOrId || l.reference === leadOrId);
+    if (!lead) return;
+
+    setSelectedLeadId(lead.id);
+    setFormData((prev) => ({
+      ...prev,
+      customer: lead.name,
+      customerEmail: lead.email || prev.customerEmail,
+      customerPhone: lead.phone || prev.customerPhone,
+      property: lead.property || prev.property,
+      location: lead.location || prev.location,
+      surveyType: lead.surveyType || prev.surveyType,
+      termsSigned: lead.termsSigned !== undefined ? lead.termsSigned : prev.termsSigned,
+      paymentReceived: lead.paymentReceived !== undefined ? lead.paymentReceived : prev.paymentReceived,
+    }));
+
+    setIsCustomerDropdownOpen(false);
+    setAutoFilledNotice({
+      name: lead.name,
+      reference: lead.reference || lead.id,
+      property: lead.property,
+    });
+  };
+
+  // Filter leads based on customer input text
+  const filteredLeads = useMemo(() => {
+    const q = (formData.customer || '').toLowerCase().trim();
+    if (!q) return availableLeads;
+    return availableLeads.filter(
+      (l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.email.toLowerCase().includes(q) ||
+        l.phone.toLowerCase().includes(q) ||
+        l.property.toLowerCase().includes(q) ||
+        l.location.toLowerCase().includes(q) ||
+        (l.id && String(l.id).toLowerCase().includes(q))
+    );
+  }, [availableLeads, formData.customer]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -86,7 +247,6 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
       return;
     }
 
-    const selectedSurveyor = SURVEYORS.find((s) => s.id === formData.surveyorId) || SURVEYORS[0];
     const canBook = formData.termsSigned && formData.paymentReceived;
 
     const newJob = {
@@ -158,7 +318,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
           <button
             type="submit"
             form="new-booking-form"
-            className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md shadow-[#0B1F4D]/20 flex items-center gap-1.5 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
             Schedule Booking
@@ -173,21 +333,145 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
         )}
 
-        {/* Client details */}
+        {/* 1. Fast-Fill from Inbound CRM Leads Banner */}
+        {availableLeads.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50/90 to-indigo-50/70 border border-blue-200/90 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#0B1F4D] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-[#0B1F4D] block">
+                  Fast-Fill from Inbound Lead
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Select an enquiry to auto-populate all contact, property &amp; survey particulars
+                </span>
+              </div>
+            </div>
+
+            <select
+              value={selectedLeadId}
+              onChange={(e) => {
+                if (e.target.value) handleSelectLead(e.target.value);
+              }}
+              className="px-3 py-1.5 bg-white border border-blue-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 cursor-pointer shadow-2xs max-w-full sm:max-w-xs"
+            >
+              <option value="">-- Choose from Leads ({availableLeads.length}) --</option>
+              {availableLeads.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name} {l.property ? `• ${l.property.slice(0, 25)}` : ''} ({l.id})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Auto-filled confirmation badge */}
+        {autoFilledNotice && (
+          <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                Auto-populated details for <strong>{autoFilledNotice.name}</strong> ({autoFilledNotice.reference})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAutoFilledNotice(null)}
+              className="text-emerald-700 hover:text-emerald-900 text-[11px] font-bold cursor-pointer underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Client details with Autocomplete Dropdown */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Customer Name *
+          {/* Customer Name + Autocomplete Dropdown */}
+          <div className="relative" ref={customerDropdownRef}>
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+              <span>Customer Name *</span>
+              {availableLeads.length > 0 && (
+                <span className="text-[10px] text-blue-600 font-normal">
+                  {availableLeads.length} leads in CRM
+                </span>
+              )}
             </label>
-            <input
-              type="text"
-              name="customer"
-              required
-              placeholder="e.g. Fiona Campbell"
-              value={formData.customer}
-              onChange={handleChange}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                name="customer"
+                required
+                autoComplete="off"
+                placeholder="e.g. Fiona Campbell"
+                value={formData.customer}
+                onChange={(e) => {
+                  handleChange(e);
+                  setIsCustomerDropdownOpen(true);
+                }}
+                onFocus={() => setIsCustomerDropdownOpen(true)}
+                className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 placeholder:text-xs placeholder:normal-case focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setIsCustomerDropdownOpen((prev) => !prev)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Toggle customer leads list"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Dropdown / Autocomplete Menu */}
+            {isCustomerDropdownOpen && availableLeads.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl border border-slate-200 shadow-xl max-h-60 overflow-y-auto z-50 divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between sticky top-0 border-b border-slate-100">
+                  <span>Available Inbound Leads</span>
+                  <span>{filteredLeads.length} matches</span>
+                </div>
+                {filteredLeads.length === 0 ? (
+                  <div className="p-3 text-center text-xs text-slate-400">
+                    No matching leads found. Continue typing to enter a new client.
+                  </div>
+                ) : (
+                  filteredLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      onClick={() => handleSelectLead(lead)}
+                      className="w-full text-left p-2.5 hover:bg-blue-50/80 transition-colors flex items-start gap-2.5 cursor-pointer group"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-blue-100 text-[#0B1F4D] flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-[#0B1F4D] group-hover:text-white transition-colors">
+                        {lead.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-[#2563EB]">
+                            {lead.name}
+                          </span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
+                            {lead.id}
+                          </span>
+                        </div>
+                        {lead.property && (
+                          <div className="text-[11px] text-slate-600 truncate mt-0.5">
+                            📍 {lead.property}{lead.location ? `, ${lead.location}` : ''}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-slate-400 truncate mt-0.5 flex items-center gap-2">
+                          {lead.email && <span>{lead.email}</span>}
+                          {lead.phone && <span>• {lead.phone}</span>}
+                          {lead.surveyType && (
+                            <span className="text-blue-600 font-medium">• {lead.surveyType}</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
 
           <div>
@@ -304,7 +588,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
         </div>
 
-        {/* Double-Booking Prevention Warning Banner (Client Point 11) */}
+        {/* Double-Booking Prevention Warning Banner */}
         {conflictJob && (
           <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2.5 text-xs text-amber-950 animate-in fade-in">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -317,7 +601,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
         )}
 
-        {/* Access & Keyholder Logistics (Client Point 11) */}
+        {/* Access & Keyholder Logistics */}
         <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-[#0B1F4D]">
             <Key className="w-3.5 h-3.5 text-[#2563EB]" />
@@ -407,11 +691,11 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
           </select>
         </div>
 
-        {/* Terms & Payment Verification Box - Critical requirement */}
+        {/* Terms & Payment Verification Box */}
         <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>RICS Compliance Requirement: Terms & Advance Payment</span>
+            <span>RICS Compliance Requirement: Terms &amp; Advance Payment</span>
           </div>
           <p className="text-[11px] text-amber-800 leading-snug">
             Bookings without executed terms or payment remain <strong>disabled</strong> on the calendar with a "Waiting for terms and payment" indicator.
