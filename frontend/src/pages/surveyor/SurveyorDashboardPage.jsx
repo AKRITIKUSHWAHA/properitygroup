@@ -681,7 +681,7 @@ export const SurveyorDashboardPage = () => {
         isOpen={isSyncModalOpen}
         onClose={() => setIsSyncModalOpen(false)}
         surveyor={user}
-        appointments={allocatedJobs}
+        appointments={myJobs}
       />
     </div>
   );

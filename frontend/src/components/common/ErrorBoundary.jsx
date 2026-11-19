@@ -15,12 +15,29 @@ export class ErrorBoundary extends React.Component {
     console.error('ErrorBoundary caught an unhandled error:', error, errorInfo);
   }
 
+  componentDidUpdate(prevProps) {
+    // Automatically reset error boundary state when switching routes
+    if (this.state.hasError && prevProps.locationKey !== this.props.locationKey) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   handleReload = () => {
     window.location.reload();
   };
 
+  getDashboardLink = () => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/surveyor')) return '/surveyor/my-calendar';
+      if (path.startsWith('/admin') || path.startsWith('/staff')) return '/admin/dashboard';
+    }
+    return '/';
+  };
+
   render() {
     if (this.state.hasError) {
+      const dashboardLink = this.getDashboardLink();
       return (
         <div className="min-h-[60vh] flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200/90 shadow-xl text-center space-y-4">
@@ -43,7 +60,7 @@ export class ErrorBoundary extends React.Component {
                 <span>Reload Page</span>
               </button>
               <a
-                href="/customer/my-dashboard"
+                href={dashboardLink}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />

@@ -25,8 +25,14 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman) or matching whitelist
-      if (!origin || env.CLIENT_URL.includes(origin) || process.env.NODE_ENV === 'development') {
+      // Allow requests with no origin (like mobile apps, curl, postman) or matching whitelist / live domains
+      if (
+        !origin ||
+        env.CLIENT_URL.includes(origin) ||
+        origin.includes('njspropertygroup.com') ||
+        origin.includes('railway.app') ||
+        process.env.NODE_ENV === 'development'
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Blocked by CORS security policy'));
@@ -34,7 +40,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'X-User-Email', 'x-user-role', 'x-user-email'],
   })
 );
 
