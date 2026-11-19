@@ -3292,21 +3292,15 @@ export const CustomerMessagesPage = () => {
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   const getEffectiveUserId = () => {
-    if (!user) return 25;
-    if (user.email === 'testak89193@gmail.com') return 28;
-    if (user.email === 'customer@demo.com') return 25;
-    if (user.email === 'customer2@demo.com') return 26;
-    if (user.email === 'surveyor@demo.com' || user.email === 'david@njspropertygroup.com') return 22;
-    if (user.email === 'oliver@njspropertygroup.com' || user.email === 'oliver@demo.com') return 23;
-    if (user.email === 'njsadmin@gmail.com') return 29;
-    if (user.email === 'njssurveyor@gmail.com') return 30;
-    if (user.email === 'admin@demo.com') return 20;
+    if (!user) return null;
+    if (typeof user.id === 'number') return user.id;
     const digits = String(user.id || '').replace(/\D/g, '');
-    return digits ? parseInt(digits, 10) : user.id;
+    if (digits) return parseInt(digits, 10);
+    return user.id;
   };
 
   const effectiveUserId = getEffectiveUserId();
-  const myConvId = `conv-user-${effectiveUserId}`;
+  const myConvId = effectiveUserId ? `conv-user-${effectiveUserId}` : 'conv-user-me';
   const defaultConvId = (isCustomer || isSurveyor) ? myConvId : null;
 
   const customerAdminContact = {
@@ -3419,8 +3413,13 @@ export const CustomerMessagesPage = () => {
             } else {
               if (urlConvId && serverContacts.some((c) => c.id === urlConvId)) {
                 setActiveChannelId(urlConvId);
-              } else if (!serverContacts.some((c) => c.id === activeChannelId)) {
-                setActiveChannelId(serverContacts[0].id);
+              } else {
+                setActiveChannelId((currentActive) => {
+                  if (currentActive && serverContacts.some((c) => c.id === currentActive)) {
+                    return currentActive; // Keep the admin's currently selected contact thread!
+                  }
+                  return serverContacts[0].id;
+                });
               }
             }
           } else {
@@ -3462,7 +3461,7 @@ export const CustomerMessagesPage = () => {
 
   // Fetch remote messages for active channel from Database with strict isolation & live polling
   useEffect(() => {
-    const targetChannel = isCustomer || isSurveyor ? myConvId : activeChannelId;
+    const targetChannel = isCustomer || isSurveyor ? (people[0]?.id || myConvId) : activeChannelId;
     if (!targetChannel) return;
     let isMounted = true;
     const fetchMsgs = () => {
@@ -3505,7 +3504,7 @@ export const CustomerMessagesPage = () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [activeChannelId, isCustomer, isSurveyor, myConvId]);
+  }, [activeChannelId, isCustomer, isSurveyor, myConvId, people]);
 
   // Find active contact or default to first contact
   const activeContact =
@@ -3515,7 +3514,7 @@ export const CustomerMessagesPage = () => {
       ? (people[0] || surveyorAdminContact)
       : (people.find((c) => c.id === activeChannelId) || people[0] || null);
 
-  const activeId = isCustomer || isSurveyor ? myConvId : activeChannelId;
+  const activeId = isCustomer || isSurveyor ? (people[0]?.id || myConvId) : activeChannelId;
   const currentMessages = (activeId && threadsMap[activeId]) || [];
 
   const displayMessages =
@@ -3558,7 +3557,7 @@ export const CustomerMessagesPage = () => {
     });
     const nowIso = new Date().toISOString();
 
-    const targetId = isCustomer || isSurveyor ? myConvId : activeChannelId;
+    const targetId = isCustomer || isSurveyor ? (people[0]?.id || myConvId) : activeChannelId;
     const senderRole = isCustomer ? 'customer' : isSurveyor ? 'surveyor' : 'admin';
 
     const newMsg = {
@@ -3618,11 +3617,6 @@ export const CustomerMessagesPage = () => {
           } catch {}
         })
         .catch((err) => console.warn('Message API send failed:', err));
-
-      // 4. Cross-tab legacy sync fallback
-      try {
-        sendMessage(activeContact.id, textToSend, user?.name || 'Client', senderRole, false);
-      } catch {}
 
       addToast({
         type: 'success',

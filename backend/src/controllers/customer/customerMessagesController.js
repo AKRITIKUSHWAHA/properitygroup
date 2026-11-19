@@ -269,30 +269,47 @@ export const getCustomerMessages = async (req, res, next) => {
     const targetConvId = req.query.conversationId;
 
     let conversationId;
+    let whereCondition;
 
     if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
       // Customer and Surveyor are locked strictly to their own conversation thread with Admin!
       // Absolute privacy - never accesses anyone else's messages
       conversationId = `conv-user-${userId}`;
+      whereCondition = {
+        OR: [
+          { conversationId: `conv-user-${userId}` },
+          { conversationId: `conv-usr_${userId}` },
+        ],
+      };
     } else if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') {
       // Admin views whichever contact thread is selected
       conversationId = targetConvId;
-      if (!conversationId) {
+      if (conversationId) {
+        const altId = conversationId.startsWith('conv-user-')
+          ? conversationId.replace('conv-user-', 'conv-usr_')
+          : conversationId.replace('conv-usr_', 'conv-user-');
+        whereCondition = {
+          OR: [
+            { conversationId },
+            { conversationId: altId },
+          ],
+        };
+      } else {
         // Default to the first customer or surveyor's conversation
         const latestMsg = await prisma.message.findFirst({
           where: { conversationId: { startsWith: 'conv-user-' } },
           orderBy: { createdAt: 'desc' },
         });
-        conversationId = latestMsg ? latestMsg.conversationId : 'conv-user-25';
+        conversationId = latestMsg ? latestMsg.conversationId : 'conv-user-20';
+        whereCondition = { conversationId };
       }
     } else {
       conversationId = `conv-user-${userId}`;
+      whereCondition = { conversationId };
     }
 
     const messages = await prisma.message.findMany({
-      where: {
-        conversationId,
-      },
+      where: whereCondition,
       orderBy: { createdAt: 'asc' },
     });
 
