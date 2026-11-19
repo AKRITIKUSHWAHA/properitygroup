@@ -74,17 +74,10 @@ export const AppLayout = () => {
       } catch {}
     };
 
-    // Initial check
+    // Initial check on mount
     checkIncomingMessages();
 
-    // Calm 30-second poll for background message notifications (synced instantaneously via BroadcastChannel)
-    const interval = setInterval(() => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        checkIncomingMessages();
-      }
-    }, 30000);
-
-    // Cross-tab broadcast channel for instantaneous 0-delay sync
+    // Cross-tab broadcast channel for instantaneous 0-delay sync (event-driven, no polling)
     let bc = null;
     try {
       bc = new BroadcastChannel('njs_chat_sync');
@@ -104,7 +97,6 @@ export const AppLayout = () => {
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
     };

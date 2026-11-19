@@ -66,14 +66,9 @@ export const NotificationDropdown = () => {
     }
   }, [user?.role]);
 
-  // Initial fetch on mount & whenever user changes
+  // Fetch notifications on mount & whenever user changes (no background polling loop)
   useEffect(() => {
     fetchNotifications();
-    // Auto-poll every 10 seconds for live updates
-    const interval = setInterval(() => {
-      fetchNotifications(true);
-    }, 10000);
-    return () => clearInterval(interval);
   }, [fetchNotifications, user?.id]);
 
   // Listen for instant message notifications dispatched by AppLayout

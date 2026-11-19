@@ -136,7 +136,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
     };
 
     checkUnread();
-    const interval = setInterval(checkUnread, 30000);
     const handleSync = () => checkUnread();
     window.addEventListener('storage', handleSync);
     window.addEventListener('njs_new_message_notification', handleSync);
@@ -144,7 +143,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
       window.removeEventListener('storage', handleSync);
       window.removeEventListener('njs_new_message_notification', handleSync);
       window.removeEventListener('propertygroup_conversations_updated', handleSync);
