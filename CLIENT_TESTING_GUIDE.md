@@ -11,6 +11,47 @@ This document is your **step-by-step testing manual**. Whether you are evaluatin
 
 ---
 
+## 🔐 Important: How Login Works & Login Experience Choices (Your Opinion Requested)
+
+### 1. How Testing Logins Work Right Now (Dedicated Role URLs)
+For structured testing and evaluation, the system currently provides **role-specific login endpoints** so you can easily test different perspectives without session conflicts:
+
+* **Customer / Client Login:** Navigate to `/login` or `/customer/login` (or `/login/customer`)  
+  *Directly opens the Customer Portal theme and redirects to `/customer/my-dashboard` upon authentication.*
+* **Super Admin Login:** Navigate to `/admin/login` (or `/login/admin`)  
+  *Directly opens the Admin Command Desk theme and redirects to `/admin/dashboard`.*
+* **Admin Staff Login:** Navigate to `/staff-login` or `/admin/login`  
+  *Directly authenticates practice booking coordinators into `/staff/dashboard`.*
+* **Surveyor Field Login:** Navigate to `/surveyor/login` (or `/login/surveyor`)  
+  *Directly opens the Surveyor theme and redirects to the surveyor diary at `/surveyor/my-calendar`.*
+* **Partner Portal:** Navigate to `/partners` (or `/partner/dashboard`)  
+  *Estate agent & referral commission workspace.*
+
+> 💡 **Testing Shortcut:** On any `/login` page during local/staging testing, you will find one-click role demo pills (`Super Admin`, `Staff`, `Surveyor`, `Customer`) that pre-fill credentials for instantaneous testing!
+
+---
+
+### 💬 Client Design Decision: How Would You Prefer the Final Login Experience?
+We would love to hear **your preference** on how you would like the live production login architecture configured for your brand:
+
+> #### 🌟 Option A: Universal Single Login Page (`/login`) — *Highly Recommended for Simple Client UX*
+> * **How it works:** All users (Homebuyers, Practice Admins, Coordinators, and Chartered Surveyors) visit **one simple, elegant URL:** `/login`.
+> * They enter their email and password.
+> * The system automatically detects their account type in the database and instantly sends them to their dedicated dashboard:
+>   - Customer $\rightarrow$ `/customer/my-dashboard`
+>   - Admin $\rightarrow$ `/admin/dashboard`
+>   - Staff $\rightarrow$ `/staff/dashboard`
+>   - Surveyor $\rightarrow$ `/surveyor/my-calendar`
+> * **Advantage:** Maximum convenience. Customers and staff never have to remember special URLs or portal prefixes.
+
+> #### 🏢 Option B: Dedicated Role URLs / Separate Branded Portals (Current Setup)
+> * **How it works:** Separate entry points for clients (`/customer/login` or `portal.njspropertygroup.com`) and internal team (`/admin/login` and `/surveyor/login`).
+> * **Advantage:** Visual separation between public consumer users and internal surveying practitioners.
+
+👉 **Please share your feedback:** After testing, please let us know whether you prefer **Option A (Universal Login)** or **Option B (Separate Portals)**, and we will tailor the production environment accordingly!
+
+---
+
 ## 🗺️ System Architecture & Portals at a Glance
 
 The platform is divided into **5 dedicated portals**:
