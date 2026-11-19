@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
 import {
   Search,
@@ -41,7 +42,7 @@ import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { LEAD_SOURCES, LEAD_STATUSES, useLeads, formatLeadReference } from '../../mock/leads';
 import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
 
-// 3-Dot Clean Action Dropdown Menu for each Lead
+// Direct Action Buttons + Portal-based Dropdown Menu for each Lead
 const LeadRowActions = ({
   lead,
   onView,
@@ -53,183 +54,295 @@ const LeadRowActions = ({
   onDelete,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: null, bottom: null, left: null });
+  const buttonRef = useRef(null);
   const menuRef = useRef(null);
 
-  const isQuoted = lead.status.toLowerCase() === 'quoted';
-  const isConverted = lead.status.toLowerCase() === 'converted';
+  const statusLower = (lead?.status || '').toLowerCase();
+  const isQuoted = statusLower === 'quoted';
+  const isConverted = statusLower === 'converted';
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuWidth = 240;
+      const menuHeight = 350;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUpward = spaceBelow < menuHeight && spaceAbove >= menuHeight;
+
+      let top = null;
+      let bottom = null;
+      if (openUpward) {
+        bottom = Math.max(8, Math.round(window.innerHeight - rect.top + 6));
+      } else {
+        top = Math.max(8, Math.round(rect.bottom + 6));
+      }
+
+      const left = Math.max(
+        12,
+        Math.min(Math.round(rect.right - menuWidth), window.innerWidth - menuWidth - 12)
+      );
+
+      setCoords({ top, bottom, left });
+      setIsOpen(true);
+    }
+  };
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
+
+    const handleResizeOrScroll = () => {
+      setIsOpen(false);
+    };
+
+    const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', handleResizeOrScroll);
+      window.addEventListener('scroll', handleResizeOrScroll, true);
+    }, 40);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResizeOrScroll);
+      window.removeEventListener('scroll', handleResizeOrScroll, true);
+    };
   }, [isOpen]);
 
   return (
-    <div className="relative inline-block text-left" ref={menuRef}>
+    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+      {/* 1. Direct Quick Action Button (Prominent right in the row) */}
+      {!isQuoted && !isConverted && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onQuote(lead);
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0B1F4D] hover:bg-[#1E3A8A] text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+          title="Send Fee Proposal to Customer"
+        >
+          <Send className="w-3.5 h-3.5 text-blue-300" />
+          <span>Send Quote</span>
+        </button>
+      )}
+
+      {isQuoted && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onConvert(lead.id);
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer"
+          title="Mark Quote as Accepted & Convert to Confirmed Job"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+          <span>Convert Deal</span>
+        </button>
+      )}
+
+      {isConverted && (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Won Job</span>
+        </span>
+      )}
+
+      {/* 2. 3-Dot More Actions Button */}
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsOpen((prev) => !prev);
-        }}
-        className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[#0B1F4D] hover:bg-slate-100 transition-colors cursor-pointer"
-        title="Lead actions"
-        aria-label="Lead actions"
+        onClick={handleToggle}
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all cursor-pointer select-none ${
+          isOpen
+            ? 'bg-blue-100 text-[#0B1F4D] ring-2 ring-blue-500 shadow-xs'
+            : 'text-slate-500 hover:text-[#0B1F4D] hover:bg-slate-100 border border-slate-200/90 bg-white shadow-2xs'
+        }`}
+        title="More actions"
+        aria-label="More actions"
       >
-        <MoreVertical className="w-4 h-4" />
+        <MoreVertical className="w-4 h-4 pointer-events-none" />
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-          {/* Primary Action Based on State */}
-          {!isQuoted && !isConverted && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  if (onAutoQuote) onAutoQuote(lead);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-950 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>⚡ Auto-Dispatch Quote Email</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  onQuote(lead);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-50/70 transition-colors cursor-pointer text-left"
-              >
-                <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Custom Fee Quote &amp; Terms</span>
-              </button>
-            </>
-          )}
-
-          {isQuoted && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  onConvert(lead.id);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Convert to Won Job</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  if (onAutoQuote) onAutoQuote(lead);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
-              >
-                <Send className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Resend Quote Email</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsOpen(false);
-                  onQuote(lead);
-                }}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
-              >
-                <PoundSterling className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>Adjust Quote Pricing</span>
-              </button>
-            </>
-          )}
-
-          {/* View Details */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onView(lead);
+      {/* 3. Portal Dropdown (Renders to body, completely immune to table overflow/clipping) */}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              top: coords.top !== null ? `${coords.top}px` : 'auto',
+              bottom: coords.bottom !== null ? `${coords.bottom}px` : 'auto',
+              left: `${coords.left}px`,
+              width: '240px',
+              zIndex: 999999,
+              maxHeight: 'calc(100vh - 20px)',
             }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200 py-1.5 animate-in fade-in zoom-in-95 duration-100 text-left overflow-y-auto"
           >
-            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span>View Full Details</span>
-          </button>
+            {/* Primary Action Based on State */}
+            {!isQuoted && !isConverted && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    if (onAutoQuote) onAutoQuote(lead);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-blue-950 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+                >
+                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>⚡ Auto-Dispatch Quote Email</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onQuote(lead);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-50/70 transition-colors cursor-pointer text-left"
+                >
+                  <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>Custom Fee Quote &amp; Terms</span>
+                </button>
+              </>
+            )}
 
-          {/* Client Profile with Call Notes & Complaints */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onClientProfile(lead.customerEmail, 'calls');
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
-          >
-            <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
-            <span>Call Notes &amp; Complaints</span>
-          </button>
+            {isQuoted && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onConvert(lead.id);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Convert to Won Job</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    if (onAutoQuote) onAutoQuote(lead);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-50 transition-colors cursor-pointer text-left"
+                >
+                  <Send className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Resend Quote Email</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onQuote(lead);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <PoundSterling className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>Adjust Quote Pricing</span>
+                </button>
+              </>
+            )}
 
-          <div className="h-px bg-slate-100 my-1" />
-
-          {/* Quick Status Submenu */}
-          <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            Update Status
-          </div>
-          {['New', 'Quoted', 'Converted', 'Lost'].map((st) => (
+            {/* View Details */}
             <button
-              key={st}
               type="button"
-              disabled={lead.status === st}
               onClick={(e) => {
                 e.stopPropagation();
                 setIsOpen(false);
-                onStatusChange(lead.id, st);
+                onView(lead);
               }}
-              className={`w-full flex items-center justify-between px-3.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
-                lead.status === st
-                  ? 'text-slate-400 font-bold bg-slate-50 cursor-default'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
             >
-              <span>{st}</span>
-              {lead.status === st && <CheckCircle2 className="w-3 h-3 text-slate-400" />}
+              <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>View Full Details</span>
             </button>
-          ))}
 
-          <div className="h-px bg-slate-100 my-1" />
+            {/* Client Profile with Call Notes & Complaints */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onClientProfile(lead.customerEmail, 'calls');
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0B1F4D] transition-colors cursor-pointer text-left"
+            >
+              <PhoneCall className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>Call Notes &amp; Complaints</span>
+            </button>
 
-          {/* Delete Lead */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(false);
-              onDelete(lead.id);
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-            <span>Delete Lead</span>
-          </button>
-        </div>
-      )}
+            <div className="h-px bg-slate-100 my-1" />
+
+            {/* Quick Status Submenu */}
+            <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Update Status
+            </div>
+            {['New', 'Quoted', 'Converted', 'Lost'].map((st) => (
+              <button
+                key={st}
+                type="button"
+                disabled={lead.status === st}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onStatusChange(lead.id, st);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-1.5 text-xs text-left transition-colors cursor-pointer ${
+                  lead.status === st
+                    ? 'text-slate-400 font-bold bg-slate-50 cursor-default'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <span>{st}</span>
+                {lead.status === st && <CheckCircle2 className="w-3 h-3 text-slate-400" />}
+              </button>
+            ))}
+
+            <div className="h-px bg-slate-100 my-1" />
+
+            {/* Delete Lead */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onDelete(lead.id);
+              }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>Delete Lead</span>
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
@@ -825,7 +938,7 @@ export const AdminLeadsPage = () => {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[280px]">
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                   <tr>
@@ -926,7 +1039,7 @@ export const AdminLeadsPage = () => {
                         )}
                       </div>
                     </th>
-                    <th className="py-3 px-4 sm:px-5 text-right whitespace-nowrap">Actions</th>
+                    <th className="py-3 px-4 sm:px-5 text-right whitespace-nowrap min-w-[180px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
