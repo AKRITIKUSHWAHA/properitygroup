@@ -1,10 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, MapPin, User, ShieldCheck, AlertCircle, Building2, Send, Key, AlertTriangle } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
+import { adminSurveyorsApi } from '../../api/adminApi';
 
 export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   const { jobs } = useJobs();
+  const [activeSurveyors, setActiveSurveyors] = useState([]);
+
+  useEffect(() => {
+    adminSurveyorsApi
+      .getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+        if (Array.isArray(raw) && raw.length > 0) {
+          setActiveSurveyors(raw);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const surveyorList = useMemo(() => {
+    if (activeSurveyors.length > 0) {
+      return activeSurveyors.map((s) => ({
+        id: `srv-${s.id}`,
+        dbId: s.id,
+        name: s.name,
+        credentials: s.surveyorProfile?.accreditation || 'MRICS Chartered Surveyor',
+        postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
+      }));
+    }
+    return SURVEYORS;
+  }, [activeSurveyors]);
+
   const [formData, setFormData] = useState({
     customer: '',
     customerEmail: '',
@@ -12,7 +40,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     property: '',
     location: '',
     surveyType: 'RICS Level 2 Home Survey',
-    surveyorId: 'srv-1',
+    surveyorId: 'srv-32',
     date: '28/10/2026',
     timeSlot: '10:00 - 13:00',
     accessType: 'Keys with Selling Agent',
@@ -23,10 +51,16 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     paymentReceived: false,
   });
 
+  useEffect(() => {
+    if (surveyorList.length > 0 && (!formData.surveyorId || !surveyorList.some(s => s.id === formData.surveyorId))) {
+      setFormData((prev) => ({ ...prev, surveyorId: surveyorList[0].id }));
+    }
+  }, [surveyorList]);
+
   const [error, setError] = useState('');
 
   // Conflict / Double-Booking Check
-  const selectedSurveyor = SURVEYORS.find((s) => s.id === formData.surveyorId) || SURVEYORS[0];
+  const selectedSurveyor = surveyorList.find((s) => s.id === formData.surveyorId) || surveyorList[0];
   const conflictJob = jobs.find(
     (j) =>
       j.surveyorId === formData.surveyorId &&
@@ -230,7 +264,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
               onChange={handleChange}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] focus:bg-white transition-all"
             >
-              {SURVEYORS.map((s) => (
+              {surveyorList.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.postcodes})
                 </option>

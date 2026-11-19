@@ -106,7 +106,7 @@ export const CustomerDashboardPage = () => {
     setBookForm({ property: '', location: '', surveyType: 'RICS Level 2 Home Survey', preferredDate: '' });
   };
 
-  const handleDownloadReport = (reportName, property = customerJob?.property || '14 Mayfair Gate', surveyor = customerJob?.surveyor || 'David Thorne MRICS') => {
+  const handleDownloadReport = (reportName, property = customerJob?.property || 'Subject Property', surveyor = customerJob?.surveyor || 'Assigned Chartered Surveyor') => {
     downloadReportPDF({
       jobNo: customerJob?.id || 'JOB-2026-080',
       clientName: user?.name || customerJob?.customer || 'Client',
@@ -189,7 +189,7 @@ export const CustomerDashboardPage = () => {
     property: `${j?.property || 'Property'}${j?.location ? `, ${j.location}` : ''}`,
     date: j?.date || '27/10/2026',
     size: '14.2 MB',
-    surveyor: j?.surveyor || 'David Thorne MRICS',
+    surveyor: j?.surveyor || 'Assigned Chartered Surveyor',
     status: 'Certified Copy',
   }));
 
@@ -403,7 +403,7 @@ export const CustomerDashboardPage = () => {
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
-                  Thank you for reviewing {customerJob.surveyor || 'David Thorne MRICS'}!
+                  Thank you for reviewing {customerJob.surveyor || 'Assigned Surveyor'}!
                 </h4>
                 <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
                   "{customerJob.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
@@ -433,7 +433,7 @@ export const CustomerDashboardPage = () => {
                   <span className="text-xs text-amber-500 font-bold">★★★★★</span>
                 </div>
                 <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
-                  How was your survey experience with {customerJob.surveyor || 'David Thorne MRICS'}?
+                  How was your survey experience with {customerJob.surveyor || 'Assigned Surveyor'}?
                 </h4>
                 <p className="text-xs text-slate-600 mt-0.5">
                   Your final RICS report for {customerJob.property || 'your property'} has been delivered. Share 30 seconds of verified feedback on Trustpilot.
@@ -500,7 +500,7 @@ export const CustomerDashboardPage = () => {
                 Message NJS Operations Desk
               </h4>
               <p className="text-xs text-slate-500">
-                Direct questions, keyholder notes, or queries for David Thorne MRICS.
+                Direct questions, keyholder notes, or queries for your assigned surveyor.
               </p>
             </div>
           </div>

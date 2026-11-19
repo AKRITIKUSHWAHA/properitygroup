@@ -511,7 +511,7 @@ export const AdminTermsPage = () => {
       signatureType: agreement.signatureType || 'drawn',
       signatureValue: agreement.signatureValue || agreement.client,
       ipAddress: agreement.signerIp ? agreement.signerIp.split(' ')[0] : '86.142.19.45',
-      surveyorName: agreement.surveyorName || 'David Thorne MRICS',
+      surveyorName: agreement.surveyorName || 'Assigned Chartered Surveyor',
       instructingSolicitor: agreement.instructingSolicitor,
       courtClaimNumber: agreement.courtClaimNumber,
       hourlyRate: agreement.hourlyRate || 250.0,
@@ -1109,7 +1109,7 @@ export const AdminTermsPage = () => {
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                 <span className="text-[10px] text-slate-400 font-bold uppercase block mb-0.5">Assigned Surveyor</span>
-                <span className="font-bold text-[#0B1F4D]">{selectedAgreementDetail.surveyorName || 'David Thorne MRICS'}</span>
+                <span className="font-bold text-[#0B1F4D]">{selectedAgreementDetail.surveyorName || 'Assigned Chartered Surveyor'}</span>
               </div>
             </div>
 

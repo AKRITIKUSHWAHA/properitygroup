@@ -762,7 +762,7 @@ export const dispatchPostInspectionUpdate = async (jobOrRecord, customOverrides 
   const surveyorName =
     jobOrRecord.surveyor ||
     jobOrRecord.surveyorName ||
-    'David Thorne MRICS';
+    'Assigned Chartered Surveyor';
   const surveyType =
     jobOrRecord.surveyType ||
     jobOrRecord.enquiry ||
@@ -925,7 +925,7 @@ export const dispatchFinalReportReadyEmail = async (jobOrRecord, customOverrides
   const surveyorName =
     jobOrRecord.surveyor ||
     jobOrRecord.surveyorName ||
-    'David Thorne MRICS';
+    'Assigned Chartered Surveyor';
   const surveyType =
     jobOrRecord.surveyType ||
     jobOrRecord.enquiry ||
@@ -991,7 +991,7 @@ https://www.trustpilot.com/review/njspropertygroup.com
 Thank you for choosing NJS Property Group.
 
 Warm regards,
-David Thorne MRICS & The NJS Property Group Team
+{{surveyor_name}} & The NJS Property Group Team
 Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
 
   const resolvedBody = renderEmailTemplate(

@@ -160,7 +160,7 @@ export const CustomerTermsPage = () => {
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
     : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
   const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || 'RICS Level 2 Home Survey';
-  const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
+  const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
     : 'Pending Scheduling';
@@ -2517,7 +2517,7 @@ export const CustomerReportsPage = () => {
     property: `${j.property}, ${j.location}`,
     date: j.date || '27/10/2026',
     size: '14.2 MB',
-    surveyor: j.surveyor || 'David Thorne MRICS',
+    surveyor: j.surveyor || 'Assigned Chartered Surveyor',
     conditionRating: 'Condition 1 & 2 (Official RICS Traffic-Light Audit)',
   }));
 
@@ -2548,7 +2548,7 @@ export const CustomerReportsPage = () => {
       clientName: 'Sample Client (Anonymised)',
       property: level === 2 ? '14 Mayfair Gate, London W1K' : '24 Kensington Palace Gardens, London W8',
       surveyType: level === 2 ? 'RICS Level 2 Home Survey' : 'RICS Level 3 Building Survey',
-      surveyorName: level === 2 ? 'David Thorne MRICS' : 'Oliver Hughes MRICS',
+      surveyorName: 'NJS Lead Chartered Surveyor',
     });
     addToast({
       type: 'success',
@@ -2627,7 +2627,7 @@ export const CustomerReportsPage = () => {
                 <span>Verified Trustpilot Invitation</span>
               </div>
               <h3 className="text-base font-black text-[#0B1F4D]">
-                Rate Surveyor {reviewPromptJob.surveyor || 'David Thorne MRICS'}
+                Rate Surveyor {reviewPromptJob.surveyor || 'Assigned Surveyor'}
               </h3>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 Your official report for <strong>{reviewPromptJob.property}</strong> has been downloaded. Would you share 30 seconds of feedback on Trustpilot?
@@ -2795,7 +2795,7 @@ export const CustomerTrackSurveyPage = () => {
     : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
 
   const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
-  const surveyorName = myJob?.surveyor || (myJob?.id === 'QUO-2026-126' ? 'David Thorne MRICS' : 'Pending Allocation');
+  const surveyorName = myJob?.surveyor || 'Pending Allocation';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
   const targetEmail = userEmail || 'astp750@gmail.com';
@@ -3062,7 +3062,7 @@ export const CustomerTrackSurveyPage = () => {
                     <span>{hj.property || hj.location}</span>
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    Status: <strong className="text-emerald-700">{hj.status}</strong> &bull; Assigned: {hj.surveyor || 'David Thorne MRICS'}
+                    Status: <strong className="text-emerald-700">{hj.status}</strong> &bull; Assigned: {hj.surveyor || 'Assigned Surveyor'}
                   </div>
                 </div>
 
@@ -3193,15 +3193,42 @@ export const CustomerAppointmentDetailsPage = () => {
 // 8. ASSIGNED SURVEYOR PAGE
 // ==========================================
 export const CustomerAssignedSurveyorPage = () => {
-  useEffect(() => { customerAssignedSurveyorApi.getSurveyor().catch(() => {}); }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
   const { addToast } = useToast();
+  const [assignedSurveyor, setAssignedSurveyor] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    customerAssignedSurveyorApi
+      .getSurveyor()
+      .then((res) => {
+        const s = res?.assignedSurveyor || res?.data?.assignedSurveyor || (res?.name ? res : null);
+        if (s) setAssignedSurveyor(s);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
   const currentJob = myJobs[0] || null;
-  const surveyorName = currentJob?.surveyor || 'David Thorne MRICS';
-  const surveyor = SURVEYORS.find((s) => s.name === surveyorName) || SURVEYORS[0];
+
+  const hasAssigned = Boolean(
+    assignedSurveyor ||
+    (currentJob?.surveyor &&
+      currentJob.surveyor !== 'Pending Allocation' &&
+      currentJob.surveyor !== 'Unallocated')
+  );
+
+  const surveyorName = assignedSurveyor?.name || (hasAssigned ? currentJob?.surveyor : 'Pending Allocation');
+  const surveyor = SURVEYORS.find((s) => s.name === surveyorName) || {
+    name: surveyorName,
+    credentials: assignedSurveyor?.accreditation
+      ? `${assignedSurveyor.accreditation} Chartered Surveyor`
+      : 'RICS Chartered Surveyor',
+    postcodes: assignedSurveyor?.postcodeCoverage || 'London & Home Counties',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+  };
 
   const handleRequestCall = () => {
     addToast({
@@ -3220,58 +3247,73 @@ export const CustomerAssignedSurveyorPage = () => {
       />
 
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-slate-100">
-          <img
-            src={surveyor.avatar}
-            alt={surveyor.name}
-            className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
-          />
-
-          <div className="space-y-1 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                RICS Regulated Member
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Verified Credentials
-              </span>
+        {!hasAssigned ? (
+          <div className="text-center py-10 px-4 space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+              <UserCheck className="w-7 h-7" />
             </div>
-
-            <h3 className="text-xl font-black text-[#0B1F4D]">{surveyor.name}</h3>
-            <p className="text-xs text-slate-500">{surveyor.credentials}</p>
-            <p className="text-xs text-slate-600 pt-1">
-              Experienced RICS specialist covering London postcodes ({surveyor.postcodes}) for period conversions, defect diagnosis, and Red Book valuation.
+            <h3 className="text-lg font-black text-[#0B1F4D]">Surveyor Allocation in Progress</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              Our operations dispatch desk is assigning an accredited local RICS chartered surveyor to your property.
+              As soon as your appointment is locked, their verified RICS credentials, direct contact, and profile will appear here.
             </p>
           </div>
+        ) : (
+          <>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-slate-100">
+              <img
+                src={surveyor.avatar}
+                alt={surveyor.name}
+                className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
+              />
 
-          <button
-            onClick={handleRequestCall}
-            className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
-          >
-            <Phone className="w-4 h-4" />
-            <span>Request Call-Back</span>
-          </button>
-        </div>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    RICS Regulated Member
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                    Verified Credentials
+                  </span>
+                </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs">
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Assigned Inspection</span>
-            <div className="font-bold text-slate-900">{currentJob?.property || '14 Mayfair Gate'}</div>
-            <div className="text-slate-500 font-mono">{currentJob?.surveyType || 'RICS Level 2'}</div>
-          </div>
+                <h3 className="text-xl font-black text-[#0B1F4D]">{surveyor.name}</h3>
+                <p className="text-xs text-slate-500">{surveyor.credentials}</p>
+                <p className="text-xs text-slate-600 pt-1">
+                  Experienced RICS specialist covering London postcodes ({surveyor.postcodes}) for period conversions, defect diagnosis, and Red Book valuation.
+                </p>
+              </div>
 
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Turnaround SLA</span>
-            <div className="font-bold text-slate-900">48h Delivery Window</div>
-            <div className="text-slate-500">Delivered directly to your portal</div>
-          </div>
+              <button
+                onClick={handleRequestCall}
+                className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Request Call-Back</span>
+              </button>
+            </div>
 
-          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
-            <span className="text-[10px] font-bold text-[#2563EB] uppercase">RICS Compliance</span>
-            <div className="font-bold text-[#0B1F4D]">VRS Regulated</div>
-            <div className="text-blue-900 text-[11px]">Strict valuation & safety standards</div>
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-xs">
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Assigned Inspection</span>
+                <div className="font-bold text-slate-900">{currentJob?.property || 'Subject Property'}</div>
+                <div className="text-slate-500 font-mono">{currentJob?.surveyType || 'RICS Level 2'}</div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Turnaround SLA</span>
+                <div className="font-bold text-slate-900">48h Delivery Window</div>
+                <div className="text-slate-500">Delivered directly to your portal</div>
+              </div>
+
+              <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 space-y-1">
+                <span className="text-[10px] font-bold text-[#2563EB] uppercase">RICS Compliance</span>
+                <div className="font-bold text-[#0B1F4D]">VRS Regulated</div>
+                <div className="text-blue-900 text-[11px]">Strict valuation & safety standards</div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -4120,7 +4162,7 @@ export const CustomerReviewPage = () => {
               "{reviewText || completedJob?.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
             </p>
             <div className="text-[10px] text-slate-500 font-medium pt-1 border-t border-slate-200/60">
-              Surveyor: <strong>{completedJob?.surveyor || 'David Thorne MRICS'}</strong> • {completedJob?.surveyType || 'RICS Level 2 Home Survey'}
+              Surveyor: <strong>{completedJob?.surveyor || 'Assigned Surveyor'}</strong> • {completedJob?.surveyType || 'RICS Level 2 Home Survey'}
             </div>
           </div>
 
@@ -4153,7 +4195,7 @@ export const CustomerReviewPage = () => {
 
           <div>
             <h3 className="text-xl font-black text-[#0B1F4D]">
-              How was your experience with Surveyor {completedJob?.surveyor || 'David Thorne MRICS'}?
+              How was your experience with Surveyor {completedJob?.surveyor || 'Assigned Surveyor'}?
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
               Your review regarding the {completedJob?.surveyType || 'RICS Level 2 Survey'} at {completedJob?.property || '14 Mayfair Gate'} helps us maintain our high RICS quality standards.
@@ -4460,7 +4502,7 @@ const INITIAL_SUPPORT_TICKETS = [
     priority: 'Normal',
     status: 'IN PROGRESS',
     createdAt: '03 Nov 2026, 11:20',
-    lastReply: 'David Thorne MRICS confirmed on-site inspection concluded. Final technical review underway.',
+    lastReply: 'Chartered Surveyor confirmed on-site inspection concluded. Final technical review underway.',
   },
   {
     id: 2,

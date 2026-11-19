@@ -20,6 +20,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { SURVEYORS, useJobs } from '../../mock/jobs';
+import { adminSurveyorsApi } from '../../api/adminApi';
 import { NewBookingModal } from './NewBookingModal';
 import { RescheduleModal } from '../crm/RescheduleModal';
 import { Modal } from '../common/Modal';
@@ -34,6 +35,36 @@ export const BookingCalendar = () => {
   // Shared persistent jobs state
   const { jobs, setJobs, addJob } = useJobs();
 
+  const [activeSurveyors, setActiveSurveyors] = useState([]);
+
+  useEffect(() => {
+    adminSurveyorsApi
+      .getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+        if (Array.isArray(raw) && raw.length > 0) {
+          setActiveSurveyors(raw);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const surveyorList = useMemo(() => {
+    if (activeSurveyors.length > 0) {
+      return activeSurveyors.map((s, idx) => ({
+        id: `srv-${s.id}`,
+        dbId: s.id,
+        name: s.name,
+        credentials: s.surveyorProfile?.accreditation || 'MRICS Chartered Surveyor',
+        color: ['#2563EB', '#7C3AED', '#059669', '#D97706', '#E11D48'][idx % 5],
+        bgLight: 'bg-blue-50 border-blue-200 text-blue-900',
+        avatar: s.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+        postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
+      }));
+    }
+    return SURVEYORS;
+  }, [activeSurveyors]);
+
   // Calendar View State (Mobile defaults to 'day', Desktop to 'month' or 'week')
   const [viewMode, setViewMode] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'month'
@@ -44,9 +75,11 @@ export const BookingCalendar = () => {
   const [monthOffset, setMonthOffset] = useState(0); // 0 = Oct 2026
 
   // Surveyor Checkbox Filters
-  const [selectedSurveyorIds, setSelectedSurveyorIds] = useState(
-    SURVEYORS.map((s) => s.id)
-  );
+  const [selectedSurveyorIds, setSelectedSurveyorIds] = useState([]);
+
+  useEffect(() => {
+    setSelectedSurveyorIds(surveyorList.map((s) => s.id));
+  }, [surveyorList]);
 
   // Modals
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -116,10 +149,10 @@ export const BookingCalendar = () => {
   };
 
   const handleSelectAllSurveyors = () => {
-    if (selectedSurveyorIds.length === SURVEYORS.length) {
+    if (selectedSurveyorIds.length === surveyorList.length) {
       setSelectedSurveyorIds([]);
     } else {
-      setSelectedSurveyorIds(SURVEYORS.map((s) => s.id));
+      setSelectedSurveyorIds(surveyorList.map((s) => s.id));
     }
   };
 
@@ -366,18 +399,18 @@ export const BookingCalendar = () => {
           <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Certified Surveyors ({selectedSurveyorIds.length}/{SURVEYORS.length})
+                Certified Surveyors ({selectedSurveyorIds.length}/{surveyorList.length})
               </span>
               <button
                 onClick={handleSelectAllSurveyors}
                 className="text-xs text-[#2563EB] hover:underline font-semibold cursor-pointer"
               >
-                {selectedSurveyorIds.length === SURVEYORS.length ? 'Clear all' : 'Select all'}
+                {selectedSurveyorIds.length === surveyorList.length ? 'Clear all' : 'Select all'}
               </button>
             </div>
 
             <div className="space-y-2">
-              {SURVEYORS.map((s) => {
+              {surveyorList.map((s) => {
                 const isSelected = selectedSurveyorIds.includes(s.id);
                 return (
                   <label
@@ -438,7 +471,7 @@ export const BookingCalendar = () => {
 
                     <div className="mt-2.5 space-y-2.5 flex-1 overflow-y-auto">
                       {dayJobs.map((job) => {
-                        const surveyorObj = SURVEYORS.find((s) => s.id === job.surveyorId);
+                        const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId);
                         const isWaiting = !job.canBook || job.termsStatus !== 'Signed' || job.paymentStatus !== 'Paid';
 
                         return (
@@ -497,7 +530,7 @@ export const BookingCalendar = () => {
                 {visibleJobs
                   .filter((j) => j.date === selectedDayDate)
                   .map((job) => {
-                    const surveyorObj = SURVEYORS.find((s) => s.id === job.surveyorId);
+                    const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId);
                     return (
                       <div
                         key={job.id}

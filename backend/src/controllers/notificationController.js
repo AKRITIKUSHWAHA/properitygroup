@@ -54,7 +54,7 @@ async function seedDefaultNotificationsForRole(user) {
       {
         role: 'ADMIN',
         title: 'Survey Report Uploaded',
-        desc: 'Chartered Surveyor David Thorne uploaded preliminary defect schedule',
+        desc: 'Assigned Chartered Surveyor uploaded preliminary defect schedule',
         type: 'report',
         read: true,
       },
@@ -110,7 +110,7 @@ async function seedDefaultNotificationsForRole(user) {
         userId: user.id,
         role: 'CUSTOMER',
         title: 'Chartered Surveyor Allocated',
-        desc: 'David Thorne MRICS has been assigned as your lead independent chartered surveyor.',
+        desc: 'An accredited RICS Chartered Surveyor has been assigned as your lead independent surveyor.',
         type: 'terms',
         read: false,
       },

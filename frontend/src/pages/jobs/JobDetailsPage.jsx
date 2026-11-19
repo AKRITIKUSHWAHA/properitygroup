@@ -121,8 +121,8 @@ export const JobDetailsPage = () => {
       property: regUser.address || 'HYDERABAD',
       location: regUser.postcode || 'GH12AA',
       postcode: regUser.postcode || 'GH12AA',
-      surveyor: 'David Thorne MRICS',
-      surveyorId: 'srv-1',
+      surveyor: 'Pending Allocation',
+      surveyorId: null,
       status: 'Action Required',
       termsStatus: 'Signed',
       paymentStatus: 'Paid',
@@ -288,7 +288,7 @@ export const JobDetailsPage = () => {
       propertyAddress: `${job.property}, ${job.location}`,
       clientName: job.customer,
       surveyDate: job.date || '27/10/2026',
-      surveyorName: job.surveyor || 'David Thorne MRICS',
+      surveyorName: job.surveyor || 'Assigned Surveyor',
       surveyType: job.surveyType,
       valuation: job.propertyDetails?.value || '£1,450,000',
     });
@@ -309,7 +309,7 @@ export const JobDetailsPage = () => {
         propertyAddress: `${job.property}, ${job.location}`,
         clientName: job.customer,
         surveyDate: job.date || '27/10/2026',
-        surveyorName: job.surveyor || 'David Thorne MRICS',
+        surveyorName: job.surveyor || 'Assigned Surveyor',
         surveyType: job.surveyType,
         valuation: job.propertyDetails?.value || '£1,450,000',
       });
@@ -322,7 +322,7 @@ export const JobDetailsPage = () => {
         agreedFee: `£${totalAmount.toFixed(2)} (inc. 20% VAT)`,
         signatureType: 'drawn',
         signatureValue: 'Verified Digital Signature',
-        surveyorName: job.surveyor || 'David Thorne MRICS',
+        surveyorName: job.surveyor || 'Assigned Surveyor',
         instructingSolicitor: job.contacts?.solicitor?.firm ? `${job.contacts.solicitor.firm} (${job.contacts.solicitor.name || 'Lead'})` : null,
         courtClaimNumber: job.contacts?.solicitor?.ref ? `Ref: ${job.contacts.solicitor.ref}` : null,
         hourlyRate: 250.0,
@@ -1080,7 +1080,7 @@ export const JobDetailsPage = () => {
                       Surveyor On-Site Notes
                     </span>
                     <p className="font-semibold text-slate-800">
-                      {job.surveyor || 'David Thorne MRICS'} &bull; Inspected {job.date || '27/10/2026'}
+                      {job.surveyor || 'Assigned Surveyor'} &bull; Inspected {job.date || '27/10/2026'}
                     </p>
                     <p className="text-[11px] text-slate-600 leading-snug">
                       Moisture meter readings in rear dining room confirmed <strong>24% WME</strong> dampness in skirting. Roof void insulation non-standard.

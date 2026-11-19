@@ -3,49 +3,15 @@ import { useState, useEffect } from 'react';
 // Mock data for Survey Jobs, Booking Calendar and Job Details
 export const SURVEYORS = [
   {
-    id: 'srv-1',
-    name: 'David Thorne MRICS',
-    credentials: 'Experienced Surveyor (MCIOB, MRPSA, AssocRICS, LLB Hons, MEWI)',
+    id: 'srv-32',
+    dbId: 32,
+    name: 'surveyor',
+    email: 'njssurveyor@gmail.com',
+    credentials: 'RICS Chartered Surveyor (MRICS)',
     color: '#2563EB', // Blue
     bgLight: 'bg-blue-50 border-blue-200 text-blue-900',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
-    postcodes: 'GU, KT, SW',
-  },
-  {
-    id: 'srv-2',
-    name: 'Oliver Hughes MRICS',
-    credentials: 'Experienced Surveyor (BSC Hons Civil Engineering, MRPSA, DAE, Retrofit Assessor, SMSTS)',
-    color: '#7C3AED', // Purple
-    bgLight: 'bg-purple-50 border-purple-200 text-purple-900',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80',
-    postcodes: 'W, NW, WC',
-  },
-  {
-    id: 'srv-3',
-    name: 'Claire Bennet AssocRICS',
-    credentials: 'Experienced Surveyor (BTEC Civil Engineering, MSC Building Surveying, MRPSA, ACABE)',
-    color: '#059669', // Emerald
-    bgLight: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=128&q=80',
-    postcodes: 'TW, UB, SL',
-  },
-  {
-    id: 'srv-4',
-    name: 'Liam Foster',
-    credentials: 'Guided Trainee Surveyor (RICS Candidate)',
-    color: '#D97706', // Amber
-    bgLight: 'bg-amber-50 border-amber-200 text-amber-900',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=128&q=80',
-    postcodes: 'EC, SE, E',
-  },
-  {
-    id: 'srv-5',
-    name: 'Fiona Macintyre MRICS',
-    credentials: 'Historic Buildings Consultant (MRICS Heritage)',
-    color: '#E11D48', // Rose
-    bgLight: 'bg-rose-50 border-rose-200 text-rose-900',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=128&q=80',
-    postcodes: 'OX, RG, HP',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+    postcodes: 'W, SW, WC',
   },
 ];
 

@@ -24,6 +24,7 @@ import {
 import { useToast } from '../ToastContext';
 import { TERMS_TEMPLATES, getTemplateForService, createAutoFilledAgreement, useTerms } from '../../mock/terms';
 import { useJobs, SURVEYORS } from '../../mock/jobs';
+import { adminSurveyorsApi } from '../../api/adminApi';
 
 export const SendTermsModal = ({
   isOpen,
@@ -35,6 +36,33 @@ export const SendTermsModal = ({
   const { addToast } = useToast();
   const { jobs, updateJob } = useJobs();
   const { addAgreement } = useTerms();
+
+  const [activeSurveyors, setActiveSurveyors] = useState([]);
+
+  useEffect(() => {
+    adminSurveyorsApi
+      .getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+        if (Array.isArray(raw) && raw.length > 0) {
+          setActiveSurveyors(raw);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const surveyorList = useMemo(() => {
+    if (activeSurveyors.length > 0) {
+      return activeSurveyors.map((s) => ({
+        id: `srv-${s.id}`,
+        dbId: s.id,
+        name: s.name,
+        credentials: s.surveyorProfile?.accreditation || 'RICS Chartered Surveyor',
+        postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
+      }));
+    }
+    return SURVEYORS;
+  }, [activeSurveyors]);
 
   const [activeTab, setActiveTab] = useState('particulars'); // 'particulars' | 'blanks' | 'preview'
   const [selectedJobId, setSelectedJobId] = useState(job ? job.id : '');
@@ -472,7 +500,7 @@ export const SendTermsModal = ({
                     onChange={(e) => setSelectedSurveyor(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40"
                   >
-                    {SURVEYORS.map((s) => (
+                    {surveyorList.map((s) => (
                       <option key={s.id} value={s.name}>
                         {s.name} ({s.credentials})
                       </option>

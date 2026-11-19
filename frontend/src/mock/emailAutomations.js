@@ -245,7 +245,7 @@ https://www.trustpilot.com/review/njspropertygroup.com
 Thank you for choosing NJS Property Group.
 
 Warm regards,
-David Thorne MRICS & The NJS Property Group Team
+{{surveyor_name}} & The NJS Property Group Team
 Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
     tags: ['Final Report', 'PDF Download', 'Trustpilot Invite', 'Surveyor Debrief'],
   },
@@ -259,7 +259,7 @@ export const renderEmailTemplate = (text, data = {}) => {
   const surveyType = data.surveyType || data.serviceName || 'RICS Level 2 Home Survey';
   const quoteTotal = data.quoteTotal || data.totalAmount || data.price || '650.00';
   const jobNo = data.jobNo || data.reference || data.lead_ref || data.jobRef || 'JOB-2026-080';
-  const surveyorName = data.surveyor || data.surveyorName || 'David Thorne MRICS';
+  const surveyorName = data.surveyor || data.surveyorName || 'Assigned Chartered Surveyor';
   const inspectionDate = data.date || data.inspectionDate || 'Wednesday, 28 October 2026';
   const timeSlot = data.timeSlot || data.arrivalWindow || '09:30 AM - 12:00 PM';
   const actionLink = data.actionLink || data.bookingLink || data.portalLink || 'https://njspropertygroup.com/customer/portal';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Calendar,
@@ -15,7 +15,7 @@ import {
 import { useToast } from '../ToastContext';
 import { useJobs, SURVEYORS } from '../../mock/jobs';
 import { useClientProfiles } from '../../mock/clientProfiles';
-import { adminSurveyJobsApi } from '../../api/adminApi';
+import { adminSurveyJobsApi, adminSurveyorsApi } from '../../api/adminApi';
 
 const TIME_SLOTS = [
   { id: 'morning', label: 'Morning Slot (09:00 - 12:00)', range: '09:00 AM - 12:00 PM' },
@@ -35,7 +35,7 @@ const RESCHEDULE_REASONS = [
   'Other Administrative Reschedule',
 ];
 
-export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
+export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSurveyors: passedSurveyors = [] }) => {
   const { addToast } = useToast();
   const { updateJob } = useJobs();
   const { addCallLog } = useClientProfiles();
@@ -43,6 +43,7 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
   // Calculate default tomorrow date in YYYY-MM-DD
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+  const [internalSurveyors, setInternalSurveyors] = useState([]);
   const [newDate, setNewDate] = useState(tomorrow);
   const [selectedSlot, setSelectedSlot] = useState(TIME_SLOTS[0].range);
   const [selectedSurveyor, setSelectedSurveyor] = useState('');
@@ -52,18 +53,48 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!passedSurveyors || passedSurveyors.length === 0) {
+      adminSurveyorsApi
+        .getSurveyors()
+        .then((res) => {
+          const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+          if (Array.isArray(raw) && raw.length > 0) {
+            setInternalSurveyors(raw);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [passedSurveyors]);
+
+  const activeList = passedSurveyors && passedSurveyors.length > 0 ? passedSurveyors : internalSurveyors;
+  const surveyorList = useMemo(() => {
+    if (activeList.length > 0) {
+      return activeList.map((s) => ({
+        id: `srv-${s.id}`,
+        dbId: s.id,
+        name: s.name,
+        credentials: s.surveyorProfile?.accreditation
+          ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
+          : 'RICS Chartered Surveyor',
+        postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
+      }));
+    }
+    return SURVEYORS;
+  }, [activeList]);
+
+  useEffect(() => {
     if (job) {
       // Find matching surveyor if set on job
-      const matchingSurveyor = SURVEYORS.find(
-        (s) => s.name === job.surveyor || s.id === job.surveyorId
+      const matchingSurveyor = surveyorList.find(
+        (s) => s.name === job.surveyor || s.id === job.surveyorId || s.dbId === job.surveyorId
       );
-      setSelectedSurveyor(matchingSurveyor ? matchingSurveyor.name : SURVEYORS[0].name);
+      setSelectedSurveyor(matchingSurveyor ? matchingSurveyor.name : (surveyorList[0]?.name || ''));
       setSelectedSlot(job.timeSlot || TIME_SLOTS[0].range);
       setNewDate(tomorrow);
       setReason(RESCHEDULE_REASONS[0]);
       setAdditionalNotes('');
     }
-  }, [job, tomorrow]);
+  }, [job, tomorrow, surveyorList]);
 
   if (!isOpen || !job) return null;
 
@@ -88,15 +119,16 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
       year: 'numeric',
     });
 
-    const targetSurveyorObj = SURVEYORS.find((s) => s.name === selectedSurveyor) || SURVEYORS[0];
+    const targetSurveyorObj = surveyorList.find((s) => s.name === selectedSurveyor) || surveyorList[0];
+    const srvNumericId = targetSurveyorObj?.dbId || parseInt(String(targetSurveyorObj?.id || '32').replace('srv-', ''), 10) || 32;
 
     const updates = {
       date: formattedDate,
       inspectionDate: newDate,
       timeSlot: selectedSlot,
       inspectionTime: selectedSlot,
-      surveyor: targetSurveyorObj.name,
-      surveyorId: targetSurveyorObj.id,
+      surveyor: targetSurveyorObj ? targetSurveyorObj.name : 'Assigned Surveyor',
+      surveyorId: targetSurveyorObj?.id || `srv-${srvNumericId}`,
       rescheduleReason: reason,
       status: job.status === 'Completed' ? job.status : 'Booked',
       stage: 'BOOKED',
@@ -122,7 +154,7 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
         staff: 'Admin Dispatcher',
         duration: '2 mins',
         subject: `Appointment Rescheduled (${job.jobNo || job.id})`,
-        notes: `Inspection rescheduled from ${job.date || 'Original Date'} to ${formattedDate} (${selectedSlot}). Assigned Surveyor: ${targetSurveyorObj.name}. Reason: ${reason}. ${additionalNotes ? `Notes: ${additionalNotes}` : ''}`,
+        notes: `Inspection rescheduled from ${job.date || 'Original Date'} to ${formattedDate} (${selectedSlot}). Assigned Surveyor: ${targetSurveyorObj?.name || 'Assigned Surveyor'}. Reason: ${reason}. ${additionalNotes ? `Notes: ${additionalNotes}` : ''}`,
         tags: ['Rescheduled', 'Booking Update'],
       });
     }
@@ -130,7 +162,6 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
     // 3. Persist to MySQL Backend via PUT/PATCH /api/v1/survey-jobs/:id/reschedule
     try {
       const jobId = job.dbId || job.reference || job.id;
-      const srvNumericId = parseInt(String(targetSurveyorObj.id || '1').replace('srv-', ''), 10) || 1;
       await adminSurveyJobsApi.rescheduleJob(jobId, {
         inspectionDate: newDate,
         inspectionTime: selectedSlot,
@@ -258,7 +289,7 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled }) => {
               onChange={(e) => setSelectedSurveyor(e.target.value)}
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
             >
-              {SURVEYORS.map((s) => (
+              {surveyorList.map((s) => (
                 <option key={s.id} value={s.name}>
                   {s.name} — {s.credentials} ({s.postcodes})
                 </option>

@@ -91,9 +91,9 @@ export const verifyJWT = async (req, res, next) => {
         };
       } else if (isSurveyorPath) {
         user = {
-          id: 22,
-          name: 'David Thorne MRICS',
-          email: 'surveyor@demo.com',
+          id: 32,
+          name: 'NJS Lead Surveyor',
+          email: 'njssurveyor@gmail.com',
           role: 'SURVEYOR',
           status: 'ACTIVE',
         };

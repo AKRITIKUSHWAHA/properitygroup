@@ -28,6 +28,8 @@ import {
   Mail,
   Zap,
   Sparkles,
+  UserX,
+  UserCheck,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -37,7 +39,7 @@ import { NewBookingModal } from '../../components/calendar/NewBookingModal';
 import { RescheduleModal } from '../../components/crm/RescheduleModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useToast } from '../../components/ToastContext';
-import { adminSurveyJobsApi } from '../../api/adminApi';
+import { adminSurveyJobsApi, adminSurveyorsApi } from '../../api/adminApi';
 import {
   dispatchUnbookedBookingReminder,
   scanAndDispatchUnbookedReminders,
@@ -66,12 +68,9 @@ const mapBackendJobToFrontend = (bj) => {
   const paymentStatus = invoicePaid ? 'Paid' : (Array.isArray(bj.invoices) && bj.invoices.length > 0 ? 'Invoice Sent' : 'Awaiting Payment');
   const canBook = termsSigned && invoicePaid;
 
-  let surveyorName = bj.surveyor?.name || 'David Thorne MRICS';
-  let sId = 'srv-1';
-  if (surveyorName.includes('Oliver')) sId = 'srv-2';
-  else if (surveyorName.includes('Claire')) sId = 'srv-3';
-  else if (surveyorName.includes('Jonathan')) sId = 'srv-4';
-  else if (surveyorName.includes('Fiona')) sId = 'srv-5';
+  const hasAllocatedSurveyor = Boolean(bj.surveyor?.name || bj.surveyorId);
+  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Pending Allocation';
+  const sId = hasAllocatedSurveyor ? (bj.surveyorId ? `srv-${bj.surveyorId}` : 'srv-assigned') : null;
 
   return {
     id: String(bj.id),
@@ -79,8 +78,8 @@ const mapBackendJobToFrontend = (bj) => {
     jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
     date: bj.inspectionDate
       ? new Date(bj.inspectionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-      : '14 Nov 2026',
-    timeSlot: bj.inspectionTime || '10:00 AM - 01:00 PM',
+      : 'Pending Allocation',
+    timeSlot: bj.inspectionTime || 'Pending Allocation',
     customer: bj.clientName || 'Private Client',
     customerEmail: bj.clientEmail || 'client@example.com',
     customerPhone: bj.clientPhone || '+44 7700 900000',
@@ -402,11 +401,25 @@ export const AdminJobsPage = () => {
   const [activeTab, setActiveTab] = useState(queryFilter);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveyorFilter, setSurveyorFilter] = useState('All');
+  const [activeSurveyors, setActiveSurveyors] = useState([]);
   const [pageSize] = useState(10);
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
   const [selectedRescheduleJob, setSelectedRescheduleJob] = useState(null);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
+
+  // Load real active surveyors from backend API
+  useEffect(() => {
+    adminSurveyorsApi
+      .getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || (Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []));
+        if (Array.isArray(raw)) {
+          setActiveSurveyors(raw);
+        }
+      })
+      .catch((err) => console.warn('Failed to load active surveyors:', err));
+  }, []);
 
   // SurveyBooker Operational Pipeline Tabs (Matching Client Audio & Workflow)
   const tabs = useMemo(() => {
@@ -751,9 +764,10 @@ export const AdminJobsPage = () => {
               className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] cursor-pointer min-h-[40px]"
             >
               <option value="All">All Surveyors</option>
-              {SURVEYORS.map((s) => (
+              <option value="Pending Allocation">Pending Allocation</option>
+              {activeSurveyors.map((s) => (
                 <option key={s.id} value={s.name}>
-                  {s.name}
+                  {s.name} ({s.surveyorProfile?.accreditation || 'MRICS'})
                 </option>
               ))}
             </select>
@@ -876,7 +890,16 @@ export const AdminJobsPage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginatedJobs.map((row) => {
-                    const sObj = SURVEYORS.find((s) => s.id === row.surveyorId);
+                    const isPendingSurveyor =
+                      !row.surveyorId ||
+                      row.surveyor === 'Pending Allocation' ||
+                      row.surveyor === 'Unallocated';
+                    const assignedSurveyorObj = activeSurveyors.find(
+                      (s) =>
+                        s.id === row.surveyorId ||
+                        `srv-${s.id}` === row.surveyorId ||
+                        s.name === row.surveyor
+                    );
                     const isWaiting = !row.canBook || row.termsStatus !== 'Signed' || row.paymentStatus !== 'Paid';
 
                     return (
@@ -946,28 +969,40 @@ export const AdminJobsPage = () => {
 
                         {/* 4. Surveyor */}
                         <td className="py-3.5 px-4 min-w-[200px] whitespace-nowrap">
-                          <div className="flex items-center gap-2.5">
-                            <div className="relative shrink-0">
-                              <img
-                                src={sObj?.avatar}
-                                alt={row.surveyor}
-                                className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shadow-2xs"
-                              />
-                              <span
-                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white"
-                                style={{ backgroundColor: sObj?.color || '#2563EB' }}
-                                title="Surveyor Calendar Color"
-                              />
-                            </div>
-                            <div>
-                              <div className="text-xs font-bold text-slate-800">
-                                {row.surveyor}
+                          {isPendingSurveyor ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                              <UserX className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Pending Allocation</span>
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2.5">
+                              <div className="relative shrink-0">
+                                {assignedSurveyorObj?.avatar ? (
+                                  <img
+                                    src={assignedSurveyorObj.avatar}
+                                    alt={row.surveyor}
+                                    className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200 shadow-2xs"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B1F4D] flex items-center justify-center font-bold text-xs ring-1 ring-blue-200">
+                                    {row.surveyor.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white bg-emerald-500"
+                                  title="Active RICS Surveyor"
+                                />
                               </div>
-                              <div className="text-[10px] text-slate-500 font-medium">
-                                {sObj?.credentials || 'Chartered Surveyor'}
+                              <div>
+                                <div className="text-xs font-bold text-slate-800">
+                                  {row.surveyor}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-medium">
+                                  {assignedSurveyorObj?.surveyorProfile?.accreditation || 'RICS Chartered Surveyor'}
+                                </div>
                               </div>
                             </div>
-                          </div>
+                          )}
                         </td>
 
                         {/* 5. SurveyBooker Stage */}
@@ -1093,6 +1128,7 @@ export const AdminJobsPage = () => {
         isOpen={!!selectedRescheduleJob}
         onClose={() => setSelectedRescheduleJob(null)}
         job={selectedRescheduleJob}
+        activeSurveyors={activeSurveyors}
         onRescheduled={(updated) => {
           setJobs((prev) =>
             prev.map((j) => {
