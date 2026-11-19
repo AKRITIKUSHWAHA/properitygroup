@@ -67,16 +67,19 @@ export const AuthProvider = ({ children }) => {
 
   // Helper to determine the role default redirect path
   const getRoleDashboard = useCallback((role) => {
-    if (role === 'customer' && !isClientPortalEnabled()) {
-      return '/';
+    if (role === 'customer') {
+      return '/customer/my-dashboard';
     }
     if (role === 'surveyor') {
       return '/surveyor/my-calendar';
     }
+    if (role === 'super_admin' || role === 'admin') {
+      return '/admin/dashboard';
+    }
     if (ROLE_NAVIGATION[role]?.defaultPath) {
       return ROLE_NAVIGATION[role].defaultPath;
     }
-    return getFallbackPublicRoute();
+    return '/customer/my-dashboard';
   }, []);
 
   // Login handler with real backend API authentication & graceful fallback

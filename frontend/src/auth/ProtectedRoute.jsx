@@ -34,21 +34,15 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
     if (path.startsWith('/surveyor')) {
       return <Navigate to="/login/surveyor" state={{ from: location }} replace />;
     }
-    const fallbackRoute = isClientLoginEnabled ? '/login' : '/';
     if (path.startsWith('/customer')) {
-      return <Navigate to={fallbackRoute} state={{ from: location }} replace />;
+      return <Navigate to="/customer/login" state={{ from: location }} replace />;
     }
-    return <Navigate to={fallbackRoute} state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // 2. Strict Role Authorization Check:
   const userRole = user.role;
   const isAdmin = userRole === 'super_admin' || userRole === 'admin';
-
-  // Block deactivated customer accounts from entering any protected route
-  if (userRole === 'customer' && !isClientLoginEnabled) {
-    return <Navigate to="/" replace />;
-  }
 
   // Super Admin / Admin has operational authority across system modules
   if (isAdmin) {
@@ -57,9 +51,9 @@ export const ProtectedRoute = ({ allowedRoles = null, children }) => {
 
   // If specific roles are required, ensure user has permitted role
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    // If a Customer attempts to enter Admin or Surveyor routes -> bounce back
+    // If a Customer attempts to enter Admin or Surveyor routes -> bounce back to Customer dashboard
     if (userRole === 'customer') {
-      return <Navigate to={isClientLoginEnabled ? '/customer/my-dashboard' : '/'} replace />;
+      return <Navigate to="/customer/my-dashboard" replace />;
     }
     // If a Surveyor attempts to enter Admin or Customer routes -> bounce back to Surveyor portal
     if (userRole === 'surveyor') {
