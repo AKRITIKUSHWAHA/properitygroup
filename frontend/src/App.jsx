@@ -111,19 +111,14 @@ const PageLoader = () => (
 // Helper component for logged in user redirect to their portal role dashboard
 const PortalRedirect = () => {
   const { user, isAuthenticated, isLoading, getRoleDashboard } = useAuth();
-  const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
   if (isLoading) return null;
   if (isAuthenticated && user) {
-    if (user.role === 'customer' && !isClientLoginEnabled) {
-      return <Navigate to="/" replace />;
-    }
     return <Navigate to={getRoleDashboard(user.role)} replace />;
   }
-  return <Navigate to={isClientLoginEnabled ? '/login' : '/'} replace />;
+  return <Navigate to="/login" replace />;
 };
 
 function AppRoutes() {
-  const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
 
   React.useEffect(() => {
     const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v2';
@@ -196,7 +191,7 @@ function AppRoutes() {
         <Route path="/surveyor" element={<Navigate to="/surveyor/my-calendar" replace />} />
         <Route
           path="/customer"
-          element={isClientLoginEnabled ? <Navigate to="/customer/my-dashboard" replace /> : <Navigate to="/" replace />}
+          element={<Navigate to="/customer/my-dashboard" replace />}
         />
         
         {/* Point 29: Estate Agent & Referral Partner Portal */}
@@ -204,17 +199,17 @@ function AppRoutes() {
         <Route path="/partner" element={<Navigate to="/partners" replace />} />
         <Route path="/partner/dashboard" element={<Navigate to="/partners" replace />} />
 
-        {/* 3. Public Auth Routes - Client login gated by siteConfig.features.showPublicPortalLogin */}
+        {/* 3. Public Auth Routes */}
         <Route
           path="/login"
-          element={isClientLoginEnabled ? <LoginPage roleProp="customer" /> : <Navigate to="/" replace />}
+          element={<LoginPage roleProp="customer" />}
         />
         <Route path="/login/:role" element={<LoginPage />} />
         <Route path="/admin/login" element={<LoginPage roleProp="super_admin" />} />
         <Route path="/surveyor/login" element={<LoginPage roleProp="surveyor" />} />
         <Route
           path="/customer/login"
-          element={isClientLoginEnabled ? <LoginPage roleProp="customer" /> : <Navigate to="/" replace />}
+          element={<LoginPage roleProp="customer" />}
         />
         <Route path="/backoffice" element={<Navigate to="/login/admin" replace />} />
         <Route path="/admin-login" element={<Navigate to="/login/admin" replace />} />
@@ -224,7 +219,7 @@ function AppRoutes() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/register"
-          element={isClientLoginEnabled ? <RegisterPage /> : <Navigate to="/" replace />}
+          element={<RegisterPage />}
         />
 
         {/* 4. Error Routes */}
@@ -357,14 +352,8 @@ function AppRoutes() {
             <Route path="/surveyor/messages" element={<CustomerMessagesPage />} />
           </Route>
 
-          {/* Customer Routes (14 menus per Client Requirement Point 12 - deactivated when showPublicPortalLogin is false) */}
-          <Route
-            element={
-              isClientLoginEnabled
-                ? <ProtectedRoute allowedRoles={['customer', 'super_admin']} />
-                : <Navigate to="/" replace />
-            }
-          >
+          {/* Customer Routes (14 menus per Client Requirement Point 12) */}
+          <Route element={<ProtectedRoute allowedRoles={['customer', 'super_admin']} />}>
             <Route path="/customer/my-dashboard" element={<CustomerDashboardPage />} />
             <Route path="/customer/quotations" element={<CustomerQuotationsPage />} />
             <Route path="/customer/my-bookings" element={<CustomerBookingsPage />} />

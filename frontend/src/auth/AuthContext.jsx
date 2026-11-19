@@ -8,8 +8,8 @@ import { siteConfig } from '../config/siteConfig';
 
 const AuthContext = createContext(null);
 
-const isClientPortalEnabled = () => Boolean(siteConfig.features?.showPublicPortalLogin);
-const getFallbackPublicRoute = () => (isClientPortalEnabled() ? '/login' : '/');
+const isClientPortalEnabled = () => true;
+const getFallbackPublicRoute = () => '/login';
 
 const STORAGE_KEY = 'property_group_user_session';
 const AUTH_TOKEN_KEY = 'property_group_auth_token';
