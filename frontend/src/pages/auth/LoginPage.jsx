@@ -125,11 +125,6 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     location.pathname
   );
 
-  // Deactivate client login portal while keeping Admin (/login/admin) and Surveyor (/login/surveyor) active
-  if (!isClientLoginEnabled && activeRoleKey === 'customer') {
-    return <Navigate to="/" replace />;
-  }
-
   const currentRoleConfig = ROLES_CONFIG[activeRoleKey] || ROLES_CONFIG.customer;
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
@@ -183,7 +178,7 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
         }
         setUser(matchedCustomer);
         localStorage.setItem('property_group_user_session', JSON.stringify(matchedCustomer));
-        navigate('/customer/quotations', { replace: true });
+        navigate('/customer/my-dashboard', { replace: true });
         return;
       }
     } else if (location.state?.prefilledEmail) {

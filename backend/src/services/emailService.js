@@ -194,7 +194,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
                 </p>
 
                 <div style="text-align: center; margin: 24px 0;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Open Customer Portal &rarr;</a>
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login?email=${encodeURIComponent(customerEmail || '')}" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Open Customer Portal &rarr;</a>
                 </div>
 
                 <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
@@ -289,7 +289,7 @@ export const sendQuoteProposalEmail = async ({
         <p>To view full terms, confirm surveyor allocation, and e-sign your engagement agreement, click the secure portal link below:</p>
         
         <div style="text-align: center; margin: 28px 0;">
-          <a href="${quoteLink || `${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login`}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review &amp; Track Your Survey &rarr;</a>
+          <a href="${quoteLink || `${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login?email=${encodeURIComponent(to || '')}`}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review &amp; Track Your Survey &rarr;</a>
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
