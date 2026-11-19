@@ -110,6 +110,34 @@ export const payInvoiceWithCard = async (req, res, next) => {
       console.warn('[sendInvoiceReceiptEmail] warning:', emailErr.message);
     }
 
+    // In-App Notifications for Customer & Admin
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: req.user.id,
+          role: 'CLIENT',
+          title: `Payment Received - £${invoice.total}`,
+          desc: `Your payment of £${invoice.total} for invoice ${invoice.invoiceNumber} has cleared. HMRC 20% VAT receipt issued.`,
+          type: 'PAYMENT',
+          amount: parseFloat(invoice.total) || 0,
+          link: '/customer/invoices-and-payments',
+        },
+      });
+
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `Invoice Settled - £${invoice.total}`,
+          desc: `${req.user.name || 'Client'} paid invoice ${invoice.invoiceNumber} via Stripe Card for ${invoice.job?.propertyAddress || 'Subject Property'}.`,
+          type: 'PAYMENT',
+          amount: parseFloat(invoice.total) || 0,
+          link: '/admin/finance/invoices',
+        },
+      });
+    } catch (notifErr) {
+      console.warn('[payInvoiceWithCard] notification create warning:', notifErr.message);
+    }
+
     return ApiResponse.success(
       res,
       { invoice: updated },

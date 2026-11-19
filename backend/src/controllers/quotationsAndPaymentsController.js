@@ -231,6 +231,36 @@ export const createQuote = async (req, res, next) => {
       } catch (emailErr) {
         console.warn('Resend quotation email warning:', emailErr.message);
       }
+
+      // In-App Notification for Client & Admin
+      try {
+        const targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
+        if (targetUser) {
+          await prisma.notification.create({
+            data: {
+              userId: targetUser.id,
+              role: 'CLIENT',
+              title: 'Formal Quote Proposal Issued',
+              desc: `A formal RICS quote of £${totalAmount.toFixed(2)} has been prepared for ${targetProperty}.`,
+              type: 'QUOTE',
+              amount: totalAmount,
+              link: '/customer/my-quotations',
+            },
+          });
+        }
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Quote Proposal Issued - £${totalAmount.toFixed(2)}`,
+            desc: `Quote proposal ${quote?.reference || reference} sent to ${recipientName} (${recipientEmail}).`,
+            type: 'QUOTE',
+            amount: totalAmount,
+            link: '/admin/finance/quotations',
+          },
+        });
+      } catch (nErr) {
+        console.warn('Quote notification create warning:', nErr.message);
+      }
     }
 
     return ApiResponse.created(
@@ -483,6 +513,40 @@ export const settleBacsPayment = async (req, res, next) => {
         }).catch((e) => console.warn('[sendInvoiceReceiptEmail BACS] background error:', e.message));
       }
     } catch (err) {}
+
+    // In-App Notification for Client & Admin
+    try {
+      const recipientEmail = invoice.clientEmail || invoice.job?.clientEmail;
+      let targetUser = null;
+      if (recipientEmail) {
+        targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
+      }
+      if (targetUser || invoice.job?.clientId) {
+        await prisma.notification.create({
+          data: {
+            userId: targetUser ? targetUser.id : invoice.job?.clientId,
+            role: 'CLIENT',
+            title: `BACS Payment Reconciled - £${invoice.total}`,
+            desc: `Your BACS bank transfer for invoice ${invoice.invoiceNumber} has been verified and settled. HMRC 20% VAT receipt issued.`,
+            type: 'PAYMENT',
+            amount: parseFloat(invoice.total) || 0,
+            link: '/customer/invoices-and-payments',
+          },
+        });
+      }
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `BACS Payment Reconciled - £${invoice.total}`,
+          desc: `BACS payment for invoice ${invoice.invoiceNumber} confirmed. Ref: ${bacsReference || 'Bank Transfer'}.`,
+          type: 'PAYMENT',
+          amount: parseFloat(invoice.total) || 0,
+          link: '/admin/finance/invoices',
+        },
+      });
+    } catch (nErr) {
+      console.warn('BACS notification create warning:', nErr.message);
+    }
 
     return ApiResponse.success(res, { invoice: updated }, 'BACS payment confirmed and reconciled');
   } catch (error) {

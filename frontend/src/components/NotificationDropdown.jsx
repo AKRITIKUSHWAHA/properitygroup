@@ -17,7 +17,7 @@ export const NotificationDropdown = () => {
     if (!silent) setIsLoading(true);
     try {
       const res = await apiRequest('/notifications');
-      let notifs = res?.data?.notifications || [];
+      let notifs = res?.notifications || res?.data?.notifications || (Array.isArray(res) ? res : []);
       setNotifications(notifs);
     } catch (err) {
       console.warn('Could not load notifications from API:', err?.message || err);
@@ -179,65 +179,78 @@ export const NotificationDropdown = () => {
                 <p className="text-[11px] text-slate-400 mt-0.5">No notifications for your account.</p>
               </div>
             ) : (
-              visibleNotifications.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => markSingle(item.id, item.link)}
-                  className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer hover:bg-slate-50 ${
-                    !item.read ? 'bg-blue-50/60' : 'bg-white'
-                  }`}
-                >
+              visibleNotifications.map((item) => {
+                const type = (item.type || '').toLowerCase();
+                const isMsg = type === 'message';
+                const isPay = type === 'payment';
+                const isBook = type === 'booking' || type === 'inspection';
+                const isTerms = type === 'terms';
+                const isQuote = type === 'quote' || type === 'enquiry';
+                const isRep = type === 'report';
+
+                return (
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      item.type === 'message'
-                        ? 'bg-blue-100 text-blue-700'
-                        : item.type === 'payment'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : item.type === 'booking'
-                        ? 'bg-blue-100 text-blue-700'
-                        : item.type === 'terms'
-                        ? 'bg-amber-100 text-amber-700'
-                        : item.type === 'report'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-slate-100 text-slate-700'
+                    key={item.id}
+                    onClick={() => markSingle(item.id, item.link)}
+                    className={`p-3.5 flex items-start gap-3 transition-colors cursor-pointer hover:bg-slate-50 ${
+                      !item.read ? 'bg-blue-50/60' : 'bg-white'
                     }`}
                   >
-                    {item.type === 'message' && <MessageSquare className="w-4 h-4" />}
-                    {item.type === 'payment' && <PoundSterling className="w-4 h-4" />}
-                    {item.type === 'booking' && <Clock className="w-4 h-4" />}
-                    {item.type === 'terms' && <FileText className="w-4 h-4" />}
-                    {item.type === 'report' && <FileText className="w-4 h-4" />}
-                    {!['message', 'payment', 'booking', 'terms', 'report'].includes(item.type) && (
-                      <Bell className="w-4 h-4" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <p
-                        className={`text-xs font-semibold truncate ${
-                          !item.read ? 'text-[#0B1F4D]' : 'text-slate-700'
-                        }`}
-                      >
-                        {item.title}
-                      </p>
-                      <span className="text-[10px] text-slate-400 shrink-0">{item.time}</span>
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                        isMsg
+                          ? 'bg-blue-100 text-blue-700'
+                          : isPay
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : isBook
+                          ? 'bg-blue-100 text-blue-700'
+                          : isTerms
+                          ? 'bg-amber-100 text-amber-700'
+                          : isQuote
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : isRep
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {isMsg && <MessageSquare className="w-4 h-4" />}
+                      {isPay && <PoundSterling className="w-4 h-4" />}
+                      {isBook && <Clock className="w-4 h-4" />}
+                      {isTerms && <FileText className="w-4 h-4" />}
+                      {isQuote && <FileText className="w-4 h-4" />}
+                      {isRep && <FileText className="w-4 h-4" />}
+                      {!isMsg && !isPay && !isBook && !isTerms && !isQuote && !isRep && (
+                        <Bell className="w-4 h-4" />
+                      )}
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
-                      {item.desc}
-                    </p>
-                    {!isSurveyor && item.amount && (
-                      <span className="inline-block mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                        Amount: {item.amount}
-                      </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <p
+                          className={`text-xs font-semibold truncate ${
+                            !item.read ? 'text-[#0B1F4D]' : 'text-slate-700'
+                          }`}
+                        >
+                          {item.title}
+                        </p>
+                        <span className="text-[10px] text-slate-400 shrink-0">{item.time}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
+                        {item.desc}
+                      </p>
+                      {!isSurveyor && item.amount && (
+                        <span className="inline-block mt-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          Amount: {typeof item.amount === 'number' ? `£${item.amount.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : item.amount}
+                        </span>
+                      )}
+                    </div>
+
+                    {!item.read && (
+                      <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0 mt-1.5" />
                     )}
                   </div>
-
-                  {!item.read && (
-                    <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0 mt-1.5" />
-                  )}
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

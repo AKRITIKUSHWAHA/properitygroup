@@ -126,6 +126,28 @@ export const executeDigitalSignature = async (req, res, next) => {
           tamperAuditHash,
         }).catch((e) => console.warn('[sendTermsSignedEmail] background error:', e.message));
       }
+
+      // In-App Notifications for Customer & Admin
+      prisma.notification.create({
+        data: {
+          userId: req.user.id,
+          role: 'CUSTOMER',
+          title: `✓ RICS Terms of Engagement Executed`,
+          desc: `Your electronic contract has been confirmed. Our operations team is finalizing surveyor booking.`,
+          type: 'terms',
+          link: '/customer/track-survey',
+        },
+      }).catch(() => {});
+
+      prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `📝 Terms Signed: ${req.user.name || term.clientName || 'Client'}`,
+          desc: `Client signed RICS Terms of Engagement for ${term.job?.propertyAddress || 'Subject Property'} (Ref: ${term.job?.reference || `TRM-${term.id}`}).`,
+          type: 'terms',
+          link: '/admin/terms',
+        },
+      }).catch(() => {});
     } catch (emailErr) {
       console.warn('[sendTermsSignedEmail] warning:', emailErr.message);
     }

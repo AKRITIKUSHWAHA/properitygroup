@@ -160,10 +160,22 @@ export const getNotifications = async (req, res, next) => {
     // Fetch clean real notifications without injecting artificial demo data
     // await seedDefaultNotificationsForRole(user);
 
+    const userEmail = (user.email || '').trim().toLowerCase();
+    let userIds = [user.id];
+    if (userEmail) {
+      try {
+        const matchingUsers = await prisma.user.findMany({
+          where: { email: userEmail },
+          select: { id: true },
+        });
+        userIds = Array.from(new Set([user.id, ...matchingUsers.map((u) => u.id)].filter(Boolean)));
+      } catch {}
+    }
+
     const notifications = await prisma.notification.findMany({
       where: {
         OR: [
-          { userId: user.id },
+          { userId: { in: userIds } },
           { role: user.role, userId: null },
         ],
       },
@@ -221,13 +233,15 @@ export const getNotifications = async (req, res, next) => {
       let unreadMessages = [];
 
       if (userRole === 'CUSTOMER' || userRole === 'SURVEYOR') {
-        const convId = `conv-user-${user.id}`;
+        const convConditions = userIds.map((uid) => ({ conversationId: `conv-user-${uid}` }));
+        convConditions.push({ conversationId: `conv-user-${user.id}` });
+        convConditions.push({ conversationId: `conv-usr_${user.id}` });
+        if (userEmail) {
+          convConditions.push({ conversationId: { contains: userEmail } });
+        }
         unreadMessages = await prisma.message.findMany({
           where: {
-            OR: [
-              { conversationId: convId },
-              { conversationId: `conv-usr_${user.id}` },
-            ],
+            OR: convConditions,
             readByCustomer: false,
           },
           orderBy: { createdAt: 'desc' },

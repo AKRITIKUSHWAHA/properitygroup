@@ -250,6 +250,20 @@ export const updateJobStage = async (req, res, next) => {
             surveyType: job.serviceType || updated.serviceType || 'RICS Level 2 Home Survey',
             reportPdfUrl: job.reportPdfUrl || updated.reportPdfUrl,
           }).catch((e) => console.warn('[sendReportReadyEmail] background error:', e.message));
+
+          const targetUser = await prisma.user.findFirst({ where: { email: clientEmail } });
+          if (targetUser || job.clientId) {
+            await prisma.notification.create({
+              data: {
+                userId: targetUser ? targetUser.id : job.clientId,
+                role: 'CLIENT',
+                title: 'RICS Survey Report Ready',
+                desc: `Your accredited RICS survey report for ${job.propertyAddress || 'Subject Property'} has been published and is ready for download.`,
+                type: 'REPORT',
+                link: '/customer/my-reports',
+              },
+            });
+          }
         }
       } catch (err) {}
     }
@@ -301,6 +315,35 @@ export const assignSurveyor = async (req, res, next) => {
           inspectionTime: job.inspectionTime || inspectionTime,
           surveyorName: job.surveyor?.name || 'RICS Chartered Surveyor',
         }).catch((e) => console.warn('[sendInspectionBookedEmail] background error:', e.message));
+
+        const formattedDate = new Date(inspectionDate).toLocaleDateString('en-GB', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        const targetUser = await prisma.user.findFirst({ where: { email: job.clientEmail } });
+        if (targetUser || job.clientId) {
+          await prisma.notification.create({
+            data: {
+              userId: targetUser ? targetUser.id : job.clientId,
+              role: 'CLIENT',
+              title: 'Inspection Appointment Booked',
+              desc: `Your property survey for ${job.propertyAddress} is confirmed for ${formattedDate} (${inspectionTime || 'Morning'}).`,
+              type: 'INSPECTION',
+              link: '/customer/appointment-details',
+            },
+          });
+        }
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Inspection Scheduled - ${job.reference}`,
+            desc: `Inspection booked for ${job.propertyAddress} on ${formattedDate} (${job.surveyor?.name || 'Surveyor'}).`,
+            type: 'INSPECTION',
+            link: '/admin/surveys/schedule',
+          },
+        });
       }
     } catch (emailErr) {}
 
@@ -446,6 +489,35 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           surveyorName: updated.surveyor?.name || 'RICS Chartered Surveyor',
           surveyorPhone: updated.surveyor?.phone,
         }).catch((e) => console.warn('[sendInspectionBookedEmail Reschedule] background error:', e.message));
+
+        const formattedDate = new Date(updated.inspectionDate).toLocaleDateString('en-GB', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        const targetUser = await prisma.user.findFirst({ where: { email: updated.clientEmail } });
+        if (targetUser || updated.clientId) {
+          await prisma.notification.create({
+            data: {
+              userId: targetUser ? targetUser.id : updated.clientId,
+              role: 'CLIENT',
+              title: 'Inspection Appointment Rescheduled',
+              desc: `Your property survey for ${updated.propertyAddress} has been rescheduled to ${formattedDate} (${updated.inspectionTime || 'Morning'}).`,
+              type: 'INSPECTION',
+              link: '/customer/appointment-details',
+            },
+          });
+        }
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Inspection Rescheduled - ${updated.reference}`,
+            desc: `Inspection appointment for ${updated.propertyAddress} moved to ${formattedDate}. Reason: ${reason || 'Updated'}`,
+            type: 'INSPECTION',
+            link: '/admin/surveys/schedule',
+          },
+        });
       }
     } catch (emailErr) {}
 

@@ -112,6 +112,29 @@ export const approveQaReport = async (req, res, next) => {
           surveyType: job.serviceType || 'RICS Level 2 Home Survey',
           reportPdfUrl: job.reportPdfUrl,
         }).catch((e) => console.warn('[sendReportReadyEmail QA] background error:', e.message));
+
+        const targetUser = await prisma.user.findFirst({ where: { email: job.clientEmail } });
+        if (targetUser || job.clientId) {
+          await prisma.notification.create({
+            data: {
+              userId: targetUser ? targetUser.id : job.clientId,
+              role: 'CLIENT',
+              title: 'RICS Survey Report Ready',
+              desc: `Your accredited RICS survey report for ${job.propertyAddress} has passed QA review and is ready for download.`,
+              type: 'REPORT',
+              link: '/customer/my-reports',
+            },
+          });
+        }
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Report QA Approved - ${job.reference}`,
+            desc: `Survey report for ${job.propertyAddress} approved and published to client portal.`,
+            type: 'REPORT',
+            link: '/admin/reports/qa-review',
+          },
+        });
       }
     } catch (emailErr) {}
 

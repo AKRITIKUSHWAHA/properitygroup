@@ -417,6 +417,25 @@ export const sendCustomerMessage = async (req, res, next) => {
         });
       }
 
+      if (!recipientUser) {
+        try {
+          const lastMsgInThread = await prisma.message.findFirst({
+            where: {
+              conversationId,
+              senderId: { not: req.user.id },
+            },
+            orderBy: { createdAt: 'desc' },
+            select: { senderId: true },
+          });
+          if (lastMsgInThread?.senderId) {
+            recipientUser = await prisma.user.findUnique({
+              where: { id: lastMsgInThread.senderId },
+              select: { id: true, name: true, email: true, role: true },
+            });
+          }
+        } catch {}
+      }
+
       if (recipientUser) {
         // 1. Email notification to the client/surveyor
         sendAdminReplyToClientNotificationEmail({

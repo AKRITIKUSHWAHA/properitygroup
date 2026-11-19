@@ -83,6 +83,29 @@ export const acceptCustomerQuotation = async (req, res, next) => {
           totalAmount: quote.totalAmount,
         }).catch((e) => console.warn('[sendQuoteAcceptedEmail] background error:', e.message));
       }
+
+      // In-App Notifications for Customer & Admin
+      prisma.notification.create({
+        data: {
+          userId: req.user.id,
+          role: 'CUSTOMER',
+          title: `✓ Quotation Accepted (${quote.reference || `QUO-${quote.id}`})`,
+          desc: `You accepted your quotation for ${quote.job?.propertyAddress || 'Subject Property'}. Please review and execute your RICS Terms of Engagement.`,
+          type: 'terms',
+          link: '/customer/terms-to-sign',
+        },
+      }).catch(() => {});
+
+      prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `✓ Quote Accepted: ${req.user.name || quote.job?.clientName || 'Client'}`,
+          desc: `Client accepted quotation ${quote.reference} for ${quote.job?.propertyAddress || 'Subject Property'}.`,
+          type: 'terms',
+          amount: `£${quote.totalAmount}`,
+          link: '/admin/quotes',
+        },
+      }).catch(() => {});
     } catch (emailErr) {
       console.warn('[sendQuoteAcceptedEmail] warning:', emailErr.message);
     }

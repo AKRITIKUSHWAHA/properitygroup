@@ -132,6 +132,34 @@ export const submitPublicEnquiry = async (req, res, next) => {
       sourcePage: body.sourcePage,
     });
 
+    // In-App Notification for Client & Admin
+    try {
+      if (clientUser) {
+        await prisma.notification.create({
+          data: {
+            userId: clientUser.id,
+            role: 'CLIENT',
+            title: 'Quote Request Received',
+            desc: `Your quote request for ${serviceName} (${propertyAddress || propertyPostcode || 'Subject Property'}) has been logged. Ref: ${referenceId}`,
+            type: 'ENQUIRY',
+            link: '/customer/my-quotations',
+          },
+        });
+      }
+
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `New Enquiry - ${customerName}`,
+          desc: `New enquiry for ${serviceName} at ${propertyAddress || propertyPostcode || 'UK'}. Ref: ${referenceId}`,
+          type: 'ENQUIRY',
+          link: '/admin/leads/enquiries',
+        },
+      });
+    } catch (notifErr) {
+      console.warn('Public enquiry notification create warning:', notifErr.message);
+    }
+
     return ApiResponse.created(
       res,
       {
