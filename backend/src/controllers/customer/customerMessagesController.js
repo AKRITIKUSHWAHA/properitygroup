@@ -5,6 +5,7 @@ import {
   sendClientMessageToAdminNotificationEmail,
   sendAdminReplyToClientNotificationEmail,
 } from '../../services/emailService.js';
+import { checkIsUserOnline } from '../../services/userPresenceService.js';
 
 /**
  * Customer & Surveyor Messages Controller
@@ -214,6 +215,8 @@ export const getMessageContacts = async (req, res, next) => {
             })
           : 'Yesterday';
 
+        const isOnline = checkIsUserOnline(u.id, u.email);
+
         return {
           id: convId,
           userId: u.id,
@@ -225,7 +228,7 @@ export const getMessageContacts = async (req, res, next) => {
           lastMessage: latestMsg ? latestMsg.content : defaultSnippet,
           time: formattedTime,
           lastMessageTime: lastTime,
-          online: true,
+          online: isOnline,
           unread: unreadCount > 0,
           unreadCount,
         };

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
+import { touchUserPresence } from '../services/userPresenceService.js';
 
 export const verifyJWT = async (req, res, next) => {
   try {
@@ -47,6 +48,10 @@ export const verifyJWT = async (req, res, next) => {
           user = matchedByEmail;
         }
       } catch {}
+    }
+
+    if (user && (authHeader?.startsWith('Bearer ') || clientUserEmail)) {
+      touchUserPresence(user.id, user.email);
     }
 
     // Role-aware fallback according to request endpoint path (Customer never falls back to Admin!)

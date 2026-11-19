@@ -3702,8 +3702,10 @@ export const CustomerMessagesPage = () => {
                         <div className="w-9 h-9 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                           {person.avatar}
                         </div>
-                        {person.online && (
-                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+                        {person.online ? (
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" title="Online" />
+                        ) : (
+                          <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-300 rounded-full ring-2 ring-white" title="Offline" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -3788,8 +3790,10 @@ export const CustomerMessagesPage = () => {
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                   {activeContact?.avatar || 'NJS'}
                 </div>
-                {activeContact?.online && (
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+                {activeContact?.online ? (
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" title="Online" />
+                ) : (
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-300 rounded-full ring-2 ring-white" title="Offline" />
                 )}
               </div>
               <div className="min-w-0">
@@ -3814,7 +3818,7 @@ export const CustomerMessagesPage = () => {
                 <p className="text-[11px] text-slate-400 font-medium truncate">
                   {activeContact?.online
                     ? `Online • Active Direct Channel`
-                    : `Offline • Last seen, ${activeContact?.lastSeen || 'recently'}`}
+                    : `Offline • Last seen, ${activeContact?.lastSeen || activeContact?.time || 'recently'}`}
                 </p>
               </div>
             </div>

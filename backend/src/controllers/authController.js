@@ -4,6 +4,7 @@ import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { touchUserPresence, clearUserPresence } from '../services/userPresenceService.js';
 
 export const register = async (req, res, next) => {
   try {
@@ -223,6 +224,9 @@ export const login = async (req, res, next) => {
       status: user.status,
     };
 
+    // Mark user as actively online
+    touchUserPresence(user.id, user.email);
+
     return ApiResponse.success(res, { user: safeUser, token }, 'Login successful');
   } catch (error) {
     next(error);
@@ -258,6 +262,9 @@ export const getMe = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
+    if (req.user) {
+      clearUserPresence(req.user.id, req.user.email);
+    }
     return ApiResponse.success(res, null, 'Logged out successfully');
   } catch (error) {
     next(error);
