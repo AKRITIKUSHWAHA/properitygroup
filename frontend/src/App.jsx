@@ -126,7 +126,7 @@ function AppRoutes() {
   const isClientLoginEnabled = Boolean(siteConfig.features?.showPublicPortalLogin);
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v2';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',
@@ -135,6 +135,12 @@ function AppRoutes() {
         'propertygroup_jobs',
         'propertygroup_conversations_v1',
         'property_group_registered_customers',
+        'propertygroup_inspection_completed',
+        'propertygroup_drafting',
+        'propertygroup_qareview',
+        'propertygroup_delivered',
+        'njs_fresh_agreements_v3',
+        'njs_clean_terms_v4',
       ].forEach((key) => {
         try {
           localStorage.removeItem(key);

@@ -51,268 +51,30 @@ export const SURVEYORS = [
 
 export const INITIAL_JOBS = [];
 
-export const syncRealCustomerJobs = (existingJobs = []) => {
-  try {
-    const regRaw = localStorage.getItem('property_group_registered_customers');
-    const registered = regRaw ? JSON.parse(regRaw) : {};
-    const leadsRaw = localStorage.getItem('propertygroup_crm_leads_v1');
-    const leads = leadsRaw ? JSON.parse(leadsRaw) : [];
-    const quotesRaw = localStorage.getItem('propertygroup_quotes');
-    const quotes = quotesRaw ? JSON.parse(quotesRaw) : [];
-
-    const realJobs = [];
-
-    const isDummyEmail = (em) => {
-      const e = (em || '').toLowerCase().trim();
-      return (
-        !e ||
-        e === 'customer@demo.com' ||
-        e === 'customer2@demo.com' ||
-        e === 'admin@demo.com' ||
-        e === 'surveyor@demo.com' ||
-        e.includes('emma.watson') ||
-        e.includes('kensingtonestates') ||
-        e.includes('harrison') ||
-        e.includes('oliver.vance') ||
-        e.includes('charlotte.b')
-      );
-    };
-
-    let sessionEmail = '';
-    try {
-      const sess = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
-      if (sess.email && !isDummyEmail(sess.email)) sessionEmail = sess.email.toLowerCase().trim();
-    } catch {}
-
-    // Collect all emails from registered customers, leads, quotes (filtering out all demo dummies)
-    const emails = new Set([
-      'astp750@gmail.com',
-      ...(sessionEmail ? [sessionEmail] : []),
-      ...Object.keys(registered).filter((em) => !isDummyEmail(em)),
-      ...leads.map((l) => l.customerEmail || l.clientEmail).filter((em) => !isDummyEmail(em)),
-      ...quotes.map((q) => q.clientEmail).filter((em) => !isDummyEmail(em)),
-    ]);
-
-    emails.forEach((emailRaw) => {
-      const email = emailRaw.toLowerCase().trim();
-      if (isDummyEmail(email)) return;
-
-      const reg = registered[email] || {};
-      const customerLeads = leads.filter((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === email);
-      const customerQuotes = quotes.filter((q) => (q.clientEmail || '').toLowerCase().trim() === email);
-      const customerExistingJobs = existingJobs.filter(
-        (j) => (j.customerEmail || j.clientEmail || '').toLowerCase().trim() === email
-      );
-
-      // If customer has no existing jobs and no leads/quotes, create a fallback job
-      if (customerExistingJobs.length === 0 && customerLeads.length === 0 && customerQuotes.length === 0) {
-        const jobNo = 'JOB-2026-880';
-        const property = reg.address || 'HYDERABAD';
-        const postcode = reg.postcode || 'GH12AA';
-        const customer = reg.name || 'abc';
-        const customerPhone = reg.phone || '1234560789';
-        const surveyType = reg.serviceType || 'RICS Level 2 Home Survey';
-
-        realJobs.push({
-          id: jobNo,
-          jobNo,
-          date: '16 Nov 2026',
-          timeSlot: '10:00 AM - 01:00 PM',
-          customer,
-          customerEmail: email,
-          customerPhone,
-          surveyType,
-          property,
-          location: postcode,
-          postcode,
-          surveyor: 'David Thorne MRICS',
-          surveyorId: 'srv-1',
-          status: 'Booked',
-          stage: 'BOOKED',
-          termsStatus: 'Signed',
-          paymentStatus: 'Paid',
-          canBook: true,
-          timelineStep: 6,
-          accessNotes: 'Customer direct instruction via portal',
-          backendSynced: false,
-        });
-        return;
-      }
-
-      // Map all existing jobs for this customer
-      customerExistingJobs.forEach((existing) => {
-        const isHistoricalJob =
-          existing.id === 'QUO-2026-126' ||
-          existing.jobNo === 'QUO-2026-126' ||
-          (!existing.isNewInstruction && (existing.timelineStep || 0) >= 6);
-
-        let currentJobStatus = existing.status || 'Booked';
-        let currentTimelineStep = existing.timelineStep || (existing.status === 'Enquiry' ? 1 : 6);
-
-        if (isHistoricalJob) {
-          const isInspected =
-            existing?.status?.toLowerCase() === 'inspected' ||
-            (existing?.timelineStep || 0) >= 7 ||
-            localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-            localStorage.getItem(`propertygroup_inspection_completed_${email}`) === 'true';
-
-          const isDrafting =
-            existing?.status?.toLowerCase() === 'drafting' ||
-            (existing?.timelineStep || 0) >= 8 ||
-            localStorage.getItem('propertygroup_drafting') === 'true' ||
-            localStorage.getItem(`propertygroup_drafting_${email}`) === 'true';
-
-          const isQAReview =
-            existing?.status?.toLowerCase() === 'qa_review' ||
-            existing?.status?.toLowerCase() === 'qa review' ||
-            (existing?.timelineStep || 0) >= 9 ||
-            localStorage.getItem('propertygroup_qareview') === 'true' ||
-            localStorage.getItem(`propertygroup_qareview_${email}`) === 'true';
-
-          const isCompleted =
-            existing?.status?.toLowerCase() === 'completed' ||
-            (existing?.timelineStep || 0) >= 10 ||
-            localStorage.getItem('propertygroup_delivered') === 'true' ||
-            localStorage.getItem(`propertygroup_delivered_${email}`) === 'true';
-
-          if (isCompleted) {
-            currentJobStatus = 'Completed';
-            currentTimelineStep = 10;
-          } else if (isQAReview) {
-            currentJobStatus = 'QA_Review';
-            currentTimelineStep = 9;
-          } else if (isDrafting) {
-            currentJobStatus = 'Drafting';
-            currentTimelineStep = 8;
-          } else if (isInspected) {
-            currentJobStatus = 'Inspected';
-            currentTimelineStep = 7;
-          }
-        }
-
-        realJobs.push({
-          ...existing,
-          id: existing.id,
-          jobNo: existing.jobNo || existing.id,
-          customer: existing.customer || reg.name || 'Client',
-          customerEmail: email,
-          customerPhone: existing.customerPhone || reg.phone || '',
-          surveyType: existing.surveyType || 'RICS Level 2 Home Survey',
-          property: existing.property || reg.address || 'Specified Property',
-          location: existing.location || existing.postcode || reg.postcode || '',
-          postcode: existing.postcode || existing.location || '',
-          surveyor: existing.surveyor || (isHistoricalJob ? 'David Thorne MRICS' : 'Pending Allocation'),
-          surveyorId: existing.surveyorId || 'srv-1',
-          status: currentJobStatus,
-          stage:
-            currentJobStatus === 'Completed'
-              ? 'COMPLETE'
-              : currentJobStatus === 'Inspected' || currentJobStatus === 'Drafting'
-              ? 'PREPARING_REPORT'
-              : currentJobStatus === 'QA_Review'
-              ? 'QA_REVIEW'
-              : currentTimelineStep <= 2
-              ? 'ENQUIRY'
-              : 'BOOKED',
-          termsStatus: existing.termsStatus || (isHistoricalJob ? 'Signed' : 'Pending'),
-          paymentStatus: existing.paymentStatus || (isHistoricalJob ? 'Paid' : 'Pending'),
-          canBook: true,
-          timelineStep: currentTimelineStep,
-          accessNotes: existing.accessNotes || 'Customer direct instruction via portal',
-          backendSynced: false,
-        });
-      });
-
-      // Also incorporate any fresh leads that don't have an existing job yet
-      customerLeads.forEach((lead) => {
-        const alreadyInJobs = realJobs.some((rj) => rj.id === lead.id || rj.jobNo === lead.id);
-        if (!alreadyInJobs) {
-          realJobs.push({
-            id: lead.id,
-            jobNo: lead.id,
-            date: 'Pending Allocation',
-            timeSlot: 'Pending Allocation',
-            customer: lead.customer || lead.clientName || reg.name || 'Client',
-            customerEmail: email,
-            customerPhone: lead.customerPhone || lead.clientPhone || reg.phone || '',
-            surveyType: lead.surveyType || lead.serviceType || 'Property Survey',
-            property: lead.property || 'Specified Property',
-            location: lead.location || lead.postcode || '',
-            postcode: lead.postcode || lead.location || '',
-            surveyor: 'Pending Allocation',
-            surveyorId: 'srv-1',
-            status: lead.status === 'New' ? 'Enquiry' : lead.status || 'Enquiry',
-            stage: 'ENQUIRY',
-            termsStatus: 'Pending',
-            paymentStatus: 'Pending',
-            canBook: false,
-            timelineStep: 1,
-            accessNotes: lead.accessNotes || 'Customer website quote enquiry',
-            backendSynced: false,
-            isNewInstruction: true,
-          });
-        }
-      });
-    });
-
-    if (sessionEmail) {
-      const activeId = localStorage.getItem(`propertygroup_active_job_${sessionEmail}`);
-      if (activeId) {
-        realJobs.sort((a, b) => {
-          if (a.id === activeId) return -1;
-          if (b.id === activeId) return 1;
-          return 0;
-        });
-      }
-    }
-
-    return realJobs;
-  } catch (e) {
-    console.error('Error syncing real customer jobs:', e);
-    return [];
-  }
-};
+export const syncRealCustomerJobs = () => [];
 
 export const getStoredJobs = () => {
   try {
-    let stored = [];
     const raw = localStorage.getItem('propertygroup_jobs');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        stored = parsed;
+        return parsed.filter((j) => {
+          const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+          return (
+            email &&
+            email !== 'customer@demo.com' &&
+            email !== 'customer2@demo.com' &&
+            email !== 'astp750@gmail.com' &&
+            email !== 'oliver.vance@example.com' &&
+            email !== 'charlotte.b@outlook.com' &&
+            !email.includes('emma.watson') &&
+            !email.includes('kensingtonestates') &&
+            !email.includes('harrison')
+          );
+        });
       }
     }
-
-    const realCustomerJobs = syncRealCustomerJobs(stored);
-
-    // Filter out dummy demo jobs (Emma Watson, Kensington Estates, Oliver Vance, etc.)
-    const nonDummyStored = stored.filter((j) => {
-      const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
-      return (
-        email &&
-        email !== 'customer@demo.com' &&
-        email !== 'customer2@demo.com' &&
-        email !== 'oliver.vance@example.com' &&
-        email !== 'charlotte.b@outlook.com' &&
-        !email.includes('emma.watson') &&
-        !email.includes('kensingtonestates') &&
-        !email.includes('harrison')
-      );
-    });
-
-    // Merge: real customer jobs first, followed by non-dummy stored
-    const merged = [...realCustomerJobs];
-    nonDummyStored.forEach((j) => {
-      if (!merged.some((m) => m.jobNo === j.jobNo || m.id === j.id)) {
-        merged.push(j);
-      }
-    });
-
-    if (merged.length > 0) {
-      return merged;
-    }
-    return realCustomerJobs;
   } catch (e) {
     console.error(e);
   }
