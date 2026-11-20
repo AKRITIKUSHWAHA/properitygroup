@@ -108,7 +108,7 @@ const STAGES = [
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { jobs, setJobs, addJob } = useJobs();
-  const { setLeads } = useLeads();
+  const { leads, setLeads } = useLeads();
   const { addToast } = useToast();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -300,6 +300,8 @@ export const AdminDashboardPage = () => {
         activeFilter={activeBucketFilter}
         onSelectFilter={setActiveBucketFilter}
         backendBuckets={backendBuckets}
+        jobs={jobs}
+        leads={leads}
       />
 
       {/* Main Content: Active Survey Instructions Queue */}

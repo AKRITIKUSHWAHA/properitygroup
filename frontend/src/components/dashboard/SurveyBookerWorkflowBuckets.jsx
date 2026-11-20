@@ -17,11 +17,20 @@ import { useJobs } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
 import { useTerms } from '../../mock/terms';
 
-export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, backendBuckets = null }) => {
+export const SurveyBookerWorkflowBuckets = ({
+  activeFilter,
+  onSelectFilter,
+  backendBuckets = null,
+  jobs: propsJobs,
+  leads: propsLeads,
+}) => {
   const navigate = useNavigate();
-  const { jobs } = useJobs();
-  const { leads } = useLeads();
+  const { jobs: hookJobs } = useJobs();
+  const { leads: hookLeads } = useLeads();
   const { agreements } = useTerms();
+
+  const jobs = Array.isArray(propsJobs) ? propsJobs : hookJobs;
+  const leads = Array.isArray(propsLeads) ? propsLeads : hookLeads;
 
   // Helper to extract count from backendBuckets if present
   const getBackendCount = (bucketId) => {
@@ -48,16 +57,12 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
   }).length;
   const termsToSend = pendingAgreementsCount;
 
-  // 4. Jobs to book: strictly matches /admin/jobs?filter=Action Required (Unbooked jobs ready for scheduling)
-  const unbookedJobs = jobs.filter(
-    (j) =>
-      (j.termsStatus === 'Signed' || j.paymentStatus === 'Paid') &&
-      j.status !== 'Booked' &&
-      j.status !== 'Scheduled' &&
-      j.status !== 'Completed'
-  );
-  const jobsToBook = unbookedJobs.length;
-  const remindersSentCount = unbookedJobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
+  // 4. Jobs to book: strictly matches /admin/jobs?filter=Action Required (Terms & Payment Pending)
+  const actionRequiredCount = jobs.filter(
+    (j) => !j.canBook || j.termsStatus !== 'Signed' || j.paymentStatus !== 'Paid'
+  ).length;
+  const jobsToBook = actionRequiredCount;
+  const remindersSentCount = jobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
 
   // 5. Appointments: strictly matches /admin/jobs?filter=Scheduled (Appointments / Booked tab)
   const appointments = jobs.filter(
@@ -74,7 +79,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       id: 'all',
       title: 'All records',
       count: allRecords,
-      badgeNote: '0 unread',
+      badgeNote: `${allRecords} ${allRecords === 1 ? 'Job' : 'Jobs'} active`,
       icon: Layers,
       color: 'bg-slate-50 text-slate-700 border-slate-200',
       activeColor: 'bg-[#0B1F4D] text-white border-[#0B1F4D]',
@@ -112,7 +117,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       color: 'bg-amber-50/70 text-amber-700 border-amber-200/80',
       activeColor: 'bg-amber-600 text-white border-amber-600',
       targetRoute: '/admin/jobs?filter=Action Required',
-      desc: 'Accepted proposals awaiting inspection booking',
+      desc: 'Proposals awaiting booking & payment',
     },
     {
       id: 'appointments',

@@ -296,6 +296,12 @@ export const AdminTermsPage = () => {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('filter') || searchParams.get('tab') || 'All';
   const [activeTab, setActiveTab] = useState(initialTab); // 'All' | 'Signed' | 'Sent' | 'Pending'
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [backendMetrics, setBackendMetrics] = useState(null);
 
   // Fetch terms and documents + metrics from backend API

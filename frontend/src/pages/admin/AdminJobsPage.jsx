@@ -409,6 +409,12 @@ export const AdminJobsPage = () => {
   }, [location.search]);
 
   const [activeTab, setActiveTab] = useState(queryFilter);
+
+  useEffect(() => {
+    if (queryFilter) {
+      setActiveTab(queryFilter);
+    }
+  }, [queryFilter]);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveyorFilter, setSurveyorFilter] = useState('All');
   const [activeSurveyors, setActiveSurveyors] = useState([]);
