@@ -151,57 +151,43 @@ export const AuthProvider = ({ children }) => {
         token: authToken,
       };
     } else {
-      // Check demo users fallback
-      matchedUser = DEMO_USERS[trimmedEmail];
+      // Check demo users fallback with strict password verification
+      const demoUser = DEMO_USERS[trimmedEmail];
+      if (demoUser) {
+        const cleanPw = (password || '').trim();
+        const validAdmin = (trimmedEmail === 'admin@demo.com' || trimmedEmail === 'njsadmin@gmail.com') && (cleanPw === 'admin123' || cleanPw === 'password123' || cleanPw === 'Password123!');
+        const validSurveyor = (trimmedEmail === 'surveyor@demo.com' || trimmedEmail === 'njssurveyor@gmail.com') && (cleanPw === 'surveyor123' || cleanPw === 'password123' || cleanPw === 'Password123!');
+        const validCustomer = (trimmedEmail === 'customer@demo.com') && (cleanPw === 'customer123' || cleanPw === 'password123');
 
+        if (!validAdmin && !validSurveyor && !validCustomer) {
+          setIsLoading(false);
+          throw new Error('Invalid password. Please verify your credentials.');
+        }
+        matchedUser = demoUser;
+      }
+
+      // Check registered customers with exact password verification
       if (!matchedUser) {
         try {
           const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
           if (registered[trimmedEmail]) {
-            matchedUser = registered[trimmedEmail];
+            const customerObj = registered[trimmedEmail];
+            const storedPw = customerObj.password || localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
+            if (storedPw && storedPw.trim() !== (password || '').trim()) {
+              setIsLoading(false);
+              throw new Error('Invalid password. Please enter the password you registered with.');
+            }
+            matchedUser = customerObj;
           }
-        } catch {
-          // ignore
+        } catch (regErr) {
+          if (regErr.message?.includes('password') || regErr.message?.includes('Invalid')) throw regErr;
         }
       }
 
+      // If user does not exist in backend, demo users, or registered customers, strictly reject!
       if (!matchedUser) {
-        try {
-          const storedQuotes = JSON.parse(localStorage.getItem('property_group_quotes') || '[]');
-          const q = storedQuotes.find((item) => (item.clientEmail || '').toLowerCase().trim() === trimmedEmail);
-          if (q) {
-            matchedUser = {
-              id: `usr_client_${Date.now()}`,
-              email: trimmedEmail,
-              name: q.client || 'Valued Client',
-              role: 'customer',
-              roleLabel: 'Property Client',
-              company: 'NJS Property Group',
-              phone: q.clientPhone || '',
-              address: q.property || '',
-              postcode: q.location || '',
-            };
-          }
-        } catch {}
-      }
-
-      if (!matchedUser && trimmedEmail.includes('@')) {
-        const isStaffPortal = expectedRole === 'admin' || expectedRole === 'super_admin' || trimmedEmail.includes('admin');
-        const isSurveyorPortal = expectedRole === 'surveyor' || trimmedEmail.includes('surveyor');
-        const assignedRole = isStaffPortal ? 'super_admin' : isSurveyorPortal ? 'surveyor' : 'customer';
-        const assignedRoleLabel = isStaffPortal ? 'Admin' : isSurveyorPortal ? 'Chartered Surveyor' : 'Property Client';
-
-        matchedUser = {
-          id: `usr_${assignedRole}_${Date.now()}`,
-          email: trimmedEmail,
-          name: trimmedEmail.split('@')[0],
-          role: assignedRole,
-          roleLabel: assignedRoleLabel,
-          company: 'NJS Property Group',
-          phone: '',
-          address: '',
-          postcode: '',
-        };
+        setIsLoading(false);
+        throw new Error('No registered account found with this email. Please create an account first.');
       }
     }
 
@@ -319,6 +305,7 @@ export const AuthProvider = ({ children }) => {
       phone,
       address: address || '',
       postcode: postcode || '',
+      password: password,
       currency: 'GBP',
       dateJoined: new Date().toLocaleDateString('en-GB'),
       badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -328,6 +315,8 @@ export const AuthProvider = ({ children }) => {
       const existing = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
       existing[trimmedEmail] = newCustomer;
       localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(existing));
+      // Store exact password for Admin Users & Roles visibility and login verification
+      localStorage.setItem(`njs_user_pw_${trimmedEmail}`, password);
     } catch {
       // ignore
     }

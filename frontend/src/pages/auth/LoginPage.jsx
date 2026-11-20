@@ -143,57 +143,11 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     if (urlEmail) {
       const cleanEmail = urlEmail.toLowerCase().trim();
       setEmail(cleanEmail);
+      setPassword('');
 
       const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
       if (blockedList.includes(cleanEmail)) {
         setErrorMessage('Your account has been deactivated or blocked by management. Please contact support.');
-        return;
-      }
-
-      // Auto-switch to customer if currently unauthenticated or logged in as a different demo user
-      if (!user || user.email?.toLowerCase().trim() !== cleanEmail) {
-        let matchedCustomer = null;
-        try {
-          const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-          matchedCustomer = registered[cleanEmail];
-        } catch {}
-        if (!matchedCustomer) {
-          try {
-            const storedQuotes = JSON.parse(localStorage.getItem('property_group_quotes') || '[]');
-            const q = storedQuotes.find(quote => (quote.clientEmail || '').toLowerCase().trim() === cleanEmail);
-            if (q) {
-              matchedCustomer = {
-                id: `usr_client_${Date.now()}`,
-                email: cleanEmail,
-                name: q.client || 'Valued Client',
-                role: 'customer',
-                roleLabel: 'Property Client',
-                company: 'NJS Property Group',
-                phone: q.clientPhone || '',
-                address: q.property || '',
-                postcode: q.location || '',
-              };
-            }
-          } catch {}
-        }
-        if (!matchedCustomer) {
-          matchedCustomer = {
-            id: `usr_client_${Date.now()}`,
-            email: cleanEmail,
-            name: cleanEmail.split('@')[0],
-            role: 'customer',
-            roleLabel: 'Property Client',
-            company: 'NJS Property Group',
-          };
-        }
-        if (setUser) {
-          setUser(matchedCustomer);
-        }
-        localStorage.setItem('property_group_user_session', JSON.stringify(matchedCustomer));
-        navigate('/customer/my-dashboard', { replace: true });
-        return;
-      } else if (user && user.email?.toLowerCase().trim() === cleanEmail && user.role === 'customer') {
-        navigate('/customer/my-dashboard', { replace: true });
         return;
       }
     } else if (location.state?.prefilledEmail) {
