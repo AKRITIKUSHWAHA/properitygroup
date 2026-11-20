@@ -21,6 +21,7 @@ import {
   Clock,
   Award,
   Copy,
+  MapPin,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -30,7 +31,7 @@ import { useToast } from '../../components/ToastContext';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { RolePermissionsManager } from '../../components/admin/RolePermissionsManager';
-import { adminUsersAndRolesApi } from '../../api/adminApi';
+import { adminUsersAndRolesApi, adminSurveyorsApi } from '../../api/adminApi';
 
 export const AdminUsersPage = () => {
   const { addToast } = useToast();
@@ -149,6 +150,18 @@ export const AdminUsersPage = () => {
     password: '',
     role: 'surveyor',
     org: '',
+    phone: '',
+    // Surveyor specific
+    credentials: 'MRICS Chartered Valuation Surveyor',
+    postcodes: 'SW, W, KT, GU',
+    color: '#2563EB',
+    piiExpiry: '31/12/2027',
+    // Customer specific
+    clientType: 'Private Residential Buyer / Homeowner',
+    address: '',
+    postcode: '',
+    // Admin specific
+    adminTitle: 'Operations & Dispatch Manager',
   });
 
   const handleAddUser = async (e) => {
@@ -171,18 +184,39 @@ export const AdminUsersPage = () => {
     setIsSubmitting(true);
     try {
       const cleanEmail = formData.email.toLowerCase().trim();
-      const cleanPhone = formData.phone.trim();
+      const cleanPhone = formData.phone ? formData.phone.trim() : '';
       const cleanPw = formData.password.trim();
 
-      // Persist to real backend database with hashed password
+      // Persist to real backend database with hashed password and role-specific fields
       const backendRole = formData.role === 'super_admin' ? 'ADMIN' : (formData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER');
       await adminUsersAndRolesApi.createUser({
         name: formData.name.trim(),
         email: cleanEmail,
-        phone: cleanPhone || null,
         password: cleanPw,
         role: backendRole,
+        phone: cleanPhone || undefined,
+        accreditation: formData.role === 'surveyor' ? formData.credentials : undefined,
+        postcodesCovered: formData.role === 'surveyor' ? formData.postcodes.trim() : undefined,
       });
+
+      // If surveyor, auto-sync to field surveyor rota
+      if (formData.role === 'surveyor') {
+        adminSurveyorsApi.onboardSurveyor({
+          name: formData.name.trim(),
+          credentials: formData.credentials,
+          postcodes: formData.postcodes,
+          phone: cleanPhone,
+          email: cleanEmail,
+          color: formData.color,
+          piiExpiry: formData.piiExpiry,
+        }).catch((err) => console.warn('Surveyor panel auto-sync note:', err));
+      }
+
+      const defaultOrg = formData.role === 'surveyor'
+        ? (formData.org.trim() || 'NJS Chartered Surveyors Practice')
+        : (formData.role === 'super_admin'
+          ? (formData.org.trim() || 'NJS Property Group HQ')
+          : (formData.org.trim() || 'Private Client'));
 
       const newUser = {
         id: `USR-${String(users.length + 1).padStart(2, '0')}`,
@@ -191,7 +225,7 @@ export const AdminUsersPage = () => {
         phone: cleanPhone || '—',
         role: formData.role,
         roleLabel: roleMap[formData.role] || 'User',
-        org: formData.org.trim() || 'NJS Property Group',
+        org: defaultOrg,
         lastLogin: 'Never',
         status: 'Active',
       };
@@ -208,11 +242,14 @@ export const AdminUsersPage = () => {
           id: newUser.id,
           name: newUser.name,
           email: cleanEmail,
-          phone: cleanPhone,
+          phone: cleanPhone || formData.phone?.trim() || '',
+          address: formData.address?.trim() || '',
+          postcode: formData.postcode?.trim().toUpperCase() || '',
+          clientType: formData.clientType,
           role: formData.role,
           roleLabel: newUser.roleLabel,
           password: cleanPw,
-          company: newUser.org,
+          company: defaultOrg,
           status: 'Active',
         };
         localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
@@ -221,7 +258,22 @@ export const AdminUsersPage = () => {
       setUsers((prev) => [newUser, ...prev]);
       fetchUsers();
       setIsAddModalOpen(false);
-      setFormData({ name: '', email: '', phone: '', password: '', role: 'surveyor', org: '' });
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'surveyor',
+        org: '',
+        phone: '',
+        credentials: 'MRICS Chartered Valuation Surveyor',
+        postcodes: 'SW, W, KT, GU',
+        color: '#2563EB',
+        piiExpiry: '31/12/2027',
+        clientType: 'Private Residential Buyer / Homeowner',
+        address: '',
+        postcode: '',
+        adminTitle: 'Operations & Dispatch Manager',
+      });
 
       addToast({
         type: 'success',
@@ -726,8 +778,8 @@ export const AdminUsersPage = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Provision Platform User"
-        subtitle="Grant role-based credentials and send onboarding invitation."
-        maxWidth="max-w-lg"
+        subtitle="Grant role-based credentials and configure role-specific permissions & profiles."
+        maxWidth="max-w-2xl"
         footer={
           <>
             <button
@@ -740,110 +792,443 @@ export const AdminUsersPage = () => {
               type="submit"
               form="add-user-form"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] disabled:opacity-50 cursor-pointer shadow-sm"
             >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting
+                ? 'Creating Account...'
+                : formData.role === 'surveyor'
+                ? 'Provision Chartered Surveyor'
+                : formData.role === 'customer'
+                ? 'Create Customer Account'
+                : 'Create Administrator Account'}
             </button>
           </>
         }
       >
         <form id="add-user-form" onSubmit={handleAddUser} className="space-y-4 text-xs">
+          {/* 1. ROLE SELECTION AT THE TOP (Prominent Visual Switcher) */}
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Full Legal Name *</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Fiona Macintyre MRICS"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address *</label>
-            <input
-              type="email"
-              required
-              placeholder="fiona@njspropertygroup.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Contact Phone Number</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Phone className="w-4 h-4" />
-              </div>
-              <input
-                type="tel"
-                placeholder="e.g. +44 7700 900382 or 07123 456789"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block font-semibold text-slate-700">Login Password *</label>
+            <label className="block font-bold text-slate-800 mb-1.5 uppercase text-[11px] tracking-wider">
+              Select User Role *
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              {/* Surveyor Option */}
               <button
                 type="button"
-                onClick={() => setShowModalPassword(!showModalPassword)}
-                className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                onClick={() => setFormData({ ...formData, role: 'surveyor' })}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                  formData.role === 'surveyor'
+                    ? 'bg-blue-50/80 border-blue-600 text-[#0B1F4D] ring-2 ring-blue-500/20 shadow-xs'
+                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                }`}
               >
-                {showModalPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                {showModalPassword ? 'Hide' : 'Show'}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5">
+                    <Award className="w-3.5 h-3.5 text-blue-600" />
+                    Surveyor
+                  </span>
+                  {formData.role === 'surveyor' && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-500 leading-tight">
+                  RICS qualified inspector, inspection rota &amp; postcodes
+                </span>
+              </button>
+
+              {/* Customer Option */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'customer' })}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                  formData.role === 'customer'
+                    ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-emerald-600" />
+                    Customer
+                  </span>
+                  {formData.role === 'customer' && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-500 leading-tight">
+                  Property client, quotes, terms sign &amp; report delivery
+                </span>
+              </button>
+
+              {/* Admin Option */}
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: 'super_admin' })}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                  formData.role === 'super_admin'
+                    ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
+                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                    Admin
+                  </span>
+                  {formData.role === 'super_admin' && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                  )}
+                </div>
+                <span className="text-[10px] text-slate-500 leading-tight">
+                  Full operations, dispatch, QA desk &amp; financial control
+                </span>
               </button>
             </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+          </div>
+
+          {/* 2. CORE LOGIN & CONTACT CREDENTIALS */}
+          <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+              1. Basic Account &amp; Login Credentials
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Full Legal Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder={
+                    formData.role === 'surveyor'
+                      ? 'e.g. David Thorne MRICS'
+                      : formData.role === 'customer'
+                      ? 'e.g. Emily Watson'
+                      : 'e.g. Operations Admin'
+                  }
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
               </div>
-              <input
-                type={showModalPassword ? 'text' : 'password'}
-                required
-                minLength={6}
-                placeholder="Create password (min 6 characters)"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
-              />
-            </div>
-            <p className="text-[10px] text-slate-400 mt-1">
-              User will log in using this email and password. They can change it anytime in their profile.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Assigned Role *</label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
-              >
-                <option value="super_admin">Admin</option>
-                <option value="surveyor">Surveyor</option>
-                <option value="customer">Customer</option>
-              </select>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Email Address (Login Username) *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder={
+                    formData.role === 'surveyor'
+                      ? 'surveyor@njspropertygroup.com'
+                      : formData.role === 'customer'
+                      ? 'client@gmail.com'
+                      : 'admin@njspropertygroup.com'
+                  }
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Organisation</label>
-              <input
-                type="text"
-                placeholder="e.g. Macintyre Surveying"
-                value={formData.org}
-                onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-700">Login Password *</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPassword(!showModalPassword)}
+                    className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    {showModalPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showModalPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showModalPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Create password (min 6 characters)"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Direct Mobile / Phone</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="+44 7700 900000"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* 3. DYNAMIC ROLE-SPECIFIC FORM FIELDS */}
+          {formData.role === 'surveyor' && (
+            <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200/80 space-y-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 block flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-blue-600" />
+                2. Chartered Surveyor Qualifications &amp; Territory
+              </span>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Surveyor Qualification &amp; RICS Designation *
+                </label>
+                <select
+                  value={formData.credentials}
+                  onChange={(e) => setFormData({ ...formData, credentials: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <optgroup label="Client Specified Surveying Designations">
+                    <option value="Guided Trainee Surveyor (RICS Candidate)">
+                      Guided Trainee Surveyor (RICS Candidate)
+                    </option>
+                    <option value="Experienced Surveyor (BSC Hons Civil Engineering, MRPSA, DAE, Retrofit Assessor, SMSTS)">
+                      Experienced Surveyor (BSC Hons Civil Engineering, MRPSA, DAE, Retrofit Assessor, SMSTS)
+                    </option>
+                    <option value="Experienced Surveyor (MCIOB, MRPSA, AssocRICS, LLB Hons, MEWI)">
+                      Experienced Surveyor (MCIOB, MRPSA, AssocRICS, LLB Hons, MEWI)
+                    </option>
+                    <option value="Experienced Surveyor (BTEC Civil Engineering, MSC Building Surveying, MRPSA, ACABE)">
+                      Experienced Surveyor (BTEC Civil Engineering, MSC Building Surveying, MRPSA, ACABE)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Standard RICS Designations">
+                    <option value="MRICS Chartered Valuation Surveyor">
+                      MRICS Chartered Valuation Surveyor (Level 2 &amp; Valuations)
+                    </option>
+                    <option value="Senior Building Surveyor (MRICS)">
+                      Senior Building Surveyor (MRICS Level 3 Specialist)
+                    </option>
+                    <option value="Residential Defect Specialist (AssocRICS)">
+                      Residential Defect Specialist (AssocRICS)
+                    </option>
+                    <option value="Fellow Chartered Surveyor (FRICS)">
+                      Fellow Chartered Surveyor (FRICS - Dispute &amp; Expert Witness)
+                    </option>
+                    <option value="Historic Buildings Consultant (MRICS)">
+                      Historic Buildings Consultant (MRICS Heritage)
+                    </option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Assigned Postcode Sectors (Coverage Area) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. SW, KT, GU, W, NW"
+                    value={formData.postcodes}
+                    onChange={(e) => setFormData({ ...formData, postcodes: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Postcodes covered without travel surcharge
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    PII Insurance Expiry Date
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 31/12/2027"
+                    value={formData.piiExpiry}
+                    onChange={(e) => setFormData({ ...formData, piiExpiry: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Surveying Practice / Firm Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. NJS Chartered Surveyors Practice"
+                    value={formData.org}
+                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Calendar Rota Color Accent
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-9 h-9 p-0.5 rounded-xl border border-slate-200 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono text-slate-900 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formData.role === 'customer' && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-950 block flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-emerald-600" />
+                2. Property Client Profile &amp; Billing Details
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Client Category / Type *
+                  </label>
+                  <select
+                    value={formData.clientType}
+                    onChange={(e) => setFormData({ ...formData, clientType: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  >
+                    <option value="Private Residential Buyer / Homeowner">
+                      Private Residential Buyer / Homeowner
+                    </option>
+                    <option value="Corporate / Portfolio Client">
+                      Corporate / Portfolio Client
+                    </option>
+                    <option value="Solicitor / Legal Representative">
+                      Solicitor / Legal Representative
+                    </option>
+                    <option value="Estate Agent / Partner Firm">
+                      Estate Agent / Partner Firm
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Organisation / Practice (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Private Client or Company"
+                    value={formData.org}
+                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Property / Billing Address *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 14 Mayfair Gate, Mayfair, London"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    UK Postcode *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. W1K 2PB"
+                    value={formData.postcode}
+                    onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {formData.role === 'super_admin' && (
+            <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-950 block flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                2. Platform Administrator Privileges
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Administrative Job Title / Position *
+                  </label>
+                  <select
+                    value={formData.adminTitle}
+                    onChange={(e) => setFormData({ ...formData, adminTitle: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  >
+                    <option value="Operations & Dispatch Manager">
+                      Operations &amp; Dispatch Manager
+                    </option>
+                    <option value="Lead Senior Administrator">
+                      Lead Senior Administrator
+                    </option>
+                    <option value="Billing & Invoicing Specialist">
+                      Billing &amp; Invoicing Specialist
+                    </option>
+                    <option value="Super Administrator (HQ)">
+                      Super Administrator (HQ)
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Headquarters / Organisation
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. NJS Property Group HQ"
+                    value={formData.org}
+                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white border border-indigo-100 flex items-center gap-2.5 text-indigo-900">
+                <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span className="text-[11px] leading-tight font-medium">
+                  <strong>Full Administrative Authority:</strong> User will have unrestricted access to all 11 admin modules, customer accounts, payment verification, QA review desk, and staff management.
+                </span>
+              </div>
+            </div>
+          )}
         </form>
       </Modal>
 
