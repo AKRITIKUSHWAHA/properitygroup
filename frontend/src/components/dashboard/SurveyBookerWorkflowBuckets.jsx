@@ -61,7 +61,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
     (j) => j.status === 'Survey done' || j.status === 'Preparing report' || j.timelineStep === 8
   ).length;
 
-  const allRecords = Math.max(jobs.length + leads.length, quotesToSubmit + termsToSend + jobsToBook + appointments + reportsToUpload);
+  const allRecords = jobs.length;
 
   const buckets = [
     {
@@ -73,7 +73,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       color: 'bg-slate-50 text-slate-700 border-slate-200',
       activeColor: 'bg-[#0B1F4D] text-white border-[#0B1F4D]',
       targetRoute: '/admin/jobs',
-      desc: 'All active instructions, leads & archive',
+      desc: 'All active instructions & archive',
     },
     {
       id: 'quotes-to-submit',
