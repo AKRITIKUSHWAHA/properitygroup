@@ -32,11 +32,34 @@ export const adminCompaniesApi = {
 };
 
 // Menu 4: Surveyors
+let cachedSurveyorsPromise = null;
+let cachedSurveyorsTime = 0;
+
 export const adminSurveyorsApi = {
-  getSurveyors: (params = '') => api.get(`/surveyors${params ? `?${params}` : ''}`),
+  getSurveyors: (params = '') => {
+    const now = Date.now();
+    if (!params && cachedSurveyorsPromise && now - cachedSurveyorsTime < 30000) {
+      return cachedSurveyorsPromise;
+    }
+    const p = api.get(`/surveyors${params ? `?${params}` : ''}`).catch((err) => {
+      cachedSurveyorsPromise = null;
+      throw err;
+    });
+    if (!params) {
+      cachedSurveyorsPromise = p;
+      cachedSurveyorsTime = now;
+    }
+    return p;
+  },
   getMetrics: () => api.get('/surveyors/metrics'),
-  onboardSurveyor: (surveyorData) => api.post('/surveyors', surveyorData),
-  updateSurveyor: (id, data) => api.patch(`/surveyors/${id}`, data),
+  onboardSurveyor: (surveyorData) => {
+    cachedSurveyorsPromise = null;
+    return api.post('/surveyors', surveyorData);
+  },
+  updateSurveyor: (id, data) => {
+    cachedSurveyorsPromise = null;
+    return api.patch(`/surveyors/${id}`, data);
+  },
 };
 
 // Menu 5: CRM & Leads

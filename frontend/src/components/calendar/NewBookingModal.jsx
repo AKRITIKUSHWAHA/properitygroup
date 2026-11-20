@@ -32,6 +32,8 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
 
   // Load live surveyors from backend API
   useEffect(() => {
+    if (!isOpen) return;
+    if (activeSurveyors.length > 0) return;
     adminSurveyorsApi
       .getSurveyors()
       .then((res) => {
@@ -45,7 +47,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isOpen]);
 
   // Load CRM leads from backend API
   useEffect(() => {

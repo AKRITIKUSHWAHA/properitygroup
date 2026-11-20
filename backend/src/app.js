@@ -60,6 +60,7 @@ if (env.NODE_ENV === 'development') {
           u.includes('action-buckets') ||
           u.includes('permissions') ||
           u.includes('messages') ||
+          u.includes('surveyors') ||
           u.includes('health')
         );
       },

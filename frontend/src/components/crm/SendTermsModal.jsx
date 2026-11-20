@@ -40,6 +40,8 @@ export const SendTermsModal = ({
   const [activeSurveyors, setActiveSurveyors] = useState([]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    if (activeSurveyors.length > 0) return;
     adminSurveyorsApi
       .getSurveyors()
       .then((res) => {
@@ -49,7 +51,7 @@ export const SendTermsModal = ({
         }
       })
       .catch(() => {});
-  }, []);
+  }, [isOpen]);
 
   const surveyorList = useMemo(() => {
     if (activeSurveyors.length > 0) {

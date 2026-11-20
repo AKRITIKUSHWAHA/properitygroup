@@ -53,18 +53,20 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSur
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!passedSurveyors || passedSurveyors.length === 0) {
-      adminSurveyorsApi
-        .getSurveyors()
-        .then((res) => {
-          const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
-          if (Array.isArray(raw) && raw.length > 0) {
-            setInternalSurveyors(raw);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [passedSurveyors]);
+    if (!isOpen) return;
+    if (passedSurveyors && passedSurveyors.length > 0) return;
+    if (internalSurveyors.length > 0) return;
+
+    adminSurveyorsApi
+      .getSurveyors()
+      .then((res) => {
+        const raw = res?.surveyors || res?.data?.surveyors || res?.data?.data?.surveyors || (Array.isArray(res) ? res : []);
+        if (Array.isArray(raw) && raw.length > 0) {
+          setInternalSurveyors(raw);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   const activeList = passedSurveyors && passedSurveyors.length > 0 ? passedSurveyors : internalSurveyors;
   const surveyorList = useMemo(() => {
