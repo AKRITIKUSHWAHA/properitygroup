@@ -126,25 +126,34 @@ export const AuthProvider = ({ children }) => {
     } catch (apiErr) {
       console.warn('Real backend authentication attempt:', apiErr.message);
       const errMsg = apiErr.message || '';
-      // If backend explicitly rejected the login (blocked, inactive, bad password, access denied), STOP and throw!
+      // If backend explicitly rejected the login (blocked, inactive, access denied), STOP and throw!
       if (
         errMsg.includes('blocked') ||
         errMsg.includes('inactive') ||
         errMsg.includes('deactivated') ||
         errMsg.includes('suspended') ||
-        errMsg.includes('Invalid') ||
-        errMsg.includes('password') ||
         errMsg.includes('Access Denied') ||
         errMsg.includes('strictly') ||
         errMsg.includes('Forbidden') ||
         errMsg.includes('forbidden') ||
         apiErr.status === 403 ||
-        apiErr.status === 401 ||
-        apiErr.response?.status === 403 ||
-        apiErr.response?.status === 401
+        apiErr.response?.status === 403
       ) {
         setIsLoading(false);
         throw new Error(errMsg || 'Your account is blocked or inactive. Please contact administration.');
+      }
+
+      // If no local password was configured, enforce backend password validation result
+      if (!requiredPassword) {
+        if (
+          errMsg.includes('Invalid') ||
+          errMsg.includes('password') ||
+          apiErr.status === 401 ||
+          apiErr.response?.status === 401
+        ) {
+          setIsLoading(false);
+          throw new Error(errMsg || 'Invalid email or password. Please verify your credentials.');
+        }
       }
     }
 
