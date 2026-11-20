@@ -256,6 +256,13 @@ export const navigationCategories = {
         shortName: "Accreditations",
         path: "/professional-standards-notice",
         description: "RICS Home Survey alignment & surveyor code of conduct."
+      },
+      {
+        id: "privacy-policy-link",
+        name: "Privacy Policy & Data Notice",
+        shortName: "Privacy Policy",
+        path: "/privacy-policy",
+        description: "Client data protection, GDPR compliance & confidentiality."
       }
     ],
     hotline: {
