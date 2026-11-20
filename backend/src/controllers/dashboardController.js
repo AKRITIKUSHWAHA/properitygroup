@@ -42,7 +42,7 @@ export const getActionBuckets = async (req, res, next) => {
   try {
     const [quotesToSubmit, jobsToBook, reportsToUpload, termsToSign, paymentsToCollect, completed] =
       await Promise.all([
-        prisma.job.count({ where: { stage: 'QUOTE' } }),
+        prisma.lead.count({ where: { status: { in: ['NEW', 'CONTACTED'] } } }),
         prisma.job.count({ where: { stage: { in: ['PAID', 'ACCEPTED'] } } }),
         prisma.job.count({ where: { stage: 'PREPARING_REPORT' } }),
         prisma.term.count({ where: { signed: false } }),
