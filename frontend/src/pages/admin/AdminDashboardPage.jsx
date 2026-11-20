@@ -173,7 +173,7 @@ export const AdminDashboardPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [setJobs, setLeads]);
+  }, []);
 
   const { conversations } = useMessages();
   const totalUnreadMessages = useMemo(() => {

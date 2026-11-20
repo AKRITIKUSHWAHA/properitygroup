@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Mock data for Survey Jobs, Booking Calendar and Job Details
 export const SURVEYORS = [
@@ -70,15 +70,15 @@ export const useJobs = () => {
     };
   }, []);
 
-  const setJobs = (updater) => {
+  const setJobs = useCallback((updater) => {
     setJobsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       saveStoredJobs(next);
       return next;
     });
-  };
+  }, []);
 
-  const updateJob = (id, updates) => {
+  const updateJob = useCallback((id, updates) => {
     // Synchronize persistent milestone progress flags
     const customerEmail = (updates.customerEmail || '').toLowerCase().trim();
     if (updates.status === 'Inspected' || updates.timelineStep === 7) {
@@ -171,9 +171,9 @@ export const useJobs = () => {
         }),
       }).catch(() => {});
     }
-  };
+  }, [setJobs]);
 
-  const addJob = (newJob) => {
+  const addJob = useCallback((newJob) => {
     setJobs((prev) => [newJob, ...prev]);
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
@@ -194,7 +194,7 @@ export const useJobs = () => {
         }),
       }).catch(() => {});
     }
-  };
+  }, [setJobs]);
 
   return { jobs, setJobs, updateJob, addJob };
 };

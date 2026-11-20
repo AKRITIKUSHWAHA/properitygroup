@@ -392,7 +392,7 @@ export const AdminJobsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [setJobs]);
+  }, []);
 
   const queryFilter = useMemo(() => {
     return new URLSearchParams(location.search).get('filter') || 'All';

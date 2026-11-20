@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Service-Specific Legal Terms of Engagement Templates
@@ -627,19 +627,19 @@ export const useTerms = () => {
     };
   }, []);
 
-  const setAgreements = (updater) => {
+  const setAgreements = useCallback((updater) => {
     setAgreementsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       saveStoredAgreements(next);
       return next;
     });
-  };
+  }, []);
 
-  const addAgreement = (newAgreement) => {
+  const addAgreement = useCallback((newAgreement) => {
     setAgreements((prev) => [newAgreement, ...prev]);
-  };
+  }, [setAgreements]);
 
-  const markAgreementSigned = (idOrJobNo, details = {}) => {
+  const markAgreementSigned = useCallback((idOrJobNo, details = {}) => {
     setAgreements((prev) =>
       prev.map((a) => {
         if (a.id !== idOrJobNo && a.jobNo !== idOrJobNo && a.refNo !== idOrJobNo) return a;
@@ -656,7 +656,7 @@ export const useTerms = () => {
         };
       })
     );
-  };
+  }, [setAgreements]);
 
   return { agreements, setAgreements, addAgreement, markAgreementSigned };
 };

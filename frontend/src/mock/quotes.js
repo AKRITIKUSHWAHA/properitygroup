@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Initial Quotations, Invoices, and Payments (Clean state for fresh client testing)
 export const INITIAL_QUOTES = [];
@@ -40,15 +40,15 @@ export const useQuotes = () => {
     };
   }, []);
 
-  const setQuotes = (updater) => {
+  const setQuotes = useCallback((updater) => {
     setQuotesState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       saveStoredQuotes(next);
       return next;
     });
-  };
+  }, []);
 
-  const addQuote = (newQuote) => {
+  const addQuote = useCallback((newQuote) => {
     setQuotes((prev) => [newQuote, ...prev]);
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
@@ -64,7 +64,7 @@ export const useQuotes = () => {
         }),
       }).catch(() => {});
     }
-  };
+  }, [setQuotes]);
 
   const updateQuote = (id, updatedFields) => {
     setQuotes((prev) =>
