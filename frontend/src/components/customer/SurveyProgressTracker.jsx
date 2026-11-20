@@ -148,7 +148,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
   const activeStageObj = stages.find((s) => s.step === selectedStep) || stages[currentStep - 1];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 sm:p-6 mb-6">
+    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
         <div>

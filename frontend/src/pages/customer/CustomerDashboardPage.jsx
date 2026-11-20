@@ -256,33 +256,33 @@ export const CustomerDashboardPage = () => {
   }));
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* 1. GRADIENT WELCOME BANNER (Required by Prompt) */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] p-5 sm:p-7 md:p-8 text-white shadow-xl shadow-[#0B1F4D]/20">
-        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
-        <div className="absolute left-1/2 bottom-0 h-40 w-40 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
+    <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto pb-10">
+      {/* 1. GRADIENT WELCOME BANNER (Compact & Elegant) */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] p-5 sm:p-6 text-white shadow-lg shadow-[#0B1F4D]/15">
+        <div className="absolute right-0 top-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/2 bottom-0 h-36 w-36 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-blue-200 border border-white/15">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-bold text-blue-200 border border-white/15">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>Customer Survey Portal • RICS Regulated Practice</span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
               Welcome back, {user?.name || 'Client'} 👋
             </h1>
 
-            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-xl">
-              Track the live progress of your property inspections, execute RICS terms of engagement, and download your accredited valuation & structural reports.
+            <p className="text-xs sm:text-[13px] text-blue-100/90 leading-relaxed max-w-xl">
+              Track real-time progress for your property instructions, sign RICS terms, and download accredited survey reports.
             </p>
           </div>
 
-          {/* Action Buttons: "Book a New Survey" & "Contact Support" (Required by prompt) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 w-full lg:w-auto">
+          {/* Action Buttons: "Book a New Survey" & "Contact Support" */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full lg:w-auto">
             <button
               onClick={() => setIsBookModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-md transition-all min-h-[44px] cursor-pointer w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs font-bold shadow-md transition-all min-h-[40px] cursor-pointer w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 text-[#2563EB]" />
               <span>Book a New Survey</span>
@@ -290,7 +290,7 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/support')}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 backdrop-blur-sm transition-all min-h-[44px] cursor-pointer w-full sm:w-auto"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/25 backdrop-blur-sm transition-all min-h-[40px] cursor-pointer w-full sm:w-auto"
             >
               <HelpCircle className="w-4 h-4 text-blue-200" />
               <span>Contact Support</span>
@@ -300,7 +300,7 @@ export const CustomerDashboardPage = () => {
       </div>
 
       {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Compact & Refined) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -605,339 +605,299 @@ export const CustomerDashboardPage = () => {
         </div>
       )}
 
-      {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Trustpilot Banner (Client Requirement Point 31 & Stage 6 Review Trigger) */}
-        {customerJob?.reviewSubmitted ? (
-          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 shrink-0">
-                    Verified Trustpilot Review ★★★★★
-                  </span>
-                  <span className="text-xs font-bold text-emerald-700">
-                    {customerJob.reviewRating || 5}.0 Stars
-                  </span>
+      {/* Clean 2-Column Cohesive Operations & Documents Desk */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* LEFT COLUMN: Property Logistics & Direct Communication */}
+        <div className="space-y-4">
+          {/* 1. Upcoming / Active Property Inspections */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center">
+                  <CalendarCheck className="w-4 h-4" />
                 </div>
-                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
-                  Thank you for reviewing {customerJob.surveyor || 'Assigned Surveyor'}!
-                </h4>
-                <p className="text-[11px] sm:text-xs text-slate-600 line-clamp-1 mt-0.5">
-                  "{customerJob.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate('/customer/leave-review')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
-            >
-              <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
-              <span>View Review</span>
-            </button>
-          </div>
-        ) : (customerJob?.status === 'Completed' || (customerJob?.timelineStep && customerJob.timelineStep >= 7)) ? (
-          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 border-2 border-emerald-400 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
-                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 shrink-0">
-                    Stage 6 Complete • Trustpilot Trigger
-                  </span>
-                  <span className="text-xs text-amber-500 font-bold">★★★★★</span>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0B1F4D]">
+                    Property Instruction &amp; Logistics
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Confirmed appointment details and site access arrangements.
+                  </p>
                 </div>
-                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
-                  How was your survey experience with {customerJob.surveyor || 'Assigned Surveyor'}?
-                </h4>
-                <p className="text-[11px] sm:text-xs text-slate-600 line-clamp-2 mt-0.5">
-                  Your final RICS report for {customerJob.property || 'your property'} has been delivered. Share 30 seconds of verified feedback on Trustpilot.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate('/customer/leave-review')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
-            >
-              <Star className="w-3.5 h-3.5 fill-white" />
-              <span>Rate on Trustpilot</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-        ) : (
-          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
-                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-[#00B67A]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                    Trustpilot 4.9 / 5.0
-                  </span>
-                  <span className="text-xs text-slate-500">★★★★★</span>
-                </div>
-                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
-                  Satisfied with your Level 2 Survey?
-                </h4>
-                <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2 mt-0.5">
-                  Leave a quick review on our official NJS Trustpilot profile.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate('/customer/leave-review')}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
-            >
-              <Star className="w-3.5 h-3.5 fill-white" />
-              <span>Leave Us a Review</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Direct Messages Card (Client Requirement Point 18) */}
-        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-blue-50 text-[#0B1F4D] shrink-0">
-              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-[#2563EB]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 shrink-0">
-                  Direct Coordinator Chat
-                </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
-                Message NJS Operations Desk
-              </h4>
-              <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2 mt-0.5">
-                Direct questions, keyholder notes, or queries for your assigned surveyor.
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/customer/messages')}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Open Messages</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 3. TWO COLUMNS: UPCOMING BOOKINGS & RECENT REPORTS WITH DOWNLOAD */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols): Upcoming Bookings */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                  <CalendarCheck className="w-4 h-4 text-[#2563EB]" />
-                  <span>Upcoming Property Inspections</span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Site visit dates and surveyor logistics for your instructed properties.
-                </p>
               </div>
               <button
                 onClick={() => navigate('/customer/my-bookings')}
-                className="text-xs font-bold text-[#2563EB] hover:underline"
+                className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer"
               >
-                View All
+                Manage
               </button>
             </div>
 
-            <div className="space-y-3">
-              {upcomingBookings.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No upcoming inspections scheduled.
-                </div>
-              ) : upcomingBookings.map((booking) => (
+            {/* List or Active Card */}
+            {upcomingBookings.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 text-center space-y-2">
+                <p className="text-xs text-slate-500">No active survey appointments currently booked.</p>
+                <button
+                  onClick={() => setIsBookModalOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-[#0B1F4D] text-white text-xs font-semibold hover:bg-[#162E6E] cursor-pointer"
+                >
+                  Instruct New Survey
+                </button>
+              </div>
+            ) : (
+              upcomingBookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all space-y-3"
+                  className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-[#2563EB] transition-all space-y-2.5"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-[#0B1F4D]">
+                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[#0B1F4D]">
                           {booking.id}
                         </span>
-                        <h4 className="font-bold text-slate-900 text-sm">
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
                           {booking.property}
                         </h4>
                       </div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
                         <span>{booking.location}</span>
                       </div>
                     </div>
 
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${booking.statusClass}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${booking.statusClass}`}>
                       {booking.status}
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2.5">
+                  <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
                       {booking.surveyorAvatar ? (
                         <img
                           src={booking.surveyorAvatar}
                           alt={booking.surveyor}
-                          className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                          className="w-6 h-6 rounded-full object-cover ring-1 ring-slate-200"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-[10px] ring-1 ring-slate-200">
+                        <div className="w-6 h-6 rounded-full bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-[9px] ring-1 ring-slate-200">
                           {booking.surveyor?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
                         </div>
                       )}
                       <div>
-                        <span className="font-bold text-slate-800">{booking.surveyor}</span>
+                        <span className="font-bold text-slate-800 text-xs">{booking.surveyor}</span>
                         <span className="text-[10px] text-slate-400 block">{booking.surveyType}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <div className="text-right font-mono">
-                        <div className="font-bold text-slate-900">{booking.date}</div>
-                        <div className="text-[10px] text-slate-400">{booking.timeSlot}</div>
-                      </div>
-
-                      {booking.statusClass.includes('amber') ? (
-                        <button
-                          onClick={() => navigate('/customer/terms-to-sign')}
-                          className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs cursor-pointer"
-                        >
-                          Sign Terms
-                        </button>
-                      ) : null}
+                    <div className="text-right font-mono">
+                      <div className="font-bold text-slate-900 text-[11px]">{booking.date}</div>
+                      <div className="text-[10px] text-slate-400">{booking.timeSlot}</div>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-slate-100">
+                    <button
+                      onClick={() => navigate('/customer/my-bookings')}
+                      className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-semibold transition-all cursor-pointer"
+                    >
+                      Choose / Change Slot
+                    </button>
+                    <button
+                      onClick={() => navigate('/customer/appointment-details')}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold transition-all cursor-pointer"
+                    >
+                      Access Details
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
+
+          {/* 2. Direct Operations Coordinator Chat */}
+          <div className="p-4 rounded-2xl bg-white border border-blue-200/90 shadow-xs flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0">
+                <MessageSquare className="w-5 h-5 text-[#2563EB]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-100/70 px-2 py-0.5 rounded-md font-mono">
+                    Direct Operations Desk
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-0.5 truncate">
+                  Need help or want to share property notes?
+                </h4>
+                <p className="text-[11px] text-slate-500 truncate">
+                  Live messaging with NJS booking coordinator &amp; assigned surveyor.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/customer/messages')}
+              className="px-3.5 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Open Chat</span>
+            </button>
+          </div>
+
+          {/* 3. Trustpilot Review Banner: Only when inspection/report is actually completed! */}
+          {(customerJob?.reviewSubmitted || customerJob?.status === 'Completed' || (customerJob?.timelineStep && customerJob.timelineStep >= 7)) && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/40 border border-emerald-300 shadow-xs flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-[#00B67A] text-white flex items-center justify-center shrink-0">
+                  <Star className="w-4 h-4 fill-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Verified Trustpilot Review ★★★★★
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-[#0B1F4D] mt-0.5 truncate">
+                    {customerJob?.reviewSubmitted ? 'Thank you for your Trustpilot review!' : 'Rate your RICS Survey inspection experience'}
+                  </h4>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/customer/leave-review')}
+                className="px-3 py-1.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 shrink-0 cursor-pointer"
+              >
+                <span>{customerJob?.reviewSubmitted ? 'View Review' : 'Rate Us'}</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Right Column (1 Col): Recent Reports with Download (Required by Prompt) */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-emerald-600" />
-                  <span>Recent Reports</span>
-                </h3>
-                <p className="text-xs text-slate-500">Official RICS PDFs</p>
+        {/* RIGHT COLUMN: Certified Reports & Email Audit Trail */}
+        <div className="space-y-4">
+          {/* 1. Certified Reports Desk */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0B1F4D]">
+                    Certified Reports &amp; Valuations
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Official RICS accredited PDF downloads.</p>
+                </div>
               </div>
               <button
                 onClick={() => navigate('/customer/reports')}
-                className="text-xs font-bold text-[#2563EB] hover:underline"
+                className="text-xs font-bold text-[#2563EB] hover:underline cursor-pointer"
               >
-                All (2)
+                All Reports
               </button>
             </div>
 
-            <div className="space-y-3">
-              {recentReports.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  No survey reports released yet.
-                </div>
-              ) : recentReports.map((report) => (
-                <div
-                  key={report.id}
-                  className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 hover:bg-white hover:border-emerald-500 transition-all space-y-2 group"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 shrink-0 group-hover:scale-105 transition-transform">
-                      <FileText className="w-5 h-5" />
+            {recentReports.length > 0 ? (
+              <div className="space-y-2.5">
+                {recentReports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-emerald-500 transition-all flex items-center justify-between gap-3 group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-lg bg-emerald-50 text-emerald-700 shrink-0 group-hover:scale-105 transition-transform">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="font-bold text-slate-900 text-xs truncate">
+                          {report.property}
+                        </h5>
+                        <span className="text-[10px] text-slate-400 block font-mono">
+                          {report.date} • {report.size} • {report.surveyor}
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h5 className="font-bold text-slate-900 text-xs truncate">
-                        {report.property}
-                      </h5>
-                      <span className="text-[10px] text-slate-400 block mt-0.5 font-mono">
-                        {report.date} • {report.size}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="pt-2 border-t border-slate-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {report.surveyor}
-                    </span>
-
-                    {/* Download button - Full-width on mobile */}
                     <button
                       onClick={() => handleDownloadReport(report.title, report.property, report.surveyor)}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs min-h-[44px] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download PDF</span>
+                      <Download className="w-3 h-3" />
+                      <span>Download</span>
                     </button>
                   </div>
-
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-blue-50/30 border border-slate-200/70 text-xs space-y-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#2563EB]" />
+                  <span className="font-bold text-[#0B1F4D]">Report In Preparation Lifecycle</span>
                 </div>
-              ))}
-            </div>
+                <p className="text-[11.5px] text-slate-600 leading-relaxed">
+                  Your official RICS survey report with photographic defect evidence will become available for instant PDF download once on-site inspection and Quality Assurance (QA) are finalized.
+                </p>
+                <div className="pt-2 border-t border-slate-200/50 flex items-center justify-between text-[10.5px] text-slate-500">
+                  <span>Standard SLA: 48–72 hours post-visit</span>
+                  <span className="font-semibold text-emerald-700 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    RICS Accredited
+                  </span>
+                </div>
+              </div>
+            )}
 
-            <div className="p-3.5 bg-blue-50/70 border border-blue-200/70 rounded-2xl text-[11px] text-blue-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
-              <span>All reports include surveyor digital signature & RICS accreditation watermark.</span>
+            <div className="p-2.5 bg-blue-50/60 border border-blue-200/60 rounded-xl text-[10.5px] text-blue-900 flex items-center gap-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+              <span>All delivered reports include surveyor cryptographic seal &amp; RICS accreditation.</span>
             </div>
           </div>
 
-          {/* Customer Email Notifications Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-black text-[#0B1F4D] flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-[#2563EB]" />
-                  <span>Email Correspondence</span>
-                </h3>
-                <p className="text-xs text-slate-500">Milestone updates sent to your email</p>
+          {/* 2. Email Correspondence & Audit Trail */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3.5">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-[#0B1F4D]">
+                    Email Correspondence &amp; Notices
+                  </h3>
+                  <p className="text-[11px] text-slate-500">Official milestone dispatches and audit copies.</p>
+                </div>
               </div>
-              <span className="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                {customerEmails.length}
+              <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {customerEmails.length} logged
               </span>
             </div>
 
             {customerEmails.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-3">No emails logged yet.</p>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-center text-xs text-slate-400">
+                All quotation emails, terms confirmations, and appointment updates are logged here.
+              </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {customerEmails.slice(0, 3).map((em, idx) => (
                   <div
                     key={em.id || idx}
                     onClick={() => setSelectedCustomerEmail(em)}
-                    className="p-3 rounded-2xl border border-slate-200/80 bg-slate-50/70 hover:bg-white hover:border-blue-400 transition-all cursor-pointer space-y-1"
+                    className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-blue-400 transition-all cursor-pointer flex items-center justify-between gap-2"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-slate-900 truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-slate-900 truncate">
                         {em.subject}
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
-                        Delivered
-                      </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        {em.date}
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                      <span>{em.date}</span>
-                      <span className="text-[#2563EB] font-sans font-bold flex items-center gap-0.5">
-                        Read <Eye className="w-2.5 h-2.5" />
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                      Delivered
+                    </span>
                   </div>
                 ))}
               </div>
