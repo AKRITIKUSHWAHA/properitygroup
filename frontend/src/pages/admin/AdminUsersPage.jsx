@@ -68,6 +68,8 @@ export const AdminUsersPage = () => {
                 ? `${updatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, ${updatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
                 : 'Active Today';
 
+              const cleanEmail = (u.email || '').toLowerCase().trim();
+              const storedPhone = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
               return {
                 id: `USR-${String(u.id).padStart(2, '0')}`,
                 dbId: u.id,
@@ -81,7 +83,7 @@ export const AdminUsersPage = () => {
                   ? 'NJS Chartered Surveyors Practice'
                   : 'Private Client',
                 status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
-                phone: u.phone || (u.role === 'ADMIN' ? '+44 20 7946 0912' : (u.role === 'SURVEYOR' ? '+44 7700 900382' : '—')),
+                phone: u.phone || storedPhone || '—',
                 createdAt: formattedCreated,
                 rawCreatedAt: u.createdAt,
                 lastLogin: formattedLastActive,
@@ -143,6 +145,7 @@ export const AdminUsersPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     role: 'surveyor',
     org: '',
@@ -167,19 +170,25 @@ export const AdminUsersPage = () => {
 
     setIsSubmitting(true);
     try {
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const cleanPhone = formData.phone.trim();
+      const cleanPw = formData.password.trim();
+
       // Persist to real backend database with hashed password
       const backendRole = formData.role === 'super_admin' ? 'ADMIN' : (formData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER');
       await adminUsersAndRolesApi.createUser({
         name: formData.name.trim(),
-        email: formData.email.trim(),
-        password: formData.password.trim(),
+        email: cleanEmail,
+        phone: cleanPhone || null,
+        password: cleanPw,
         role: backendRole,
       });
 
       const newUser = {
         id: `USR-${String(users.length + 1).padStart(2, '0')}`,
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: cleanEmail,
+        phone: cleanPhone || '—',
         role: formData.role,
         roleLabel: roleMap[formData.role] || 'User',
         org: formData.org.trim() || 'NJS Property Group',
@@ -188,16 +197,21 @@ export const AdminUsersPage = () => {
       };
 
       try {
-        const cleanEmail = formData.email.toLowerCase().trim();
-        localStorage.setItem(`njs_user_pw_${cleanEmail}`, formData.password.trim());
+        if (cleanPw) {
+          localStorage.setItem(`njs_user_pw_${cleanEmail}`, cleanPw);
+        }
+        if (cleanPhone) {
+          localStorage.setItem(`njs_user_phone_${cleanEmail}`, cleanPhone);
+        }
         const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
         registered[cleanEmail] = {
           id: newUser.id,
           name: newUser.name,
           email: cleanEmail,
+          phone: cleanPhone,
           role: formData.role,
           roleLabel: newUser.roleLabel,
-          password: formData.password.trim(),
+          password: cleanPw,
           company: newUser.org,
           status: 'Active',
         };
@@ -207,12 +221,12 @@ export const AdminUsersPage = () => {
       setUsers((prev) => [newUser, ...prev]);
       fetchUsers();
       setIsAddModalOpen(false);
-      setFormData({ name: '', email: '', password: '', role: 'surveyor', org: '' });
+      setFormData({ name: '', email: '', phone: '', password: '', role: 'surveyor', org: '' });
 
       addToast({
         type: 'success',
         title: 'User Account Created',
-        message: `${newUser.name} created! Can now log in using ${newUser.email} and password: ${formData.password.trim()}`,
+        message: `${newUser.name} created! Can now log in using ${newUser.email} and password: ${cleanPw}`,
       });
     } catch (err) {
       addToast({
@@ -252,9 +266,26 @@ export const AdminUsersPage = () => {
     return null;
   };
 
+  const getUserPhone = (email) => {
+    if (!email) return '—';
+    const cleanEmail = email.toLowerCase().trim();
+    try {
+      const stored = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
+      if (stored) return stored;
+    } catch {}
+    try {
+      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      if (registered[cleanEmail]?.phone) {
+        return registered[cleanEmail].phone;
+      }
+    } catch {}
+    return '—';
+  };
+
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
     name: '',
+    phone: '',
     role: 'surveyor',
     org: '',
     status: 'Active',
@@ -316,8 +347,10 @@ export const AdminUsersPage = () => {
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+    const cleanPhone = (user.phone && user.phone !== '—') ? user.phone : (getUserPhone(user.email) !== '—' ? getUserPhone(user.email) : '');
     setEditFormData({
       name: user.name,
+      phone: cleanPhone,
       role: user.role,
       org: user.org,
       status: user.status || 'Active',
@@ -337,6 +370,7 @@ export const AdminUsersPage = () => {
 
     const targetEmail = (editingUser.email || '').toLowerCase().trim();
     const isBlocking = editFormData.status === 'Blocked' || editFormData.status === 'Inactive' || editFormData.status?.toUpperCase()?.includes('BLOCK');
+    const cleanPhone = editFormData.phone?.trim() || '';
 
     // Update localStorage blocked list
     try {
@@ -352,12 +386,19 @@ export const AdminUsersPage = () => {
       }
     } catch {}
 
+    if (cleanPhone && targetEmail) {
+      try {
+        localStorage.setItem(`njs_user_phone_${targetEmail}`, cleanPhone);
+      } catch {}
+    }
+
     setUsers((prev) =>
       prev.map((u) =>
         u.id === editingUser.id || (editingUser.dbId && u.dbId === editingUser.dbId) || (targetEmail && u.email?.toLowerCase() === targetEmail)
           ? {
               ...u,
               name: editFormData.name.trim(),
+              phone: cleanPhone || u.phone || '—',
               role: editFormData.role,
               roleLabel: roleMap[editFormData.role] || u.roleLabel,
               org: editFormData.org.trim() || u.org,
@@ -371,6 +412,7 @@ export const AdminUsersPage = () => {
     try {
       const payload = {
         name: editFormData.name.trim(),
+        phone: cleanPhone || null,
         role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
         status: isBlocking ? 'INACTIVE' : 'ACTIVE',
         email: targetEmail,
@@ -455,7 +497,7 @@ export const AdminUsersPage = () => {
       key: 'name',
       header: 'Full Legal Name',
       sortable: true,
-      className: 'w-[32%] min-w-[210px]',
+      className: 'w-[26%] min-w-[190px]',
       render: (val, row) => {
         if (row.role === 'customer') {
           return (
@@ -483,10 +525,27 @@ export const AdminUsersPage = () => {
       },
     },
     {
+      key: 'phone',
+      header: 'Contact Phone',
+      sortable: false,
+      className: 'w-[16%] min-w-[130px]',
+      render: (val, row) => {
+        const phone = (val && val !== '—') ? val : getUserPhone(row.email);
+        return phone && phone !== '—' ? (
+          <span className="inline-flex items-center gap-1.5 text-slate-700 font-mono text-[11px]">
+            <Phone className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
+            <span>{phone}</span>
+          </span>
+        ) : (
+          <span className="text-slate-400 text-xs">—</span>
+        );
+      },
+    },
+    {
       key: 'roleLabel',
       header: 'Assigned Role',
       sortable: true,
-      className: 'w-[18%] min-w-[130px]',
+      className: 'w-[16%] min-w-[120px]',
       render: (val, row) => {
         let badgeColor = 'bg-[#0B1F4D] text-white';
         if (row.role === 'surveyor') badgeColor = 'bg-purple-100 text-purple-800 border border-purple-200';
@@ -503,13 +562,13 @@ export const AdminUsersPage = () => {
       key: 'org',
       header: 'Organisation / Practice',
       sortable: true,
-      className: 'w-[26%] min-w-[170px] text-xs text-slate-700 font-medium',
+      className: 'w-[20%] min-w-[140px] text-xs text-slate-700 font-medium',
     },
     {
       key: 'status',
       header: 'Status',
       sortable: true,
-      className: 'w-[12%] min-w-[100px]',
+      className: 'w-[11%] min-w-[90px]',
       render: (val) => (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 whitespace-nowrap">
           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
@@ -521,8 +580,8 @@ export const AdminUsersPage = () => {
       key: 'actions',
       header: 'Actions',
       sortable: false,
-      headerClassName: 'text-center w-[12%] min-w-[100px]',
-      className: 'text-center w-[12%] min-w-[100px] whitespace-nowrap',
+      headerClassName: 'text-center w-[11%] min-w-[90px]',
+      className: 'text-center w-[11%] min-w-[90px] whitespace-nowrap',
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {/* 1. View User */}
@@ -714,6 +773,22 @@ export const AdminUsersPage = () => {
           </div>
 
           <div>
+            <label className="block font-semibold text-slate-700 mb-1">Contact Phone Number</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Phone className="w-4 h-4" />
+              </div>
+              <input
+                type="tel"
+                placeholder="e.g. +44 7700 900382 or 07123 456789"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
+              />
+            </div>
+          </div>
+
+          <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block font-semibold text-slate-700">Login Password *</label>
               <button
@@ -835,9 +910,9 @@ export const AdminUsersPage = () => {
             <div className="grid grid-cols-2 gap-2.5">
               <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Contact Phone</span>
-                <span className="font-bold text-slate-800 flex items-center gap-1">
+                <span className="font-bold text-slate-800 flex items-center gap-1 font-mono text-xs">
                   <Phone className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{viewingUser.phone || '—'}</span>
+                  <span>{(viewingUser.phone && viewingUser.phone !== '—') ? viewingUser.phone : (getUserPhone(viewingUser.email) || '—')}</span>
                 </span>
               </div>
 
@@ -1097,6 +1172,22 @@ export const AdminUsersPage = () => {
                 className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
               />
               <span className="text-[10px] text-slate-400 mt-0.5 block">Email cannot be changed directly.</span>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Contact Phone Number</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <input
+                  type="tel"
+                  placeholder="e.g. +44 7700 900382 or 07123 456789"
+                  value={editFormData.phone}
+                  onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
