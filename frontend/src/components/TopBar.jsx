@@ -5,7 +5,6 @@ import {
   Search,
   ChevronDown,
   User,
-  KeyRound,
   LogOut,
   Calendar,
   X,
@@ -35,7 +34,6 @@ const SYSTEM_PAGES = [
   { name: 'Reports & Analytics', path: '/admin/reports', keywords: ['report', 'reports', 'analytics', 'revenue'], role: 'ADMIN' },
   { name: 'Users & Permissions', path: '/admin/users', keywords: ['user', 'users', 'role', 'permission'], role: 'ADMIN' },
   { name: 'My Profile', path: '/profile', keywords: ['profile', 'account', 'me', 'details'] },
-  { name: 'Change Password', path: '/change-password', keywords: ['password', 'security', 'change password'] },
   { name: 'Surveyor Jobs Pipeline', path: '/surveyor/jobs', keywords: ['job', 'jobs', 'survey'], role: 'SURVEYOR' },
   { name: 'Inspection Calendar', path: '/surveyor/calendar', keywords: ['calendar', 'schedule'], role: 'SURVEYOR' },
   { name: 'Track My Survey', path: '/customer/track-survey', keywords: ['survey', 'track', 'status'], role: 'CUSTOMER' },
@@ -542,17 +540,6 @@ export const TopBar = ({ onToggleSidebar }) => {
                 >
                   <User className="w-4 h-4 text-slate-400" />
                   <span>My Profile</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    navigate('/change-password');
-                  }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 min-h-[44px] cursor-pointer"
-                >
-                  <KeyRound className="w-4 h-4 text-slate-400" />
-                  <span>Change Password</span>
                 </button>
               </div>
 
