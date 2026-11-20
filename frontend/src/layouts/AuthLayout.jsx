@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, ShieldCheck, MapPin, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export const AuthLayout = ({ children, title, subtitle }) => {
@@ -26,18 +26,13 @@ export const AuthLayout = ({ children, title, subtitle }) => {
 
         {/* Top Left Brand Header matching Reference Logo + Back Button */}
         <div className="relative z-20 px-6 sm:px-12 pt-6 sm:pt-10 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-[#0B1F4D] flex items-center justify-center text-white shadow-md shadow-[#0B1F4D]/20 group-hover:scale-105 transition-transform">
-              <Building2 className="w-5 h-5 text-white stroke-[2.2]" />
-            </div>
-            <div>
-              <div className="text-sm sm:text-base font-extrabold tracking-tight text-[#0B1F4D] uppercase leading-none">
-                NJS Property Group
-              </div>
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5">
-                INDEPENDENT RICS-ALIGNED SURVEYORS
-              </div>
-            </div>
+          <Link to="/" className="flex items-center gap-2 group" title="Return to NJS Property Group Homepage">
+            <img
+              src="/images/njs-logo.png"
+              alt="NJS Property Group"
+              className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
+              style={{ maxHeight: '64px', width: 'auto', objectFit: 'contain' }}
+            />
           </Link>
 
           {/* Top Bar Back Button */}
