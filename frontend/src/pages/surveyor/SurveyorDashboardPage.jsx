@@ -84,12 +84,12 @@ export const SurveyorDashboardPage = () => {
   } catch { }
 
   const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-880',
-    property: regUser.address || 'HYDERABAD',
-    location: regUser.postcode || 'GH12AA',
-    surveyType: regUser.serviceType || 'RICS Level 2 Home Survey',
-    customer: regUser.name || 'abc',
-    customerPhone: regUser.phone || '1234560789',
+    id: 'JOB-2026-001',
+    property: regUser.address || '14 High Street',
+    location: regUser.postcode || 'London',
+    surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
+    customer: regUser.name || 'Client',
+    customerPhone: regUser.phone || '',
     timeSlot: '10:00 - 13:00',
     status: 'Booked',
     countdown: '48h SLA Target',
@@ -102,7 +102,7 @@ export const SurveyorDashboardPage = () => {
 
   const secondaryJob = activeJobs[1] || null;
 
-  const targetCustomerEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+  const targetCustomerEmail = primaryJob?.customerEmail || regUser?.email || '';
   const isJobCompleted =
     primaryJob?.status === 'Inspected' ||
     primaryJob?.status === 'Drafting' ||
@@ -181,7 +181,7 @@ export const SurveyorDashboardPage = () => {
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_inspection_completed', 'true');
     localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
 
@@ -219,7 +219,7 @@ export const SurveyorDashboardPage = () => {
     setIsPhotoModalOpen(false);
     setDefectNote('');
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_drafting', 'true');
     localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
 
@@ -246,7 +246,7 @@ export const SurveyorDashboardPage = () => {
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_qareview', 'true');
     localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
 

@@ -91,14 +91,6 @@ export const JobDetailsPage = () => {
     );
     if (matched) return matched;
 
-    // Check if matching registered customer or client quote
-    const clientJob = jobs.find(
-      (j) =>
-        (j.customerEmail || '').toLowerCase().trim() === 'astp750@gmail.com' ||
-        (j.customer || '').toLowerCase().trim() === 'abc'
-    );
-    if (clientJob) return clientJob;
-
     if (jobs && jobs.length > 0) return jobs[0];
 
     // Fallback if jobs array empty: construct from real registered customer
@@ -110,17 +102,17 @@ export const JobDetailsPage = () => {
     } catch {}
 
     return {
-      id: jobId || 'JOB-2026-880',
-      jobNo: jobId || 'JOB-2026-880',
+      id: jobId || 'JOB-2026-001',
+      jobNo: jobId || 'JOB-2026-001',
       date: 'Pending Allocation',
       timeSlot: '10:00 AM - 01:00 PM',
-      customer: regUser.name || 'abc',
-      customerEmail: regUser.email || 'astp750@gmail.com',
-      customerPhone: regUser.phone || '1234560789',
-      surveyType: regUser.serviceType || 'RICS Level 2 Home Survey',
-      property: regUser.address || 'HYDERABAD',
-      location: regUser.postcode || 'GH12AA',
-      postcode: regUser.postcode || 'GH12AA',
+      customer: regUser.name || 'Client',
+      customerEmail: regUser.email || '',
+      customerPhone: regUser.phone || '',
+      surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
+      property: regUser.address || '14 High Street',
+      location: regUser.postcode || 'London',
+      postcode: regUser.postcode || 'London',
       surveyor: 'Pending Allocation',
       surveyorId: null,
       status: 'Action Required',
@@ -208,7 +200,7 @@ export const JobDetailsPage = () => {
   const handleApproveQaReport = async () => {
     setQaStatus('Approved');
     handleStepClick(5); // Complete stage
-    const targetEmail = job?.customerEmail || 'astp750@gmail.com';
+    const targetEmail = job?.customerEmail || '';
     localStorage.setItem('propertygroup_delivered', 'true');
     localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
     updateJob(job.id, {

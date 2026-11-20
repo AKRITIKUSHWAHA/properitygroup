@@ -78,15 +78,15 @@ export const SurveyorCalendarPage = () => {
       apt.status === 'Drafting' ||
       apt.status === 'QA_Review' ||
       apt.status === 'Completed' ||
-      localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-      localStorage.getItem('propertygroup_inspection_completed_astp750@gmail.com') === 'true'
+      localStorage.getItem('propertygroup_inspection_completed') === 'true'
     );
   };
 
   const handleCompleteAppointment = (aptId) => {
-    const targetEmail = 'astp750@gmail.com';
+    const apt = myJobs.find((j) => j.id === aptId || j.jobNo === aptId);
+    const targetEmail = apt?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_inspection_completed', 'true');
-    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    if (targetEmail) localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
     if (updateJob) {
       updateJob(aptId, {
         status: 'Inspected',
@@ -727,17 +727,17 @@ export const SurveyorSiteVisitsPage = () => {
   } catch {}
 
   const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-880',
-    property: regUser.address || 'HYDERABAD',
-    location: regUser.postcode || 'GH12AA',
+    id: 'JOB-2026-001',
+    property: regUser.address || 'Subject Property',
+    location: regUser.postcode || 'London',
     timeSlot: '10:00 - 13:00',
-    surveyType: regUser.serviceType || 'RICS Level 2 Home Survey',
+    surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
     propertyDetails: {
       accessDetails: 'Customer direct instruction via portal',
     },
   };
 
-  const targetEmail = primaryJob?.customerEmail || regUser?.email || 'astp750@gmail.com';
+  const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
   const isInspectedPersisted =
     primaryJob?.status === 'Inspected' ||
     primaryJob?.status === 'Drafting' ||
@@ -976,9 +976,10 @@ export const SurveyorUploadReportsPage = () => {
   };
 
   const handleStartDrafting = () => {
-    const targetEmail = 'astp750@gmail.com';
+    const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
+    const targetEmail = activeJobObj?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_drafting', 'true');
-    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    if (targetEmail) localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'Drafting',
@@ -1001,11 +1002,14 @@ export const SurveyorUploadReportsPage = () => {
   };
 
   const handleSubmitAllQA = () => {
-    const targetEmail = 'astp750@gmail.com';
+    const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
+    const targetEmail = activeJobObj?.customerEmail || regUser?.email || '';
     localStorage.setItem('propertygroup_drafting', 'true');
     localStorage.setItem('propertygroup_qareview', 'true');
-    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
-    localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+      localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
+    }
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'QA_Review',

@@ -219,13 +219,19 @@ export const createQuote = async (req, res, next) => {
     let emailSent = false;
     if (recipientEmail) {
       try {
+        const frontendBase = process.env.CLIENT_URL?.split(',')[0] || process.env.FRONTEND_URL || 'http://localhost:5175';
+        const cleanRef = quote?.reference || reference;
+        const targetQuoteLink =
+          req.body.quoteLink ||
+          `${frontendBase}/customer/my-quotations?quoteRef=${encodeURIComponent(cleanRef)}&property=${encodeURIComponent(targetProperty)}&survey=${encodeURIComponent(targetSurveyType)}&fee=${totalAmount.toFixed(2)}&email=${encodeURIComponent(recipientEmail)}`;
+
         const emailRes = await sendQuoteProposalEmail({
           to: recipientEmail,
           clientName: recipientName || 'Valued Client',
           quoteAmount: totalAmount.toFixed(2),
           surveyType: targetSurveyType || 'RICS Level 2 Home Survey',
           propertyAddress: targetProperty || 'Subject Property',
-          quoteLink: req.body.quoteLink || `${process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5175'}/login?email=${encodeURIComponent(recipientEmail)}&role=customer`,
+          quoteLink: targetQuoteLink,
         });
         emailSent = Boolean(emailRes?.success);
       } catch (emailErr) {

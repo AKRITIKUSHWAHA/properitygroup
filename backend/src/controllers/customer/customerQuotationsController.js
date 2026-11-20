@@ -8,32 +8,84 @@ import { sendQuoteAcceptedEmail } from '../../services/emailService.js';
  */
 export const getCustomerQuotations = async (req, res, next) => {
   try {
-    const userEmail = req.user.email;
-    const userId = req.user.id;
+    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userId = req.user?.id;
+    const userName = (req.user?.name || '').toLowerCase().trim();
 
     const quotes = await prisma.quote.findMany({
       where: {
         OR: [
-          { job: { clientId: userId } },
-          { job: { clientEmail: userEmail } },
-          { lead: { clientEmail: userEmail } },
+          ...(userId ? [{ job: { clientId: userId } }] : []),
+          ...(userEmail ? [{ job: { clientEmail: { equals: userEmail } } }] : []),
+          ...(userEmail ? [{ lead: { clientEmail: { equals: userEmail } } }] : []),
+          ...(userEmail ? [{ inclusions: { contains: userEmail } }] : []),
+          ...(userName && userName.length > 2 ? [{ inclusions: { contains: userName } }] : []),
         ],
       },
       include: {
-        job: {
-          select: {
-            id: true,
-            reference: true,
-            propertyAddress: true,
-            postcode: true,
-            serviceType: true,
-          },
-        },
+        job: true,
+        lead: true,
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return ApiResponse.success(res, { quotes, total: quotes.length });
+    const mappedQuotes = quotes.map((q) => {
+      let inclusionsObj = {};
+      try {
+        if (q.inclusions) {
+          inclusionsObj = typeof q.inclusions === 'string' ? JSON.parse(q.inclusions) : q.inclusions;
+        }
+      } catch {}
+
+      const property =
+        q.job?.propertyAddress ||
+        q.lead?.propertyAddress ||
+        inclusionsObj.property ||
+        inclusionsObj.propertyAddress ||
+        'Subject Property';
+      const surveyType =
+        q.job?.serviceType ||
+        q.lead?.serviceType ||
+        inclusionsObj.surveyType ||
+        inclusionsObj.serviceName ||
+        'RICS Level 2 Home Survey';
+      const client =
+        q.job?.clientName ||
+        q.lead?.clientName ||
+        inclusionsObj.client ||
+        inclusionsObj.clientName ||
+        req.user?.name ||
+        'Valued Client';
+      const clientEmail =
+        q.job?.clientEmail ||
+        q.lead?.clientEmail ||
+        inclusionsObj.clientEmail ||
+        userEmail;
+
+      return {
+        id: q.reference || `QUO-2026-${q.id}`,
+        numericId: q.id,
+        reference: q.reference,
+        jobId: q.job?.reference || (q.jobId ? `JOB-${q.jobId}` : `JOB-2026-${q.id}`),
+        property,
+        surveyType,
+        client,
+        clientEmail,
+        baseFee: q.baseFee,
+        vatAmount: q.vatAmount,
+        totalAmount: q.totalAmount,
+        net: `£${q.baseFee.toFixed(2)}`,
+        vat: `£${q.vatAmount.toFixed(2)}`,
+        total: `£${q.totalAmount.toFixed(2)}`,
+        status: q.status === 'ACCEPTED' ? 'Quotation Accepted' : 'Open Proposal',
+        isAccepted: q.status === 'ACCEPTED',
+        date: q.createdAt ? new Date(q.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+        validUntil: q.validUntil ? `Valid until ${new Date(q.validUntil).toLocaleDateString('en-GB')}` : '14 Days Remaining',
+        rawQuote: q,
+      };
+    });
+
+    return ApiResponse.success(res, { quotes: mappedQuotes, total: mappedQuotes.length });
   } catch (error) {
     next(error);
   }

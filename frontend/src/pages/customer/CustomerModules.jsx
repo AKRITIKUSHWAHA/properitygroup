@@ -159,7 +159,7 @@ export const CustomerTermsPage = () => {
     ? `${userLead.property}${userLead.location ? `, ${userLead.location}` : ''}`
     : regUser.address
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
-    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
+    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
   const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || 'RICS Level 2 Home Survey';
   const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
@@ -1273,6 +1273,7 @@ export const CustomerBookingsPage = () => {
 // ==========================================
 export const CustomerQuotationsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs } = useJobs();
@@ -1289,9 +1290,15 @@ export const CustomerQuotationsPage = () => {
     // Clean up any stale dummy fallback quotes from localStorage
     try {
       const rawQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      if (Array.isArray(rawQuotes) && rawQuotes.some((q) => q.id === 'QUO-2026-880')) {
-        const cleaned = rawQuotes.filter((q) => q.id !== 'QUO-2026-880');
-        localStorage.setItem('propertygroup_quotes', JSON.stringify(cleaned));
+      if (Array.isArray(rawQuotes)) {
+        const cleaned = rawQuotes.filter((q) => {
+          const prop = (q.property || '').toLowerCase();
+          const ref = String(q.id || '').toLowerCase();
+          return !prop.includes('hyderabad') && !prop.includes('gh12aa') && ref !== 'quo-2026-880';
+        });
+        if (cleaned.length !== rawQuotes.length) {
+          localStorage.setItem('propertygroup_quotes', JSON.stringify(cleaned));
+        }
       }
     } catch {}
 
@@ -1320,7 +1327,12 @@ export const CustomerQuotationsPage = () => {
   let userEmail = (user?.email || '').toLowerCase().trim();
   let userName = (user?.name || '').toLowerCase().trim();
 
-  // If email missing from user session, recover from registered customers
+  // If email missing from user session, recover from URL or registered customers
+  const urlEmail = searchParams.get('email');
+  if (urlEmail && !userEmail) {
+    userEmail = urlEmail.toLowerCase().trim();
+  }
+
   if (!userEmail && userName) {
     try {
       const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
@@ -1455,8 +1467,88 @@ export const CustomerQuotationsPage = () => {
       };
     });
 
-  // Combine and deduplicate quotes per unique property instruction
-  const rawCombined = isDemo ? jobQuotes : [...jobQuotes, ...standAloneQuotes, ...leadQuotes];
+  // 3. Map backend API quotes (Real live quotations from backend)
+  const apiMappedQuotes = (apiQuotes || []).map((q) => {
+    let inclusions = {};
+    try {
+      if (q.inclusions) {
+        inclusions = typeof q.inclusions === 'string' ? JSON.parse(q.inclusions) : q.inclusions;
+      }
+    } catch {}
+
+    const fee = q.baseFee || inclusions.baseFee || (q.totalAmount ? q.totalAmount / 1.2 : 770.0);
+    const vat = q.vatAmount || inclusions.vatAmount || fee * 0.2;
+    const total = q.totalAmount || inclusions.totalAmount || (fee + vat);
+    const isAccepted = Boolean(q.isAccepted || q.status === 'ACCEPTED' || q.status === 'Accepted');
+
+    return {
+      id: q.reference || q.id || `QUO-${q.numericId || '101'}`,
+      jobId: q.jobId || q.job?.reference || q.id,
+      property:
+        q.property ||
+        q.job?.propertyAddress ||
+        q.lead?.propertyAddress ||
+        inclusions.property ||
+        inclusions.propertyAddress ||
+        'Subject Property',
+      surveyType:
+        q.surveyType ||
+        q.job?.serviceType ||
+        q.lead?.serviceType ||
+        inclusions.surveyType ||
+        inclusions.serviceName ||
+        'RICS Level 2 Home Survey',
+      net: `£${fee.toFixed(2)}`,
+      vat: `£${vat.toFixed(2)}`,
+      total: `£${total.toFixed(2)}`,
+      date: q.date || (q.createdAt ? new Date(q.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')),
+      status: isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+      isAccepted,
+      termsStatus: isAccepted ? 'Terms Pending' : 'Pending',
+      validUntil: q.validUntil || '14 Days Remaining',
+      rawQuote: q,
+    };
+  });
+
+  // 4. URL quote params (e.g. client arrived directly via proposal email link)
+  const urlQuoteRef = searchParams.get('quoteRef') || searchParams.get('ref');
+  const urlProp = searchParams.get('property') || searchParams.get('address');
+  const urlSurvey = searchParams.get('survey') || searchParams.get('surveyType') || searchParams.get('service');
+  const urlFee = searchParams.get('fee') || searchParams.get('amount') || searchParams.get('price');
+
+  const urlQuotes = (urlProp || urlQuoteRef)
+    ? [
+        {
+          id: urlQuoteRef || `QUO-2026-${Date.now().toString().slice(-4)}`,
+          jobId: urlQuoteRef || `JOB-2026-${Date.now().toString().slice(-4)}`,
+          property: urlProp || 'Subject Property',
+          surveyType: urlSurvey || 'RICS Level 3 Building Survey (Full Structural)',
+          net: urlFee ? `£${(parseFloat(urlFee) / 1.2).toFixed(2)}` : '£850.00',
+          vat: urlFee ? `£${(parseFloat(urlFee) - parseFloat(urlFee) / 1.2).toFixed(2)}` : '£170.00',
+          total: urlFee ? `£${parseFloat(urlFee).toFixed(2)}` : '£1020.00',
+          date: new Date().toLocaleDateString('en-GB'),
+          status: 'Open Proposal',
+          isAccepted: false,
+          termsStatus: 'Pending',
+          validUntil: '14 Days Remaining',
+        },
+      ]
+    : [];
+
+  // Combine quotes from all valid sources (API, URL, jobs, standalone quotes, CRM leads)
+  const rawCombined = isDemo
+    ? jobQuotes
+    : [...urlQuotes, ...apiMappedQuotes, ...standAloneQuotes, ...jobQuotes, ...leadQuotes];
+
+  // Strictly filter out any dummy / Hyderabad legacy test artifacts
+  const cleanCandidates = rawCombined.filter((candidate) => {
+    if (!candidate) return false;
+    const propLower = (candidate.property || '').toLowerCase();
+    const idLower = String(candidate.id || '').toLowerCase();
+    if (propLower.includes('hyderabad') || propLower.includes('gh12aa')) return false;
+    if (idLower === 'quo-2026-880') return false;
+    return true;
+  });
 
   const normalizeAddress = (addr) =>
     (addr || '')
@@ -1466,14 +1558,8 @@ export const CustomerQuotationsPage = () => {
   const deduplicatedQuotes = [];
   const seenProperties = new Map();
 
-  for (const candidate of rawCombined) {
-    if (candidate.id === 'QUO-2026-880' && rawCombined.length > 1) continue;
-    const key = normalizeAddress(candidate.property);
-    if (!key) {
-      deduplicatedQuotes.push(candidate);
-      continue;
-    }
-
+  for (const candidate of cleanCandidates) {
+    const key = normalizeAddress(candidate.property) || candidate.id;
     if (!seenProperties.has(key)) {
       seenProperties.set(key, candidate);
       deduplicatedQuotes.push(candidate);
@@ -1481,10 +1567,8 @@ export const CustomerQuotationsPage = () => {
       const existing = seenProperties.get(key);
       const isCandidateBetter =
         (!existing.isAccepted && candidate.isAccepted) ||
-        (existing.id === 'QUO-2026-880' && candidate.id !== 'QUO-2026-880') ||
-        (existing.id.startsWith('QUO-20266') && !candidate.id.startsWith('QUO-20266')) ||
-        (Boolean(candidate.rawJob) && !existing.rawJob) ||
-        (Boolean(candidate.rawQuote) && !existing.rawQuote);
+        (Boolean(candidate.rawQuote) && !existing.rawQuote) ||
+        (Boolean(candidate.rawJob) && !existing.rawJob);
 
       if (isCandidateBetter) {
         const idx = deduplicatedQuotes.indexOf(existing);
@@ -1497,68 +1581,6 @@ export const CustomerQuotationsPage = () => {
   }
 
   let quotes = deduplicatedQuotes;
-
-  // Fallback: If no quote card resolved yet for this client, extract from registered client profile or lead request
-  if (quotes.length === 0 && !isDemo && (userEmail || userName) && leads.length === 0 && effectiveJobs.length === 0) {
-    let regCust = null;
-    try {
-      const regMap = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-      regCust = regMap[userEmail] || Object.values(regMap).find((c) => (c.name || '').toLowerCase().trim() === userName);
-    } catch {}
-
-    const targetProp = regCust?.address
-      ? `${regCust.address}${regCust.postcode ? `, ${regCust.postcode}` : ''}`
-      : user?.address
-      ? `${user.address}${user.postcode ? `, ${user.postcode}` : ''}`
-      : 'HYDERABAD, GH12AA';
-
-    let isFallbackAccepted = false;
-    try {
-      const allQ = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      isFallbackAccepted = allQ.some(
-        (q) => (q.clientEmail || '').toLowerCase().trim() === userEmail && (q.status === 'Accepted' || q.status === 'ACCEPTED')
-      );
-    } catch {}
-
-    quotes = [
-      {
-        id: 'QUO-2026-880',
-        jobId: 'JOB-2026-880',
-        property: targetProp,
-        surveyType: 'RICS Level 2 Home Survey (Homebuyer)',
-        net: '£550.00',
-        vat: '£110.00',
-        total: '£660.00',
-        date: new Date().toLocaleDateString('en-GB'),
-        status: isFallbackAccepted ? 'Quotation Accepted' : 'Open Proposal',
-        isAccepted: isFallbackAccepted,
-        termsStatus: 'Pending',
-        validUntil: '14 Days Remaining',
-      },
-    ];
-
-    // Persist into quotes store so all portal menus stay in sync
-    try {
-      const allQ = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      if (!allQ.some((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail)) {
-        allQ.unshift({
-          id: 'QUO-2026-880',
-          refNo: 'QUO-2026-880',
-          client: userName || 'abc',
-          clientEmail: userEmail || 'astp750@gmail.com',
-          property: targetProp,
-          surveyType: 'RICS Level 2 Home Survey (Homebuyer)',
-          baseFee: 550.0,
-          vatAmount: 110.0,
-          totalAmount: 660.0,
-          status: isFallbackAccepted ? 'Accepted' : 'Sent',
-          type: 'quotation',
-          date: new Date().toLocaleDateString('en-GB'),
-        });
-        localStorage.setItem('propertygroup_quotes', JSON.stringify(allQ));
-      }
-    } catch {}
-  }
 
   // SurveyBooker Trigger 2 Acceptance Handler
   const handleAcceptQuote = async (targetQuote) => {
@@ -1770,8 +1792,22 @@ export const CustomerQuotationsPage = () => {
         })}
 
         {quotes.length === 0 && (
-          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
-            No quotations found under your account.
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0B1F4D] flex items-center justify-center mx-auto border border-blue-200">
+              <FileSpreadsheet className="w-8 h-8 text-[#2563EB]" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-lg font-black text-[#0B1F4D]">No Open Quotations</h4>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                You do not have any active quotations pending review. Once our surveying desk prepares your comprehensive RICS fee proposal, it will appear here.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/request-quote')}
+              className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+            >
+              Request a New Survey Quote
+            </button>
           </div>
         )}
       </div>
@@ -2858,13 +2894,13 @@ export const CustomerTrackSurveyPage = () => {
     ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}`
     : regUser.address
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
-    : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'HYDERABAD, GH12AA');
+    : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
 
-  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-880');
+  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
   const surveyorName = myJob?.surveyor || 'Pending Allocation';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
-  const targetEmail = userEmail || 'astp750@gmail.com';
+  const targetEmail = userEmail || 'client@example.com';
   const isHistoricalJob = myJob?.id === 'QUO-2026-126' || (!myJob?.isNewInstruction && (myJob?.timelineStep || 0) >= 6);
   const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
   const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
