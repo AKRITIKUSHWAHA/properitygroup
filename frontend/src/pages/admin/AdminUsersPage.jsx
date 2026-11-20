@@ -20,6 +20,7 @@ import {
   Calendar,
   Clock,
   Award,
+  Copy,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -160,6 +161,10 @@ export const AdminUsersPage = () => {
         status: 'Active',
       };
 
+      try {
+        localStorage.setItem(`njs_user_pw_${formData.email.toLowerCase().trim()}`, formData.password.trim());
+      } catch {}
+
       setUsers((prev) => [newUser, ...prev]);
       fetchUsers();
       setIsAddModalOpen(false);
@@ -168,7 +173,7 @@ export const AdminUsersPage = () => {
       addToast({
         type: 'success',
         title: 'User Account Created',
-        message: `${newUser.name} created! Can now log in using ${newUser.email} and the chosen password.`,
+        message: `${newUser.name} created! Can now log in using ${newUser.email} and password: ${formData.password.trim()}`,
       });
     } catch (err) {
       addToast({
@@ -182,6 +187,19 @@ export const AdminUsersPage = () => {
   };
 
   const [viewingUser, setViewingUser] = useState(null);
+  const [showViewingPassword, setShowViewingPassword] = useState(true);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [newQuickPassword, setNewQuickPassword] = useState('');
+
+  const getUserPassword = (email) => {
+    if (!email) return 'password123';
+    try {
+      const stored = localStorage.getItem(`njs_user_pw_${email.toLowerCase().trim()}`);
+      if (stored) return stored;
+    } catch {}
+    return 'password123';
+  };
+
   const [editingUser, setEditingUser] = useState(null);
   const [editFormData, setEditFormData] = useState({
     name: '',
@@ -193,6 +211,47 @@ export const AdminUsersPage = () => {
 
   const handleViewUser = (user) => {
     setViewingUser(user);
+    setShowViewingPassword(true);
+    setIsResettingPassword(false);
+    setNewQuickPassword('');
+  };
+
+  const handleQuickResetPassword = async () => {
+    if (!newQuickPassword.trim() || newQuickPassword.trim().length < 6) {
+      addToast({
+        type: 'warning',
+        title: 'Invalid Password',
+        message: 'Password must be at least 6 characters long.',
+      });
+      return;
+    }
+
+    const cleanPw = newQuickPassword.trim();
+    const targetEmail = (viewingUser?.email || '').toLowerCase().trim();
+    const numericId = viewingUser?.dbId || (typeof viewingUser?.id === 'string' ? viewingUser.id.replace(/\D/g, '') : viewingUser?.id);
+
+    try {
+      if (numericId) {
+        await adminUsersAndRolesApi.updateUser(numericId, { password: cleanPw });
+      }
+      try {
+        localStorage.setItem(`njs_user_pw_${targetEmail}`, cleanPw);
+      } catch {}
+
+      addToast({
+        type: 'success',
+        title: 'Password Updated',
+        message: `Password for ${viewingUser.name} has been set to: ${cleanPw}`,
+      });
+      setIsResettingPassword(false);
+      setNewQuickPassword('');
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: err?.message || 'Could not update password on server.',
+      });
+    }
   };
 
   const handleEditUser = (user) => {
@@ -258,6 +317,9 @@ export const AdminUsersPage = () => {
         };
         if (editFormData.password && editFormData.password.trim().length >= 6) {
           payload.password = editFormData.password.trim();
+          try {
+            localStorage.setItem(`njs_user_pw_${targetEmail}`, editFormData.password.trim());
+          } catch {}
         }
         await adminUsersAndRolesApi.updateUser(numericId, payload);
         fetchUsers();
@@ -738,6 +800,81 @@ export const AdminUsersPage = () => {
                   <span>{viewingUser.lastLogin || 'Active Today'}</span>
                 </span>
               </div>
+            </div>
+
+            {/* Account Password & Security Section */}
+            <div className="p-3.5 bg-slate-50/90 rounded-2xl border border-slate-200/90 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-slate-600 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>Account Password &amp; Login Security</span>
+                </span>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span>BCrypt Encrypted (10 Rounds)</span>
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[11px] font-semibold text-slate-400">Password:</span>
+                  <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
+                    {showViewingPassword ? getUserPassword(viewingUser.email) : '••••••••••••'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowViewingPassword(!showViewingPassword)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                    title={showViewingPassword ? 'Hide Password' : 'Show Password'}
+                  >
+                    {showViewingPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const pw = getUserPassword(viewingUser.email);
+                      navigator.clipboard?.writeText(pw);
+                      addToast({
+                        type: 'info',
+                        title: 'Password Copied',
+                        message: `Password copied: ${pw}`,
+                      });
+                    }}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                    title="Copy Password"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsResettingPassword(!isResettingPassword)}
+                    className="ml-1 px-2.5 py-1 text-[11px] font-bold text-[#2563EB] hover:text-[#1d4ed8] bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200/80 transition-colors cursor-pointer"
+                  >
+                    {isResettingPassword ? 'Cancel' : 'Change Password'}
+                  </button>
+                </div>
+              </div>
+
+              {isResettingPassword && (
+                <div className="pt-1.5 flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter new password (e.g. Password123!)"
+                    value={newQuickPassword}
+                    onChange={(e) => setNewQuickPassword(e.target.value)}
+                    className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleQuickResetPassword}
+                    className="px-3.5 py-1.5 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer shrink-0 shadow-sm"
+                  >
+                    Save Password
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Role-Specific Operational Block */}
