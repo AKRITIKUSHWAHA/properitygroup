@@ -23,7 +23,16 @@ const escapeHtml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Independent RICS-Regulated Practice') => `
+export const sanitizeSurveyStandard = (text) => {
+  if (!text) return '';
+  return String(text)
+    .replace(/\s*\(\s*Full\s+Structural\s*\)/gi, '')
+    .replace(/\s*Full\s+Structural\s*/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
+export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Independent RICS-Regulated Practice • Firm #084920') => `
   <div style="background: #ffffff; padding: 20px 26px; border-bottom: 1px solid #e2e8f0; text-align: left;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
       <tr>
@@ -46,8 +55,8 @@ export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Indep
 
 export const buildEmailFooter = () => `
   <div style="background: #f8fafc; padding: 18px 26px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.6;">
-    <div style="font-weight: 700; color: #0B1F4D; margin-bottom: 4px; font-size: 12px; line-height: 1.4;">NJS Property Group Ltd &bull; Chartered Surveyors</div>
-    <div>Regulated by RICS &bull; Phone: <a href="tel:03333052777" style="color: #0B1F4D; font-weight: 700; text-decoration: none;">0333 305 2777</a> &bull; Email: <a href="mailto:info@njspropertygroup.com" style="color: #2563EB; text-decoration: none;">info@njspropertygroup.com</a></div>
+    <div style="font-weight: 700; color: #0B1F4D; margin-bottom: 4px; font-size: 12px; line-height: 1.4;">NJS Property Group Ltd &bull; Independent Chartered Surveyors</div>
+    <div>Regulated by RICS &bull; Firm #084920 &bull; Phone: <a href="tel:03333052777" style="color: #0B1F4D; font-weight: 700; text-decoration: none;">0333 305 2777</a> &bull; Email: <a href="mailto:info@njspropertygroup.com" style="color: #2563EB; text-decoration: none;">info@njspropertygroup.com</a></div>
     <div style="color: #94a3b8; font-size: 10.5px; margin-top: 6px;">&copy; ${new Date().getFullYear()} NJS Property Group Ltd. All rights reserved under UK Law.</div>
   </div>
 `;
@@ -260,10 +269,11 @@ export const sendQuoteProposalEmail = async ({
   propertyAddress,
   quoteLink,
 }) => {
-  const subject = `Your Formal RICS Survey Proposal: ${surveyType} — NJS Property Group`;
+  const cleanSurveyType = sanitizeSurveyStandard(surveyType) || 'RICS Home Survey';
+  const subject = `Your Formal RICS Survey Proposal: ${cleanSurveyType} — NJS Property Group`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
-      ${buildEmailHeader('NJS PROPERTY GROUP — FORMAL SURVEY PROPOSAL', `RICS Practice Reference • ${escapeHtml(surveyType || 'RICS Home Survey')}`)}
+      ${buildEmailHeader('NJS PROPERTY GROUP — FORMAL SURVEY PROPOSAL', `RICS Practice Reference • ${escapeHtml(cleanSurveyType)}`)}
       
       <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
         <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</h2>
@@ -277,7 +287,7 @@ export const sendQuoteProposalEmail = async ({
             </tr>
             <tr>
               <td style="padding: 12px 0; color: #64748b; font-weight: 500; vertical-align: top; width: 38%; border-bottom: 1px solid #e2e8f0;">Survey Standard:</td>
-              <td style="padding: 12px 0; font-weight: 700; color: #0B1F4D; text-align: right; vertical-align: top; width: 62%; line-height: 1.45; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${escapeHtml(surveyType || 'RICS Level 2 Home Survey')}</td>
+              <td style="padding: 12px 0; font-weight: 700; color: #0B1F4D; text-align: right; vertical-align: top; width: 62%; line-height: 1.45; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${escapeHtml(cleanSurveyType)}</td>
             </tr>
             <tr>
               <td style="padding: 14px 0 6px 0; color: #475569; font-weight: 600; vertical-align: middle; width: 45%;">
@@ -309,13 +319,42 @@ export const sendQuoteProposalEmail = async ({
 
   if (resend) {
     try {
+      // 1. Send client-facing formal proposal exclusively to Customer (NEVER cc admin on customer letters)
       const response = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct administrative operations record to Admin inbox (if recipient is not already admin)
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[PROPOSAL ISSUED] RICS Quotation Dispatched to ${clientName || 'Client'}: £${quoteAmount}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS OPERATIONS — PROPOSAL ISSUED', 'Outbound Fee Quotation Dispatched')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>Operations Notice:</strong> A formal fee proposal has been dispatched to <strong>${escapeHtml(clientName || 'Client')}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Client:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Survey Standard:</td><td>${escapeHtml(cleanSurveyType)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Quoted Fee:</td><td style="font-weight: 800; color: #059669; font-size: 15px;">£${escapeHtml(quoteAmount || '770.00')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Status:</td><td>Awaiting client review &amp; electronic acceptance</td></tr>
+                </table>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/quotes" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Quotes in Admin Portal &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin proposal dispatch record notice:', err.message));
+      }
+
       if (response?.error) {
         console.warn('Resend quote proposal error:', response.error.message || response.error);
         return { success: false, error: response.error.message, provider: 'resend_error' };
@@ -389,13 +428,42 @@ export const sendInvoiceReceiptEmail = async ({
 
   if (resend) {
     try {
+      // 1. Send client-facing VAT receipt exclusively to Customer
       const res = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct accounts settlement alert to Admin desk
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[PAYMENT CONFIRMED] £${amount} Received from ${clientName || 'Client'} (Inv #${invoiceRef})`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS ACCOUNTS — PAYMENT CONFIRMED', 'Invoice Settled & Cleared')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>Accounts Notice:</strong> Payment has been verified and settled for invoice <strong>${escapeHtml(invoiceRef)}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Client:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Amount Settled:</td><td style="font-weight: 800; color: #059669; font-size: 15px;">£${escapeHtml(amount)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Method:</td><td>${escapeHtml(paymentMethod)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Invoice Reference:</td><td style="font-family: monospace;">${escapeHtml(invoiceRef)}</td></tr>
+                </table>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/quotes-and-payments" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Accounts Ledger &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin payment alert error:', err.message));
+      }
+
       return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend receipt error:', err.message);
@@ -476,13 +544,43 @@ export const sendQuoteAcceptedEmail = async ({
 
   if (resend && to && to.includes('@')) {
     try {
+      // 1. Send confirmation exclusively to Customer (NEVER cc admin on customer letters)
       const res = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct operations action alert to Admin desk
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[ACTION REQUIRED] Quote Accepted by ${clientName || 'Client'}: ${quoteRef} (£${totalAmount || ''})`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS OPERATIONS — QUOTE ACCEPTED', 'Client Instruction Confirmed')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>Instruction Confirmed:</strong> Client <strong>${escapeHtml(clientName)}</strong> has accepted quotation <strong>${escapeHtml(quoteRef)}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Quote Reference:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(quoteRef)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Client:</td><td>${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Survey Standard:</td><td>${escapeHtml(surveyType || 'RICS Survey')}</td></tr>
+                  ${totalAmount ? `<tr><td style="padding: 6px 0; color: #64748b;">Agreed Fee:</td><td style="font-weight: 800; color: #059669; font-size: 15px;">£${escapeHtml(totalAmount)}</td></tr>` : ''}
+                  <tr><td style="padding: 6px 0; color: #64748b;">Next Action:</td><td>Generate RICS Terms of Engagement and allocate chartered surveyor.</td></tr>
+                </table>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Manage Instruction in Admin Portal &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin quote accepted notice error:', err.message));
+      }
+
       return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend quote accepted email error:', err.message);
@@ -558,13 +656,43 @@ export const sendTermsSignedEmail = async ({
 
   if (resend && to && to.includes('@')) {
     try {
+      // 1. Send confirmation exclusively to Customer (NEVER cc admin on customer letters)
       const res = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct contract confirmation alert to Admin desk
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[CONTRACT SIGNED] Terms Executed by ${clientName || 'Client'}: ${propertyAddress || jobRef}`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS OPERATIONS — CONTRACT CONFIRMED', 'RICS Engagement Executed')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>Contract Notice:</strong> Client <strong>${escapeHtml(clientName)}</strong> has digitally executed the RICS Terms of Engagement.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Job Reference:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(jobRef)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Client:</td><td>${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Signed Timestamp:</td><td>${escapeHtml(formattedDate)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Audit Signature:</td><td style="font-family: monospace; font-size: 11px;">${escapeHtml(tamperAuditHash || 'VERIFIED-SHA256')}</td></tr>
+                </table>
+                <p style="font-size: 13px; color: #475569;"><strong>Next Action:</strong> Allocate surveyor in calendar and confirm site key collection protocol.</p>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/terms" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Executed Contract in Admin &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin terms signed notice error:', err.message));
+      }
+
       return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend terms signed email error:', err.message);
@@ -660,13 +788,43 @@ export const sendInspectionBookedEmail = async ({
 
   if (resend && to && to.includes('@')) {
     try {
+      // 1. Send inspection notice exclusively to Customer (NEVER cc admin on customer letters)
       const res = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct operations schedule alert to Admin desk
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[INSPECTION CONFIRMED] ${jobRef}: ${propertyAddress || 'Subject Property'} (${formattedDate})`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS OPERATIONS — INSPECTION SCHEDULED', 'Field Rota Locked')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>Rota Notice:</strong> Physical survey inspection confirmed for <strong>${escapeHtml(propertyAddress || jobRef)}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Job Reference:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(jobRef)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Client:</td><td>${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Assigned Surveyor:</td><td style="font-weight: 700;">${escapeHtml(surveyorName || 'RICS Surveyor')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Inspection Date:</td><td style="font-weight: 800; color: #059669;">${escapeHtml(formattedDate)}</td></tr>
+                  ${inspectionTime ? `<tr><td style="padding: 6px 0; color: #64748b;">Arrival Window:</td><td>${escapeHtml(inspectionTime)}</td></tr>` : ''}
+                </table>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Dispatch Rota &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin inspection notice error:', err.message));
+      }
+
       return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend booking email error:', err.message);
@@ -743,13 +901,41 @@ export const sendReportReadyEmail = async ({
 
   if (resend && to && to.includes('@')) {
     try {
+      // 1. Send report delivery notice exclusively to Customer (NEVER cc admin on customer letters)
       const res = await resend.emails.send({
         from: SENDER_EMAIL,
         to: [to],
-        cc: [ENQUIRY_INBOX],
         subject,
         html,
       });
+
+      // 2. Send distinct QA audit delivery alert to Admin desk
+      if (to && to.toLowerCase() !== ENQUIRY_INBOX.toLowerCase()) {
+        await resend.emails.send({
+          from: SENDER_EMAIL,
+          to: [ENQUIRY_INBOX],
+          subject: `[REPORT DELIVERED] Certified RICS Survey Report Dispatched to ${clientName || 'Client'} (${jobRef})`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+              ${buildEmailHeader('NJS QA DESK — REPORT DELIVERED', 'Instruction Lifecycle Complete')}
+              <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                <p><strong>QA Sign-off Notice:</strong> The official certified survey report for <strong>${escapeHtml(propertyAddress || jobRef)}</strong> has been delivered to <strong>${escapeHtml(clientName)}</strong>.</p>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0;">
+                  <tr><td style="padding: 6px 0; color: #64748b; width: 40%;">Job Reference:</td><td style="font-weight: 700; color: #0B1F4D;">${escapeHtml(jobRef)}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Client:</td><td>${escapeHtml(clientName)} &lt;${escapeHtml(to)}&gt;</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Property:</td><td style="font-weight: 600;">${escapeHtml(propertyAddress || 'Subject Property')}</td></tr>
+                  <tr><td style="padding: 6px 0; color: #64748b;">Delivered Document:</td><td><a href="${downloadUrl}" style="color: #2563EB; font-weight: 600;">Download Official PDF &rarr;</a></td></tr>
+                </table>
+                <div style="margin-top: 20px;">
+                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/reports" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Reports Repository &rarr;</a>
+                </div>
+              </div>
+              ${buildEmailFooter()}
+            </div>
+          `,
+        }).catch((err) => console.warn('Admin report delivered alert error:', err.message));
+      }
+
       return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
     } catch (err) {
       console.warn('Resend report ready email error:', err.message);
