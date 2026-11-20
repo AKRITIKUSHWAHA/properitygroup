@@ -27,7 +27,7 @@ import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
 import { useJobs } from '../../mock/jobs';
-import { adminReportsAndAnalyticsApi } from '../../api/adminApi';
+import { adminReportsAndAnalyticsApi, adminSurveyorsApi } from '../../api/adminApi';
 
 // 3-Dot Dropdown Menu for Surveyor Performance Table
 const SurveyorRowActions = ({ surveyor, onView, onCopyEmail }) => {
@@ -141,7 +141,8 @@ export const AdminReportsPage = () => {
   const [localQaJobs, setLocalQaJobs] = useState(() => {
     try {
       const stored = localStorage.getItem('njs_qa_desk_jobs');
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      return Array.isArray(parsed) ? parsed.filter((j) => !String(j.id || '').includes('JOB-2026-QA')) : [];
     } catch {
       return [];
     }
@@ -187,36 +188,8 @@ export const AdminReportsPage = () => {
       }
     });
 
-    return list.filter((j) => (j.status || '').toLowerCase() !== 'complete' && (j.stage || '').toUpperCase() !== 'COMPLETE');
+    return list.filter((j) => (j.status || '').toLowerCase() !== 'complete' && (j.stage || '').toUpperCase() !== 'COMPLETE' && !String(j.id || '').includes('JOB-2026-QA'));
   }, [jobs, localQaJobs]);
-
-  const handleCreateSampleQaJob = () => {
-    const randomId = Math.floor(100 + Math.random() * 900);
-    const sample = {
-      id: `JOB-2026-QA${randomId}`,
-      jobNo: `JOB-2026-QA${randomId}`,
-      reference: `JOB-2026-QA${randomId}`,
-      customer: 'Jonathan Edwards',
-      customerEmail: 'j.edwards@properitygroup.co.uk',
-      property: '24 Kensington Church Street, London',
-      location: 'W8 4EP, London',
-      surveyType: 'RICS Level 2 Home Survey',
-      surveyor: 'David Thorne MRICS',
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      stage: 'QA_REVIEW',
-      status: 'QA_Review',
-      timelineStep: 9,
-      notes: 'Physical on-site inspection completed. Structural hairline cracks recorded at rear elevation. Moisture meter readings within normal RICS parameters. Draft report submitted for QA review.',
-    };
-
-    saveLocalQaJobs([sample, ...localQaJobs]);
-    addJob(sample);
-    addToast({
-      type: 'success',
-      title: 'Sample Draft Report Added to QA Desk',
-      message: `${sample.jobNo} is now ready for QA Audit. You can Inspect, Amend, or Approve & Release.`,
-    });
-  };
 
   const handleApproveQa = async (job) => {
     const jobId = job.dbId || job.id;
@@ -278,15 +251,17 @@ export const AdminReportsPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('October 2026');
   const [backendMetrics, setBackendMetrics] = useState(null);
   const [_backendReports, setBackendReports] = useState([]);
+  const [realSurveyors, setRealSurveyors] = useState([]);
 
   // Fetch live reports and analytics + metrics from backend API
   useEffect(() => {
     let isMounted = true;
     const fetchAnalytics = async () => {
       try {
-        const [repRes, metRes] = await Promise.allSettled([
+        const [repRes, metRes, survRes] = await Promise.allSettled([
           adminReportsAndAnalyticsApi.getReports(),
           adminReportsAndAnalyticsApi.getMetrics(),
+          adminSurveyorsApi.getSurveyors(),
         ]);
 
         if (repRes.status === 'fulfilled' && repRes.value?.data?.data?.reports && isMounted) {
@@ -295,6 +270,13 @@ export const AdminReportsPage = () => {
 
         if (metRes.status === 'fulfilled' && metRes.value?.data?.data && isMounted) {
           setBackendMetrics(metRes.value.data.data);
+        }
+
+        if (survRes.status === 'fulfilled' && isMounted) {
+          const rawSurvs = survRes.value?.surveyors || survRes.value?.data?.surveyors || (Array.isArray(survRes.value) ? survRes.value : (Array.isArray(survRes.value?.data) ? survRes.value.data : []));
+          if (Array.isArray(rawSurvs)) {
+            setRealSurveyors(rawSurvs);
+          }
         }
       } catch (err) {
         console.warn('Analytics fetch error:', err);
@@ -305,7 +287,8 @@ export const AdminReportsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedPeriod]); // 'October 2026' | 'September 2026' | 'Q3 2026' | 'YTD 2026'
+  }, [selectedPeriod]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingSurveyor, setViewingSurveyor] = useState(null);
 
@@ -317,172 +300,69 @@ export const AdminReportsPage = () => {
     { id: 'YTD 2026', label: 'YTD (2026)' },
   ];
 
-  // Dynamic KPI Metrics based on selected period and live backend metrics
+  // Dynamic KPI Metrics based on live backend database metrics (Real Data Only)
   const kpiData = useMemo(() => {
-    switch (selectedPeriod) {
-      case 'September 2026':
-        return {
-          revenue: '£356,200',
-          revChange: '+11.2% vs Aug',
-          surveysCount: '156',
-          surveysUnit: 'Jobs',
-          survChange: '+9.4% volume',
-          conversion: '68.5%',
-          convChange: '+2.8% vs Aug',
-          slaCount: '39.2',
-          slaUnit: 'Hours',
-          slaNote: '96.8% within 48h SLA',
-        };
-      case 'Q3 2026':
-        return {
-          revenue: '£1,048,900',
-          revChange: '+15.7% vs Q2',
-          surveysCount: '452',
-          surveysUnit: 'Jobs',
-          survChange: '+14.1% volume',
-          conversion: '70.4%',
-          convChange: '+3.5% vs Q2',
-          slaCount: '38.8',
-          slaUnit: 'Hours',
-          slaNote: '97.1% within 48h SLA',
-        };
-      case 'YTD 2026':
-        return {
-          revenue: '£3,418,600',
-          revChange: '+22.4% vs 2025',
-          surveysCount: '1,492',
-          surveysUnit: 'Jobs',
-          survChange: '+18.6% volume',
-          conversion: '71.8%',
-          convChange: '+4.5% vs 2025',
-          slaCount: '38.5',
-          slaUnit: 'Hours',
-          slaNote: '97.2% within 48h SLA',
-        };
-      case 'October 2026':
-      default:
-        return {
-          revenue: backendMetrics?.settledRevenue || '£421,860',
-          revChange: '+18.4% vs Sep',
-          surveysCount: backendMetrics?.completedReports ? String(backendMetrics.completedReports) : '176',
-          surveysUnit: 'Jobs',
-          survChange: '+12.5% volume',
-          conversion: backendMetrics?.conversionRate || '71.2%',
-          convChange: '+4.1% vs Sep',
-          slaCount: backendMetrics?.turnaroundTime ? String(backendMetrics.turnaroundTime).replace(/[^\d.]/g, '') || '38.4' : '38.4',
-          slaUnit: 'Hours',
-          slaNote: `${backendMetrics?.qaAuditPassRate || '97.4%'} within 48h SLA`,
-        };
-    }
-  }, [selectedPeriod, backendMetrics]);
+    const rev = backendMetrics?.settledRevenue || '£0';
+    const completed = backendMetrics?.completedReports !== undefined ? backendMetrics.completedReports : 0;
+    const conv = backendMetrics?.conversionRate || '0%';
+    const sla = backendMetrics?.turnaroundTime || '—';
+    const passRate = backendMetrics?.qaAuditPassRate || '—';
 
-  // Survey Revenue Breakdown by Service
+    return {
+      revenue: rev,
+      revChange: 'Real Settled Turnover',
+      surveysCount: String(completed),
+      surveysUnit: 'Jobs',
+      survChange: `${backendMetrics?.totalJobs || completed} Total Dispatched`,
+      conversion: conv,
+      convChange: 'Quotes to Job Conversion',
+      slaCount: sla !== '—' ? String(sla).replace(/[^\d.]/g, '') || '48' : '—',
+      slaUnit: sla !== '—' ? 'Hours' : '',
+      slaNote: passRate !== '—' ? `${passRate} Pass Rate` : 'No audits completed yet',
+    };
+  }, [backendMetrics]);
+
+  // Survey Revenue Breakdown by Service (Real Data from database)
   const revenueDistribution = useMemo(() => {
-    return [
-      {
-        discipline: 'RICS Level 2 Home Survey',
-        percentage: 42,
-        amount: '£177,180',
-        jobs: 74,
-        color: 'bg-[#2563EB]',
-        textColor: 'text-[#2563EB]',
-      },
-      {
-        discipline: 'RICS Level 3 Comprehensive Building Survey',
-        percentage: 31,
-        amount: '£130,776',
-        jobs: 42,
-        color: 'bg-purple-600',
-        textColor: 'text-purple-600',
-      },
-      {
-        discipline: 'RICS Red Book Valuation (Probate & Lending)',
-        percentage: 16,
-        amount: '£67,497',
-        jobs: 35,
-        color: 'bg-amber-500',
-        textColor: 'text-amber-500',
-      },
-      {
-        discipline: 'Specialist Defect, Damp & Timber Assessment',
-        percentage: 11,
-        amount: '£46,407',
-        jobs: 25,
-        color: 'bg-emerald-500',
-        textColor: 'text-emerald-500',
-      },
-    ];
-  }, []);
+    if (backendMetrics?.breakdown && backendMetrics.breakdown.length > 0) {
+      const colors = ['bg-[#2563EB]', 'bg-purple-600', 'bg-amber-500', 'bg-emerald-500', 'bg-indigo-500'];
+      const textColors = ['text-[#2563EB]', 'text-purple-600', 'text-amber-500', 'text-emerald-500', 'text-indigo-500'];
+      return backendMetrics.breakdown.map((item, idx) => ({
+        ...item,
+        color: colors[idx % colors.length],
+        textColor: textColors[idx % textColors.length],
+      }));
+    }
+    return [];
+  }, [backendMetrics]);
 
-  // Surveyor League Table Data (Connected to SURVEYORS mock)
+  // Surveyor League Table Data (Connected to Real Registered Surveyors)
   const surveyorPerformance = useMemo(() => {
-    const list = [
-      {
-        id: 'srv-1',
-        name: 'David Thorne MRICS',
-        credentials: 'Chartered Valuation Surveyor',
-        avatar: null,
-        postcodes: 'GU, KT, SW',
-        surveys: 46,
-        onTimeRate: '98.5%',
-        revenue: '£42,850',
-        email: 'david.thorne@njspropertygroup.com',
-        phone: '+44 7700 900184',
-        specialism: 'Valuations & Homebuyer L2',
-      },
-      {
-        id: 'srv-2',
-        name: 'Oliver Hughes MRICS',
-        credentials: 'Senior Building Surveyor',
-        avatar: null,
-        postcodes: 'W, NW, WC',
-        surveys: 38,
-        onTimeRate: '96.2%',
-        revenue: '£54,200',
-        email: 'oliver.hughes@njspropertygroup.com',
-        phone: '+44 7700 900284',
-        specialism: 'Period Structures & Level 3',
-      },
-      {
-        id: 'srv-3',
-        name: 'Claire Bennet AssocRICS',
-        credentials: 'Residential Defect Specialist',
-        avatar: null,
-        postcodes: 'TW, UB, SL',
-        surveys: 34,
-        onTimeRate: '100%',
-        revenue: '£29,400',
-        email: 'claire.bennet@njspropertygroup.com',
-        phone: '+44 7700 900384',
-        specialism: 'Damp, Timber & Defects',
-      },
-      {
-        id: 'srv-4',
-        name: 'Jonathan Cross FRICS',
-        credentials: 'Fellow Chartered Surveyor',
-        avatar: null,
-        postcodes: 'EC, SE, E',
-        surveys: 32,
-        onTimeRate: '97.0%',
-        revenue: '£68,900',
-        email: 'jonathan.cross@njspropertygroup.com',
-        phone: '+44 7700 900484',
-        specialism: 'Commercial Red Book & Party Wall',
-      },
-      {
-        id: 'srv-5',
-        name: 'Fiona Macintyre MRICS',
-        credentials: 'Historic Buildings Consultant',
-        avatar: null,
-        postcodes: 'OX, RG, HP',
-        surveys: 26,
-        onTimeRate: '95.8%',
-        revenue: '£22,100',
-        email: 'fiona.macintyre@njspropertygroup.com',
-        phone: '+44 7700 900584',
-        specialism: 'Listed Heritage & CPR35',
-      },
-    ];
+    const list = realSurveyors.map((s) => {
+      const assigned = s.assignedJobs || [];
+      const completedCount = assigned.filter((j) => (j.stage || '').toUpperCase() === 'COMPLETE' || (j.status || '').toLowerCase() === 'complete').length;
+      const cleanEmail = (s.email || '').toLowerCase().trim();
+      const storedPhone = typeof window !== 'undefined' ? localStorage.getItem(`njs_user_phone_${cleanEmail}`) : null;
+
+      return {
+        id: `srv-${s.id}`,
+        dbId: s.id,
+        name: s.name,
+        credentials: s.surveyorProfile?.accreditation
+          ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
+          : 'MRICS Chartered Surveyor',
+        avatar: (s.avatar && !s.avatar.includes('unsplash.com')) ? s.avatar : null,
+        postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
+          ? s.surveyorProfile.postcodesCovered.join(', ')
+          : (s.surveyorProfile?.postcodesCovered || 'London & Home Counties'),
+        surveys: completedCount,
+        onTimeRate: completedCount > 0 ? '100%' : '—',
+        revenue: completedCount > 0 ? `£${(completedCount * 850).toLocaleString()}` : '£0',
+        email: s.email,
+        phone: s.phone || storedPhone || '—',
+        specialism: s.surveyorProfile?.specialism || 'RICS Level 2, Level 3 & Valuation',
+      };
+    });
 
     if (!searchTerm.trim()) return list;
 
@@ -494,7 +374,7 @@ export const AdminReportsPage = () => {
         s.postcodes.toLowerCase().includes(q) ||
         s.specialism.toLowerCase().includes(q)
     );
-  }, [searchTerm]);
+  }, [realSurveyors, searchTerm]);
 
   const handleExportCSV = () => {
     try {
@@ -781,16 +661,6 @@ export const AdminReportsPage = () => {
                 <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
                   All submitted surveyor draft reports have been audited and released to clients within the 48-hour SLA standard.
                 </p>
-                <div className="mt-5 flex items-center justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCreateSampleQaJob}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#0B1F4D] hover:bg-[#162E6E] shadow-sm transition-all cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4 text-emerald-400" />
-                    <span>Generate Sample Draft Report for QA Testing</span>
-                  </button>
-                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -826,7 +696,7 @@ export const AdminReportsPage = () => {
                             <span className="font-semibold text-[#2563EB]">{job.surveyType || job.serviceType}</span>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="font-semibold text-slate-800">{job.surveyor || 'David Thorne MRICS'}</div>
+                            <div className="font-semibold text-slate-800">{job.surveyor || 'Assigned Surveyor'}</div>
                             <div className="text-[11px] text-slate-400">Chartered Surveyor</div>
                           </td>
                           <td className="py-3 px-4">
@@ -997,31 +867,37 @@ export const AdminReportsPage = () => {
           </div>
 
           <div className="space-y-3.5 text-xs">
-            {revenueDistribution.map((item, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex items-center justify-between font-bold">
-                  <span className="text-slate-800">{item.discipline}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-400 font-normal">
-                      ({item.jobs} jobs)
-                    </span>
-                    <span className="font-mono text-slate-900">{item.amount}</span>
+            {revenueDistribution.length > 0 ? (
+              revenueDistribution.map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex items-center justify-between font-bold">
+                    <span className="text-slate-800">{item.discipline}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-400 font-normal">
+                        ({item.jobs} {item.jobs === 1 ? 'job' : 'jobs'})
+                      </span>
+                      <span className="font-mono text-slate-900">{item.amount}</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                      style={{ width: `${item.percentage}%` }}
+                    />
                   </div>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={`h-full ${item.color} rounded-full transition-all duration-500`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-slate-400 font-medium">
+                No completed surveys recorded in this reporting period.
               </div>
-            ))}
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <span className="text-slate-500 font-medium">Monthly Billed Total:</span>
             <span className="font-mono font-black text-[#0B1F4D] text-sm">
-              {kpiData.revenue} (176 Surveys)
+              {kpiData.revenue} ({kpiData.surveysCount} {Number(kpiData.surveysCount) === 1 ? 'Survey' : 'Surveys'})
             </span>
           </div>
         </div>
@@ -1185,7 +1061,7 @@ export const AdminReportsPage = () => {
           </div>
           <div className="grid grid-cols-2 gap-2 text-slate-600 text-[11px] pt-1 border-t border-slate-200/60">
             <div>Client: <strong className="text-slate-800">{inspectingJob.customer || inspectingJob.clientName}</strong></div>
-            <div>Surveyor: <strong className="text-slate-800">{inspectingJob.surveyor || 'David Thorne MRICS'}</strong></div>
+            <div>Surveyor: <strong className="text-slate-800">{inspectingJob.surveyor || 'Assigned Surveyor'}</strong></div>
             <div>Standard: <strong className="text-[#2563EB]">{inspectingJob.surveyType || inspectingJob.serviceType}</strong></div>
             <div>Location: <strong className="text-slate-800">{inspectingJob.location || 'London, UK'}</strong></div>
           </div>
