@@ -355,11 +355,9 @@ export const AdminQuotesPage = () => {
             dueDate: new Date(createdDate.getTime() + 7 * 86400000).toLocaleDateString('en-GB'),
             paidDate: inv?.paidAt ? new Date(inv.paidAt).toLocaleDateString('en-GB') : null,
             paymentMethod:
-              inv?.paymentMethod === 'STRIPE_CARD'
-                ? 'Stripe UK Online Card Settlement'
-                : inv?.paymentMethod === 'BACS_TRANSFER'
+              inv?.paymentMethod === 'STRIPE_CARD' || inv?.paymentMethod === 'BACS_TRANSFER'
                 ? `BACS (${inv.bacsReference || 'Bank Transfer'})`
-                : null,
+                : inv?.paymentMethod || 'Direct Bank Transfer (BACS)',
             invoiceDbId: inv?.id,
           };
         });
@@ -1086,8 +1084,8 @@ export const AdminQuotesPage = () => {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <PageHeader
-        title="Quotations & Payment Gateway"
-        subtitle="Manage client fee proposals, 20% UK VAT calculations, online Stripe card settlements, and official invoices."
+        title="Quotations & Payment Invoicing"
+        subtitle="Manage client fee proposals, 20% UK VAT calculations, bank transfer settlements, and official invoices."
         breadcrumb={['Admin', 'Quotations & Payments']}
         actionLabel="New Quotation"
         actionIcon={Plus}
@@ -1112,7 +1110,7 @@ export const AdminQuotesPage = () => {
             </span>
           </div>
           <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
-            Cleared via Stripe / BACS Direct Debit
+            Cleared via Bank Transfer / BACS Faster Payments
           </p>
         </div>
 
@@ -1609,7 +1607,7 @@ export const AdminQuotesPage = () => {
             {selectedQuoteDetail.status === 'Paid' ? (
               <div className="space-y-3">
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center justify-between">
-                  <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod || 'Stripe UK Online'}</strong></span>
+                  <span>Payment Method: <strong>{selectedQuoteDetail.paymentMethod || 'Bank Transfer (BACS)'}</strong></span>
                   <span className="font-mono text-[11px]">{selectedQuoteDetail.paidDate || 'Paid in Full'}</span>
                 </div>
                 <button

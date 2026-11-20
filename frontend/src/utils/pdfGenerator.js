@@ -440,7 +440,7 @@ export const downloadInvoicePDF = ({
   invoiceDate = null,
   date = null,
   paymentDate = null,
-  paymentMethod = 'Stripe Credit Card (•••• 4242)',
+  paymentMethod = 'Direct Bank Transfer (BACS Faster Payments)',
   baseFee = 770.0,
   vatAmount = null,
   totalAmount = null,
@@ -663,7 +663,7 @@ export const downloadInvoicePDF = ({
     const txnY = curY + 14 + (settledLines.length * 4);
     doc.text(`Transaction Reference: TXN-NJS-${Date.now().toString(16).toUpperCase()}`, 20, txnY);
   } else {
-    const bankLines = doc.splitTextToSize('Metro Bank PLC: Sort Code 23-05-80 • Account 18920412 • Beneficiary: NJS Property Group Ltd', stampBoxW - 10);
+    const bankLines = doc.splitTextToSize('Bank Transfer: Sort Code 23-05-80 • Account 46452283 • Beneficiary: NJS PROPERTY GROUP LTD', stampBoxW - 10);
     const stampBoxH = Math.max(24, 18 + bankLines.length * 3.8);
 
     doc.setDrawColor(234, 88, 12);

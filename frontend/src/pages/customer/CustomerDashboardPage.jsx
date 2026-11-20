@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   CalendarCheck,
-  CreditCard,
+  Building2,
   PenTool,
   CheckCircle2,
   Clock,
@@ -148,9 +148,19 @@ export const CustomerDashboardPage = () => {
       id: 'payment',
       title: 'Payment Status',
       value: customerJob?.paymentStatus === 'Paid' ? '£0.00' : customerJob ? `£${((customerJob.quote?.baseFee || 650) * 1.2).toFixed(2)}` : '£0.00',
-      subtext: customerJob?.paymentStatus === 'Paid' ? 'All fees settled' : customerJob ? 'Invoice pending settlement' : 'No balance due',
-      icon: CreditCard,
-      color: customerJob?.paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600',
+      subtext: customerJob?.paymentStatus === 'Paid'
+        ? 'All fees settled'
+        : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
+        ? 'Payment Claimed — Awaiting NJS Admin Verification'
+        : customerJob
+        ? 'Bank transfer pending settlement'
+        : 'No balance due',
+      icon: Building2,
+      color: customerJob?.paymentStatus === 'Paid'
+        ? 'bg-emerald-50 text-emerald-600'
+        : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-slate-50 text-slate-700',
       path: '/customer/invoices-and-payments',
     },
     {
@@ -414,6 +424,41 @@ export const CustomerDashboardPage = () => {
             >
               <CalendarCheck className="w-3.5 h-3.5 text-[#2563EB]" />
               <span>2. Choose Date</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Claimed — Awaiting NJS Admin Verification Prompt Banner */}
+      {(customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed')) && customerJob?.paymentStatus !== 'Paid' && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/90 border border-amber-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500 text-white shrink-0 shadow-2xs">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md border border-amber-300">
+                  Payment Claimed — Awaiting NJS Admin Verification
+                </span>
+                <span className="text-xs font-bold text-slate-700">Bank Transfer Logged</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Bank Transfer Logged for {customerJob?.property || 'Subject Property'}
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Your bank transfer notification has been submitted. Our accounts desk is reconciling the funds (Sort Code: 23-05-80, Account: 46452283). Your booking will be confirmed once funds clear.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate('/customer/invoices-and-payments')}
+              className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>View Bank Details &amp; Status</span>
             </button>
           </div>
         </div>

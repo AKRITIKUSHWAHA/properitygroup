@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FileText,
   CalendarCheck,
-  CreditCard,
+  Building2,
+  Copy,
   PenTool,
   CheckCircle2,
   Clock,
@@ -205,15 +206,8 @@ export const CustomerTermsPage = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
 
-  // Payment Form State
-  const [paymentMethod, setPaymentMethod] = useState('bacs'); // 'bacs' | 'card' | 'apple'
-  const [cardDetails, setCardDetails] = useState({
-    number: '•••• •••• •••• 4242',
-    expiry: '12/28',
-    cvc: '892',
-    name: user?.name || currentJob?.customer || 'Customer Account',
-    postcode: 'W1K 2PB',
-  });
+  // Bank Transfer Payment Form State (Client Specification: Bank Transfer Only, No Stripe/Card)
+  const [bankProofRef, setBankProofRef] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Canvas drawing handlers
@@ -378,6 +372,7 @@ export const CustomerTermsPage = () => {
         termsStatus: 'Signed',
         paymentStatus: 'Claimed (Verification Pending)',
         paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+        transferReference: bankProofRef || '',
         canBook: false,
         timelineStep: 3,
         status: 'Action Required',
@@ -458,10 +453,11 @@ export const CustomerTermsPage = () => {
             'x-user-email': userEmail,
           },
           body: JSON.stringify({
-            paymentMethod: paymentMethod === 'bacs' ? 'Direct Bank Transfer (Metro Bank BACS)' : 'Online Card (Stripe Gateway)',
+            paymentMethod: 'Direct Bank Transfer (BACS Faster Payments)',
             amount: grossTotal,
             property: propertyAddress,
             clientName: user?.name || currentJob?.customer || typedName,
+            transferReference: bankProofRef || '',
           }),
         }).catch((e) => console.warn('Backend payment record error:', e));
       } catch {}
@@ -470,11 +466,9 @@ export const CustomerTermsPage = () => {
       setStage('confirmed');
 
       addToast({
-        type: 'success',
-        title: paymentMethod === 'bacs' ? 'Metro Bank Transfer Confirmed' : 'Advance Payment Successful',
-        message: paymentMethod === 'bacs'
-          ? `Direct bank transfer of £${grossTotal.toFixed(2)} registered to Metro Bank PLC. Terms of engagement recorded.`
-          : `Stripe transaction of £${grossTotal.toFixed(2)} authorized. Terms of engagement recorded.`,
+        type: 'info',
+        title: 'Bank Transfer Claim Submitted',
+        message: `Notification logged for £${grossTotal.toFixed(2)}. Status: Payment Claimed — Awaiting NJS Admin Verification.`,
       });
     }, 1000);
   };
@@ -952,7 +946,7 @@ export const CustomerTermsPage = () => {
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Payment Reference</span>
-                    <strong className="text-[#2563EB] font-mono text-sm font-black">{jobNo || 'NJS-JOB-2026'}</strong>
+                    <strong className="text-[#2563EB] font-mono text-sm font-black">INV-2026-{(jobNo || '080').replace(/\D/g, '') || '080'}</strong>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Sort Code</span>
@@ -978,12 +972,12 @@ export const CustomerTermsPage = () => {
                 {/* Optional Payment Reference Note */}
                 <div className="space-y-1.5 pt-1">
                   <label className="block text-xs font-semibold text-slate-700">
-                    Your Bank Transfer Reference / Notes (Optional):
+                    Your Bank Transfer Reference / Payer Name (Optional):
                   </label>
                   <input
                     type="text"
-                    value={cardDetails.name || ''}
-                    onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
+                    value={bankProofRef}
+                    onChange={(e) => setBankProofRef(e.target.value)}
                     placeholder="e.g. Sent from Barclays / Halifax Ref #12345"
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
@@ -994,7 +988,7 @@ export const CustomerTermsPage = () => {
 
                 {/* Important Compliance Callout */}
                 <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-medium">
-                  <strong>Notice:</strong> Marking "I have made a bank transfer" notifies NJS Admin to verify receipt of funds. Once verified by our accounts desk, your invoice will be marked as Paid and your inspection booking confirmed.
+                  <strong>Notice:</strong> Marking "I have made a bank transfer" notifies NJS Admin to verify receipt of funds. Status will be marked as <strong>"Payment Claimed — Awaiting NJS Admin Verification"</strong>. To prevent unverified bookings, your invoice is NOT automatically marked as Paid.
                 </div>
 
                 {/* Submit Claim Button */}
@@ -1012,7 +1006,7 @@ export const CustomerTermsPage = () => {
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4" />
-                      <span>I Have Made a Bank Transfer (£{grossTotal.toFixed(2)})</span>
+                      <span>I have made a bank transfer</span>
                     </>
                   )}
                 </button>
@@ -1068,9 +1062,9 @@ export const CustomerTermsPage = () => {
           </div>
 
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
-              <Clock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Bank Transfer Verification Pending</span>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-300">
+              <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+              <span>Payment Claimed — Awaiting NJS Admin Verification</span>
             </div>
             <h3 className="text-2xl font-black text-[#0B1F4D]">
               Terms Signed • Transfer Notification Logged
@@ -1881,15 +1875,9 @@ export const CustomerInvoicesPage = () => {
 
   const [settlingInvoice, setSettlingInvoice] = useState(null);
   const [viewingReceipt, setViewingReceipt] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('bacs'); // 'card' | 'apple' | 'bacs'
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    name: user?.name || 'Customer Account',
-    number: '•••• •••• •••• 4242',
-    expiry: '12/28',
-    cvc: '892',
-    postcode: 'W1K 2PB',
-  });
+  const [transferProofRef, setTransferProofRef] = useState('');
+  const [copiedRef, setCopiedRef] = useState(false);
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
 
@@ -1898,6 +1886,10 @@ export const CustomerInvoicesPage = () => {
     const vat = Math.round(net * 0.2);
     const total = net + vat;
     const isPaid = j.paymentStatus === 'Paid';
+    const isClaimed =
+      j.paymentStatus === 'Claimed (Verification Pending)' ||
+      j.paymentStatus === 'Claimed' ||
+      (j.paymentStatus && j.paymentStatus.includes('Claimed'));
 
     return {
       invNo: `INV-2026-${j.id.replace('JOB-2026-', '90')}`,
@@ -1911,8 +1903,11 @@ export const CustomerInvoicesPage = () => {
       net: `£${net.toFixed(2)}`,
       vat: `£${vat.toFixed(2)}`,
       total: `£${total.toFixed(2)}`,
-      status: isPaid ? 'Paid' : 'Unpaid',
-      method: j.paymentMethod || (isPaid ? 'Metro Bank Direct Transfer (BACS)' : 'Pending Settlement'),
+      status: isPaid ? 'Paid' : isClaimed ? 'Payment Claimed' : 'Unpaid',
+      isPaid,
+      isClaimed,
+      transferReference: j.transferReference,
+      method: j.paymentMethod || (isPaid ? 'Bank Transfer (BACS Faster Payments)' : 'Bank Transfer (BACS)'),
     };
   });
 
@@ -1952,27 +1947,47 @@ export const CustomerInvoicesPage = () => {
     setIsProcessing(true);
 
     setTimeout(() => {
-      // 1. Update job in store to Claimed (Verification Pending) per Client Bank Transfer specification
+      // 1. Update job in store to Claimed (Verification Pending) per Client Bank Transfer specification (NOT auto-paid!)
       updateJob(settlingInvoice.jobRef, {
         paymentStatus: 'Claimed (Verification Pending)',
         paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+        transferReference: transferProofRef || '',
         canBook: false,
         activityLog: [
           {
             id: Date.now(),
             time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-            text: `Customer ${user?.name || 'Client'} marked bank transfer of £${settlingInvoice.grossTotal.toFixed(2)} for invoice ${settlingInvoice.invNo}. Verification pending by NJS Admin.`,
+            text: `Customer ${user?.name || 'Client'} marked bank transfer of £${settlingInvoice.grossTotal.toFixed(2)} for invoice ${settlingInvoice.invNo} (Ref: ${transferProofRef || 'N/A'}). Status: Payment Claimed — Awaiting NJS Admin Verification.`,
           },
         ],
       });
 
+      // 2. Also update localStorage so all tabs reflect immediately
+      try {
+        const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+        const updatedJobs = storedJobs.map((j) => {
+          if (j.id === settlingInvoice.jobRef) {
+            return {
+              ...j,
+              paymentStatus: 'Claimed (Verification Pending)',
+              paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+              transferReference: transferProofRef || '',
+            };
+          }
+          return j;
+        });
+        localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+        window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+      } catch {}
+
       setIsProcessing(false);
       setSettlingInvoice(null);
+      setTransferProofRef('');
 
       addToast({
         type: 'info',
         title: 'Bank Transfer Claim Submitted',
-        message: `Notification submitted for ${settlingInvoice.total}. NJS Admin will verify the funds in our bank account before marking invoice as Paid.`,
+        message: `Status updated to: Payment Claimed — Awaiting NJS Admin Verification for ${settlingInvoice.total}. NJS accounts desk will reconcile funds.`,
       });
     }, 800);
   };
@@ -2009,7 +2024,7 @@ export const CustomerInvoicesPage = () => {
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-            <CreditCard className="w-5 h-5 text-amber-600" />
+            <Receipt className="w-5 h-5 text-amber-600" />
           </div>
           <div>
             <div className="text-xs font-semibold text-slate-500">Outstanding Balance</div>
@@ -2041,13 +2056,30 @@ export const CustomerInvoicesPage = () => {
               <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                      isPaid
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1 ${
+                      inv.isPaid
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : inv.isClaimed
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
                         : 'bg-rose-50 text-rose-800 border-rose-200'
                     }`}
                   >
-                    {isPaid ? 'Paid & Settled ✓' : 'Payment Outstanding'}
+                    {inv.isPaid ? (
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>Paid &amp; Settled ✓</span>
+                      </>
+                    ) : inv.isClaimed ? (
+                      <>
+                        <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                        <span>Payment Claimed — Awaiting NJS Admin Verification</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-3 h-3 text-rose-600" />
+                        <span>Payment Outstanding</span>
+                      </>
+                    )}
                   </span>
                   <span className="font-mono text-xs font-bold text-slate-400">{inv.invNo}</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
@@ -2059,13 +2091,18 @@ export const CustomerInvoicesPage = () => {
                 <p className="text-xs text-slate-600 font-medium">{inv.service}</p>
 
                 <div className="text-xs text-slate-500 flex items-center gap-2 pt-1 font-medium">
-                  {isPaid ? (
+                  {inv.isPaid ? (
                     <span>
                       Settled on {inv.date} via <strong className="text-slate-700">{inv.method}</strong>
                     </span>
+                  ) : inv.isClaimed ? (
+                    <span className="text-amber-700 font-semibold flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Bank transfer notification submitted — awaiting NJS accounts verification</span>
+                    </span>
                   ) : (
                     <span className="text-rose-600 font-bold">
-                      Awaiting Advance Payment Settlement prior to site visit
+                      Awaiting Advance Bank Transfer Settlement prior to site visit
                     </span>
                   )}
                 </div>
@@ -2080,7 +2117,7 @@ export const CustomerInvoicesPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {isPaid ? (
+                  {inv.isPaid ? (
                     <>
                       <button
                         type="button"
@@ -2102,14 +2139,30 @@ export const CustomerInvoicesPage = () => {
                         <span>Download VAT Receipt</span>
                       </button>
                     </>
+                  ) : inv.isClaimed ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSettlingInvoice(inv)}
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        title="View bank details"
+                      >
+                        <Building className="w-3.5 h-3.5 text-[#0B1F4D]" />
+                        <span>View Bank Details</span>
+                      </button>
+                      <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                        <span>Verification Pending</span>
+                      </span>
+                    </div>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setSettlingInvoice(inv)}
                       className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
                     >
-                      <CreditCard className="w-4 h-4" />
-                      <span>Settle Invoice Now ({inv.total})</span>
+                      <Building className="w-4 h-4" />
+                      <span>Pay via Bank Transfer ({inv.total})</span>
                     </button>
                   )}
                 </div>
@@ -2130,20 +2183,20 @@ export const CustomerInvoicesPage = () => {
         <Modal
           isOpen={Boolean(settlingInvoice)}
           onClose={() => setSettlingInvoice(null)}
-          title="Settle Invoice & Lock Inspection"
-          subtitle={`Advance payment settlement for ${settlingInvoice.invNo} (${settlingInvoice.property})`}
+          title="Bank Transfer Payment Details"
+          subtitle={`Direct BACS Faster Payments settlement for ${settlingInvoice.invNo} (${settlingInvoice.property})`}
           maxWidth="max-w-xl"
           footer={
             <div className="flex items-center justify-between w-full">
               <span className="text-[11px] text-slate-500 font-medium">
-                Encrypted 256-bit SSL session • Merchant: NJS Property Group Ltd
+                Official NJS Practice Client Account • Beneficiary: NJS PROPERTY GROUP LTD
               </span>
               <button
                 type="button"
                 onClick={() => setSettlingInvoice(null)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
               >
-                Cancel
+                Close
               </button>
             </div>
           }
@@ -2160,7 +2213,7 @@ export const CustomerInvoicesPage = () => {
               </div>
               <div className="text-right">
                 <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                  Instant VAT Receipt
+                  Zero Merchant Surcharges
                 </span>
               </div>
             </div>
@@ -2173,7 +2226,7 @@ export const CustomerInvoicesPage = () => {
                   <span>Direct Bank Transfer (BACS / Faster Payments)</span>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  Zero Merchant Surcharges
+                  Zero Surcharges
                 </span>
               </div>
 
@@ -2182,29 +2235,62 @@ export const CustomerInvoicesPage = () => {
               </p>
 
               {/* Exact Bank Details */}
-              <div className="grid grid-cols-2 gap-3 p-3.5 bg-white rounded-xl border border-blue-100 shadow-2xs text-slate-800">
+              <div className="grid grid-cols-2 gap-3 p-4 bg-white rounded-xl border border-blue-100 shadow-2xs text-slate-800">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Name</span>
-                  <strong className="text-slate-900 text-xs font-black">NJS PROPERTY GROUP LTD</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm font-black">NJS PROPERTY GROUP LTD</strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Payment Reference</span>
-                  <strong className="text-[#2563EB] font-mono text-xs font-black">{settlingInvoice.invNo}</strong>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <strong className="text-[#2563EB] font-mono text-xs sm:text-sm font-black">{settlingInvoice.invNo}</strong>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard?.writeText(settlingInvoice.invNo);
+                        setCopiedRef(true);
+                        setTimeout(() => setCopiedRef(false), 2000);
+                      }}
+                      className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer text-[10px]"
+                      title="Copy Reference"
+                    >
+                      {copiedRef ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Sort Code</span>
-                  <strong className="text-slate-900 font-mono text-sm font-black">23-05-80</strong>
+                  <strong className="text-slate-900 font-mono text-sm sm:text-base font-black">23-05-80</strong>
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Number</span>
-                  <strong className="text-slate-900 font-mono text-sm font-black">46452283</strong>
+                  <strong className="text-slate-900 font-mono text-sm sm:text-base font-black">46452283</strong>
                 </div>
               </div>
 
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 font-medium">
-                <strong>Notice:</strong> Clicking "I have made a bank transfer" creates a notification for NJS Admin. Admin will verify receipt of funds in our bank account before marking this invoice as Paid.
+              {/* Optional Transfer Reference / Notes */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Your Bank Transfer Reference / Payer Name (Optional):
+                </label>
+                <input
+                  type="text"
+                  value={transferProofRef}
+                  onChange={(e) => setTransferProofRef(e.target.value)}
+                  placeholder="e.g. Sent from Barclays Ref #12345 / Payer Name"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+                <span className="text-[10.5px] text-slate-500 block leading-tight">
+                  Enter your bank reference or sending account name so NJS accounts can swiftly reconcile your payment.
+                </span>
               </div>
 
+              {/* Status Compliance Notice */}
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-medium">
+                <strong>Notice:</strong> Clicking "I have made a bank transfer" notifies NJS Admin to verify receipt of funds. Status will be marked as <strong>"Payment Claimed — Awaiting NJS Admin Verification"</strong>. To prevent unverified bookings, your invoice is NOT automatically marked as Paid until verified by our accounts team.
+              </div>
+
+              {/* Submit Claim Button with Exact User Text */}
               <button
                 type="button"
                 onClick={handleProcessSettlement}
@@ -2219,7 +2305,7 @@ export const CustomerInvoicesPage = () => {
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    <span>I Have Made a Bank Transfer ({settlingInvoice.total})</span>
+                    <span>I have made a bank transfer</span>
                   </>
                 )}
               </button>

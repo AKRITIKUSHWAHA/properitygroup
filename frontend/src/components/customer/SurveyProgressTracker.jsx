@@ -4,7 +4,7 @@ import {
   Clock,
   ArrowRight,
   FileCheck,
-  CreditCard,
+  Building2,
   CalendarCheck,
   Eye,
   FileText,
@@ -70,10 +70,18 @@ export const getSurveyStages = (job) => {
     {
       step: 5,
       title: 'Payment Confirmed',
-      shortName: 'Paid',
-      date: job?.paymentStatus === 'Paid' ? 'Settled' : 'Pending',
-      icon: CreditCard,
-      desc: job?.paymentStatus === 'Paid' ? 'Client account payment settled in full. VAT receipt available in portal.' : 'Deposit or full invoice pending payment settlement.',
+      shortName: 'Bank Transfer',
+      date: job?.paymentStatus === 'Paid'
+        ? 'Settled'
+        : (job?.paymentStatus === 'Claimed (Verification Pending)' || job?.paymentStatus === 'Claimed' || job?.paymentStatus?.includes('Claimed'))
+        ? 'Verification Pending'
+        : 'Pending',
+      icon: Building2,
+      desc: job?.paymentStatus === 'Paid'
+        ? 'Bank transfer verified and cleared in full. Official VAT receipt available in portal.'
+        : (job?.paymentStatus === 'Claimed (Verification Pending)' || job?.paymentStatus === 'Claimed' || job?.paymentStatus?.includes('Claimed'))
+        ? 'Payment Claimed — Awaiting NJS Admin Verification.'
+        : 'Direct bank transfer pending to NJS client account.',
     },
     {
       step: 6,
