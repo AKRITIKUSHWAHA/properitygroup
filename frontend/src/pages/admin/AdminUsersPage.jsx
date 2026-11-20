@@ -282,12 +282,15 @@ export const AdminUsersPage = () => {
 
     const cleanPw = newQuickPassword.trim();
     const targetEmail = (viewingUser?.email || '').toLowerCase().trim();
-    const numericId = viewingUser?.dbId || (typeof viewingUser?.id === 'string' ? viewingUser.id.replace(/\D/g, '') : viewingUser?.id);
+    const targetId = viewingUser?.dbId || viewingUser?.id || targetEmail;
 
     try {
-      if (numericId) {
-        await adminUsersAndRolesApi.updateUser(numericId, { password: cleanPw });
-      }
+      await adminUsersAndRolesApi.updateUser(targetId, {
+        password: cleanPw,
+        email: targetEmail,
+        name: viewingUser?.name,
+        role: viewingUser?.role === 'super_admin' ? 'ADMIN' : (viewingUser?.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
+      });
       try {
         localStorage.setItem(`njs_user_pw_${targetEmail}`, cleanPw);
         const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
@@ -366,30 +369,29 @@ export const AdminUsersPage = () => {
       )
     );
 
-    const numericId = editingUser.dbId || (typeof editingUser.id === 'string' ? editingUser.id.replace(/\D/g, '') : editingUser.id);
-    if (numericId) {
-      try {
-        const payload = {
-          name: editFormData.name.trim(),
-          role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
-          status: isBlocking ? 'INACTIVE' : 'ACTIVE',
-        };
-        if (editFormData.password && editFormData.password.trim().length >= 6) {
-          payload.password = editFormData.password.trim();
-          try {
-            localStorage.setItem(`njs_user_pw_${targetEmail}`, editFormData.password.trim());
-            const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-            if (registered[targetEmail]) {
-              registered[targetEmail].password = editFormData.password.trim();
-              localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
-            }
-          } catch {}
-        }
-        await adminUsersAndRolesApi.updateUser(numericId, payload);
-        fetchUsers();
-      } catch (err) {
-        console.warn('Backend update error:', err?.message || err);
+    const targetId = editingUser.dbId || editingUser.id || targetEmail;
+    try {
+      const payload = {
+        name: editFormData.name.trim(),
+        role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
+        status: isBlocking ? 'INACTIVE' : 'ACTIVE',
+        email: targetEmail,
+      };
+      if (editFormData.password && editFormData.password.trim().length >= 6) {
+        payload.password = editFormData.password.trim();
+        try {
+          localStorage.setItem(`njs_user_pw_${targetEmail}`, editFormData.password.trim());
+          const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+          if (registered[targetEmail]) {
+            registered[targetEmail].password = editFormData.password.trim();
+            localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+          }
+        } catch {}
       }
+      await adminUsersAndRolesApi.updateUser(targetId, payload);
+      fetchUsers();
+    } catch (err) {
+      console.warn('Backend update error:', err?.message || err);
     }
 
     setEditingUser(null);
