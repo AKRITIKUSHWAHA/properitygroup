@@ -6,6 +6,7 @@
 import { renderEmailTemplate, DEFAULT_EMAIL_AUTOMATIONS } from '../mock/emailAutomations';
 import { getStoredQuotes, saveStoredQuotes } from '../mock/quotes';
 import { getStoredLeads, saveStoredLeads } from '../mock/leads';
+import { getApiBaseUrl } from '../api/apiClient';
 
 const STANDARD_SURVEY_BASE_FEES = {
   'RICS Level 2 Home Survey (Homebuyer)': 550,
@@ -219,7 +220,7 @@ export const dispatchAutoQuoteForLead = async (lead, customOverrides = {}) => {
   // 7. Non-blocking Backend API Dispatch
   try {
     const token = localStorage.getItem('property_group_auth_token');
-    fetch('/api/v1/quotations-and-payments/quotes/send-email', {
+    fetch(`${getApiBaseUrl()}/quotations-and-payments/quotes/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -428,7 +429,7 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
           'x-user-email': clientEmail,
         },
       }).catch(() => {});
-      fetch(`/api/v1/quotations-and-payments/quotes/${quoteId}/status`, {
+      fetch(`${getApiBaseUrl()}/quotations-and-payments/quotes/${quoteId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

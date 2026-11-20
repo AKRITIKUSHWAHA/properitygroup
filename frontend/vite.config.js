@@ -14,9 +14,9 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://njs-proprty-group-production.up.railway.app',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },

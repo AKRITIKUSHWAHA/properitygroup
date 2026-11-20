@@ -17,7 +17,7 @@ export function getApiBaseUrl() {
       return 'https://njs-proprty-group-production.up.railway.app/api/v1';
     }
   }
-  return envUrl || 'http://localhost:5000/api/v1';
+  return envUrl || 'https://njs-proprty-group-production.up.railway.app/api/v1';
 }
 
 export class ApiError extends Error {

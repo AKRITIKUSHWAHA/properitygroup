@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getApiBaseUrl } from '../api/apiClient';
 
 // Initial Quotations, Invoices, and Payments (Clean state for fresh client testing)
 export const INITIAL_QUOTES = [];
@@ -52,7 +53,7 @@ export const useQuotes = () => {
     setQuotes((prev) => [newQuote, ...prev]);
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
-      fetch('/api/v1/quotations-and-payments/quotes', {
+      fetch(`${getApiBaseUrl()}/quotations-and-payments/quotes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
