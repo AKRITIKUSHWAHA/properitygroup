@@ -44,14 +44,14 @@ export function RedirectsPage() {
       source: '/renovations',
       code: '301 Permanent',
       target: '/services/building-survey-level-3',
-      targetName: 'Level 3 Building Survey (Full Structural)',
+      targetName: 'Level 3 Building Survey',
       reason: 'Renovation feasibility and structural alterations routed to RICS Level 3 survey.'
     },
     {
       source: '/repairs-extensions',
       code: '301 Permanent',
       target: '/services/building-survey-level-3',
-      targetName: 'Level 3 Building Survey (Structural)',
+      targetName: 'Level 3 Building Survey',
       reason: 'Property extension and major repair investigations routed to Level 3 inspection.'
     },
     {

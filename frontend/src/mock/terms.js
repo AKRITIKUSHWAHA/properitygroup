@@ -164,17 +164,17 @@ export const TERMS_TEMPLATES = [
     id: 'tmpl-l3',
     serviceKey: 'Building L3',
     aliases: ['level 3', 'building survey', 'structural', 'full structural', 'comprehensive'],
-    name: 'Comprehensive Building Survey (Level 3) Structural Terms',
+    name: 'Comprehensive Building Survey (Level 3) Engagement Terms',
     shortName: 'Level 3 Building Survey Terms',
     version: 'v2026.1 (10 November 2026 Edition)',
     year: '2026',
     governingBody: 'RICS Technical Guidelines & Consumer Rights Act 2015',
-    piiCap: '£1,000,000 Full Structural Indemnity Cover',
-    summary: 'Exhaustive structural investigation terms for older, altered, period, or listed properties. Covers invasive inspection rights, loft access, sub-floors, structural movement analysis, and remediation costings.',
+    piiCap: '£1,000,000 Level 3 Building Survey Indemnity Cover',
+    summary: 'Exhaustive technical investigation terms for older, altered, period, or listed properties. Covers invasive inspection rights, loft access, sub-floors, fabric movement analysis, and remediation costings.',
     isExpertWitness: false,
     orderFormDefaults: {
-      serviceTitle: 'Service Level 3 Comprehensive Building Survey & Structural Audit | Version 10 November 2026',
-      liabilityLimit: '£1,000,000 Full Structural Indemnity',
+      serviceTitle: 'Service Level 3 Comprehensive Building Survey | Version 10 November 2026',
+      liabilityLimit: '£1,000,000 Level 3 Building Survey Indemnity',
       cancellationPeriod: '14-day statutory consumer cancellation right',
       complaintsContact: 'Natasha Shergill (info@njspropertygroup.com / 07444 918809 / 0333 305 2777)',
       adrEntity: 'CEDR (Centre for Effective Dispute Resolution)',
@@ -202,7 +202,7 @@ export const TERMS_TEMPLATES = [
       },
       {
         num: '5',
-        title: 'Full Structural Liability & Indemnity',
+        title: 'Level 3 Professional Liability & Indemnity',
         text: 'NJS Property Group maintains £1,000,000 professional indemnity cover for Level 3 instructions under RSA and Lloyd’s syndicates. Liability is governed by English law and the Consumer Rights Act 2015.',
       },
       {
@@ -231,12 +231,12 @@ export const TERMS_TEMPLATES = [
     version: 'v2026.1 (10 November 2026 Edition)',
     year: '2026',
     governingBody: 'RICS Technical Guidelines & RICS Valuation – Global Standards',
-    piiCap: '£1,000,000 Full Structural & Valuation Cover',
-    summary: 'Exhaustive structural investigation for complex, altered, or period buildings combined with RICS Red Book Market Valuation (VPS 4). Covers load-bearing masonry, timber pathology, costed remedial budgeting, and Land Registry comparables.',
+    piiCap: '£1,000,000 Level 3 Building Survey & Valuation Cover',
+    summary: 'Exhaustive technical investigation for complex, altered, or period buildings combined with RICS Red Book Market Valuation (VPS 4). Covers load-bearing masonry, timber pathology, costed remedial budgeting, and Land Registry comparables.',
     isExpertWitness: false,
     orderFormDefaults: {
       serviceTitle: 'Service Level 3 Comprehensive Building Survey & RICS Market Valuation | Version 10 November 2026',
-      liabilityLimit: '£1,000,000 Full Structural & Valuation Indemnity',
+      liabilityLimit: '£1,000,000 Level 3 Building Survey & Valuation Indemnity',
       cancellationPeriod: '14-day statutory consumer cancellation right',
       complaintsContact: 'Natasha Shergill (info@njspropertygroup.com / 07444 918809 / 0333 305 2777)',
       adrEntity: 'CEDR (Centre for Effective Dispute Resolution)',
@@ -244,7 +244,7 @@ export const TERMS_TEMPLATES = [
     clauses: [
       {
         num: '1',
-        title: 'Full Structural Audit & Valuation Integration',
+        title: 'Building Survey Audit & Valuation Integration',
         text: 'Level 3 with Valuation provides an exhaustive technical structural audit combined with RICS Red Book Market Valuation. Tailored for older, period, altered, or high-value residential assets. Covers load-bearing structures, sub-floor pathology, damp diagnostics, and formal valuation appraisal.',
       },
       {

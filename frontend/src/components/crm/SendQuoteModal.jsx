@@ -35,7 +35,7 @@ import { formatLeadReference } from '../../mock/leads';
 const STANDARD_FEES = {
   'RICS Level 2 Home Survey (Homebuyer)': 550,
   'RICS Level 2 Home Survey (with Valuation)': 650,
-  'RICS Level 3 Building Survey (Full Structural)': 850,
+  'RICS Level 3 Building Survey': 850,
   'Residential Red Book Valuation (Matrimonial/Tax/Probate)': 450,
   'Specific Structural Defect Survey (Damp/Cracking)': 395,
   'New Build Snagging Report': 350,
@@ -55,7 +55,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   const resolveInitialSurveyType = (enquiry) => {
     const raw = (enquiry || '').toLowerCase();
     if (raw.includes('level 3') || raw.includes('structural')) {
-      return 'RICS Level 3 Building Survey (Full Structural)';
+      return 'RICS Level 3 Building Survey';
     }
     if (raw.includes('level 2') && raw.includes('valuation')) {
       return 'RICS Level 2 Home Survey (with Valuation)';
@@ -422,8 +422,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                   <option value="RICS Level 2 Home Survey (with Valuation)">
                     RICS Level 2 Home Survey (with RICS Valuation) &mdash; Combined (£650 guide)
                   </option>
-                  <option value="RICS Level 3 Building Survey (Full Structural)">
-                    RICS Level 3 Building Survey (Full Structural) &mdash; Comprehensive (£850 guide)
+                  <option value="RICS Level 3 Building Survey">
+                    RICS Level 3 Building Survey &mdash; Comprehensive (£850 guide)
                   </option>
                   <option value="Residential Red Book Valuation (Matrimonial/Tax/Probate)">
                     Residential Red Book Valuation (Matrimonial / Tax / Probate) &mdash; (£450 guide)

@@ -34,7 +34,7 @@ export const HERO_SLIDES = [
     image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=75",
     altText: "Period English heritage residence in the Home Counties",
     tagline: "Historic & Complex Structures",
-    accent: "Full Structural Investigation"
+    accent: "Comprehensive Building Investigation"
   },
   {
     id: 3,

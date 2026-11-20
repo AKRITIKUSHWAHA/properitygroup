@@ -1522,7 +1522,7 @@ export const CustomerQuotationsPage = () => {
           id: urlQuoteRef || `QUO-2026-${Date.now().toString().slice(-4)}`,
           jobId: urlQuoteRef || `JOB-2026-${Date.now().toString().slice(-4)}`,
           property: urlProp || 'Subject Property',
-          surveyType: urlSurvey || 'RICS Level 3 Building Survey (Full Structural)',
+          surveyType: urlSurvey || 'RICS Level 3 Building Survey',
           net: urlFee ? `£${(parseFloat(urlFee) / 1.2).toFixed(2)}` : '£850.00',
           vat: urlFee ? `£${(parseFloat(urlFee) - parseFloat(urlFee) / 1.2).toFixed(2)}` : '£170.00',
           total: urlFee ? `£${parseFloat(urlFee).toFixed(2)}` : '£1020.00',

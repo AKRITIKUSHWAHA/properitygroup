@@ -285,7 +285,7 @@ export const downloadTermsPDF = ({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(11, 31, 77);
-    doc.text('2. FULL STRUCTURAL INDEMNITY & STATUTORY CANCELLATION', 15, curY);
+    doc.text('2. LEVEL 3 BUILDING SURVEY INDEMNITY & STATUTORY CANCELLATION', 15, curY);
 
     curY += 5;
     doc.setFont('helvetica', 'normal');

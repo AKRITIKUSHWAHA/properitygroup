@@ -1081,7 +1081,7 @@ export const SurveyorUploadReportsPage = () => {
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
             >
               <option>RICS Level 2 Home Survey (Final Draft)</option>
-              <option>RICS Level 3 Building Survey (Full Structural)</option>
+              <option>RICS Level 3 Building Survey</option>
               <option>Valuation & Rebuild Cost Assessment</option>
               <option>Photographic Defect Schedule Only</option>
             </select>

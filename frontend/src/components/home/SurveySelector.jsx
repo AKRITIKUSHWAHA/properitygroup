@@ -44,7 +44,7 @@ export function SurveySelector() {
         price: 'From £650 Inc VAT',
         path: '/services/building-survey-level-3',
         reasons: [
-          'Full structural examination of load-bearing walls, foundations & roof framing',
+          'Exhaustive inspection of load-bearing walls, foundations & roof framing',
           'Timber decay & wood-boring insect diagnostics (dry rot / wet rot)',
           'Assessment of past wall removals, loft conversions, or extensions',
           'Prioritized remediation schedule with budgeting recommendations',
