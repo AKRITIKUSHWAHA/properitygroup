@@ -121,17 +121,20 @@ export const CustomerDashboardPage = () => {
     });
   };
 
+  const confirmedBookings = myCustomerJobs.filter((j) => j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6);
   const activeBookings = myCustomerJobs.filter((j) => j.status !== 'Cancelled');
-  const pendingQuotes = myCustomerJobs.filter((j) => j.termsStatus === 'Pending' || j.status === 'Quoted');
-  const completedReports = myCustomerJobs.filter((j) => j.status === 'Completed' || j.timelineStep >= 7);
+  const pendingQuotes = myCustomerJobs.filter((j) => j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2);
+  const completedReports = myCustomerJobs.filter((j) => j.status === 'Completed' || (j.timelineStep || 0) >= 10);
 
   // Dynamic isolated stat cards
   const statCards = [
     {
       id: 'bookings',
       title: 'Active Bookings',
-      value: `${activeBookings.length} Active`,
-      subtext: customerJob ? `${customerJob.property} (${customerJob.surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})` : 'No active bookings',
+      value: `${confirmedBookings.length} Active`,
+      subtext: confirmedBookings.length > 0
+        ? `${confirmedBookings[0].property} (${confirmedBookings[0].surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})`
+        : customerJob ? 'Survey slot pending quote & terms' : 'No active bookings',
       icon: CalendarCheck,
       color: 'bg-blue-50 text-[#2563EB]',
       path: '/customer/my-bookings',
@@ -139,8 +142,8 @@ export const CustomerDashboardPage = () => {
     {
       id: 'quotations',
       title: 'Quotations',
-      value: pendingQuotes.length > 0 ? `${pendingQuotes.length} New` : customerJob ? '1 Confirmed' : '0 Quotes',
-      subtext: customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : '£924'})` : 'No open quotes',
+      value: pendingQuotes.length > 0 ? `${pendingQuotes.length} ${pendingQuotes.some(q => q.status === 'Enquiry' || q.timelineStep === 1) ? 'In Review' : 'New'}` : customerJob ? '1 Confirmed' : '0 Quotes',
+      subtext: customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Fixed Fee Estimating'})` : 'No open quotes',
       icon: Receipt,
       color: 'bg-indigo-50 text-indigo-600',
       path: '/customer/quotations',
@@ -168,7 +171,7 @@ export const CustomerDashboardPage = () => {
       id: 'reports',
       title: 'Reports Available',
       value: `${completedReports.length} Finalized`,
-      subtext: completedReports.length > 0 ? 'Official RICS PDF copies' : 'Inspection in progress',
+      subtext: completedReports.length > 0 ? 'Official RICS PDF copies' : 'Inspection pending',
       icon: FileSpreadsheet,
       color: 'bg-emerald-50 text-emerald-600',
       path: '/customer/reports',
@@ -360,27 +363,38 @@ export const CustomerDashboardPage = () => {
         </div>
       ) : (
         <SurveyProgressTracker
-          currentStep={
-            (customerJob?.status === 'Completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || (customerJob?.timelineStep || 0) >= 10)
-              ? 10
-              : (customerJob?.status === 'QA_Review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || customerJob?.timelineStep === 9)
-              ? 9
-              : (customerJob?.status === 'Drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || customerJob?.timelineStep === 8)
-              ? 8
-              : (customerJob?.status === 'Inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || customerJob?.timelineStep === 7)
-              ? 7
-              : (customerJob?.surveyor && customerJob?.surveyor !== 'Pending Allocation') || (customerJob?.timelineStep || 0) >= 6
-              ? 6
-              : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
-              ? 5
-              : (customerJob?.termsStatus === 'Signed' || (customerJob?.timelineStep || 0) >= 4)
-              ? 4
-              : (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) >= 3)
-              ? 3
-              : (customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) >= 2)
-              ? 2
-              : 1
-          }
+          currentStep={(() => {
+            const status = (customerJob?.status || '').toLowerCase().trim();
+            const stage = (customerJob?.stage || '').toLowerCase().trim();
+            const termsStatus = (customerJob?.termsStatus || '').toLowerCase().trim();
+            const paymentStatus = (customerJob?.paymentStatus || '').toLowerCase().trim();
+            const step = Number(customerJob?.timelineStep) || 0;
+            const hasRealSurveyor = customerJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(customerJob.surveyor.toLowerCase().trim());
+
+            if (status === 'completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || step >= 10) return 10;
+            if (status === 'qa_review' || status === 'qa review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || step === 9) return 9;
+            if (status === 'drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || step === 8) return 8;
+            if (status === 'inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || step === 7) return 7;
+
+            // Early instruction stages (Enquiry, Quoted, Accepted)
+            if (status === 'enquiry' || stage === 'enquiry' || step === 1) return 1;
+            if (status === 'quoted' || stage === 'quote' || step === 2) return 2;
+            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted' || step === 3) return 3;
+
+            // Terms & Payment stages
+            if (termsStatus === 'signed' && paymentStatus !== 'paid' && status !== 'booked' && status !== 'scheduled' && step < 5) return 4;
+            if (paymentStatus === 'paid' && status !== 'booked' && status !== 'scheduled' && step < 6) return 5;
+
+            // Booking confirmation stage (Step 6)
+            if ((status === 'booked' || status === 'scheduled' || step >= 6) && (hasRealSurveyor || status === 'booked' || status === 'scheduled')) return 6;
+
+            if (paymentStatus === 'paid') return 5;
+            if (termsStatus === 'signed') return 4;
+            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted') return 3;
+            if (status === 'quoted') return 2;
+            if (step > 0) return Math.min(10, Math.max(1, step));
+            return 1;
+          })()}
           job={customerJob}
         />
       )}

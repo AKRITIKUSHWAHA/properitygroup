@@ -31,7 +31,9 @@ import {
 
 export const getSurveyStages = (job) => {
   const property = job?.property || 'the property';
-  const surveyor = job?.surveyor || 'Assigned Surveyor';
+  const surveyor = (job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(String(job.surveyor).toLowerCase().trim()))
+    ? job.surveyor
+    : 'Assigned Chartered Surveyor';
   const fee = job?.quote?.baseFee ? `£${job.quote.baseFee.toFixed(2)} (+VAT)` : 'agreed fee';
 
   return [

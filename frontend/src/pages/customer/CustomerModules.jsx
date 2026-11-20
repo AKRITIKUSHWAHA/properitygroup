@@ -2913,9 +2913,10 @@ export const CustomerTrackSurveyPage = () => {
   const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
   const jStatus = (myJob?.status || '').toLowerCase().trim();
-  const timelineStep = myJob?.timelineStep || (jStatus === 'enquiry' || jStatus === 'new' ? 1 : 0);
-  const hasSurveyor = myJob?.surveyor && myJob.surveyor !== 'Pending Allocation';
-  const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || hasSurveyor || timelineStep >= 6;
+  const jStage = (myJob?.stage || '').toLowerCase().trim();
+  const timelineStep = Number(myJob?.timelineStep) || (jStatus === 'enquiry' || jStatus === 'new' ? 1 : 0);
+  const hasSurveyor = myJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(myJob.surveyor.toLowerCase().trim());
+  const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || (hasSurveyor && myJob?.paymentStatus === 'Paid') || timelineStep >= 6;
 
   let currentStep = 1;
   if (isDemo) {
@@ -2928,6 +2929,16 @@ export const CustomerTrackSurveyPage = () => {
     currentStep = 8;
   } else if (myJob?.status === 'Inspected' || timelineStep === 7 || (isHistoricalJob && isLocalInspected) || jStatus === 'inspected') {
     currentStep = 7;
+  } else if (jStatus === 'enquiry' || jStage === 'enquiry' || timelineStep === 1) {
+    currentStep = 1;
+  } else if (jStatus === 'quoted' || jStage === 'quote' || timelineStep === 2) {
+    currentStep = 2;
+  } else if (jStatus === 'accepted' || jStage === 'accepted' || timelineStep === 3) {
+    currentStep = 3;
+  } else if (myJob?.termsStatus === 'Signed' && myJob?.paymentStatus !== 'Paid' && !isBookedOrScheduled) {
+    currentStep = 4;
+  } else if (myJob?.paymentStatus === 'Paid' && !isBookedOrScheduled) {
+    currentStep = 5;
   } else if (isBookedOrScheduled) {
     currentStep = 6;
   } else if (myJob?.paymentStatus === 'Paid' || timelineStep >= 5) {

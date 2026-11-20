@@ -166,7 +166,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           property: formData.propertyAddress || formData.propertyLocation || '',
           location: formData.propertyPostcode || '',
           postcode: formData.propertyPostcode || '',
-          surveyor: 'Unassigned',
+          surveyor: 'Pending Allocation',
           surveyorId: null,
           status: 'Enquiry',
           stage: 'ENQUIRY',
