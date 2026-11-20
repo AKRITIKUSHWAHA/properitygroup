@@ -4493,7 +4493,6 @@ export const CustomerDetailsPage = () => {
         email: user?.email || '',
         phone: user?.phone || '',
         address: user?.address || '',
-        city: user?.city || '',
         postcode: user?.postcode || '',
       };
     }
@@ -4511,7 +4510,6 @@ export const CustomerDetailsPage = () => {
           email: user.email,
           phone: user.phone || regUser.phone || (isEmma ? '+44 7700 900147' : ''),
           address: user.address || regUser.address || (isEmma ? 'Flat 4, 12 Gloucester Road' : ''),
-          city: user.city || regUser.city || (isEmma ? 'London' : ''),
           postcode: user.postcode || regUser.postcode || (isEmma ? 'SW7 4RB' : ''),
         });
       } catch {}
@@ -4581,32 +4579,22 @@ export const CustomerDetailsPage = () => {
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Billing Address</label>
-            <input
-              type="text"
-              value={profile.address}
-              onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">City</label>
-            <input
-              type="text"
-              value={profile.city}
-              onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
-            />
-          </div>
-
-          <div>
             <label className="block font-semibold text-slate-700 mb-1">Postcode</label>
             <input
               type="text"
               value={profile.postcode}
               onChange={(e) => setProfile({ ...profile, postcode: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase text-slate-900"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block font-semibold text-slate-700 mb-1">Billing Address</label>
+            <input
+              type="text"
+              value={profile.address}
+              onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900"
             />
           </div>
         </div>

@@ -252,36 +252,36 @@ export const CustomerDashboardPage = () => {
       </div>
 
       {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Compact & Refined) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.id}
               onClick={() => navigate(card.path)}
-              className="bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs hover:border-[#2563EB] hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between min-w-0"
+              className="bg-white px-3 py-2.5 sm:px-3.5 sm:py-3 rounded-xl border border-slate-200/80 shadow-2xs hover:border-[#2563EB] hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate mr-1">
+                <span className="text-[9.5px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate mr-1">
                   {card.title}
                 </span>
-                <div className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl ${card.color} group-hover:scale-105 transition-transform shrink-0`}>
-                  <Icon className="w-3.5 h-3.5" />
+                <div className={`p-1 sm:p-1.5 rounded-lg ${card.color} group-hover:scale-105 transition-transform shrink-0`}>
+                  <Icon className="w-3 h-3" />
                 </div>
               </div>
 
-              <div className="my-2">
-                <div className="text-lg sm:text-2xl font-bold text-[#0B1F4D] tracking-tight truncate">
+              <div className="my-1">
+                <div className="text-base sm:text-lg font-bold text-[#0B1F4D] tracking-tight truncate">
                   {card.value}
                 </div>
-                <div className="text-[11px] sm:text-[11.5px] text-slate-400 font-medium truncate mt-0.5">
+                <div className="text-[10px] sm:text-[10.5px] text-slate-400 font-medium truncate mt-0.5">
                   {card.subtext}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] sm:text-xs font-semibold text-[#2563EB]">
+              <div className="pt-1.5 border-t border-slate-100/90 flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-[#2563EB]">
                 <span>Manage</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
           );
