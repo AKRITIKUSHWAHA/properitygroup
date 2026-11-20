@@ -461,10 +461,11 @@ export const downloadInvoicePDF = ({
   );
 
   // Invoice Meta
+  const metaBoxH = 34;
   doc.setFillColor(248, 250, 252);
-  doc.rect(15, 50, 180, 32, 'F');
+  doc.rect(15, 50, 180, metaBoxH, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(15, 50, 180, 32, 'S');
+  doc.rect(15, 50, 180, metaBoxH, 'S');
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -472,48 +473,52 @@ export const downloadInvoicePDF = ({
   doc.text('Billed To:', 20, 57);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(clientName, 45, 57);
+  doc.text(clientName, 42, 57);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  const invProp = doc.splitTextToSize(property || 'Property address', 70);
-  doc.text(invProp, 45, 63);
+  const invProp = doc.splitTextToSize(property || 'Property address', 68);
+  doc.text(invProp, 42, 63);
 
+  // Right column meta labels & values
   doc.setTextColor(71, 85, 105);
-  doc.text('Invoice Date:', 125, 57);
+  doc.text('Invoice Date:', 116, 57);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text(effectiveInvoiceDate, 155, 57);
+  doc.text(effectiveInvoiceDate, 146, 57);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
-  doc.text('VAT Reg No:', 125, 63);
+  doc.text('VAT Reg No:', 116, 63);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text('GB 384 9281 92', 155, 63);
+  doc.text('GB 384 9281 92', 146, 63);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
-  doc.text('Instruction Ref:', 125, 69);
+  doc.text('Instruction Ref:', 116, 69);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(11, 31, 77);
-  doc.text(jobNo, 155, 69);
+  doc.text(jobNo, 146, 69);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(71, 85, 105);
-  doc.text('Payment Method:', 125, 75);
+  doc.text('Payment Method:', 116, 75);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(isPaid ? 22 : 180, isPaid ? 101 : 83, isPaid ? 52 : 9);
-  doc.text(paymentMethod, 155, 75);
+  const pmLines = doc.splitTextToSize(paymentMethod || (isPaid ? 'BACS Faster Payments' : 'Pending Settlement'), 46);
+  doc.text(pmLines, 146, 75);
 
   // Line Items Table Header
+  const tableTopY = 90;
   doc.setFillColor(11, 31, 77);
-  doc.rect(15, 88, 180, 8, 'F');
+  doc.rect(15, tableTopY, 180, 8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(255, 255, 255);
-  doc.text('Description', 20, 93.5);
-  doc.text('Survey Service', 90, 93.5);
-  doc.text('VAT (20%)', 140, 93.5);
-  doc.text('Amount (£)', 190, 93.5, { align: 'right' });
+  doc.text('Description & Scope of Service', 20, tableTopY + 5.5);
+  doc.text('Rate', 130, tableTopY + 5.5);
+  doc.text('VAT (20%)', 158, tableTopY + 5.5);
+  doc.text('Amount (£)', 190, tableTopY + 5.5, { align: 'right' });
 
   // Calculate clean subtotal, VAT and total
   const subtotal = totalAmount !== null
@@ -522,47 +527,86 @@ export const downloadInvoicePDF = ({
   const vatTotal = vatAmount !== null ? vatAmount : subtotal * vatRate;
   const total = totalAmount !== null ? totalAmount : subtotal + vatTotal;
 
-  // Rows
-  let curY = 103;
+  // Prepare line items
   const items = [];
   if (extras && extras.length > 0) {
-    items.push({ desc: `${surveyType} (Full Property Inspection)`, sub: 'Professional RICS Service', amount: baseFee });
-    extras.forEach((ex) => items.push({ desc: ex.name, sub: 'Optional Add-on Service', amount: ex.amount }));
+    items.push({
+      title: surveyType,
+      subtitle: 'Physical On-Site Inspection & Comprehensive RICS Report',
+      rate: 'Standard',
+      amount: baseFee
+    });
+    extras.forEach((ex) => {
+      items.push({
+        title: ex.name,
+        subtitle: 'Optional Add-on Service',
+        rate: 'Add-on',
+        amount: ex.amount
+      });
+    });
   } else {
-    items.push({ desc: `${surveyType} (Physical Site Inspection & Comprehensive Report)`, sub: 'RICS Regulated Practice Mandate', amount: subtotal });
+    items.push({
+      title: surveyType,
+      subtitle: 'Physical On-Site Inspection & Comprehensive RICS Report',
+      rate: 'Standard',
+      amount: subtotal
+    });
   }
   if (discount > 0) {
-    items.push({ desc: 'Promotional Welcome Discount', sub: 'Applied at checkout', amount: -discount });
+    items.push({
+      title: 'Promotional Welcome Discount',
+      subtitle: 'Applied at invoice checkout',
+      rate: 'Discount',
+      amount: -discount
+    });
   }
 
+  // Render Rows
+  let curY = tableTopY + 8;
   items.forEach((item, idx) => {
+    const rowH = 13;
     if (idx % 2 === 1) {
       doc.setFillColor(248, 250, 252);
-      doc.rect(15, curY - 5, 180, 9, 'F');
+      doc.rect(15, curY, 180, rowH, 'F');
     }
+    doc.setDrawColor(241, 245, 249);
+    doc.line(15, curY + rowH, 195, curY + rowH);
+
+    // Primary Service Title (Bold)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(15, 23, 42);
-    doc.text(item.desc, 20, curY);
+    const titleLines = doc.splitTextToSize(item.title, 105);
+    doc.text(titleLines[0], 20, curY + 5);
 
+    // Subtitle / Scope (Normal, Slate)
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(item.sub, 90, curY);
+    const subLines = doc.splitTextToSize(item.subtitle, 105);
+    doc.text(subLines[0], 20, curY + 9.5);
 
+    // Rate
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text(item.rate, 130, curY + 6.5);
+
+    // VAT
     const itemVat = item.amount >= 0 ? (item.amount * vatRate).toFixed(2) : '0.00';
-    doc.text(`£${itemVat}`, 140, curY);
+    doc.text(`£${itemVat}`, 158, curY + 6.5);
 
+    // Amount Net
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(15, 23, 42);
-    doc.text(`£${item.amount.toFixed(2)}`, 190, curY, { align: 'right' });
+    doc.text(`£${item.amount.toFixed(2)}`, 190, curY + 6.5, { align: 'right' });
 
-    curY += 9;
+    curY += rowH;
   });
 
   // Totals Box
-  curY += 6;
+  curY += 5;
   doc.setDrawColor(226, 232, 240);
   doc.line(120, curY, 195, curY);
   curY += 5;
@@ -587,39 +631,57 @@ export const downloadInvoicePDF = ({
   doc.text(`£${total.toFixed(2)}`, 190, curY + 2, { align: 'right' });
 
   // Paid Stamp / Settlement Advice
-  curY += 18;
+  curY += 15;
+  const stampBoxW = 110;
   if (isPaid) {
+    const settledLines = doc.splitTextToSize(`Settled via ${paymentMethod} on ${effectivePaymentDate}`, stampBoxW - 12);
+    const stampBoxH = Math.max(24, 18 + settledLines.length * 4);
+
     doc.setDrawColor(22, 163, 74);
-    doc.setLineWidth(1);
+    doc.setLineWidth(0.8);
     doc.setFillColor(240, 253, 244);
-    doc.roundedRect(15, curY, 105, 22, 2, 2, 'FD');
+    doc.roundedRect(15, curY, stampBoxW, stampBoxH, 2, 2, 'FD');
+
+    // Vector checkmark circle badge (clean geometric checkmark)
+    doc.setFillColor(22, 163, 74);
+    doc.circle(22.5, curY + 6.5, 3.2, 'F');
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.65);
+    doc.line(21.2, curY + 6.5, 22.3, curY + 7.8);
+    doc.line(22.3, curY + 7.8, 24.3, curY + 5.3);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(9.5);
     doc.setTextColor(22, 163, 74);
-    doc.text('✔ PAID IN FULL — OFFICIAL VAT RECEIPT', 20, curY + 8);
+    doc.text('PAID IN FULL — OFFICIAL VAT RECEIPT', 28, curY + 7.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(21, 128, 61);
-    doc.text(`Settled via ${paymentMethod} on ${effectivePaymentDate}`, 20, curY + 14);
-    doc.text(`Transaction Reference: TXN-NJS-${Date.now().toString(16).toUpperCase()}`, 20, curY + 18);
+    doc.text(settledLines, 20, curY + 14);
+
+    const txnY = curY + 14 + (settledLines.length * 4);
+    doc.text(`Transaction Reference: TXN-NJS-${Date.now().toString(16).toUpperCase()}`, 20, txnY);
   } else {
+    const bankLines = doc.splitTextToSize('Metro Bank PLC: Sort Code 23-05-80 • Account 18920412 • Beneficiary: NJS Property Group Ltd', stampBoxW - 10);
+    const stampBoxH = Math.max(24, 18 + bankLines.length * 3.8);
+
     doc.setDrawColor(234, 88, 12);
-    doc.setLineWidth(1);
+    doc.setLineWidth(0.8);
     doc.setFillColor(255, 247, 237);
-    doc.roundedRect(15, curY, 105, 22, 2, 2, 'FD');
+    doc.roundedRect(15, curY, stampBoxW, stampBoxH, 2, 2, 'FD');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.5);
+    doc.setFontSize(9.5);
     doc.setTextColor(194, 65, 12);
-    doc.text('PAYMENT ADVICE — AWAITING SETTLEMENT', 20, curY + 8);
+    doc.text('PAYMENT ADVICE — AWAITING SETTLEMENT', 20, curY + 7.5);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
+    doc.setFontSize(7);
     doc.setTextColor(154, 52, 18);
-    doc.text('Metro Bank PLC: Sort Code 23-05-80 • Account 18920412 • Beneficiary: NJS Property Group Ltd', 20, curY + 14);
-    doc.text(`Payment Reference: ${invoiceNo} • Settlement due upon terms execution`, 20, curY + 18);
+    doc.text(bankLines, 20, curY + 13.5);
+    const refY = curY + 13.5 + (bankLines.length * 3.8);
+    doc.text(`Payment Reference: ${invoiceNo} • Settlement due upon terms execution`, 20, refY);
   }
 
   drawNJSFooter(doc, 1, 1);
