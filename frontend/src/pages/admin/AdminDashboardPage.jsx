@@ -26,10 +26,74 @@ import { NewBookingModal } from '../../components/calendar/NewBookingModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { AdminMessagesModal } from '../../components/crm/AdminMessagesModal';
 import { useJobs } from '../../mock/jobs';
+import { useLeads } from '../../mock/leads';
 import { useMessages } from '../../mock/messages';
 import { useToast } from '../../components/ToastContext';
-import { adminDashboardApi } from '../../api/adminApi';
+import { adminDashboardApi, adminSurveyJobsApi, adminCrmAndLeadsApi } from '../../api/adminApi';
 import { useEffect } from 'react';
+
+// Mapper from Backend Job model to Frontend Job state
+const mapBackendJobToFrontend = (bj) => {
+  let mappedStatus = 'Action Required';
+  let timelineStep = 2;
+  const stage = (bj.stage || '').toUpperCase();
+  if (stage === 'COMPLETE') {
+    mappedStatus = 'Completed';
+    timelineStep = 10;
+  } else if (stage === 'PREPARING_REPORT' || stage === 'IN_PROGRESS') {
+    mappedStatus = 'In Progress';
+    timelineStep = 8;
+  } else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') {
+    mappedStatus = 'Scheduled';
+    timelineStep = 6;
+  } else if (stage === 'QUOTE' || stage === 'INSTRUCTION' || stage === 'NEW') {
+    mappedStatus = 'Action Required';
+    timelineStep = 2;
+  } else if (stage === 'PAID') {
+    mappedStatus = 'Action Required';
+    timelineStep = 3;
+  } else if (stage === 'ACCEPTED') {
+    mappedStatus = 'Action Required';
+    timelineStep = 4;
+  }
+
+  const termsSigned = Array.isArray(bj.terms) && bj.terms.some((t) => t.signed);
+  const invoicePaid = Array.isArray(bj.invoices) && bj.invoices.some((i) => i.status === 'PAID');
+
+  const termsStatus = termsSigned ? 'Signed' : (Array.isArray(bj.terms) && bj.terms.length > 0 ? 'Sent' : 'Pending');
+  const paymentStatus = invoicePaid ? 'Paid' : (Array.isArray(bj.invoices) && bj.invoices.length > 0 ? 'Invoice Sent' : 'Awaiting Payment');
+  const canBook = termsSigned && invoicePaid;
+
+  const hasAllocatedSurveyor = Boolean(bj.surveyor?.name || bj.surveyorId);
+  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Pending Allocation';
+  const sId = hasAllocatedSurveyor ? (bj.surveyorId ? `srv-${bj.surveyorId}` : 'srv-assigned') : null;
+
+  return {
+    id: String(bj.id),
+    dbId: bj.id,
+    jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
+    date: bj.inspectionDate
+      ? new Date(bj.inspectionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : 'Pending Allocation',
+    timeSlot: bj.inspectionTime || 'Pending Allocation',
+    customer: bj.clientName || 'Private Client',
+    customerEmail: bj.clientEmail || 'client@example.com',
+    customerPhone: bj.clientPhone || '+44 7700 900000',
+    surveyType: bj.serviceType || 'RICS Level 2 Home Survey',
+    property: bj.propertyAddress || 'London Property',
+    location: bj.postcode ? `${bj.postcode}, London` : 'London, UK',
+    postcode: bj.postcode || 'W1K 2PB',
+    surveyor: surveyorName,
+    surveyorId: sId,
+    status: mappedStatus,
+    timelineStep,
+    termsStatus,
+    paymentStatus,
+    canBook: canBook || mappedStatus === 'Scheduled' || mappedStatus === 'Completed',
+    accessNotes: bj.company?.keyCollectionProtocol || 'Keys held at estate agent branch',
+    backendSynced: true,
+  };
+};
 
 // Canonical 6-Step SurveyBooker Pipeline
 const STAGES = [
@@ -43,7 +107,8 @@ const STAGES = [
 
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
-  const { jobs, addJob } = useJobs();
+  const { jobs, setJobs, addJob } = useJobs();
+  const { setLeads } = useLeads();
   const { addToast } = useToast();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -52,12 +117,63 @@ export const AdminDashboardPage = () => {
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeBucketFilter, setActiveBucketFilter] = useState('all');
+  const [backendBuckets, setBackendBuckets] = useState(null);
 
-  // Fetch dashboard stats & action buckets from backend API
+  // Fetch dashboard stats, jobs, leads & action buckets from backend API
   useEffect(() => {
-    adminDashboardApi.getStats().catch(() => {});
-    adminDashboardApi.getActionBuckets().catch(() => {});
-  }, []);
+    let isMounted = true;
+    Promise.allSettled([
+      adminSurveyJobsApi.getJobs(),
+      adminCrmAndLeadsApi.getLeads(),
+      adminDashboardApi.getActionBuckets(),
+      adminDashboardApi.getStats(),
+    ]).then(([jobsRes, leadsRes, bucketsRes]) => {
+      if (!isMounted) return;
+
+      // 1. Synchronize Jobs
+      if (jobsRes.status === 'fulfilled') {
+        const apiJobs = jobsRes.value?.data?.data?.jobs || jobsRes.value?.jobs || [];
+        if (Array.isArray(apiJobs)) {
+          const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
+            const email = (bj.customerEmail || '').toLowerCase().trim();
+            return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
+          });
+          setJobs(mapped);
+        }
+      }
+
+      // 2. Synchronize Leads
+      if (leadsRes.status === 'fulfilled') {
+        const rawLeads = leadsRes.value?.leads || leadsRes.value?.data?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
+        if (Array.isArray(rawLeads)) {
+          const mappedLeads = rawLeads.map((l) => ({
+            id: l.reference || `NJS-2026-${l.id}`,
+            customerName: l.clientName || 'Private Client',
+            customerEmail: l.clientEmail || '',
+            customerPhone: l.clientPhone || '',
+            enquiry: l.serviceType || 'RICS Level 2 Home Survey',
+            property: l.propertyAddress || 'London Property',
+            location: l.postcode || '',
+            status: l.status === 'QUOTE_SENT' ? 'Quoted' : (l.status || 'New'),
+            source: l.source || 'Website',
+          }));
+          setLeads(mappedLeads);
+        }
+      }
+
+      // 3. Synchronize Action Buckets
+      if (bucketsRes.status === 'fulfilled') {
+        const buckets = bucketsRes.value?.buckets || bucketsRes.value?.data?.buckets || [];
+        if (Array.isArray(buckets) && buckets.length > 0) {
+          setBackendBuckets(buckets);
+        }
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setJobs, setLeads]);
 
   const { conversations } = useMessages();
   const totalUnreadMessages = useMemo(() => {
@@ -165,6 +281,7 @@ export const AdminDashboardPage = () => {
       <SurveyBookerWorkflowBuckets
         activeFilter={activeBucketFilter}
         onSelectFilter={setActiveBucketFilter}
+        backendBuckets={backendBuckets}
       />
 
       {/* Main Content: Active Survey Instructions Queue */}

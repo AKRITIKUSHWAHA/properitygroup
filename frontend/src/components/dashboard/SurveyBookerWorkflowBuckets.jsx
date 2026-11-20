@@ -16,17 +16,26 @@ import {
 import { useJobs } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
 
-export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) => {
+export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, backendBuckets = null }) => {
   const navigate = useNavigate();
   const { jobs } = useJobs();
   const { leads } = useLeads();
 
-  // Dynamic calculations matching SurveyBooker workflow buckets from Video 1
-  const quotesToSubmit = leads.filter(
-    (l) => l.status === 'New' || l.status === 'Contacted' || !l.quotedAmount
-  ).length + jobs.filter((j) => j.status === 'Quote requested').length;
+  // Helper to extract count from backendBuckets if present
+  const getBackendCount = (bucketId) => {
+    if (!Array.isArray(backendBuckets)) return null;
+    const b = backendBuckets.find((item) => item.id === bucketId);
+    return b ? b.count : null;
+  };
 
-  const termsToSend = jobs.filter(
+  // Dynamic calculations matching SurveyBooker workflow buckets
+  const bQuotes = getBackendCount('quotes_to_submit');
+  const quotesToSubmit = bQuotes !== null ? bQuotes : (leads.filter(
+    (l) => l.status === 'New' || l.status === 'Contacted' || !l.quotedAmount
+  ).length + jobs.filter((j) => j.status === 'Quote requested').length);
+
+  const bTerms = getBackendCount('terms_to_sign');
+  const termsToSend = bTerms !== null ? bTerms : jobs.filter(
     (j) => j.status === 'Quote sent' || j.status === 'Accepted' || j.termsStatus === 'Not Sent'
   ).length;
 
@@ -38,18 +47,20 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter }) =>
       j.status !== 'Survey done' &&
       j.status !== 'Closed'
   );
-  const jobsToBook = unbookedJobs.length;
-  const remindersSentCount = unbookedJobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
+  const bJobsToBook = getBackendCount('jobs_to_book');
+  const jobsToBook = bJobsToBook !== null ? bJobsToBook : unbookedJobs.length;
 
-  const appointments = jobs.filter(
+  const bAppointments = getBackendCount('appointments');
+  const appointments = bAppointments !== null ? bAppointments : jobs.filter(
     (j) => j.status === 'Booked' || j.status === 'Scheduled' || j.timelineStep === 7
   ).length;
 
-  const reportsToUpload = jobs.filter(
+  const bReports = getBackendCount('reports_to_upload');
+  const reportsToUpload = bReports !== null ? bReports : jobs.filter(
     (j) => j.status === 'Survey done' || j.status === 'Preparing report' || j.timelineStep === 8
   ).length;
 
-  const allRecords = jobs.length + leads.length;
+  const allRecords = Math.max(jobs.length + leads.length, quotesToSubmit + termsToSend + jobsToBook + appointments + reportsToUpload);
 
   const buckets = [
     {
