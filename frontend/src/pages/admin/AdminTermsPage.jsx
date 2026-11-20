@@ -1167,7 +1167,18 @@ export const AdminTermsPage = () => {
                   <div>Timestamp: {selectedAgreementDetail.signedDate}</div>
                   <div>IP Address: {selectedAgreementDetail.signerIp || '86.142.19.42 (London, UK)'}</div>
                   <div>Audit Hash: {selectedAgreementDetail.auditCode}</div>
-                  <div>Signer: {selectedAgreementDetail.signatureValue || selectedAgreementDetail.client} ({selectedAgreementDetail.signatureType || 'digital'})</div>
+                  {selectedAgreementDetail.signatureValue && selectedAgreementDetail.signatureValue.startsWith('data:image') ? (
+                    <div className="pt-1">
+                      <div className="text-[10px] text-emerald-800 font-sans font-bold">Drawn Digital Signature:</div>
+                      <img
+                        src={selectedAgreementDetail.signatureValue}
+                        alt="Drawn Signature"
+                        className="h-10 max-w-[150px] object-contain bg-white px-2 py-0.5 rounded border border-emerald-300 mt-0.5 shadow-2xs"
+                      />
+                    </div>
+                  ) : (
+                    <div>Signer: {selectedAgreementDetail.signatureValue || selectedAgreementDetail.client} ({selectedAgreementDetail.signatureType || 'digital'})</div>
+                  )}
                 </div>
               </div>
             ) : (

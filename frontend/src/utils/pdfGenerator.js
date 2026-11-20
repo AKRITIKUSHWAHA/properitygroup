@@ -382,9 +382,10 @@ export const downloadTermsPDF = ({
   doc.text('Digital Signature Execution:', 20, curY + 16);
 
   // If drawn signature image provided as dataURL, embed it; otherwise render styled cursive text
-  if (signatureType === 'drawn' && signatureValue && signatureValue.startsWith('data:image')) {
+  const isDrawnSig = Boolean(signatureValue && typeof signatureValue === 'string' && signatureValue.startsWith('data:image'));
+  if (isDrawnSig) {
     try {
-      doc.addImage(signatureValue, 'PNG', 65, curY + 10, 45, 15);
+      doc.addImage(signatureValue, 'PNG', 65, curY + 8, 48, 16);
     } catch {
       doc.setFont('times', 'bolditalic');
       doc.setFontSize(15);
@@ -447,6 +448,8 @@ export const downloadInvoicePDF = ({
   extras = [],
   discount = 0.0,
   vatRate = 0.2, // 20%
+  signatureValue = null,
+  signatureType = 'typed',
 }) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -682,6 +685,44 @@ export const downloadInvoicePDF = ({
     doc.text(bankLines, 20, curY + 13.5);
     const refY = curY + 13.5 + (bankLines.length * 3.8);
     doc.text(`Payment Reference: ${invoiceNo} • Settlement due upon terms execution`, 20, refY);
+  }
+
+  // Client Execution / Signature Box on Official Receipt
+  if (signatureValue) {
+    const isDrawn = typeof signatureValue === 'string' && signatureValue.startsWith('data:image');
+    const sigBoxX = 132;
+    const sigBoxW = 63;
+    const sigBoxH = 26;
+
+    doc.setDrawColor(203, 213, 225);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(sigBoxX, curY, sigBoxW, sigBoxH, 2, 2, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(11, 31, 77);
+    doc.text('CLIENT DIGITAL EXECUTION', sigBoxX + 4, curY + 5.5);
+
+    if (isDrawn) {
+      try {
+        doc.addImage(signatureValue, 'PNG', sigBoxX + 5, curY + 7, 38, 13);
+      } catch {
+        doc.setFont('times', 'bolditalic');
+        doc.setFontSize(11);
+        doc.setTextColor(11, 31, 77);
+        doc.text(clientName, sigBoxX + 6, curY + 14);
+      }
+    } else {
+      doc.setFont('times', 'bolditalic');
+      doc.setFontSize(11);
+      doc.setTextColor(11, 31, 77);
+      doc.text(signatureValue || clientName, sigBoxX + 6, curY + 14);
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Digitally Verified • ECA 2000', sigBoxX + 4, curY + 22);
   }
 
   drawNJSFooter(doc, 1, 1);

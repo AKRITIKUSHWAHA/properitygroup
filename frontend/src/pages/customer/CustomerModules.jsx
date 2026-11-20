@@ -201,6 +201,22 @@ export const CustomerTermsPage = () => {
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
   const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || '');
 
+  const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
+  const [savedSignatureDataUrl, setSavedSignatureDataUrl] = useState(() => {
+    try {
+      return localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`) || currentAgreement?.signatureValue || '';
+    } catch {
+      return currentAgreement?.signatureValue || '';
+    }
+  });
+  const [savedSignatureType, setSavedSignatureType] = useState(() => {
+    try {
+      return localStorage.getItem(`propertygroup_user_sig_type_${userStorageKey}`) || currentAgreement?.signatureType || 'typed';
+    } catch {
+      return currentAgreement?.signatureType || 'typed';
+    }
+  });
+
   // Canvas ref for drawn signature
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -278,7 +294,7 @@ export const CustomerTermsPage = () => {
       return;
     }
 
-    if (signatureType === 'drawn' && !hasDrawn) {
+    if (signatureType === 'drawn' && !hasDrawn && !savedSignatureDataUrl) {
       addToast({
         type: 'error',
         title: 'Signature Required',
@@ -286,6 +302,28 @@ export const CustomerTermsPage = () => {
       });
       return;
     }
+
+    // Capture signature data immediately before unmounting canvas!
+    let capturedSignature = typedName;
+    if (signatureType === 'drawn') {
+      if (canvasRef.current && hasDrawn) {
+        try {
+          capturedSignature = canvasRef.current.toDataURL('image/png');
+        } catch (err) {
+          console.warn('Canvas export failed, falling back:', err);
+          capturedSignature = savedSignatureDataUrl || typedName;
+        }
+      } else if (savedSignatureDataUrl) {
+        capturedSignature = savedSignatureDataUrl;
+      }
+    }
+
+    setSavedSignatureDataUrl(capturedSignature);
+    setSavedSignatureType(signatureType);
+    try {
+      localStorage.setItem(`propertygroup_user_signature_${userStorageKey}`, capturedSignature);
+      localStorage.setItem(`propertygroup_user_sig_type_${userStorageKey}`, signatureType);
+    } catch {}
 
     // Call backend API to record execution and trigger Terms Signed confirmation email
     try {
@@ -300,7 +338,7 @@ export const CustomerTermsPage = () => {
           'x-user-email': userEmail,
         },
         body: JSON.stringify({
-          signatureData: signatureType === 'drawn' ? 'Drawn Signature' : typedName,
+          signatureData: capturedSignature,
           clientName: user?.name || typedName,
           property: propertyAddress,
           surveyType: surveyType,
@@ -320,11 +358,16 @@ export const CustomerTermsPage = () => {
     e.preventDefault();
     setIsProcessingPayment(true);
 
-    let signatureVal = typedName;
-    if (signatureType === 'drawn' && canvasRef.current) {
-      try {
-        signatureVal = canvasRef.current.toDataURL('image/png');
-      } catch {
+    const finalSigType = savedSignatureType || signatureType;
+    let signatureVal = savedSignatureDataUrl;
+    if (!signatureVal) {
+      if (finalSigType === 'drawn' && canvasRef.current) {
+        try {
+          signatureVal = canvasRef.current.toDataURL('image/png');
+        } catch {
+          signatureVal = typedName;
+        }
+      } else {
         signatureVal = typedName;
       }
     }
@@ -339,7 +382,7 @@ export const CustomerTermsPage = () => {
           signedDate: nowString,
           signerIp: '86.142.19.42 (London, UK)',
           auditCode: generatedAuditCode,
-          signatureType,
+          signatureType: finalSigType,
           signatureValue: signatureVal,
         });
       } else if (currentJob?.id) {
@@ -361,6 +404,8 @@ export const CustomerTermsPage = () => {
             signedDate: nowString,
             signerIp: '86.142.19.42 (London, UK)',
             auditCode: generatedAuditCode,
+            signatureType: finalSigType,
+            signatureValue: signatureVal,
             downloadUrl: '#download-signed-pdf',
           },
           ...prev,
@@ -474,12 +519,17 @@ export const CustomerTermsPage = () => {
   };
 
   const handleDownloadSignedPDF = () => {
-    let signatureVal = typedName;
-    if (signatureType === 'drawn' && canvasRef.current) {
-      try {
-        signatureVal = canvasRef.current.toDataURL('image/png');
-      } catch {
-        signatureVal = typedName;
+    const finalSigType = savedSignatureType || currentAgreement?.signatureType || signatureType;
+    let signatureVal = savedSignatureDataUrl || currentAgreement?.signatureValue;
+    if (!signatureVal) {
+      if (finalSigType === 'drawn' && canvasRef.current) {
+        try {
+          signatureVal = canvasRef.current.toDataURL('image/png');
+        } catch {
+          signatureVal = typedName;
+        }
+      } else {
+        signatureVal = typedName || user?.name || currentJob?.customer;
       }
     }
 
@@ -491,7 +541,7 @@ export const CustomerTermsPage = () => {
       agreedFee: `£${grossTotal.toFixed(2)} (inc. 20% VAT)`,
       signedDate: currentAgreement?.signedDate || new Date().toLocaleDateString('en-GB'),
       signedTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      signatureType,
+      signatureType: finalSigType,
       signatureValue: signatureVal,
       ipAddress: currentAgreement?.signerIp || '86.142.19.104',
     });
@@ -576,9 +626,19 @@ export const CustomerTermsPage = () => {
                     Legally Binding (ECA 2000)
                   </span>
                 </div>
-                <div className="font-serif italic text-2xl text-[#0B1F4D] font-bold tracking-wide">
-                  {user?.name || currentJob?.customer}
-                </div>
+                {((savedSignatureDataUrl && savedSignatureDataUrl.startsWith('data:image')) || (currentAgreement?.signatureValue && currentAgreement.signatureValue.startsWith('data:image'))) ? (
+                  <div className="py-1">
+                    <img
+                      src={savedSignatureDataUrl || currentAgreement.signatureValue}
+                      alt="Digital Signature"
+                      className="h-14 max-w-[220px] object-contain bg-white px-3 py-1 rounded-lg border border-blue-200 shadow-xs"
+                    />
+                  </div>
+                ) : (
+                  <div className="font-serif italic text-2xl text-[#0B1F4D] font-bold tracking-wide">
+                    {savedSignatureDataUrl || currentAgreement?.signatureValue || user?.name || currentJob?.customer}
+                  </div>
+                )}
                 <div className="text-[11px] text-slate-500 font-mono">
                   Signer IP: {currentAgreement?.signerIp || '86.142.19.42 (London, UK)'} • Cryptographic Checksum Verified
                 </div>
@@ -1086,6 +1146,18 @@ export const CustomerTermsPage = () => {
             <div className="flex justify-between">
               <span className="text-slate-500">Assigned Surveyor:</span>
               <span className="font-bold text-slate-900">{surveyorName}</span>
+            </div>
+            <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+              <span className="text-slate-500">Executed Signature:</span>
+              {(savedSignatureDataUrl && savedSignatureDataUrl.startsWith('data:image')) ? (
+                <img
+                  src={savedSignatureDataUrl}
+                  alt="Drawn Signature"
+                  className="h-8 max-w-[140px] object-contain bg-white px-2 py-0.5 rounded border border-slate-200"
+                />
+              ) : (
+                <span className="font-serif italic font-bold text-slate-800">{savedSignatureDataUrl || typedName || user?.name}</span>
+              )}
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Access Arrangement:</span>
@@ -1872,6 +1944,7 @@ export const CustomerInvoicesPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
+  const { agreements } = useTerms();
 
   const [settlingInvoice, setSettlingInvoice] = useState(null);
   const [viewingReceipt, setViewingReceipt] = useState(null);
@@ -1919,6 +1992,15 @@ export const CustomerInvoicesPage = () => {
   const balanceDue = totalInvoiced - totalSettled;
 
   const handleDownloadInvoice = (inv) => {
+    const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
+    const storedSig = localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`);
+    const storedSigType = localStorage.getItem(`propertygroup_user_sig_type_${userStorageKey}`);
+    const relatedAgr = agreements.find(
+      (a) => a.jobNo === inv.jobRef || a.client === user?.name || a.signerEmail === user?.email
+    );
+    const signatureVal = relatedAgr?.signatureValue || storedSig || null;
+    const signatureType = relatedAgr?.signatureType || storedSigType || (signatureVal?.startsWith('data:image') ? 'drawn' : 'typed');
+
     downloadInvoicePDF({
       invoiceNo: inv.invNo,
       jobNo: inv.jobRef,
@@ -1931,6 +2013,8 @@ export const CustomerInvoicesPage = () => {
       baseFee: inv.netAmount,
       vatAmount: inv.vatAmount,
       totalAmount: inv.grossTotal,
+      signatureValue: signatureVal,
+      signatureType: signatureType,
     });
 
     addToast({
@@ -2399,6 +2483,45 @@ export const CustomerInvoicesPage = () => {
                 <span className="font-mono">{viewingReceipt.total}</span>
               </div>
             </div>
+
+            {/* Signature & Execution on Receipt Modal */}
+            <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Digital Signature Execution
+                </span>
+                <span className="text-[11px] text-slate-700 font-medium block">
+                  Authorised Client Signatory: <strong className="text-slate-900">{user?.name}</strong>
+                </span>
+                <span className="text-[10px] text-emerald-700 font-medium block">
+                  ✔ Certified compliant under UK Electronic Communications Act 2000
+                </span>
+              </div>
+              <div>
+                {(() => {
+                  const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
+                  const storedSig = localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`);
+                  const relatedAgr = agreements.find(
+                    (a) => a.jobNo === viewingReceipt.jobRef || a.client === user?.name || a.signerEmail === user?.email
+                  );
+                  const sig = relatedAgr?.signatureValue || storedSig;
+                  if (sig && sig.startsWith('data:image')) {
+                    return (
+                      <img
+                        src={sig}
+                        alt="Drawn Signature"
+                        className="h-10 max-w-[140px] object-contain bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs"
+                      />
+                    );
+                  }
+                  return (
+                    <span className="font-serif italic font-bold text-slate-800 text-sm">
+                      {sig || user?.name || 'Digitally Signed'}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
         </Modal>
       )}
@@ -2414,6 +2537,7 @@ export const CustomerReportsPage = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
+  const { agreements } = useTerms();
   const [reviewPromptJob, setReviewPromptJob] = useState(null);
   const [promptRating, setPromptRating] = useState(5);
   const [promptFeedback, setPromptFeedback] = useState('');
@@ -4022,6 +4146,7 @@ export const CustomerMessagesPage = () => {
 export const CustomerReviewPage = () => {
   const { user } = useAuth();
   const { jobs, updateJob, addJob } = useJobs();
+  const { agreements } = useTerms();
   const { addToast } = useToast();
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));

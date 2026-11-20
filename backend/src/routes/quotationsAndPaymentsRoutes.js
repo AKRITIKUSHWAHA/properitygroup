@@ -13,7 +13,12 @@ import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 const router = Router();
 
 router.use(verifyJWT);
-router.use(authorizeRoles('ADMIN'));
+
+// Customer or Admin can update quote status (e.g. ACCEPTED when customer signs or accepts)
+router.patch('/quotes/:id/status', authorizeRoles('ADMIN', 'SUPER_ADMIN', 'CUSTOMER'), updateQuoteStatus);
+
+// All other Quotations & Payments Endpoints restricted to ADMIN and SUPER_ADMIN
+router.use(authorizeRoles('ADMIN', 'SUPER_ADMIN'));
 
 // Menu 8: Quotations & Payments Endpoints
 router.get('/quotes', getQuotesList);
@@ -23,7 +28,6 @@ router.post('/quotes', createQuote);
 router.post('/quote', createQuote);
 router.put('/quotes/:id', updateQuote);
 router.patch('/quotes/:id', updateQuote);
-router.patch('/quotes/:id/status', updateQuoteStatus);
 router.post('/invoices/:id/settle-bacs', settleBacsPayment);
 
 export default router;
