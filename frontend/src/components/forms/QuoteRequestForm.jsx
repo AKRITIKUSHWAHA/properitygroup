@@ -393,7 +393,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           className={`form-select form-input-compact ${errors.serviceId ? 'is-invalid' : ''}`}
           aria-invalid={!!errors.serviceId}
         >
-          <option value="">Select Survey Discipline</option>
+          <option value="">Select Survey Service</option>
           {approvedServices.map(service => (
             <option key={service.id} value={service.id}>
               {service.name}
@@ -561,59 +561,6 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           {errors.customerPhone && <span className="form-error-compact">{errors.customerPhone}</span>}
         </div>
       </div>
-
-      {/* Row 6: Create Account Password (only displayed when Customer Portal is enabled) */}
-      {siteConfig.features?.showPublicPortalLogin && (
-        <div className="form-group-compact" style={{ marginBottom: '0.55rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <label htmlFor="password" className="form-label-compact" style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Lock size={12} style={{ color: '#0B1F4D' }} />
-              <span>Create Portal Password <span className="req">*</span></span>
-            </label>
-            <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 500 }}>
-              Min. 6 characters
-            </span>
-          </div>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              name="password"
-              placeholder="Choose a password (to log in and track survey)"
-              value={formData.password}
-              onChange={handleChange}
-              className={`form-input form-input-compact ${errors.password ? 'is-invalid' : ''}`}
-              aria-invalid={!!errors.password}
-              autoComplete="new-password"
-              style={{ paddingRight: '2.5rem' }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: 'absolute',
-                right: '0.55rem',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#64748B',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '4px'
-              }}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-          {errors.password && <span className="form-error-compact">{errors.password}</span>}
-          <span style={{ display: 'block', fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.3 }}>
-            Use this password with your email to log in to your dashboard to review quotes and download reports.
-          </span>
-        </div>
-      )}
 
       {/* Expandable Optional Notes Section */}
       <div style={{ marginBottom: '0.45rem' }}>

@@ -4,7 +4,6 @@ import {
   Menu,
   ChevronDown,
   Building,
-  User,
   Phone,
   Clock,
   ShieldCheck,
@@ -113,10 +112,15 @@ export function Header() {
               </div>
               <div className="announcement-right">
                 {siteConfig.features?.showPublicPortalLogin && (
-                  <Link to="/login" className="announcement-login-btn">
-                    <span>Customer Login</span>
-                    <ChevronRight size={13} aria-hidden="true" />
-                  </Link>
+                  <div className="announcement-auth-group">
+                    <Link to="/login" className="announcement-login-btn" title="Customer Portal Login">
+                      <span>Customer Login</span>
+                      <ChevronRight size={13} aria-hidden="true" />
+                    </Link>
+                    <Link to="/register" className="announcement-register-btn hide-mobile" title="Create Customer Account">
+                      <span>Create Account / Register</span>
+                    </Link>
+                  </div>
                 )}
                 <button
                   type="button"

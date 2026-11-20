@@ -260,7 +260,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Customer registration
-  const registerCustomer = async ({ fullName, email, phone, password = 'password123' }) => {
+  const registerCustomer = async ({ fullName, email, phone, address, postcode, password = 'password123' }) => {
     if (!isClientPortalEnabled()) {
       setIsLoading(false);
       throw new Error('Client portal registration is currently deactivated. Please submit an enquiry instead.');
@@ -275,6 +275,8 @@ export const AuthProvider = ({ children }) => {
         email: trimmedEmail,
         password,
         phone,
+        address,
+        postcode,
         role: 'CUSTOMER',
       });
     } catch (err) {
@@ -290,6 +292,8 @@ export const AuthProvider = ({ children }) => {
       department: 'Private Client',
       company: 'Private Residential',
       phone,
+      address: address || '',
+      postcode: postcode || '',
       currency: 'GBP',
       dateJoined: new Date().toLocaleDateString('en-GB'),
       badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',

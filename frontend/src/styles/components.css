@@ -9296,6 +9296,34 @@ p.mega-action-sub {
   color: #FFFFFF !important;
 }
 
+.announcement-auth-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.announcement-register-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #FFFFFF !important;
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  padding: 0.26rem 0.8rem !important;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.announcement-register-btn:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px) !important;
+}
+
 /* Row 2: Utility Strip (Deeper Obsidian Tone) */
 .header-utility-strip {
   background: #070D15 !important;

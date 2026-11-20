@@ -39,6 +39,62 @@ export function RedirectsPage() {
       target: '/services/valuation-report',
       targetName: 'RICS Red Book Valuation',
       reason: 'Root real estate landing page redirected to Help to Buy / Shared Ownership valuations.'
+    },
+    {
+      source: '/renovations',
+      code: '301 Permanent',
+      target: '/services/building-survey-level-3',
+      targetName: 'Level 3 Building Survey (Full Structural)',
+      reason: 'Renovation feasibility and structural alterations routed to RICS Level 3 survey.'
+    },
+    {
+      source: '/repairs-extensions',
+      code: '301 Permanent',
+      target: '/services/building-survey-level-3',
+      targetName: 'Level 3 Building Survey (Structural)',
+      reason: 'Property extension and major repair investigations routed to Level 3 inspection.'
+    },
+    {
+      source: '/new-homes',
+      code: '301 Permanent',
+      target: '/services/snagging-report',
+      targetName: 'New-Build Snagging Report',
+      reason: 'New home buyers routed to pre-completion independent snagging inspection.'
+    },
+    {
+      source: '/sell',
+      code: '301 Permanent',
+      target: '/services/valuation-report',
+      targetName: 'RICS Red Book Valuation',
+      reason: 'Vendor property sale and probate valuations routed to RICS Red Book report.'
+    },
+    {
+      source: '/rent',
+      code: '301 Permanent',
+      target: '/services/damp-survey',
+      targetName: 'Damp Diagnostics & Condition',
+      reason: 'Rental and tenancy condition/moisture queries routed to damp survey.'
+    },
+    {
+      source: '/buy',
+      code: '301 Permanent',
+      target: '/what-survey-do-i-need',
+      targetName: 'Survey Decision Guidance',
+      reason: 'Property purchasers routed to Level 2 vs Level 3 comparison tool.'
+    },
+    {
+      source: '/let',
+      code: '301 Permanent',
+      target: '/services/homebuyer-survey-level-2',
+      targetName: 'Level 2 Homebuyer Survey',
+      reason: 'Landlord and letting property inspections routed to Level 2 survey.'
+    },
+    {
+      source: '/buying-agent-enquiries',
+      code: '301 Permanent',
+      target: '/partners',
+      targetName: 'Partners & Buying Agents Portal',
+      reason: 'Professional buying agents and estate agents routed to Partner Portal.'
     }
   ];
 

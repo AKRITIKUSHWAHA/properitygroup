@@ -779,7 +779,7 @@ export const AdminSurveyorsPage = () => {
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   Professional Indemnity Insurance (PII)
                 </span>
-                <span className="text-[11px] text-emerald-700">Validated under RICS Firm Registration #089421</span>
+                <span className="text-[11px] text-emerald-700">Validated under RICS Firm Registration #084920</span>
               </div>
               <span className="text-xs font-mono font-bold text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
                 Valid to {viewingSurveyor.piiExpiry}

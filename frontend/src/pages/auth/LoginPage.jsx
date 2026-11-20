@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { siteConfig } from '../../config/siteConfig';
@@ -28,7 +29,7 @@ export const ROLES_CONFIG = {
     badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
     title: 'Customer Login',
     subtitle: 'Access your fee proposals, e-sign terms & download survey reports',
-    demoName: 'Demo Customer Account',
+    demoName: 'Customer Portal',
     buttonText: 'Customer Login',
     rightBadge: 'Independent RICS Practice Portal',
     rightHeading: 'Fast, Objective Property Surveys & Red Book Valuations',
@@ -48,7 +49,7 @@ export const ROLES_CONFIG = {
     badgeColor: 'bg-amber-50 text-amber-900 border-amber-200/80',
     title: 'Surveyor Portal Sign In',
     subtitle: 'Site inspection logistics, access notes & report drafting',
-    demoName: 'Demo Surveyor Account',
+    demoName: 'Surveyor Portal',
     buttonText: 'Sign In to Surveyor Portal',
     rightBadge: 'RICS Chartered Surveyor Access',
     rightHeading: 'Field Inspection Logistics & Defect Diagnostics',
@@ -68,7 +69,7 @@ export const ROLES_CONFIG = {
     badgeColor: 'bg-blue-50 text-[#0B1F4D] border-blue-200/80',
     title: 'Admin Portal Sign In',
     subtitle: 'Full operations, SurveyBooker pipeline, VAT billing & settings',
-    demoName: 'Demo Administrator Account',
+    demoName: 'Admin Operations Portal',
     buttonText: 'Sign In to Admin Portal',
     rightBadge: 'Central Practice Headquarters',
     rightHeading: 'Operations Management & Surveyor Allocation',
@@ -128,7 +129,9 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const currentRoleConfig = ROLES_CONFIG[activeRoleKey] || ROLES_CONFIG.customer;
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
-  const [email, setEmail] = useState(() => urlEmail || location.state?.prefilledEmail || '');
+  const [email, setEmail] = useState(
+    () => urlEmail || location.state?.prefilledEmail || location.state?.registeredEmail || ''
+  );
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -254,6 +257,14 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
               </p>
             </div>
 
+            {/* Registration Success Alert */}
+            {location.state?.registrationSuccess && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2 text-emerald-800 text-xs animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                <span>{location.state?.message || 'Account created successfully! Please enter your password to sign in.'}</span>
+              </div>
+            )}
+
             {/* Error Message Alert */}
             {errorMessage && (
               <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2 text-rose-700 text-xs animate-in fade-in">
@@ -357,12 +368,12 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
               </button>
             </form>
 
-            {/* Optional Customer Registration Link (only shown when public client login is active) */}
-            {isClientLoginEnabled && activeRoleKey === 'customer' && (
-              <div className="mt-3 text-center">
-                <span className="text-xs text-slate-500 font-medium">Need a customer survey account? </span>
-                <Link to="/register" className="text-xs font-bold text-[#0B1F4D] hover:underline">
-                  Register online
+            {/* Customer Registration Link */}
+            {activeRoleKey === 'customer' && (
+              <div className="mt-4 p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                <span className="text-xs text-slate-600 font-medium">New property client? </span>
+                <Link to="/register" className="text-xs font-bold text-[#2563EB] hover:underline">
+                  Create Customer Account &rarr;
                 </Link>
               </div>
             )}

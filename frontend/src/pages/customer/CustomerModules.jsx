@@ -198,7 +198,7 @@ export const CustomerTermsPage = () => {
   // Sign Form State
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
-  const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || 'Emma Watson');
+  const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || '');
 
   // Canvas ref for drawn signature
   const canvasRef = useRef(null);
@@ -373,24 +373,25 @@ export const CustomerTermsPage = () => {
         ]);
       }
 
-      // 2. Update in useJobs store
+      // 2. Update in useJobs store (Strict Client Specification: Claimed payment does NOT auto-mark as paid)
       const jobPayload = {
         termsStatus: 'Signed',
-        paymentStatus: 'Paid',
-        canBook: true,
-        timelineStep: 5,
-        status: 'Booked',
+        paymentStatus: 'Claimed (Verification Pending)',
+        paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+        canBook: false,
+        timelineStep: 3,
+        status: 'Action Required',
       };
 
       if (currentJob?.id) {
         updateJob(currentJob.id, {
           ...jobPayload,
-          tasks: (currentJob.tasks || []).map((t) => ({ ...t, done: true })),
+          tasks: (currentJob.tasks || []).map((t) => ({ ...t, done: t.id === 'terms' })),
           activityLog: [
             {
               id: Date.now(),
               time: nowString,
-              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & settled invoice (£${grossTotal.toFixed(2)}).`,
+              text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement & notified bank transfer of £${grossTotal.toFixed(2)} (Awaiting NJS Admin reconciliation).`,
             },
             ...(currentJob.activityLog || []),
           ],
@@ -407,10 +408,10 @@ export const CustomerTermsPage = () => {
           location: regUser.postcode || '',
           postcode: regUser.postcode || '',
           surveyor: 'Pending Allocation',
-          status: 'Booked',
+          status: 'Action Required',
           termsStatus: 'Signed',
-          paymentStatus: 'Paid',
-          timelineStep: 5,
+          paymentStatus: 'Claimed (Verification Pending)',
+          timelineStep: 3,
           date: 'Pending Allocation',
           timeSlot: 'Pending Confirmation',
           quote: {
@@ -425,7 +426,7 @@ export const CustomerTermsPage = () => {
         const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
         const updatedQuotes = storedQuotes.map((q) => {
           if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === (user?.name || '').toLowerCase().trim()) {
-            return { ...q, status: 'Paid', termsStatus: 'Signed' };
+            return { ...q, termsStatus: 'Signed', paymentStatus: 'Claimed (Verification Pending)' };
           }
           return q;
         });
@@ -884,17 +885,28 @@ export const CustomerTermsPage = () => {
               </div>
             )}
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>Timestamp: {new Date().toLocaleDateString('en-GB')} at {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
-              <span className="font-mono text-slate-400">IP: 86.142.19.104 (Audit Logged)</span>
+            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-slate-800">
+                  Electronic Signature Timestamp:
+                </span>
+                <span className="font-mono text-[#0B1F4D] font-bold">
+                  {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} at {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} (UK Time)
+                </span>
+              </div>
+              <span className="font-mono text-[11px] text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                Audit Ref: DOC-ESIGN-84920-VERIFIED
+              </span>
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-6 py-3 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>Sign Agreement & Proceed to Payment</span>
+                <Check className="w-4 h-4 stroke-[2.5]" />
+                <span>Execute &amp; E-Sign Terms of Engagement</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -902,205 +914,109 @@ export const CustomerTermsPage = () => {
         </form>
       )}
 
-      {/* STAGE 2: PAYMENT */}
+      {/* STAGE 2: BANK TRANSFER PAYMENT ONLY (Client Rule: Bank Transfer Only, No Stripe/Card) */}
       {stage === 'payment' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-4">
             <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-base font-bold text-[#0B1F4D] flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-[#2563EB]" />
-                  <span>Secure Payment Gateway (Stripe)</span>
+                  <Building className="w-5 h-5 text-[#2563EB]" />
+                  <span>Direct Bank Transfer (BACS / Faster Payments)</span>
                 </h3>
                 <span className="text-xs text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full font-bold">
-                  256-Bit SSL Encrypted
+                  Zero Merchant Surcharges
                 </span>
               </div>
 
-              {/* Payment Method Selector */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('bacs')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                    paymentMethod === 'bacs'
-                      ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <Building className="w-4 h-4 text-emerald-700" />
-                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full">Zero Fee</span>
+              {/* Direct Bank Transfer Instructions Box */}
+              <div className="p-5 bg-gradient-to-br from-blue-50/70 via-slate-50 to-emerald-50/60 rounded-2xl border border-blue-200/90 space-y-4 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Official NJS Practice Client Account
+                  </span>
+                  <span className="text-[10px] font-bold text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-full">
+                    UK Faster Payments Aligned
+                  </span>
+                </div>
+
+                <p className="text-slate-700 leading-relaxed font-medium">
+                  Please transfer the survey fee directly from your online banking app or branch to our designated client account:
+                </p>
+
+                {/* Bank Account Details Grid (Client Mandatory Specification) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-white rounded-2xl border border-blue-100 shadow-sm text-slate-800">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Name</span>
+                    <strong className="text-slate-900 text-sm font-black">NJS PROPERTY GROUP LTD</strong>
                   </div>
-                  <span>BACS Transfer</span>
-                </button>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Payment Reference</span>
+                    <strong className="text-[#2563EB] font-mono text-sm font-black">{jobNo || 'NJS-JOB-2026'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Sort Code</span>
+                    <strong className="text-slate-900 font-mono text-base font-black">23-05-80</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Number</span>
+                    <strong className="text-slate-900 font-mono text-base font-black">46452283</strong>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Fee Breakdown</span>
+                    <span className="text-slate-700 font-medium">Net: £{baseFee.toFixed(2)} + 20% VAT: £{vatAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Amount Due</span>
+                    <strong className="text-emerald-700 font-extrabold text-base">£{grossTotal.toFixed(2)}</strong>
+                  </div>
+                </div>
+
+                {/* Optional Payment Reference Note */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Your Bank Transfer Reference / Notes (Optional):
+                  </label>
+                  <input
+                    type="text"
+                    value={cardDetails.name || ''}
+                    onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
+                    placeholder="e.g. Sent from Barclays / Halifax Ref #12345"
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <span className="text-[10.5px] text-slate-500 block leading-tight">
+                    Include your reference so our accounts team can immediately match and reconcile your funds.
+                  </span>
+                </div>
+
+                {/* Important Compliance Callout */}
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-medium">
+                  <strong>Notice:</strong> Marking "I have made a bank transfer" notifies NJS Admin to verify receipt of funds. Once verified by our accounts desk, your invoice will be marked as Paid and your inspection booking confirmed.
+                </div>
+
+                {/* Submit Claim Button */}
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                    paymentMethod === 'card'
-                      ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
+                  onClick={handlePaymentSubmit}
+                  disabled={isProcessingPayment}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  <CreditCard className="w-4 h-4 text-[#2563EB]" />
-                  <span>Debit / Credit Card</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('apple')}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                    paymentMethod === 'apple'
-                      ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                      : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                  }`}
-                >
-                  <span className="font-sans font-black text-sm"> Pay</span>
-                  <span>Apple Pay</span>
+                  {isProcessingPayment ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Logging Transfer Notification...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>I Have Made a Bank Transfer (£{grossTotal.toFixed(2)})</span>
+                    </>
+                  )}
                 </button>
               </div>
-
-              {/* BACS Form */}
-              {paymentMethod === 'bacs' ? (
-                <div className="p-5 bg-gradient-to-br from-emerald-50/70 to-blue-50/60 rounded-2xl border border-emerald-200/90 space-y-4 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-[#0B1F4D] flex items-center gap-2">
-                      <Building className="w-4 h-4 text-emerald-700" />
-                      <span>Direct Bank Transfer (Metro Bank Faster Payments)</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                      Zero Merchant Fee
-                    </span>
-                  </div>
-
-                  <p className="text-slate-600 leading-relaxed">
-                    Please transfer the advance instruction fee directly to our practice business account via UK Faster Payments / Online Banking:
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-white rounded-xl border border-emerald-100 shadow-2xs text-slate-800">
-                    <div>Bank: <strong className="text-slate-900">Metro Bank PLC</strong></div>
-                    <div>Beneficiary: <strong className="text-slate-900">NJS Property Group Ltd</strong></div>
-                    <div>Sort Code: <strong className="text-slate-900 font-mono text-sm">23-05-80</strong></div>
-                    <div>Account No: <strong className="text-slate-900 font-mono text-sm">18920412</strong></div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 text-[11px]">
-                    <div>Payment Reference: <strong className="font-mono text-[#0B1F4D] text-xs">{jobNo || 'NJS-JOB-2026'}</strong></div>
-                    <div className="text-right">Total Payable: <strong className="text-emerald-700 font-extrabold text-sm">£{grossTotal.toFixed(2)}</strong></div>
-                  </div>
-
-                  <div className="text-[11px] text-slate-500 italic">
-                    Once transferred from your bank app, click below to confirm your booking instruction.
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handlePaymentSubmit}
-                    disabled={isProcessingPayment}
-                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isProcessingPayment ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Confirming Metro Bank Transfer...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Confirm Metro Bank Transfer (£{grossTotal.toFixed(2)}) &amp; Confirm Booking</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              ) : paymentMethod === 'apple' ? (
-                <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-4">
-                  <div className="text-sm font-semibold text-slate-700">Apple Pay Express Checkout</div>
-                  <button
-                    type="button"
-                    onClick={handlePaymentSubmit}
-                    disabled={isProcessingPayment}
-                    className="w-full max-w-sm mx-auto py-3 bg-black hover:bg-slate-900 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2"
-                  >
-                    <span className="font-sans text-base"> Pay £{grossTotal.toFixed(2)}</span>
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handlePaymentSubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Cardholder Name</label>
-                  <input
-                    type="text"
-                    value={cardDetails.name}
-                    onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Card Number</label>
-                  <input
-                    type="text"
-                    value={cardDetails.number}
-                    onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Expiry Date</label>
-                    <input
-                      type="text"
-                      value={cardDetails.expiry}
-                      onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                      placeholder="MM/YY"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-center"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">CVC Code</label>
-                    <input
-                      type="password"
-                      maxLength={4}
-                      value={cardDetails.cvc}
-                      onChange={(e) => setCardDetails({ ...cardDetails, cvc: e.target.value })}
-                      placeholder="892"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-center"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Billing Postcode</label>
-                  <input
-                    type="text"
-                    value={cardDetails.postcode}
-                    onChange={(e) => setCardDetails({ ...cardDetails, postcode: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl uppercase font-mono"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={isProcessingPayment}
-                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isProcessingPayment ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Authorizing with Bank...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4" />
-                        <span>Pay £{grossTotal.toFixed(2)} & Confirm Booking</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-              )}
             </div>
           </div>
 
@@ -1144,19 +1060,23 @@ export const CustomerTermsPage = () => {
         </div>
       )}
 
-      {/* STAGE 3: CONFIRMED */}
+      {/* STAGE 3: TRANSFER CLAIMED & PENDING VERIFICATION */}
       {stage === 'confirmed' && (
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-8 text-center space-y-5">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10" />
+          <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0B1F4D] flex items-center justify-center mx-auto border border-blue-200">
+            <CheckCircle2 className="w-10 h-10 text-[#2563EB]" />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Bank Transfer Verification Pending</span>
+            </div>
             <h3 className="text-2xl font-black text-[#0B1F4D]">
-              Inspection Confirmed & Locked!
+              Terms Signed • Transfer Notification Logged
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Your Terms of Engagement are executed and advance payment of £{grossTotal.toFixed(2)} has been received in full.
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+              Your Terms of Engagement are legally executed. Our accounts desk will verify your payment of £{grossTotal.toFixed(2)} to our NJS client account (Sort Code: 23-05-80, Account: 46452283) and confirm your inspection appointment.
             </p>
           </div>
 
@@ -1603,17 +1523,24 @@ export const CustomerQuotationsPage = () => {
 
       addToast({
         type: 'success',
-        title: 'Quotation Accepted!',
-        message: `Quotation ${targetQuote.id} accepted. Automated confirmation email sent to ${userEmail || 'your email'}.`,
+        title: 'Proposal Accepted!',
+        message: `Proposal ${targetQuote.id} accepted. Opening Terms of Engagement agreement to e-sign.`,
       });
 
       setConfirmQuote(null);
-      setAcceptedSuccessQuote({
-        ...targetQuote,
-        emailSentTo: userEmail || user?.email || 'customer@demo.com',
-        acceptedAt: result?.acceptedAt || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-      });
       setRefreshKey((k) => k + 1);
+
+      // Immediately navigate to Terms of Engagement Agreement to e-sign
+      setTimeout(() => {
+        navigate('/customer/terms-to-sign', {
+          state: {
+            quoteId: targetQuote.id,
+            property: targetQuote.property,
+            surveyType: targetQuote.surveyType,
+            acceptedProposal: true,
+          }
+        });
+      }, 350);
     } catch (err) {
       console.error('Failed to accept quotation', err);
       addToast({
@@ -1732,7 +1659,7 @@ export const CustomerQuotationsPage = () => {
                         className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
                         <Check className="w-4 h-4 stroke-[2.5]" />
-                        <span>Accept Quotation</span>
+                        <span>Accept Proposal</span>
                       </button>
                     </div>
                   )}
@@ -1788,7 +1715,7 @@ export const CustomerQuotationsPage = () => {
         <Modal
           isOpen={true}
           onClose={() => setConfirmQuote(null)}
-          title="Accept Quotation & Confirm Instruction"
+          title="Review & Accept Proposal"
           size="md"
         >
           <div className="space-y-4 text-xs">
@@ -1842,7 +1769,7 @@ export const CustomerQuotationsPage = () => {
                 ) : (
                   <>
                     <Check className="w-4 h-4 stroke-[2.5]" />
-                    <span>Confirm &amp; Accept Quotation</span>
+                    <span>Confirm &amp; Accept Proposal</span>
                   </>
                 )}
               </button>
@@ -2025,55 +1952,29 @@ export const CustomerInvoicesPage = () => {
     setIsProcessing(true);
 
     setTimeout(() => {
-      // 1. Update job in store
+      // 1. Update job in store to Claimed (Verification Pending) per Client Bank Transfer specification
       updateJob(settlingInvoice.jobRef, {
-        paymentStatus: 'Paid',
-        paymentMethod:
-          paymentMethod === 'card'
-            ? 'Stripe Card (•••• 4242)'
-            : paymentMethod === 'apple'
-            ? 'Apple Pay'
-            : 'Metro Bank Direct Transfer (BACS)',
-        canBook: true,
-        timelineStep: 4,
+        paymentStatus: 'Claimed (Verification Pending)',
+        paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+        canBook: false,
         activityLog: [
           {
             id: Date.now(),
             time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-            text: `Customer ${user?.name || 'Client'} settled invoice ${settlingInvoice.invNo} (£${settlingInvoice.grossTotal.toFixed(2)}) via ${paymentMethod === 'card' ? 'Stripe Card' : paymentMethod === 'apple' ? 'Apple Pay' : 'BACS'}.`,
+            text: `Customer ${user?.name || 'Client'} marked bank transfer of £${settlingInvoice.grossTotal.toFixed(2)} for invoice ${settlingInvoice.invNo}. Verification pending by NJS Admin.`,
           },
         ],
-      });
-
-      // 2. Automatically generate and download the VAT invoice receipt
-      downloadInvoicePDF({
-        invoiceNo: settlingInvoice.invNo,
-        jobNo: settlingInvoice.jobRef,
-        clientName: user?.name || 'Customer',
-        property: settlingInvoice.property,
-        surveyType: settlingInvoice.service,
-        invoiceDate: new Date().toLocaleDateString('en-GB'),
-        paymentDate: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-        paymentMethod:
-          paymentMethod === 'card'
-            ? 'Stripe Credit Card (•••• 4242)'
-            : paymentMethod === 'apple'
-            ? 'Apple Pay (Biometric Settled)'
-            : 'Metro Bank Direct Transfer (BACS Faster Payments)',
-        baseFee: settlingInvoice.netAmount,
-        vatAmount: settlingInvoice.vatAmount,
-        totalAmount: settlingInvoice.grossTotal,
       });
 
       setIsProcessing(false);
       setSettlingInvoice(null);
 
       addToast({
-        type: 'success',
-        title: 'Payment Cleared & Settled',
-        message: `${settlingInvoice.total} received in full. Official VAT invoice receipt downloaded.`,
+        type: 'info',
+        title: 'Bank Transfer Claim Submitted',
+        message: `Notification submitted for ${settlingInvoice.total}. NJS Admin will verify the funds in our bank account before marking invoice as Paid.`,
       });
-    }, 1000);
+    }, 800);
   };
 
   return (
@@ -2264,140 +2165,65 @@ export const CustomerInvoicesPage = () => {
               </div>
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('bacs')}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                  paymentMethod === 'bacs'
-                    ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <div className="flex items-center gap-1">
+            {/* Direct Bank Transfer Payment Panel (Client Specification: Bank Transfer Only) */}
+            <div className="p-5 bg-gradient-to-br from-blue-50/70 via-slate-50 to-emerald-50/60 rounded-2xl border border-blue-200/90 space-y-4 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-[#0B1F4D] flex items-center gap-2">
                   <Building className="w-4 h-4 text-emerald-700" />
-                  <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full">Zero Fee</span>
+                  <span>Direct Bank Transfer (BACS / Faster Payments)</span>
                 </div>
-                <span>BACS Transfer</span>
-              </button>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Zero Merchant Surcharges
+                </span>
+              </div>
+
+              <p className="text-slate-600 leading-relaxed font-medium">
+                Please transfer the invoice balance directly to our practice client account using your online banking application:
+              </p>
+
+              {/* Exact Bank Details */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-white rounded-xl border border-blue-100 shadow-2xs text-slate-800">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Name</span>
+                  <strong className="text-slate-900 text-xs font-black">NJS PROPERTY GROUP LTD</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Payment Reference</span>
+                  <strong className="text-[#2563EB] font-mono text-xs font-black">{settlingInvoice.invNo}</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Sort Code</span>
+                  <strong className="text-slate-900 font-mono text-sm font-black">23-05-80</strong>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Account Number</span>
+                  <strong className="text-slate-900 font-mono text-sm font-black">46452283</strong>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 font-medium">
+                <strong>Notice:</strong> Clicking "I have made a bank transfer" creates a notification for NJS Admin. Admin will verify receipt of funds in our bank account before marking this invoice as Paid.
+              </div>
+
               <button
                 type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                  paymentMethod === 'card'
-                    ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                }`}
+                onClick={handleProcessSettlement}
+                disabled={isProcessing}
+                className="w-full mt-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                <CreditCard className="w-4 h-4 text-[#2563EB]" />
-                <span>Credit / Debit Card</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('apple')}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
-                  paymentMethod === 'apple'
-                    ? 'border-[#0B1F4D] bg-blue-50/50 text-[#0B1F4D]'
-                    : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <span className="font-sans font-black text-sm"> Pay</span>
-                <span>Apple Pay</span>
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Logging Bank Transfer Notification...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    <span>I Have Made a Bank Transfer ({settlingInvoice.total})</span>
+                  </>
+                )}
               </button>
             </div>
-
-            {/* Payment Form */}
-            {paymentMethod === 'bacs' ? (
-              <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-200 space-y-2 text-xs">
-                <div className="font-bold text-[#0B1F4D]">Direct Bank Transfer Instructions:</div>
-                <div className="grid grid-cols-2 gap-2 text-slate-700">
-                  <div>Bank: <strong>Metro Bank PLC</strong></div>
-                  <div>Sort Code: <strong>23-05-80</strong></div>
-                  <div>Account No: <strong>18920412</strong></div>
-                  <div>Beneficiary: <strong>NJS Property Group Ltd</strong></div>
-                </div>
-                <div className="pt-2 text-[11px] text-slate-500 font-mono">
-                  Mandatory Reference: <strong>{settlingInvoice.invNo}</strong>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleProcessSettlement}
-                  disabled={isProcessing}
-                  className="w-full mt-3 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isProcessing ? 'Confirming Settlement...' : `Confirm Settlement (${settlingInvoice.total})`}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleProcessSettlement} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Cardholder Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={cardDetails.name}
-                    onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Card Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={cardDetails.number}
-                    onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono font-medium"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Expiry Date</label>
-                    <input
-                      type="text"
-                      required
-                      value={cardDetails.expiry}
-                      onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                      placeholder="MM/YY"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-center"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">CVC Code</label>
-                    <input
-                      type="password"
-                      required
-                      maxLength={4}
-                      value={cardDetails.cvc}
-                      onChange={(e) => setCardDetails({ ...cardDetails, cvc: e.target.value })}
-                      placeholder="892"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono text-center"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isProcessing}
-                  className="w-full mt-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Authorizing with Bank...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>Pay {settlingInvoice.total} & Download VAT Receipt</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
           </div>
         </Modal>
       )}
@@ -2506,8 +2332,14 @@ export const CustomerReportsPage = () => {
   const [promptRating, setPromptRating] = useState(5);
   const [promptFeedback, setPromptFeedback] = useState('');
 
+  // Strict RICS Compliance: Final report is ONLY accessible after explicit Admin/QA approval.
+  // Drafts, rejected reports, and in-progress QA notes must NEVER appear as downloadable reports.
   const myCompletedJobs = jobs.filter(
-    (j) => isJobForCustomer(j, user) && (j.status === 'Completed' || j.timelineStep >= 7)
+    (j) => isJobForCustomer(j, user) && (j.status === 'Completed' || j.qaApproved === true || j.reportReleased === true || (j.timelineStep === 10 && j.status !== 'Preparing report'))
+  );
+
+  const inProgressQaJobs = jobs.filter(
+    (j) => isJobForCustomer(j, user) && (j.status === 'Preparing report' || j.timelineStep === 7 || j.timelineStep === 8) && !(j.status === 'Completed' || j.qaApproved === true || j.reportReleased === true)
   );
 
   const reports = myCompletedJobs.map((j) => ({
@@ -2602,9 +2434,33 @@ export const CustomerReportsPage = () => {
           </div>
         ))}
 
-        {reports.length === 0 && (
+        {/* In-Progress QA Reports Notice (Drafts remain strictly hidden until Admin QA approval) */}
+        {inProgressQaJobs.map((j) => (
+          <div
+            key={j.id}
+            className="bg-amber-50/60 p-5 rounded-3xl border border-amber-200/80 flex items-start gap-4 text-xs"
+          >
+            <div className="p-2.5 bg-amber-100 text-amber-800 rounded-2xl shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-amber-900">{j.jobNo || j.id}</span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px]">
+                  Under Admin QA Review
+                </span>
+              </div>
+              <h4 className="font-bold text-slate-900 text-sm">{j.property}</h4>
+              <p className="text-slate-600 leading-relaxed">
+                On-site inspection completed. The surveyor's technical draft is currently undergoing quality assurance review by NJS practice governance. The final certified report PDF will be unlocked here immediately upon formal QA approval.
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {reports.length === 0 && inProgressQaJobs.length === 0 && (
           <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
-            No completed reports released yet for your properties. Reports are uploaded within 48h-72h following inspection.
+            No completed reports released yet for your properties. Reports are uploaded within 48h-72h following inspection and QA review.
           </div>
         )}
 

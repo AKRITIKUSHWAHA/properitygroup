@@ -3,7 +3,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 
 const DEFAULT_PRACTICE_SETTINGS = [
   { key: 'practice_name', value: 'NJS Property Group Ltd', category: 'GENERAL' },
-  { key: 'rics_firm_number', value: 'RICS-089421-UK', category: 'RICS' },
+  { key: 'rics_firm_number', value: 'RICS-084920-UK', category: 'RICS' },
   { key: 'vat_registration_number', value: 'GB 984 2190 44', category: 'FINANCIAL' },
   { key: 'standard_vat_rate', value: '20.0', category: 'FINANCIAL' },
   { key: 'registered_office_address', value: '14 Berkeley Street, Mayfair, London W1J 8BN', category: 'GENERAL' },

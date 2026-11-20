@@ -361,7 +361,7 @@ export const EmailTemplatePreviewModal = ({
                       <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                         <div className="flex items-center gap-1.5 text-slate-500">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Regulated by RICS Firm #089421</span>
+                          <span>Regulated by RICS Firm #084920</span>
                         </div>
                         <div className="font-mono">Helpline: 0800 169 9661</div>
                       </div>

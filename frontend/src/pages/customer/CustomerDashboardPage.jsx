@@ -208,7 +208,7 @@ export const CustomerDashboardPage = () => {
             </div>
 
             <h1 className="text-fluid-banner font-black tracking-tight leading-tight">
-              Welcome back, {user?.name || 'Emma Watson'} 👋
+              Welcome back, {user?.name || 'Client'} 👋
             </h1>
 
             <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
@@ -341,6 +341,41 @@ export const CustomerDashboardPage = () => {
         }
         job={customerJob}
       />
+
+      {/* SurveyBooker Stage 2 Prompt Banner: Formal Proposal Ready to Review & Accept */}
+      {(customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) === 2) && customerJob?.status !== 'Accepted' && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-slate-50 border border-blue-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-[#0B1F4D] text-white shrink-0 shadow-2xs">
+              <Sparkles className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">
+                  Stage 2 Ready • Action Required
+                </span>
+                <span className="text-xs font-bold text-slate-700">Formal Proposal Issued</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Your survey quotation proposal for {customerJob?.property || 'your property'} is ready for review.
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Review your RICS service particulars and click "Accept Proposal" to proceed to Terms of Engagement.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate('/customer/quotations')}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Review &amp; Accept Proposal</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SurveyBooker Trigger 2 Next-Steps Prompt Banner (If Quote is Accepted but Terms Pending) */}
       {(customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) === 3) && customerJob?.termsStatus !== 'Signed' && (

@@ -174,6 +174,32 @@ function AppRoutes() {
           <Route path="/redirects" element={<RedirectsPage />} />
           <Route path="/REDIRECTS.md" element={<RedirectsPage />} />
           <Route path="/redirects.md" element={<RedirectsPage />} />
+
+          {/* Privacy Policy Routes (Client Feedback Section 3) */}
+          <Route path="/privacy-policy" element={<Navigate to="/contact#privacy" replace />} />
+          <Route path="/privacy" element={<Navigate to="/contact#privacy" replace />} />
+          <Route path="/privacy-notice" element={<Navigate to="/contact#privacy" replace />} />
+
+          {/* 8 Broken Destinations Fixed with Canonical RICS Routing (Client Feedback Section 3) */}
+          <Route path="/renovations" element={<Navigate to="/services/building-survey-level-3" replace />} />
+          <Route path="/renovation" element={<Navigate to="/services/building-survey-level-3" replace />} />
+          <Route path="/repairs-extensions" element={<Navigate to="/services/building-survey-level-3" replace />} />
+          <Route path="/repairs" element={<Navigate to="/services/building-survey-level-3" replace />} />
+          <Route path="/extensions" element={<Navigate to="/services/building-survey-level-3" replace />} />
+          <Route path="/new-homes" element={<Navigate to="/services/snagging-report" replace />} />
+          <Route path="/new-builds" element={<Navigate to="/services/snagging-report" replace />} />
+          <Route path="/sell" element={<Navigate to="/services/valuation-report" replace />} />
+          <Route path="/selling" element={<Navigate to="/services/valuation-report" replace />} />
+          <Route path="/rent" element={<Navigate to="/services/damp-survey" replace />} />
+          <Route path="/renting" element={<Navigate to="/services/damp-survey" replace />} />
+          <Route path="/buy" element={<Navigate to="/what-survey-do-i-need" replace />} />
+          <Route path="/buying" element={<Navigate to="/what-survey-do-i-need" replace />} />
+          <Route path="/let" element={<Navigate to="/services/homebuyer-survey-level-2" replace />} />
+          <Route path="/letting" element={<Navigate to="/services/homebuyer-survey-level-2" replace />} />
+          <Route path="/buying-agent-enquiries" element={<Navigate to="/partners" replace />} />
+          <Route path="/buying-agent" element={<Navigate to="/partners" replace />} />
+          <Route path="/buying-agents" element={<Navigate to="/partners" replace />} />
+
           {/* Legacy Retired Services Redirects (Master Spec Part 4 & 9) */}
           <Route path="/construction" element={<Navigate to="/services/building-survey-level-3" replace />} />
           <Route path="/construction/*" element={<Navigate to="/services/building-survey-level-3" replace />} />

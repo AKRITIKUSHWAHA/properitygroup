@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { User, Mail, Phone, MapPin, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Phone, MapPin, Building, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthLayout } from '../../layouts/AuthLayout';
 
 export const RegisterPage = () => {
   const { registerCustomer } = useAuth();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
+    address: '',
     postcode: '',
     password: '',
     confirmPassword: '',
@@ -54,8 +56,18 @@ export const RegisterPage = () => {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
+        address: formData.address,
         postcode: formData.postcode,
         password: formData.password,
+      });
+
+      // Navigate to login pre-filling the customer's email
+      navigate('/login', {
+        state: {
+          registeredEmail: formData.email,
+          registrationSuccess: true,
+          message: 'Account registered successfully! Please sign in with your email and password.'
+        }
       });
     } catch (err) {
       setError(err.message || 'Registration failed.');
@@ -120,6 +132,27 @@ export const RegisterPage = () => {
               onChange={handleChange}
               disabled={isLoading}
               placeholder="e.g. eleanor@example.co.uk"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all disabled:opacity-50"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Property / Contact Address
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Building className="w-4 h-4 text-slate-400" />
+            </div>
+            <input
+              type="text"
+              name="address"
+              required
+              value={formData.address}
+              onChange={handleChange}
+              disabled={isLoading}
+              placeholder="e.g. 14 High Street, Richmond"
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all disabled:opacity-50"
             />
           </div>

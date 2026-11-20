@@ -40,3 +40,7 @@ scratch/
 uploads/
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Live backend folder (protected - do not commit or push)
+live backend/
+

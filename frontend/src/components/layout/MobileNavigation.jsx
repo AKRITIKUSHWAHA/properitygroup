@@ -259,36 +259,44 @@ export function MobileNavigation({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* 5. Client Portal Login (Hidden until Phase 2 CRM activation) */}
-          {siteConfig.features?.showPublicPortalLogin && (
-            <NavLink
-              to="/login"
-              className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
-              onClick={onClose}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={15} />
-                <span>Customer Login</span>
-              </span>
-              <ChevronRight size={15} />
-            </NavLink>
-          )}
+          {/* 5. Customer Portal Login & Account Creation */}
+          <NavLink
+            to="/login"
+            className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+              <User size={15} />
+              <span>Customer Portal Login</span>
+            </span>
+            <ChevronRight size={15} />
+          </NavLink>
+
+          <NavLink
+            to="/register"
+            className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
+            onClick={onClose}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+              <User size={15} />
+              <span>Create Customer Account</span>
+            </span>
+            <ChevronRight size={15} />
+          </NavLink>
         </nav>
 
         {/* Mobile Action Callouts */}
         <div className="mobile-drawer-bottom">
-          {siteConfig.features?.showPublicPortalLogin && (
-            <Button
-              to="/login"
-              variant="outline"
-              isBlock
-              onClick={onClose}
-              style={{ marginBottom: 'var(--space-2)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.08)' }}
-            >
-              <User size={15} style={{ marginRight: '6px' }} />
-              <span>Customer Login</span>
-            </Button>
-          )}
+          <Button
+            to="/login"
+            variant="outline"
+            isBlock
+            onClick={onClose}
+            style={{ marginBottom: 'var(--space-2)', color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+          >
+            <User size={15} style={{ marginRight: '6px' }} />
+            <span>Customer Login</span>
+          </Button>
 
           <Button
             to="/request-quote"

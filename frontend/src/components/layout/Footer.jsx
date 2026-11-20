@@ -122,7 +122,7 @@ export function Footer() {
             <Link to="/request-quote">Request a Quote</Link>
             <Link to="/professional-standards-notice">Professional Standards Notice</Link>
             <Link to="/contact">Client Enquiry Form</Link>
-            <Link to="/contact#privacy">Privacy Notice &amp; Data Protection</Link>
+            <Link to="/privacy-policy">Privacy Notice &amp; Data Protection</Link>
             <Link to="/contact#complaints">Complaints Procedure (CHP)</Link>
           </div>
         </div>
