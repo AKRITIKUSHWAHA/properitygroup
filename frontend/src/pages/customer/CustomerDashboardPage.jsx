@@ -38,10 +38,10 @@ const isJobForCustomer = (job, user) => {
   if (!job || !user) return false;
   const uEmail = (user.email || '').toLowerCase().trim();
   const uName = (user.name || '').toLowerCase().trim();
-  const jEmail = (job.customerEmail || '').toLowerCase().trim();
+  const jEmail = (job.customerEmail || job.clientEmail || '').toLowerCase().trim();
   const jAlt = (job.customerAltEmail || '').toLowerCase().trim();
   const jDemo = (job.customerDemoEmail || '').toLowerCase().trim();
-  const jName = (job.customer || '').toLowerCase().trim();
+  const jName = (job.customer || job.customerName || job.client || '').toLowerCase().trim();
 
   if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
     return jEmail === 'customer@demo.com' || jName.includes('emma');
@@ -52,10 +52,10 @@ const isJobForCustomer = (job, user) => {
   }
 
   return (
-    (jEmail && jEmail === uEmail) ||
-    (jAlt && jAlt === uEmail) ||
-    (jDemo && jDemo === uEmail) ||
-    (jName && uName && jName === uName)
+    (jEmail && (jEmail === uEmail || jEmail.includes(uEmail) || uEmail.includes(jEmail))) ||
+    (jAlt && (jAlt === uEmail || jAlt.includes(uEmail))) ||
+    (jDemo && (jDemo === uEmail || jDemo.includes(uEmail))) ||
+    (jName && uName && (jName === uName || jName.includes(uName) || uName.includes(jName)))
   );
 };
 
@@ -63,7 +63,7 @@ export const CustomerDashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { jobs } = useJobs();
+  const { jobs, addJob, updateJob } = useJobs();
 
   const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
   const userEmail = (user?.email || '').toLowerCase().trim();
@@ -99,10 +99,58 @@ export const CustomerDashboardPage = () => {
   const handleBookSubmit = (e) => {
     e.preventDefault();
     setIsBookModalOpen(false);
+
+    const newJobId = `JOB-2026-${Math.floor(100 + Math.random() * 899)}`;
+    const newJob = {
+      id: newJobId,
+      jobNo: newJobId,
+      customer: user?.name || 'Client',
+      customerEmail: userEmail || user?.email || 'customer@demo.com',
+      customerPhone: user?.phone || '',
+      property: bookForm.property,
+      location: bookForm.location,
+      postcode: bookForm.location,
+      surveyType: bookForm.surveyType,
+      status: 'Enquiry',
+      stage: 'enquiry',
+      timelineStep: 1,
+      termsStatus: 'Pending',
+      paymentStatus: 'Pending',
+      date: bookForm.preferredDate || 'Date: TBD',
+      timeSlot: 'Time: TBD',
+      surveyor: 'Pending Allocation',
+      createdAt: new Date().toLocaleDateString('en-GB'),
+      isNewInstruction: true,
+      quote: {
+        baseFee: bookForm.surveyType.includes('Level 3') ? 1150 : 650,
+        total: bookForm.surveyType.includes('Level 3') ? 1380 : 780,
+      },
+      activityLog: [
+        {
+          id: Date.now(),
+          time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+          text: `Survey instruction enquiry submitted by ${user?.name || 'Client'} for ${bookForm.property}.`,
+        },
+      ],
+    };
+
+    if (addJob) {
+      addJob(newJob);
+    }
+
+    try {
+      const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+      localStorage.setItem('propertygroup_jobs', JSON.stringify([newJob, ...storedJobs]));
+      localStorage.setItem(`propertygroup_active_job_${userEmail}`, newJobId);
+      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    } catch {}
+
+    setSelectedJobId(newJobId);
+
     addToast({
       type: 'success',
-      title: 'Survey Request Received',
-      message: `Your booking request for ${bookForm.property} has been logged. Our operations team will issue your fixed-price quote within 2 hours.`,
+      title: 'Survey Instruction Received',
+      message: `Your booking request for ${bookForm.property} has been logged as enquiry #${newJobId}. Our estimating team will issue your fixed-price quote shortly.`,
     });
     setBookForm({ property: '', location: '', surveyType: 'RICS Level 2 Home Survey', preferredDate: '' });
   };
@@ -370,28 +418,39 @@ export const CustomerDashboardPage = () => {
             const paymentStatus = (customerJob?.paymentStatus || '').toLowerCase().trim();
             const step = Number(customerJob?.timelineStep) || 0;
             const hasRealSurveyor = customerJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(customerJob.surveyor.toLowerCase().trim());
+            const hasDate = customerJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(customerJob.date.toLowerCase().trim());
 
+            // 10-Stage RICS Lifecycle in Descending Order (Highest Milestones Preempt Lower Ones)
+            // Stage 10: Report Delivered
             if (status === 'completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || step >= 10) return 10;
+
+            // Stage 9: Quality Check / QA Review
             if (status === 'qa_review' || status === 'qa review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || step === 9) return 9;
-            if (status === 'drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || step === 8) return 8;
+
+            // Stage 8: Report Preparation / Drafting
+            if (status === 'drafting' || status === 'preparing report' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || step === 8) return 8;
+
+            // Stage 7: Inspection Completed
             if (status === 'inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || step === 7) return 7;
 
-            // Early instruction stages (Enquiry, Quoted, Accepted)
-            if (status === 'enquiry' || stage === 'enquiry' || step === 1) return 1;
+            // Stage 6: Appointment Booked
+            if (status === 'booked' || status === 'scheduled' || step === 6 || (hasDate && (paymentStatus === 'paid' || paymentStatus.includes('claimed') || termsStatus === 'signed'))) return 6;
+
+            // Stage 5: Payment Confirmed / Verification Pending
+            if (paymentStatus === 'paid' || paymentStatus.includes('claimed') || step === 5) return 5;
+
+            // Stage 4: Terms Signed
+            if (termsStatus === 'signed' || step === 4) return 4;
+
+            // Stage 3: Quote Accepted
+            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted' || stage === 'accepted' || step === 3) return 3;
+
+            // Stage 2: Quote Issued
             if (status === 'quoted' || stage === 'quote' || step === 2) return 2;
-            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted' || step === 3) return 3;
 
-            // Terms & Payment stages
-            if (termsStatus === 'signed' && paymentStatus !== 'paid' && status !== 'booked' && status !== 'scheduled' && step < 5) return 4;
-            if (paymentStatus === 'paid' && status !== 'booked' && status !== 'scheduled' && step < 6) return 5;
+            // Stage 1: Enquiry Received
+            if (status === 'enquiry' || stage === 'enquiry' || step === 1) return 1;
 
-            // Booking confirmation stage (Step 6)
-            if ((status === 'booked' || status === 'scheduled' || step >= 6) && (hasRealSurveyor || status === 'booked' || status === 'scheduled')) return 6;
-
-            if (paymentStatus === 'paid') return 5;
-            if (termsStatus === 'signed') return 4;
-            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted') return 3;
-            if (status === 'quoted') return 2;
             if (step > 0) return Math.min(10, Math.max(1, step));
             return 1;
           })()}
@@ -471,6 +530,41 @@ export const CustomerDashboardPage = () => {
             >
               <CalendarCheck className="w-3.5 h-3.5 text-[#2563EB]" />
               <span>2. Choose Date</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Stage 4 Prompt Banner: Terms Signed & Advance Bank Transfer Pending */}
+      {customerJob?.termsStatus === 'Signed' && customerJob?.paymentStatus !== 'Paid' && !customerJob?.paymentStatus?.toLowerCase().includes('claimed') && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50/90 via-blue-50/50 to-slate-50 border border-indigo-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shrink-0 shadow-2xs">
+              <FileCheck className="w-5 h-5 text-indigo-100" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-900 bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200">
+                  Stage 4 Complete • Terms Executed
+                </span>
+                <span className="text-xs font-bold text-slate-700">Bank Transfer Required</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                Terms of Engagement Digitally Signed
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Your contractual agreement is locked and archived. Please submit your bank transfer notification or reference to confirm surveyor site dispatch.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => navigate('/customer/invoices-and-payments')}
+              className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Submit Payment Notification</span>
             </button>
           </div>
         </div>
