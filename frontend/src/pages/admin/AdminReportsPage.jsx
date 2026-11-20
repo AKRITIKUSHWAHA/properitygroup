@@ -137,6 +137,23 @@ export const AdminReportsPage = () => {
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
 
+  // Local state for QA desk jobs (persisted in localStorage for immediate responsive rendering)
+  const [localQaJobs, setLocalQaJobs] = useState(() => {
+    try {
+      const stored = localStorage.getItem('njs_qa_desk_jobs');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const saveLocalQaJobs = (updated) => {
+    setLocalQaJobs(updated);
+    try {
+      localStorage.setItem('njs_qa_desk_jobs', JSON.stringify(updated));
+    } catch {}
+  };
+
   // Active Main View Tab: 'analytics' or 'qa-desk'
   const [activeTab, setActiveTab] = useState('analytics');
   const [inspectingJob, setInspectingJob] = useState(null);
@@ -144,12 +161,15 @@ export const AdminReportsPage = () => {
   const [revisionNotes, setRevisionNotes] = useState('');
   const [isSubmittingQa, setIsSubmittingQa] = useState(false);
 
-  // Filter jobs pending QA audit or revision
+  // Filter jobs pending QA audit or revision (combining local QA desk and global jobs queue)
   const pendingQaJobs = useMemo(() => {
-    return jobs.filter((j) => {
+    const list = [...localQaJobs];
+    const seen = new Set(list.map((j) => String(j.id)));
+
+    jobs.forEach((j) => {
       const s = (j.stage || '').toUpperCase();
       const st = (j.status || '').toLowerCase();
-      return (
+      const isQa =
         s === 'PREPARING_REPORT' ||
         s === 'DRAFTING' ||
         s === 'QA_REVIEW' ||
@@ -159,10 +179,16 @@ export const AdminReportsPage = () => {
         st.includes('revision') ||
         st.includes('preparing') ||
         j.timelineStep === 8 ||
-        j.timelineStep === 9
-      );
+        j.timelineStep === 9;
+
+      if (isQa && !seen.has(String(j.id))) {
+        list.push(j);
+        seen.add(String(j.id));
+      }
     });
-  }, [jobs]);
+
+    return list.filter((j) => (j.status || '').toLowerCase() !== 'complete' && (j.stage || '').toUpperCase() !== 'COMPLETE');
+  }, [jobs, localQaJobs]);
 
   const handleCreateSampleQaJob = () => {
     const randomId = Math.floor(100 + Math.random() * 900);
@@ -170,8 +196,8 @@ export const AdminReportsPage = () => {
       id: `JOB-2026-QA${randomId}`,
       jobNo: `JOB-2026-QA${randomId}`,
       reference: `JOB-2026-QA${randomId}`,
-      customer: 'Dr. James Harrison',
-      customerEmail: 'j.harrison@example.com',
+      customer: 'Jonathan Edwards',
+      customerEmail: 'j.edwards@properitygroup.co.uk',
       property: '24 Kensington Church Street, London',
       location: 'W8 4EP, London',
       surveyType: 'RICS Level 2 Home Survey',
@@ -182,6 +208,8 @@ export const AdminReportsPage = () => {
       timelineStep: 9,
       notes: 'Physical on-site inspection completed. Structural hairline cracks recorded at rear elevation. Moisture meter readings within normal RICS parameters. Draft report submitted for QA review.',
     };
+
+    saveLocalQaJobs([sample, ...localQaJobs]);
     addJob(sample);
     addToast({
       type: 'success',
@@ -197,6 +225,8 @@ export const AdminReportsPage = () => {
     } catch (e) {
       console.warn('API approveQa warning:', e.message);
     }
+
+    saveLocalQaJobs(localQaJobs.filter((j) => j.id !== job.id));
     updateJob(job.id, {
       stage: 'COMPLETE',
       status: 'Complete',
@@ -222,6 +252,14 @@ export const AdminReportsPage = () => {
     } catch (e) {
       console.warn('API rejectQa warning:', e.message);
     }
+
+    saveLocalQaJobs(
+      localQaJobs.map((j) =>
+        j.id === revisionModalJob.id
+          ? { ...j, status: 'Revision Requested', qaNotes: revisionNotes }
+          : j
+      )
+    );
     updateJob(revisionModalJob.id, {
       status: 'Revision Requested',
       qaNotes: revisionNotes,

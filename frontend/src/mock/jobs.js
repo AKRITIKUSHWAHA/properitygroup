@@ -35,8 +35,7 @@ export const getStoredJobs = () => {
             email !== 'oliver.vance@example.com' &&
             email !== 'charlotte.b@outlook.com' &&
             !email.includes('emma.watson') &&
-            !email.includes('kensingtonestates') &&
-            !email.includes('harrison')
+            !email.includes('kensingtonestates')
           );
         });
       }
