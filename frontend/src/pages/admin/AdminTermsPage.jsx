@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
   Search,
@@ -292,7 +293,9 @@ export const AdminTermsPage = () => {
   const { addToast } = useToast();
   const { agreements, setAgreements, addAgreement, markAgreementSigned } = useTerms();
 
-  const [activeTab, setActiveTab] = useState('All'); // 'All' | 'Signed' | 'Sent' | 'Pending'
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('filter') || searchParams.get('tab') || 'All';
+  const [activeTab, setActiveTab] = useState(initialTab); // 'All' | 'Signed' | 'Sent' | 'Pending'
   const [backendMetrics, setBackendMetrics] = useState(null);
 
   // Fetch terms and documents + metrics from backend API

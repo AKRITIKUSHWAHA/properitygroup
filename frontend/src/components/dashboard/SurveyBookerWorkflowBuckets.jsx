@@ -28,15 +28,17 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
     return b ? b.count : null;
   };
 
-  // Dynamic calculations matching SurveyBooker workflow buckets
+  // Dynamic calculations matching SurveyBooker workflow buckets and their destination menus
+  const newLeadsCount = leads.filter(
+    (l) => l.status === 'New' || l.status === 'Contacted' || l.status === 'Qualified'
+  ).length;
+
   const bQuotes = getBackendCount('quotes_to_submit');
-  const quotesToSubmit = bQuotes !== null ? bQuotes : (leads.filter(
-    (l) => l.status === 'New' || l.status === 'Contacted' || !l.quotedAmount
-  ).length + jobs.filter((j) => j.status === 'Quote requested').length);
+  const quotesToSubmit = bQuotes !== null && bQuotes > 0 ? bQuotes : (newLeadsCount > 0 ? newLeadsCount : 0);
 
   const bTerms = getBackendCount('terms_to_sign');
   const termsToSend = bTerms !== null ? bTerms : jobs.filter(
-    (j) => j.status === 'Quote sent' || j.status === 'Accepted' || j.termsStatus === 'Not Sent'
+    (j) => j.termsStatus === 'Pending' || j.status === 'Accepted' || j.termsStatus === 'Not Sent'
   ).length;
 
   const unbookedJobs = jobs.filter(
@@ -53,12 +55,12 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
 
   const bAppointments = getBackendCount('appointments');
   const appointments = bAppointments !== null ? bAppointments : jobs.filter(
-    (j) => j.status === 'Booked' || j.status === 'Scheduled' || j.timelineStep === 7
+    (j) => j.status.toLowerCase() === 'scheduled' || j.status.toLowerCase() === 'booked' || j.timelineStep === 7
   ).length;
 
   const bReports = getBackendCount('reports_to_upload');
   const reportsToUpload = bReports !== null ? bReports : jobs.filter(
-    (j) => j.status === 'Survey done' || j.status === 'Preparing report' || j.timelineStep === 8
+    (j) => j.status.toLowerCase() === 'in progress' || j.status.toLowerCase() === 'preparing report' || j.status === 'Survey done' || j.timelineStep === 8
   ).length;
 
   const allRecords = jobs.length;
@@ -94,7 +96,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       icon: Send,
       color: 'bg-indigo-50/70 text-indigo-700 border-indigo-200/80',
       activeColor: 'bg-indigo-600 text-white border-indigo-600',
-      targetRoute: '/admin/jobs?filter=Accepted',
+      targetRoute: '/admin/terms?filter=Pending',
       desc: 'Accepted proposals awaiting agreement dispatch',
     },
     {
@@ -116,7 +118,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       icon: CalendarDays,
       color: 'bg-emerald-50/70 text-emerald-700 border-emerald-200/80',
       activeColor: 'bg-emerald-600 text-white border-emerald-600',
-      targetRoute: '/admin/jobs?filter=Booked',
+      targetRoute: '/admin/jobs?filter=Scheduled',
       desc: 'Scheduled on-site surveyor attendances',
     },
     {
@@ -127,7 +129,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
       icon: Upload,
       color: 'bg-rose-50/70 text-rose-700 border-rose-200/80',
       activeColor: 'bg-rose-600 text-white border-rose-600',
-      targetRoute: '/admin/jobs?filter=Survey done',
+      targetRoute: '/admin/jobs?filter=In Progress',
       desc: 'Surveys inspected awaiting final PDF release',
     },
   ];
