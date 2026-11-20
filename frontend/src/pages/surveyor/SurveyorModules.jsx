@@ -712,40 +712,26 @@ export const SurveyorSiteVisitsPage = () => {
 
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
+  const surveyorDbId = user?.id;
 
   const myJobs = jobs.filter((j) =>
+    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
     (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName)
+    (surveyorName && j.surveyor === surveyorName) ||
+    (user?.email && j.surveyorEmail === user.email)
   );
 
   const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
-  let regUser = {};
-  try {
-    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-    const firstEmail = Object.keys(reg).find((e) => !e.includes('demo') && !e.includes('watson'));
-    if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
-  } catch {}
+  const primaryJob = activeJobs[0] || myJobs[0] || null;
 
-  const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-001',
-    property: regUser.address || 'Subject Property',
-    location: regUser.postcode || 'London',
-    timeSlot: '10:00 - 13:00',
-    surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
-    propertyDetails: {
-      accessDetails: 'Customer direct instruction via portal',
-    },
-  };
-
-  const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
+  const targetEmail = primaryJob?.customerEmail || '';
   const isInspectedPersisted =
     primaryJob?.status === 'Inspected' ||
     primaryJob?.status === 'Drafting' ||
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
     (primaryJob?.timelineStep || 0) >= 7 ||
-    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-    localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
+    localStorage.getItem(`propertygroup_inspection_completed_${primaryJob?.id}`) === 'true';
 
   const [hasArrived, setHasArrived] = useState(true);
   const [hasFinished, setHasFinished] = useState(isInspectedPersisted);
@@ -757,6 +743,7 @@ export const SurveyorSiteVisitsPage = () => {
   }, [isInspectedPersisted]);
 
   const handleArrival = () => {
+    if (!primaryJob) return;
     setHasArrived(true);
     addToast({
       type: 'success',
@@ -766,9 +753,9 @@ export const SurveyorSiteVisitsPage = () => {
   };
 
   const handleFinished = () => {
+    if (!primaryJob) return;
     setHasFinished(true);
-    localStorage.setItem('propertygroup_inspection_completed', 'true');
-    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
     if (primaryJob?.id && updateJob) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
@@ -785,6 +772,36 @@ export const SurveyorSiteVisitsPage = () => {
       message: 'Physical survey finished. Customer tracker updated to Stage 7.',
     });
   };
+
+  if (!primaryJob) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <PageHeader
+          title="Site Visits & Key Logistics"
+          subtitle="Log on-site arrival timestamps, record key collection procedures, and execute physical survey protocols."
+          breadcrumb={['Surveyor', 'Site Visits']}
+        />
+
+        <div className="bg-white p-12 rounded-3xl border border-slate-200/90 shadow-xs text-center space-y-4">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+            <Key className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900">No Site Visits Scheduled</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              You currently have no site inspections or key collection protocols allocated to your diary. When a residential survey is assigned, keyholder instructions and entry codes will appear here.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/surveyor/my-calendar')}
+            className="px-4 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] transition-colors cursor-pointer"
+          >
+            Open Surveyor Calendar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -876,25 +893,27 @@ export const SurveyorUploadReportsPage = () => {
 
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
+  const surveyorDbId = user?.id;
 
   const myJobs = jobs.filter((j) =>
+    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
     (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName)
+    (surveyorName && j.surveyor === surveyorName) ||
+    (user?.email && j.surveyorEmail === user.email)
   );
 
   const defaultJobId = queryJobId
     ? (myJobs.find((j) => j.jobNo === queryJobId || j.id === queryJobId)?.jobNo ||
        myJobs.find((j) => j.jobNo === queryJobId || j.id === queryJobId)?.id ||
        queryJobId)
-    : (myJobs[0]?.jobNo || myJobs[0]?.id || 'JOB-2026-080');
+    : (myJobs[0]?.jobNo || myJobs[0]?.id || null);
 
   const [selectedJob, setSelectedJob] = useState(defaultJobId);
 
   const currentJobObj =
     myJobs.find((j) => (j.jobNo || j.id) === selectedJob) ||
-    jobs.find((j) => (j.jobNo || j.id) === selectedJob) ||
     myJobs[0] ||
-    jobs[0];
+    null;
 
   useEffect(() => {
     if (queryJobId) {
@@ -904,15 +923,18 @@ export const SurveyorUploadReportsPage = () => {
 
   const [reportStandard, setReportStandard] = useState('RICS Level 2 Home Survey (Final)');
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([
-    {
-      name: `Draft_Report_${defaultJobId}_v1.pdf`,
-      size: '14.2 MB',
-      date: 'Today, 14:15',
-      jobId: defaultJobId,
-      status: 'Under Admin QA Review',
-    },
-  ]);
+  const [uploadedFiles, setUploadedFiles] = useState(() => {
+    if (!defaultJobId) return [];
+    return [
+      {
+        name: `Draft_Report_${defaultJobId}_v1.pdf`,
+        size: '14.2 MB',
+        date: 'Today, 14:15',
+        jobId: defaultJobId,
+        status: 'Under Admin QA Review',
+      },
+    ];
+  });
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -1026,6 +1048,36 @@ export const SurveyorUploadReportsPage = () => {
       message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review. Progress advanced to Stage 9 (90%).`,
     });
   };
+
+  if (!currentJobObj) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <PageHeader
+          title="Upload Reports & Submit for Quality Review"
+          subtitle="Deliver completed RICS condition reports, photographic evidence, and submit draft reports for Admin QA sign-off."
+          breadcrumb={['Surveyor', 'Upload Reports']}
+        />
+
+        <div className="bg-white p-12 rounded-3xl border border-slate-200/90 shadow-xs text-center space-y-4">
+          <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto">
+            <UploadCloud className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900">No Reports Awaiting Upload</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              You currently have no completed inspections awaiting draft report submission or QA approval.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/surveyor/my-jobs')}
+            className="px-4 py-2 bg-[#0B1F4D] text-white rounded-xl text-xs font-bold hover:bg-[#162E6E] transition-colors cursor-pointer"
+          >
+            View My Allocated Jobs
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">

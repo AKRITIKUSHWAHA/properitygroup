@@ -29,7 +29,7 @@ import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
-import { surveyorDashboardApi } from '../../api/surveyorApi';
+import { surveyorDashboardApi, surveyorJobsApi } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
 import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
 import {
@@ -40,7 +40,8 @@ import {
 
 /**
  * Mobile-First Surveyor Field Portal Dashboard
- * Fully implements Client Master List Requirements (Point 14):
+ * Fully implements Client Master List Requirements:
+ * - Strict surveyor job isolation (Surveyor only sees jobs allocated to their ID/account)
  * - Mobile-first responsive UI for field inspections
  * - Allocated daily jobs with property & keyholder access instructions
  * - On-Site Action Buttons: "Log Arrival" & "Inspection Complete"
@@ -58,66 +59,76 @@ export const SurveyorDashboardPage = () => {
   // Strict surveyor job isolation
   const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
   const surveyorName = user?.name;
+  const surveyorDbId = user?.id;
 
-  const myJobs = jobs.filter((j) =>
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName)
-  );
+  // 1. Fetch live jobs strictly assigned to this surveyor from backend API
+  const [liveJobs, setLiveJobs] = useState([]);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState('Dining Room (Damp Defect)');
+  const [defectNote, setDefectNote] = useState('Moisture meter reading 24% WME at skirting board level behind radiator.');
 
-  const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
-  // Sync Surveyor Dashboard from backend API
   useEffect(() => {
-    surveyorDashboardApi.getDashboard()
+    let isMounted = true;
+    surveyorJobsApi.getJobs()
       .then((res) => {
-        if (res?.data) {
-          // Surveyor live dashboard synced
+        if (!isMounted) return;
+        const fetched = res?.data?.data?.jobs || res?.data?.jobs || [];
+        if (Array.isArray(fetched) && fetched.length > 0) {
+          const mapped = fetched.map((j) => ({
+            id: j.reference || `JOB-${j.id}`,
+            property: j.propertyAddress,
+            location: j.postcode,
+            surveyType: j.serviceType,
+            customer: j.clientName,
+            customerPhone: j.clientPhone,
+            customerEmail: j.clientEmail,
+            timeSlot: j.inspectionTime || '10:00 - 13:00',
+            status: j.stage === 'PREPARING_REPORT' ? 'Inspected' : (j.stage || 'Booked'),
+            countdown: '48h SLA Target',
+            propertyDetails: {
+              accessDetails: j.keyCollectionDetails || 'Keys with estate agent',
+              propertyType: j.serviceType || 'Residential Property',
+            },
+          }));
+          setLiveJobs(mapped);
         }
       })
-      .catch(() => { });
-  }, []);
+      .catch(() => {});
 
-  let regUser = {};
-  try {
-    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-    const firstEmail = Object.keys(reg).find((e) => !e.includes('demo') && !e.includes('watson'));
-    if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
-  } catch { }
+    return () => { isMounted = false; };
+  }, [user]);
 
-  const primaryJob = activeJobs[0] || myJobs[0] || {
-    id: 'JOB-2026-001',
-    property: regUser.address || '14 High Street',
-    location: regUser.postcode || 'London',
-    surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
-    customer: regUser.name || 'Client',
-    customerPhone: regUser.phone || '',
-    timeSlot: '10:00 - 13:00',
-    status: 'Booked',
-    countdown: '48h SLA Target',
-    propertyDetails: {
-      accessDetails: 'Customer direct instruction via portal',
-      yearBuilt: 'Modern Construction',
-      propertyType: 'Residential Property',
-    },
-  };
+  // 2. Filter mock jobs strictly matching this surveyor
+  const mockAssignedJobs = jobs.filter((j) =>
+    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
+    (surveyorId && j.surveyorId === surveyorId) ||
+    (surveyorName && j.surveyor === surveyorName) ||
+    (user?.email && j.surveyorEmail === user.email)
+  );
 
+  const combinedJobs = liveJobs.length > 0
+    ? liveJobs
+    : mockAssignedJobs;
+
+  const activeJobs = combinedJobs.filter((j) => j.status !== 'Completed');
+  const primaryJob = activeJobs[0] || combinedJobs[0] || null;
   const secondaryJob = activeJobs[1] || null;
 
-  const targetCustomerEmail = primaryJob?.customerEmail || regUser?.email || '';
+  const targetCustomerEmail = primaryJob?.customerEmail || '';
   const isJobCompleted =
     primaryJob?.status === 'Inspected' ||
     primaryJob?.status === 'Drafting' ||
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
     (primaryJob?.timelineStep || 0) >= 7 ||
-    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-    localStorage.getItem(`propertygroup_inspection_completed_${targetCustomerEmail}`) === 'true';
+    localStorage.getItem(`propertygroup_inspection_completed_${primaryJob?.id}`) === 'true';
 
   const isJobQASubmitted =
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
     (primaryJob?.timelineStep || 0) >= 9 ||
-    localStorage.getItem('propertygroup_qareview') === 'true' ||
-    localStorage.getItem(`propertygroup_qareview_${targetCustomerEmail}`) === 'true';
+    localStorage.getItem(`propertygroup_qareview_${primaryJob?.id}`) === 'true';
 
   // On-Site Status for Primary Job (Persistent across browser refresh)
   const [jobStage, setJobStage] = useState(
@@ -140,32 +151,23 @@ export const SurveyorDashboardPage = () => {
   // Turnaround Countdown State (48h SLA)
   const [timeRemaining, setTimeRemaining] = useState({ hours: 34, minutes: 22 });
 
-  // Photo & Note Upload State
-  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState('Dining Room (Damp Defect)');
-  const [defectNote, setDefectNote] = useState('Moisture meter reading 24% WME at skirting board level behind radiator.');
-  const [capturedPhotos, setCapturedPhotos] = useState([
-    {
-      id: 1,
-      room: 'Dining Room',
-      note: 'Skirting board dampness reading 24% WME',
-      url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=300&q=80',
-      time: '10:45 AM',
-    },
-    {
-      id: 2,
-      room: 'Roof & Parapet',
-      note: 'Minor slip on two Welsh slate tiles on west elevation',
-      url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=300&q=80',
-      time: '11:15 AM',
-    },
-  ]);
+  // Photo & Note Upload State (Contextual to primaryJob)
+  const [capturedPhotos, setCapturedPhotos] = useState(() => {
+    if (!primaryJob?.id) return [];
+    try {
+      const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // QA Submission State
   const [isQASubmitted, setIsQASubmitted] = useState(isJobQASubmitted);
 
   // Handlers for On-Site Actions
   const handleLogArrival = () => {
+    if (!primaryJob) return;
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setJobStage('arrived');
     setArrivalTimestamp(`Today at ${timeStr}`);
@@ -177,20 +179,19 @@ export const SurveyorDashboardPage = () => {
   };
 
   const handleInspectionComplete = () => {
+    if (!primaryJob) return;
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
-    localStorage.setItem('propertygroup_inspection_completed', 'true');
-    localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
 
-    if (primaryJob?.id) {
+    if (primaryJob.id) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
-        customerEmail: targetEmail,
+        customerEmail: targetCustomerEmail,
       });
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
@@ -205,7 +206,7 @@ export const SurveyorDashboardPage = () => {
 
   const handleAddPhoto = (e) => {
     e.preventDefault();
-    if (!defectNote.trim()) return;
+    if (!defectNote.trim() || !primaryJob) return;
 
     const newPhoto = {
       id: Date.now(),
@@ -215,22 +216,24 @@ export const SurveyorDashboardPage = () => {
       time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setCapturedPhotos([newPhoto, ...capturedPhotos]);
+    const updated = [newPhoto, ...capturedPhotos];
+    setCapturedPhotos(updated);
+    try {
+      localStorage.setItem(`surveyor_photos_${primaryJob.id}`, JSON.stringify(updated));
+    } catch {}
+
     setIsPhotoModalOpen(false);
     setDefectNote('');
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
-    localStorage.setItem('propertygroup_drafting', 'true');
-    localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_drafting_${primaryJob.id}`, 'true');
 
-    if (primaryJob?.id) {
+    if (primaryJob.id) {
       updateJob(primaryJob.id, {
         status: 'Drafting',
         timelineStep: 8,
-        customerEmail: targetEmail,
+        customerEmail: targetCustomerEmail,
       });
-      // SurveyBooker Trigger 4 (Part A): Dispatch post-inspection update email
-      dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetEmail }).catch(() => {});
+      dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -243,18 +246,17 @@ export const SurveyorDashboardPage = () => {
   };
 
   const handleSubmitQA = () => {
+    if (!primaryJob) return;
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
 
-    const targetEmail = primaryJob?.customerEmail || regUser?.email || '';
-    localStorage.setItem('propertygroup_qareview', 'true');
-    localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_qareview_${primaryJob.id}`, 'true');
 
-    if (primaryJob?.id) {
+    if (primaryJob.id) {
       updateJob(primaryJob.id, {
         status: 'QA_Review',
         timelineStep: 9,
-        customerEmail: targetEmail,
+        customerEmail: targetCustomerEmail,
       });
     }
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
@@ -267,7 +269,133 @@ export const SurveyorDashboardPage = () => {
     });
   };
 
-  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  // If no jobs are allocated to this surveyor, render Standby Dashboard (Strict isolation)
+  if (!primaryJob) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-16">
+        <PageHeader
+          title="Surveyor Mobile Field Portal"
+          subtitle="Manage allocated appointments, log site arrival & completion, record defect photos, and submit reports for QA."
+          breadcrumb={['Surveyor', 'Field Portal']}
+          actionLabel="📲 Sync Mobile Diary"
+          actionIcon={Smartphone}
+          onAction={() => setIsSyncModalOpen(true)}
+        />
+
+        {/* 1. STANDBY STATUS BANNER */}
+        <div className="bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] text-white p-6 sm:p-8 rounded-3xl shadow-sm border border-blue-400/20 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-blue-200 border border-white/15">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Surveyor Diary Active • Standby</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                Welcome, {user?.name || 'Surveyor'}
+              </h2>
+              <p className="text-xs sm:text-sm text-blue-100/90 max-w-xl leading-relaxed">
+                You currently have 0 active residential inspections allocated to your diary. When new survey instructions are assigned to you by central operations, they will appear here with full property details, keyholder access codes, and navigation routes.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/20 self-start md:self-auto shrink-0">
+              <div className="text-center">
+                <span className="text-2xl font-black font-mono text-emerald-300">0</span>
+                <span className="block text-[10px] uppercase font-bold text-blue-200 tracking-wider mt-0.5">
+                  Allocated Surveys
+                </span>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className="text-center">
+                <span className="text-2xl font-black font-mono text-blue-200">100%</span>
+                <span className="block text-[10px] uppercase font-bold text-blue-200 tracking-wider mt-0.5">
+                  On-Time Target
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. THREE QUICK ACTION CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div
+            onClick={() => navigate('/surveyor/my-calendar')}
+            className="p-6 rounded-3xl bg-white border border-slate-200/90 hover:border-blue-300 shadow-xs hover:shadow-md transition-all cursor-pointer space-y-3 group"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Surveyor Calendar</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Inspect your diary schedule, weekly appointments, and external calendar sync.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-blue-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              Open Calendar →
+            </span>
+          </div>
+
+          <div
+            onClick={() => navigate('/surveyor/site-visits')}
+            className="p-6 rounded-3xl bg-white border border-slate-200/90 hover:border-amber-300 shadow-xs hover:shadow-md transition-all cursor-pointer space-y-3 group"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Site Visits & Access</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Check key collection protocols, concierge entry codes, and estate agent contacts.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-amber-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              View Site Visits →
+            </span>
+          </div>
+
+          <div
+            onClick={() => navigate('/surveyor/my-availability')}
+            className="p-6 rounded-3xl bg-white border border-slate-200/90 hover:border-purple-300 shadow-xs hover:shadow-md transition-all cursor-pointer space-y-3 group"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">My Availability</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Configure working days, max inspection capacity, and postcodes covered.
+              </p>
+            </div>
+            <span className="text-xs font-bold text-purple-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+              Set Availability →
+            </span>
+          </div>
+        </div>
+
+        {/* 3. OPERATIONAL RESTRICTION & PRIVACY NOTICE */}
+        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+            <span>
+              <strong>RICS Surveyor Privacy Lockdown:</strong> You can only view inspections allocated specifically to your surveyor account. Unallocated leads, client billing figures, and company invoices remain strictly restricted to central operations.
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/surveyor/my-jobs')}
+            className="px-4 py-2 bg-[#0B1F4D] text-white rounded-xl font-bold text-xs hover:bg-[#162E6E] transition-colors shrink-0 cursor-pointer shadow-xs"
+          >
+            All Assigned Jobs
+          </button>
+        </div>
+
+        <SurveyorCalendarSyncModal
+          isOpen={isSyncModalOpen}
+          onClose={() => setIsSyncModalOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
@@ -435,10 +563,12 @@ export const SurveyorDashboardPage = () => {
               <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
               <span>Concierge & Entry</span>
             </span>
-            <div className="font-bold text-slate-900">Portico Access Code</div>
-            <div className="text-[#0B1F4D] font-mono font-black text-sm">#8492</div>
+            <div className="font-bold text-slate-900">{primaryJob.propertyDetails?.entryProtocol || 'Access Protocol'}</div>
+            <div className="text-[#0B1F4D] font-mono font-black text-sm">
+              {primaryJob.propertyDetails?.accessCode || primaryJob.accessCode || 'Direct Entry / Keyholder'}
+            </div>
             <div className="text-slate-500 text-[11px] pt-1 border-t border-slate-200">
-              Concierge desk on ground floor (Tel: 020 7946 0888)
+              {primaryJob.propertyDetails?.conciergeNotes || 'Standard RICS daylight inspection protocol'}
             </div>
           </div>
 
@@ -547,6 +677,12 @@ export const SurveyorDashboardPage = () => {
                 </div>
               </div>
             ))}
+
+            {capturedPhotos.length === 0 && (
+              <div className="col-span-full py-8 text-center text-xs text-slate-400 bg-slate-50/60 border border-dashed border-slate-200 rounded-2xl">
+                No site defect photos recorded yet. Tap &apos;Add Photo / Note&apos; to log defect observations.
+              </div>
+            )}
           </div>
         </div>
 
