@@ -210,31 +210,31 @@ export const CustomerDashboardPage = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* 1. GRADIENT WELCOME BANNER (Required by Prompt) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] p-6 sm:p-8 text-white shadow-xl shadow-[#0B1F4D]/20">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#0B1F4D] via-[#162E6E] to-[#2563EB] p-5 sm:p-7 md:p-8 text-white shadow-xl shadow-[#0B1F4D]/20">
         <div className="absolute right-0 top-0 -mt-10 -mr-10 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
         <div className="absolute left-1/2 bottom-0 h-40 w-40 rounded-full bg-indigo-500/20 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-blue-200 border border-white/15">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>Customer Survey Portal • RICS Regulated Practice</span>
             </div>
 
-            <h1 className="text-fluid-banner font-black tracking-tight leading-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-tight">
               Welcome back, {user?.name || 'Client'} 👋
             </h1>
 
-            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
+            <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-xl">
               Track the live progress of your property inspections, execute RICS terms of engagement, and download your accredited valuation & structural reports.
             </p>
           </div>
 
           {/* Action Buttons: "Book a New Survey" & "Contact Support" (Required by prompt) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 shrink-0 w-full lg:w-auto">
             <button
               onClick={() => setIsBookModalOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-md transition-all min-h-[44px] cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-[#0B1F4D] text-xs sm:text-sm font-bold shadow-md transition-all min-h-[44px] cursor-pointer w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 text-[#2563EB]" />
               <span>Book a New Survey</span>
@@ -242,7 +242,7 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/support')}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 backdrop-blur-sm transition-all min-h-[44px] cursor-pointer"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-bold border border-white/25 backdrop-blur-sm transition-all min-h-[44px] cursor-pointer w-full sm:w-auto"
             >
               <HelpCircle className="w-4 h-4 text-blue-200" />
               <span>Contact Support</span>
@@ -252,34 +252,34 @@ export const CustomerDashboardPage = () => {
       </div>
 
       {/* 2. FOUR METRIC CARDS in 2x2 grid on phone, 4 on desktop (Compact & Refined) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.id}
               onClick={() => navigate(card.path)}
-              className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-[#2563EB] hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-2xs hover:border-[#2563EB] hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between min-w-0"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate mr-1">
+                <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate mr-1">
                   {card.title}
                 </span>
-                <div className={`p-2 rounded-xl ${card.color} group-hover:scale-105 transition-transform shrink-0`}>
+                <div className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl ${card.color} group-hover:scale-105 transition-transform shrink-0`}>
                   <Icon className="w-3.5 h-3.5" />
                 </div>
               </div>
 
               <div className="my-2">
-                <div className="text-xl sm:text-2xl font-bold text-[#0B1F4D] tracking-tight">
+                <div className="text-lg sm:text-2xl font-bold text-[#0B1F4D] tracking-tight truncate">
                   {card.value}
                 </div>
-                <div className="text-[11.5px] text-slate-400 font-medium truncate mt-0.5">
+                <div className="text-[11px] sm:text-[11.5px] text-slate-400 font-medium truncate mt-0.5">
                   {card.subtext}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[#2563EB]">
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] sm:text-xs font-semibold text-[#2563EB]">
                 <span>Manage</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -332,29 +332,29 @@ export const CustomerDashboardPage = () => {
 
       {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
       {!customerJob ? (
-        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-xs text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto">
-            <Building2 className="w-7 h-7" />
+        <div className="p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xs text-center space-y-4">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto shadow-2xs">
+            <Building2 className="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <div className="max-w-md mx-auto space-y-1">
-            <h3 className="text-base font-bold text-[#0B1F4D]">
+            <h3 className="text-sm sm:text-base font-bold text-[#0B1F4D]">
               No Active Survey Instructions Yet
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Welcome to your NJS Customer Portal! Instruct your first RICS Home Survey or request an instant quote to track milestones in real-time.
             </p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 pt-2 w-full sm:w-auto max-w-sm mx-auto sm:max-w-none">
             <button
               onClick={() => setIsBookModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Instruct a Survey</span>
             </button>
             <button
               onClick={() => navigate('/instant-quote')}
-              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px]"
             >
               <span>Get Instant Quote</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -512,27 +512,27 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* Trustpilot Review & Direct Portal Messaging Quick Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Trustpilot Banner (Client Requirement Point 31 & Stage 6 Review Trigger) */}
         {customerJob?.reviewSubmitted ? (
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
-                <CheckCircle2 className="w-6 h-6" />
+          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 shrink-0">
                     Verified Trustpilot Review ★★★★★
                   </span>
                   <span className="text-xs font-bold text-emerald-700">
                     {customerJob.reviewRating || 5}.0 Stars
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
                   Thank you for reviewing {customerJob.surveyor || 'Assigned Surveyor'}!
                 </h4>
-                <p className="text-xs text-slate-600 line-clamp-1 mt-0.5">
+                <p className="text-[11px] sm:text-xs text-slate-600 line-clamp-1 mt-0.5">
                   "{customerJob.reviewFeedback || 'Excellent survey turnaround and clear advice.'}"
                 </p>
               </div>
@@ -540,29 +540,29 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/leave-review')}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
             >
               <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
               <span>View Review</span>
             </button>
           </div>
         ) : (customerJob?.status === 'Completed' || (customerJob?.timelineStep && customerJob.timelineStep >= 7)) ? (
-          <div className="p-5 rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 border-2 border-emerald-400 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
-                <Star className="w-6 h-6 fill-white" />
+          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 border-2 border-emerald-400 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A] text-white shrink-0 shadow-xs">
+                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-white" />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300 shrink-0">
                     Stage 6 Complete • Trustpilot Trigger
                   </span>
                   <span className="text-xs text-amber-500 font-bold">★★★★★</span>
                 </div>
-                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
                   How was your survey experience with {customerJob.surveyor || 'Assigned Surveyor'}?
                 </h4>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-[11px] sm:text-xs text-slate-600 line-clamp-2 mt-0.5">
                   Your final RICS report for {customerJob.property || 'your property'} has been delivered. Share 30 seconds of verified feedback on Trustpilot.
                 </p>
               </div>
@@ -570,7 +570,7 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/leave-review')}
-              className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
             >
               <Star className="w-3.5 h-3.5 fill-white" />
               <span>Rate on Trustpilot</span>
@@ -578,22 +578,22 @@ export const CustomerDashboardPage = () => {
             </button>
           </div>
         ) : (
-          <div className="p-5 rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
-                <Star className="w-6 h-6 fill-[#00B67A]" />
+          <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-[#00B67A]/10 text-[#00B67A] shrink-0">
+                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-[#00B67A]" />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
                     Trustpilot 4.9 / 5.0
                   </span>
                   <span className="text-xs text-slate-500">★★★★★</span>
                 </div>
-                <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+                <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
                   Satisfied with your Level 2 Survey?
                 </h4>
-                <p className="text-xs text-slate-500">
+                <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2 mt-0.5">
                   Leave a quick review on our official NJS Trustpilot profile.
                 </p>
               </div>
@@ -601,7 +601,7 @@ export const CustomerDashboardPage = () => {
 
             <button
               onClick={() => navigate('/customer/leave-review')}
-              className="px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#00B67A] hover:bg-[#009E6B] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
             >
               <Star className="w-3.5 h-3.5 fill-white" />
               <span>Leave Us a Review</span>
@@ -611,22 +611,22 @@ export const CustomerDashboardPage = () => {
         )}
 
         {/* Direct Messages Card (Client Requirement Point 18) */}
-        <div className="p-5 rounded-3xl bg-white border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-2xl bg-blue-50 text-[#0B1F4D] shrink-0">
-              <MessageSquare className="w-6 h-6 text-[#2563EB]" />
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-blue-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-blue-50 text-[#0B1F4D] shrink-0">
+              <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-[#2563EB]" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0B1F4D] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 shrink-0">
                   Direct Coordinator Chat
                 </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
-              <h4 className="text-sm font-bold text-[#0B1F4D] mt-1">
+              <h4 className="text-xs sm:text-sm font-bold text-[#0B1F4D] mt-1 truncate">
                 Message NJS Operations Desk
               </h4>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 line-clamp-2 mt-0.5">
                 Direct questions, keyholder notes, or queries for your assigned surveyor.
               </p>
             </div>
@@ -634,7 +634,7 @@ export const CustomerDashboardPage = () => {
 
           <button
             onClick={() => navigate('/customer/messages')}
-            className="px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer min-h-[42px] whitespace-nowrap"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Open Messages</span>

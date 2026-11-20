@@ -216,7 +216,7 @@ export const TopBar = ({ onToggleSidebar }) => {
         </div>
 
         {/* Global Search Bar (Tablet & Desktop) */}
-        <div className="relative w-full max-w-md hidden sm:block" ref={searchContainerRef}>
+        <div className="relative w-full max-w-xs md:max-w-sm lg:max-w-md hidden sm:block" ref={searchContainerRef}>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               {isSearching ? (
