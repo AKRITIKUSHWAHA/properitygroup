@@ -320,15 +320,14 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         )}
 
         {/* Action Buttons */}
-        <div className="quote-success-actions" style={{ marginTop: '0.85rem' }}>
+        <div className="quote-success-actions">
           {siteConfig.features?.showPublicPortalLogin && (
             <Link
               to="/login"
               state={{ prefilledEmail: data.customerEmail }}
-              className="compact-submit-btn quote-success-action-btn"
-              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', backgroundColor: '#0B1F4D', color: '#FFFFFF', fontWeight: 700 }}
+              className="quote-success-action-btn quote-success-login-btn"
             >
-              <User size={15} />
+              <User size={16} style={{ flexShrink: 0 }} />
               <span>Login to Customer Dashboard &rarr;</span>
             </Link>
           )}
@@ -336,9 +335,9 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           <button
             type="button"
             onClick={handleReset}
-            className="quote-success-action-btn quote-success-call-btn"
+            className="quote-success-action-btn quote-success-reset-btn"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={15} style={{ flexShrink: 0 }} />
             <span>Submit Another Quote</span>
           </button>
         </div>

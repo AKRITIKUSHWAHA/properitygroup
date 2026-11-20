@@ -10000,6 +10000,7 @@ p.mega-action-sub {
   width: 100% !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  container-type: inline-size;
 }
 
 .quote-success-header-strip {
@@ -10113,37 +10114,107 @@ p.mega-action-sub {
 
 .quote-success-actions {
   display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.75rem !important;
-  flex-wrap: wrap !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
   width: 100% !important;
+  box-sizing: border-box !important;
+  margin-top: 1rem !important;
+}
+
+@media (min-width: 520px) {
+  .quote-success-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+}
+
+@container (max-width: 480px) {
+  .quote-success-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
 }
 
 .quote-success-action-btn {
-  flex: 1 1 200px !important;
+  flex: 1 1 0px !important;
+  min-width: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.45rem !important;
-  padding: 0.65rem 1.25rem !important;
+  gap: 0.5rem !important;
+  padding: 0.72rem 1.15rem !important;
+  min-height: 44px !important;
   border-radius: 9999px !important;
   font-size: 0.84rem !important;
   font-weight: 700 !important;
   text-decoration: none !important;
-  transition: all 0.2s ease !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
   box-sizing: border-box !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+/* Primary Action: Portal Login */
+.quote-success-login-btn {
+  background: linear-gradient(135deg, #032954 0%, #0B1F4D 100%) !important;
+  background-color: #032954 !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid #032954 !important;
+  box-shadow: 0 4px 14px rgba(3, 41, 84, 0.22) !important;
+}
+
+.quote-success-login-btn:hover {
+  background: linear-gradient(135deg, #0B1F4D 0%, #15326c 100%) !important;
+  background-color: #0B1F4D !important;
+  color: #FFFFFF !important;
+  border-color: #0B1F4D !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(3, 41, 84, 0.32) !important;
+}
+
+.quote-success-login-btn span,
+.quote-success-login-btn svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Secondary Action: Submit Another Quote / Reset */
+.quote-success-reset-btn,
 .quote-success-call-btn {
   background: #F8FAFC !important;
-  border: 1px solid #CBD5E1 !important;
-  color: #032954 !important;
+  background-color: #F8FAFC !important;
+  border: 1.5px solid #CBD5E1 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
+.quote-success-reset-btn:hover,
 .quote-success-call-btn:hover {
   background: #EFF6FF !important;
+  background-color: #EFF6FF !important;
   border-color: #93C5FD !important;
+  color: #032954 !important;
+  transform: translateY(-1px) !important;
+}
+
+.quote-success-reset-btn span,
+.quote-success-call-btn span {
+  color: inherit !important;
+}
+
+.quote-success-reset-btn svg,
+.quote-success-call-btn svg {
+  color: #475569 !important;
+  stroke: #475569 !important;
+}
+
+.quote-success-reset-btn:hover svg,
+.quote-success-call-btn:hover svg {
+  color: #032954 !important;
+  stroke: #032954 !important;
 }
 
 @media (max-width: 640px) {
