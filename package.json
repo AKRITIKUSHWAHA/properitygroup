@@ -8,7 +8,7 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "build:frontend": "npm --prefix frontend run build",
-    "dev:backend": "npm --prefix backend run dev"
+    "dev:backend": "npm --prefix \"live backend/njs-proprty-group\" run dev"
   }
 }
 
