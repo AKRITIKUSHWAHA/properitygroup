@@ -805,96 +805,68 @@ export const AdminUsersPage = () => {
           </>
         }
       >
-        <form id="add-user-form" onSubmit={handleAddUser} className="space-y-4 text-xs">
-          {/* 1. ROLE SELECTION AT THE TOP (Prominent Visual Switcher) */}
+        <form id="add-user-form" onSubmit={handleAddUser} className="space-y-4">
+          {/* 1. ROLE SELECTION (Clean Segmented Switcher) */}
           <div>
-            <label className="block font-bold text-slate-800 mb-1.5 uppercase text-[11px] tracking-wider">
-              Select User Role *
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+              Select User Role <span className="text-rose-500">*</span>
             </label>
-            <div className="grid grid-cols-3 gap-2.5">
-              {/* Surveyor Option */}
+            <div className="bg-slate-100/80 p-1 rounded-xl flex items-center gap-1 border border-slate-200/60">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'surveyor' })}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   formData.role === 'surveyor'
-                    ? 'bg-blue-50/80 border-blue-600 text-[#0B1F4D] ring-2 ring-blue-500/20 shadow-xs'
-                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                    ? 'bg-white text-[#0B1F4D] shadow-sm border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-blue-600" />
-                    Surveyor
-                  </span>
-                  {formData.role === 'surveyor' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-500 leading-tight">
-                  RICS qualified inspector, inspection rota &amp; postcodes
-                </span>
+                <Award className={`w-3.5 h-3.5 ${formData.role === 'surveyor' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <span>Surveyor</span>
               </button>
 
-              {/* Customer Option */}
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'customer' })}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   formData.role === 'customer'
-                    ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950 ring-2 ring-emerald-500/20 shadow-xs'
-                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                    ? 'bg-white text-emerald-950 shadow-sm border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-emerald-600" />
-                    Customer
-                  </span>
-                  {formData.role === 'customer' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-500 leading-tight">
-                  Property client, quotes, terms sign &amp; report delivery
-                </span>
+                <Users className={`w-3.5 h-3.5 ${formData.role === 'customer' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <span>Customer</span>
               </button>
 
-              {/* Admin Option */}
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'super_admin' })}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   formData.role === 'super_admin'
-                    ? 'bg-indigo-50/80 border-indigo-600 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
-                    : 'bg-slate-50/60 border-slate-200 text-slate-600 hover:bg-slate-100/70 hover:border-slate-300'
+                    ? 'bg-white text-indigo-950 shadow-sm border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                    Admin
-                  </span>
-                  {formData.role === 'super_admin' && (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
-                  )}
-                </div>
-                <span className="text-[10px] text-slate-500 leading-tight">
-                  Full operations, dispatch, QA desk &amp; financial control
-                </span>
+                <ShieldCheck className={`w-3.5 h-3.5 ${formData.role === 'super_admin' ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <span>Admin</span>
               </button>
             </div>
           </div>
 
           {/* 2. CORE LOGIN & CONTACT CREDENTIALS */}
-          <div className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-              1. Basic Account &amp; Login Credentials
-            </span>
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                1. Account Credentials
+              </span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Full Legal Name *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Legal Name <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   required
@@ -907,12 +879,14 @@ export const AdminUsersPage = () => {
                   }
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B1F4D] focus:ring-1 focus:ring-[#0B1F4D] transition-all"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Email Address (Login Username) *</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Email Address (Login Username) <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="email"
                   required
@@ -925,52 +899,56 @@ export const AdminUsersPage = () => {
                   }
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B1F4D] focus:ring-1 focus:ring-[#0B1F4D] transition-all"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-slate-700">Login Password *</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowModalPassword(!showModalPassword)}
-                    className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer font-medium"
-                  >
-                    {showModalPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    {showModalPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Direct Mobile / Phone
+                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <input
-                    type={showModalPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    placeholder="Create password (min 6 characters)"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Direct Mobile / Phone</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <Phone className="w-4 h-4" />
+                    <Phone className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="tel"
                     placeholder="+44 7700 900000"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full h-9.5 pl-8.5 pr-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 font-mono placeholder:text-slate-400 focus:outline-none focus:border-[#0B1F4D] focus:ring-1 focus:ring-[#0B1F4D] transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Login Password <span className="text-rose-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowModalPassword(!showModalPassword)}
+                    className="text-[11px] text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                  >
+                    {showModalPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    {showModalPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type={showModalPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Min 6 characters"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full h-9.5 pl-8.5 pr-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 font-mono placeholder:text-slate-400 focus:outline-none focus:border-[#0B1F4D] focus:ring-1 focus:ring-[#0B1F4D] transition-all"
                   />
                 </div>
               </div>
@@ -979,20 +957,23 @@ export const AdminUsersPage = () => {
 
           {/* 3. DYNAMIC ROLE-SPECIFIC FORM FIELDS */}
           {formData.role === 'surveyor' && (
-            <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-200/80 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 block flex items-center gap-1.5">
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2">
                 <Award className="w-3.5 h-3.5 text-blue-600" />
-                2. Chartered Surveyor Qualifications &amp; Territory
-              </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                  2. Chartered Surveyor Qualifications &amp; Coverage
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Surveyor Qualification &amp; RICS Designation *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Surveyor Qualification &amp; RICS Designation <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={formData.credentials}
                   onChange={(e) => setFormData({ ...formData, credentials: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
                 >
                   <optgroup label="Client Specified Surveying Designations">
                     <option value="Guided Trainee Surveyor (RICS Candidate)">
@@ -1030,8 +1011,8 @@ export const AdminUsersPage = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Assigned Postcode Sectors (Coverage Area) *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Coverage Postcode Sectors <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1039,15 +1020,12 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. SW, KT, GU, W, NW"
                     value={formData.postcodes}
                     onChange={(e) => setFormData({ ...formData, postcodes: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    Postcodes covered without travel surcharge
-                  </span>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     PII Insurance Expiry Date
                   </label>
                   <input
@@ -1055,14 +1033,14 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. 31/12/2027"
                     value={formData.piiExpiry}
                     onChange={(e) => setFormData({ ...formData, piiExpiry: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Surveying Practice / Firm Name
                   </label>
                   <input
@@ -1070,12 +1048,12 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. NJS Chartered Surveyors Practice"
                     value={formData.org}
                     onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Calendar Rota Color Accent
                   </label>
                   <div className="flex items-center gap-2">
@@ -1083,13 +1061,13 @@ export const AdminUsersPage = () => {
                       type="color"
                       value={formData.color}
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      className="w-9 h-9 p-0.5 rounded-xl border border-slate-200 cursor-pointer"
+                      className="w-9.5 h-9.5 p-0.5 rounded-lg border border-slate-200 cursor-pointer bg-white"
                     />
                     <input
                       type="text"
                       value={formData.color}
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-mono text-slate-900 text-xs"
+                      className="flex-1 h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all"
                     />
                   </div>
                 </div>
@@ -1098,21 +1076,24 @@ export const AdminUsersPage = () => {
           )}
 
           {formData.role === 'customer' && (
-            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-950 block flex items-center gap-1.5">
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-emerald-600" />
-                2. Property Client Profile &amp; Billing Details
-              </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                  2. Property Client &amp; Billing Profile
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Client Category / Type *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Client Category / Type <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formData.clientType}
                     onChange={(e) => setFormData({ ...formData, clientType: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                   >
                     <option value="Private Residential Buyer / Homeowner">
                       Private Residential Buyer / Homeowner
@@ -1130,23 +1111,23 @@ export const AdminUsersPage = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Organisation / Practice (Optional)
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Organisation / Firm (Optional)
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. Private Client or Company"
                     value={formData.org}
                     onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Property / Billing Address *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Property / Billing Address <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1154,13 +1135,13 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. 14 Mayfair Gate, Mayfair, London"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    UK Postcode *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    UK Postcode <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1168,7 +1149,7 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. W1K 2PB"
                     value={formData.postcode}
                     onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                   />
                 </div>
               </div>
@@ -1176,21 +1157,24 @@ export const AdminUsersPage = () => {
           )}
 
           {formData.role === 'super_admin' && (
-            <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-950 block flex items-center gap-1.5">
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                2. Platform Administrator Privileges
-              </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                  2. Administrator Role &amp; Access Scope
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Administrative Job Title / Position *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Administrative Job Title / Position <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formData.adminTitle}
                     onChange={(e) => setFormData({ ...formData, adminTitle: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
                   >
                     <option value="Operations & Dispatch Manager">
                       Operations &amp; Dispatch Manager
@@ -1208,7 +1192,7 @@ export const AdminUsersPage = () => {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Headquarters / Organisation
                   </label>
                   <input
@@ -1216,15 +1200,15 @@ export const AdminUsersPage = () => {
                     placeholder="e.g. NJS Property Group HQ"
                     value={formData.org}
                     onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
                   />
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-white border border-indigo-100 flex items-center gap-2.5 text-indigo-900">
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 flex items-center gap-2 text-slate-600">
                 <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="text-[11px] leading-tight font-medium">
-                  <strong>Full Administrative Authority:</strong> User will have unrestricted access to all 11 admin modules, customer accounts, payment verification, QA review desk, and staff management.
+                <span className="text-[11px] leading-tight">
+                  <strong className="text-slate-800">Full System Access:</strong> Unrestricted control across all 11 modules, surveyor dispatch rota, QA desk, and financial billing.
                 </span>
               </div>
             </div>
