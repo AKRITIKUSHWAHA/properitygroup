@@ -110,23 +110,14 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
       const cleanEmail = formData.customerEmail.toLowerCase().trim();
       const generatedRef = res?.referenceId || `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      try {
-        const storedCustomers = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        const existingCust = storedCustomers[cleanEmail] || {};
-        storedCustomers[cleanEmail] = {
-          id: existingCust.id || `usr_client_${Date.now()}`,
-          email: cleanEmail,
-          name: formData.customerName || existingCust.name,
-          role: 'customer',
-          roleLabel: 'Property Client',
-          company: 'NJS Property Group',
-          phone: formData.customerPhone || existingCust.phone || '',
-          address: formData.propertyAddress || existingCust.address || '',
-          city: formData.city || formData.propertyLocation || existingCust.city || '',
-          postcode: formData.propertyPostcode || existingCust.postcode || '',
-        };
-        localStorage.setItem('property_group_registered_customers', JSON.stringify(storedCustomers));
-      } catch {}
+      // Check whether customer was already registered with an existing password
+      const storedCustomers = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      const alreadyRegistered = Boolean(
+        res?.isExistingUser ||
+        res?.data?.isExistingUser ||
+        Boolean(storedCustomers[cleanEmail]?.password) ||
+        Boolean(localStorage.getItem(`njs_user_pw_${cleanEmail}`))
+      );
 
       // Save new distinct lead into CRM leads storage
       try {
@@ -212,6 +203,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           serviceName: serviceName,
           quoteReference: generatedRef,
           fromQuote: true,
+          isExistingUser: alreadyRegistered,
         },
       });
     } catch (err) {

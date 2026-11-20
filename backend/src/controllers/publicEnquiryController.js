@@ -51,45 +51,18 @@ export const submitPublicEnquiry = async (req, res, next) => {
     const prefix = enquiryCategory === 'SURVEY_QUOTE' ? 'NJS' : 'ENQ';
     const referenceId = `${prefix}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Create or synchronize customer user account automatically
-    let accountCreated = false;
-    const rawPassword = body.password ? String(body.password).trim() : 'password123';
+    // Check if customer is already registered in users table
+    let existingUser = null;
     try {
-      const existingUser = await prisma.user.findUnique({
+      existingUser = await prisma.user.findUnique({
         where: { email: customerEmail },
       });
-
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(rawPassword, salt);
-
-      if (!existingUser) {
-        await prisma.user.create({
-          data: {
-            name: customerName,
-            email: customerEmail,
-            password: hashedPassword,
-            phone: customerPhone || null,
-            role: 'CUSTOMER',
-            status: 'ACTIVE',
-          },
-        });
-        accountCreated = true;
-      } else if (existingUser.role === 'CUSTOMER') {
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            status: 'ACTIVE',
-            name: customerName || existingUser.name,
-            phone: customerPhone || existingUser.phone,
-          },
-        });
-        accountCreated = true;
-      }
     } catch (userErr) {
-      console.warn('Customer account creation warning:', userErr.message);
+      console.warn('Customer account lookup note:', userErr.message);
     }
+    const isExistingUser = Boolean(existingUser);
 
-    // Persist to MySQL CRM leads table when DB is available
+    // Persist Lead information strictly to MySQL CRM leads table
     let dbSaved = false;
     try {
       await prisma.lead.create({
@@ -132,12 +105,12 @@ export const submitPublicEnquiry = async (req, res, next) => {
       sourcePage: body.sourcePage,
     });
 
-    // In-App Notification for Client & Admin
+    // In-App Notification for Client (if existing user) & Admin
     try {
-      if (clientUser) {
+      if (existingUser) {
         await prisma.notification.create({
           data: {
-            userId: clientUser.id,
+            userId: existingUser.id,
             role: 'CLIENT',
             title: 'Quote Request Received',
             desc: `Your quote request for ${serviceName} (${propertyAddress || propertyPostcode || 'Subject Property'}) has been logged. Ref: ${referenceId}`,
@@ -166,8 +139,9 @@ export const submitPublicEnquiry = async (req, res, next) => {
         referenceId,
         timestamp: new Date().toISOString(),
         dbSaved,
-        accountCreated,
+        isExistingUser,
         customerEmail,
+        customerName,
         emailNotification: {
           recipient: emailResult.notifiedEmail,
           emailSent: Boolean(emailResult.emailSent),
