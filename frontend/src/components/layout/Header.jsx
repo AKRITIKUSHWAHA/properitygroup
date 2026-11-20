@@ -106,8 +106,11 @@ export function Header() {
             <div className="announcement-strip-inner">
               <div className="announcement-center">
                 <span className="announcement-home-icon" role="img" aria-label="house">🏡</span>
-                <span className="announcement-text">
+                <span className="announcement-text hidden md:inline">
                   Skip the wait – get a quote, book and pay for your survey online
+                </span>
+                <span className="announcement-text inline md:hidden">
+                  Skip the wait – book &amp; pay online
                 </span>
               </div>
               <div className="announcement-right">

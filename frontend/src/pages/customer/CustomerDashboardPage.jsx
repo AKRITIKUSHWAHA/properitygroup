@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Check,
   FileText,
   CalendarCheck,
   Building2,
@@ -327,30 +328,62 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* 2.5 LIVE 10-STAGE PROGRESS TRACKER (Client Requirement Point 13) */}
-      <SurveyProgressTracker
-        currentStep={
-          (customerJob?.status === 'Completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || (customerJob?.timelineStep || 0) >= 10)
-            ? 10
-            : (customerJob?.status === 'QA_Review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || customerJob?.timelineStep === 9)
-            ? 9
-            : (customerJob?.status === 'Drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || customerJob?.timelineStep === 8)
-            ? 8
-            : (customerJob?.status === 'Inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || customerJob?.timelineStep === 7)
-            ? 7
-            : (customerJob?.surveyor && customerJob?.surveyor !== 'Pending Allocation') || (customerJob?.timelineStep || 0) >= 6
-            ? 6
-            : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
-            ? 5
-            : (customerJob?.termsStatus === 'Signed' || (customerJob?.timelineStep || 0) >= 4)
-            ? 4
-            : (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) >= 3)
-            ? 3
-            : (customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) >= 2)
-            ? 2
-            : 1
-        }
-        job={customerJob}
-      />
+      {!customerJob ? (
+        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-xs text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mx-auto">
+            <Building2 className="w-7 h-7" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="text-base font-bold text-[#0B1F4D]">
+              No Active Survey Instructions Yet
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Welcome to your NJS Customer Portal! Instruct your first RICS Home Survey or request an instant quote to track milestones in real-time.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => setIsBookModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Instruct a Survey</span>
+            </button>
+            <button
+              onClick={() => navigate('/instant-quote')}
+              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Get Instant Quote</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <SurveyProgressTracker
+          currentStep={
+            (customerJob?.status === 'Completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || (customerJob?.timelineStep || 0) >= 10)
+              ? 10
+              : (customerJob?.status === 'QA_Review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || customerJob?.timelineStep === 9)
+              ? 9
+              : (customerJob?.status === 'Drafting' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || customerJob?.timelineStep === 8)
+              ? 8
+              : (customerJob?.status === 'Inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || customerJob?.timelineStep === 7)
+              ? 7
+              : (customerJob?.surveyor && customerJob?.surveyor !== 'Pending Allocation') || (customerJob?.timelineStep || 0) >= 6
+              ? 6
+              : (customerJob?.paymentStatus === 'Paid' || (customerJob?.timelineStep || 0) >= 5)
+              ? 5
+              : (customerJob?.termsStatus === 'Signed' || (customerJob?.timelineStep || 0) >= 4)
+              ? 4
+              : (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) >= 3)
+              ? 3
+              : (customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) >= 2)
+              ? 2
+              : 1
+          }
+          job={customerJob}
+        />
+      )}
 
       {/* SurveyBooker Stage 2 Prompt Banner: Formal Proposal Ready to Review & Accept */}
       {(customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) === 2) && customerJob?.status !== 'Accepted' && (

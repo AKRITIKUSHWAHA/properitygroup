@@ -9215,24 +9215,35 @@ p.mega-action-sub {
 }
 
 .announcement-strip-inner {
-  position: relative !important;
+  position: static !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: space-between !important;
   width: 100% !important;
   min-height: 28px !important;
+  gap: 0.85rem !important;
 }
 
 .announcement-center {
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   gap: 0.55rem !important;
   color: #F8FAFC !important;
   font-size: 0.82rem !important;
   font-weight: 500 !important;
   letter-spacing: -0.005em !important;
-  text-align: center !important;
+  text-align: left !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.announcement-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
 }
 
 .announcement-home-icon {
@@ -9242,14 +9253,13 @@ p.mega-action-sub {
 }
 
 .announcement-right {
-  position: absolute !important;
-  right: 0 !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
+  position: static !important;
+  transform: none !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0.65rem !important;
+  gap: 0.55rem !important;
   flex-shrink: 0 !important;
+  margin-left: auto !important;
 }
 
 .announcement-login-btn {
@@ -9439,12 +9449,20 @@ p.mega-action-sub {
   color: #CBD5E1 !important;
 }
 
+@media (max-width: 1100px) {
+  .announcement-register-btn {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   .header-announcement-strip {
     padding: 0.35rem 0 !important;
   }
   .announcement-strip-inner {
     position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
     justify-content: space-between !important;
     align-items: center !important;
     gap: 0.5rem !important;
@@ -9454,19 +9472,28 @@ p.mega-action-sub {
     justify-content: flex-start !important;
     text-align: left !important;
     flex: 1 !important;
+    min-width: 0 !important;
   }
   .announcement-right {
     position: static !important;
     transform: none !important;
+    margin-left: auto !important;
     flex-shrink: 0 !important;
+    gap: 0.4rem !important;
   }
   .announcement-text {
-    font-size: 0.7rem !important;
+    font-size: 0.72rem !important;
     line-height: 1.25 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
   .announcement-login-btn {
-    font-size: 0.68rem !important;
-    padding: 0.2rem 0.6rem !important;
+    font-size: 0.7rem !important;
+    padding: 0.22rem 0.65rem !important;
+  }
+  .announcement-register-btn {
+    display: none !important;
   }
   .header-utility-strip {
     padding: 0.35rem 0 !important;
@@ -10179,13 +10206,23 @@ p.mega-action-sub {
     display: flex !important;
   }
   .announcement-strip-inner {
-    flex-direction: column !important;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
-    gap: 0.25rem !important;
-    text-align: center !important;
+    justify-content: space-between !important;
+    gap: 0.35rem !important;
+    text-align: left !important;
   }
   .announcement-center {
-    justify-content: center !important;
-    text-align: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+  .announcement-text {
+    max-width: 180px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 }
