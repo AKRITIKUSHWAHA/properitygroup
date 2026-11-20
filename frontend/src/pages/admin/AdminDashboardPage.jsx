@@ -156,6 +156,14 @@ export const AdminDashboardPage = () => {
       if (leadsRes.status === 'fulfilled') {
         const rawLeads = leadsRes.value?.leads || leadsRes.value?.data?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
         if (Array.isArray(rawLeads)) {
+          const statusMap = {
+            NEW: 'New',
+            CONTACTED: 'Contacted',
+            QUALIFIED: 'Qualified',
+            QUOTE_SENT: 'Quoted',
+            CONVERTED: 'Converted',
+            LOST: 'Lost',
+          };
           const mappedLeads = rawLeads.map((l) => ({
             id: l.reference || `NJS-2026-${l.id}`,
             customerName: l.clientName || 'Private Client',
@@ -164,7 +172,7 @@ export const AdminDashboardPage = () => {
             enquiry: l.serviceType || 'RICS Level 2 Home Survey',
             property: l.propertyAddress || 'London Property',
             location: l.postcode || '',
-            status: l.status === 'QUOTE_SENT' ? 'Quoted' : (l.status || 'New'),
+            status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
             source: l.source || 'Website',
           }));
           setLeads(mappedLeads);

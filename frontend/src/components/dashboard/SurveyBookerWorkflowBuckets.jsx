@@ -15,11 +15,13 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
+import { useTerms } from '../../mock/terms';
 
 export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, backendBuckets = null }) => {
   const navigate = useNavigate();
   const { jobs } = useJobs();
   const { leads } = useLeads();
+  const { agreements } = useTerms();
 
   // Helper to extract count from backendBuckets if present
   const getBackendCount = (bucketId) => {
@@ -28,42 +30,44 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
     return b ? b.count : null;
   };
 
-  // Dynamic calculations matching SurveyBooker workflow buckets and their destination menus
-  const newLeadsCount = leads.filter(
-    (l) => l.status === 'New' || l.status === 'Contacted' || l.status === 'Qualified'
-  ).length;
+  // 1. All records: matches /admin/jobs (All Survey Jobs)
+  const allRecords = jobs.length;
 
+  // 2. Quotes to submit: strictly matches /admin/leads?filter=New (New / Inbound Leads)
+  const newLeadsCount = leads.filter((l) => {
+    const s = String(l.status || '').toLowerCase();
+    return s === 'new' || s === 'contacted' || s === 'qualified';
+  }).length;
   const bQuotes = getBackendCount('quotes_to_submit');
-  const quotesToSubmit = bQuotes !== null && bQuotes > 0 ? bQuotes : (newLeadsCount > 0 ? newLeadsCount : 0);
+  const quotesToSubmit = newLeadsCount > 0 ? newLeadsCount : (bQuotes !== null ? bQuotes : 0);
 
-  const bTerms = getBackendCount('terms_to_sign');
-  const termsToSend = bTerms !== null ? bTerms : jobs.filter(
-    (j) => j.termsStatus === 'Pending' || j.status === 'Accepted' || j.termsStatus === 'Not Sent'
-  ).length;
+  // 3. Terms to send: strictly matches /admin/terms?filter=Pending (Pending Agreements in Terms & Documents)
+  const pendingAgreementsCount = agreements.filter((a) => {
+    const s = String(a.status || '').toLowerCase();
+    return s === 'pending';
+  }).length;
+  const termsToSend = pendingAgreementsCount;
 
+  // 4. Jobs to book: strictly matches /admin/jobs?filter=Action Required (Unbooked jobs ready for scheduling)
   const unbookedJobs = jobs.filter(
     (j) =>
-      (j.termsStatus === 'Signed' || j.paymentStatus === 'Paid' || j.status === 'Accepted' || j.quoteStatus === 'Accepted') &&
+      (j.termsStatus === 'Signed' || j.paymentStatus === 'Paid') &&
       j.status !== 'Booked' &&
       j.status !== 'Scheduled' &&
-      j.status !== 'Survey done' &&
-      j.status !== 'Closed'
+      j.status !== 'Completed'
   );
-  const bJobsToBook = getBackendCount('jobs_to_book');
-  const jobsToBook = bJobsToBook !== null ? bJobsToBook : unbookedJobs.length;
+  const jobsToBook = unbookedJobs.length;
   const remindersSentCount = unbookedJobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
 
-  const bAppointments = getBackendCount('appointments');
-  const appointments = bAppointments !== null ? bAppointments : jobs.filter(
-    (j) => j.status.toLowerCase() === 'scheduled' || j.status.toLowerCase() === 'booked' || j.timelineStep === 7
+  // 5. Appointments: strictly matches /admin/jobs?filter=Scheduled (Appointments / Booked tab)
+  const appointments = jobs.filter(
+    (j) => j.status.toLowerCase() === 'scheduled' || j.status.toLowerCase() === 'booked'
   ).length;
 
-  const bReports = getBackendCount('reports_to_upload');
-  const reportsToUpload = bReports !== null ? bReports : jobs.filter(
-    (j) => j.status.toLowerCase() === 'in progress' || j.status.toLowerCase() === 'preparing report' || j.status === 'Survey done' || j.timelineStep === 8
+  // 6. Reports to upload: strictly matches /admin/jobs?filter=In Progress (Preparing Report tab)
+  const reportsToUpload = jobs.filter(
+    (j) => j.status.toLowerCase() === 'in progress' || j.status.toLowerCase() === 'preparing report'
   ).length;
-
-  const allRecords = jobs.length;
 
   const buckets = [
     {
