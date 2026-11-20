@@ -69,7 +69,7 @@ const mapBackendJobToFrontend = (bj) => {
   const canBook = termsSigned && invoicePaid;
 
   const hasAllocatedSurveyor = Boolean(bj.surveyor?.name || bj.surveyorId);
-  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Pending Allocation';
+  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Unassigned';
   const sId = hasAllocatedSurveyor ? (bj.surveyorId ? `srv-${bj.surveyorId}` : 'srv-assigned') : null;
 
   return {
@@ -78,8 +78,8 @@ const mapBackendJobToFrontend = (bj) => {
     jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
     date: bj.inspectionDate
       ? new Date(bj.inspectionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-      : 'Pending Allocation',
-    timeSlot: bj.inspectionTime || 'Pending Allocation',
+      : 'Date: TBD',
+    timeSlot: bj.inspectionTime || 'Time: TBD',
     customer: bj.clientName || 'Private Client',
     customerEmail: bj.clientEmail || 'client@example.com',
     customerPhone: bj.clientPhone || '+44 7700 900000',
@@ -375,7 +375,17 @@ export const AdminJobsPage = () => {
                 const email = (bj.customerEmail || '').toLowerCase().trim();
                 return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
               });
-              setJobs(mapped);
+              // Deduplicate multiple entries for identical client instruction
+              const seen = new Set();
+              const deduplicated = [];
+              for (const item of mapped) {
+                const key = `${(item.customerEmail || '').toLowerCase()}_${(item.property || '').toLowerCase().replace(/\s+/g, '')}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  deduplicated.push(item);
+                }
+              }
+              setJobs(deduplicated);
             }
           }
         }
@@ -893,6 +903,7 @@ export const AdminJobsPage = () => {
                     const isPendingSurveyor =
                       !row.surveyorId ||
                       row.surveyor === 'Pending Allocation' ||
+                      row.surveyor === 'Unassigned' ||
                       row.surveyor === 'Unallocated';
                     const assignedSurveyorObj = activeSurveyors.find(
                       (s) =>
@@ -972,7 +983,7 @@ export const AdminJobsPage = () => {
                           {isPendingSurveyor ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                               <UserX className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Pending Allocation</span>
+                              <span>Unassigned Surveyor</span>
                             </span>
                           ) : (
                             <div className="flex items-center gap-2.5">

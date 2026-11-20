@@ -127,6 +127,34 @@ export const createSurveyJob = async (req, res, next) => {
       throw ApiError.badRequest('Property address, postcode, client name and email are required');
     }
 
+    const cleanEmail = clientEmail.toLowerCase().trim();
+    const cleanAddress = propertyAddress.trim();
+
+    // Check for duplicate pending job instruction within same client and property
+    const existingJob = await prisma.job.findFirst({
+      where: {
+        clientEmail: cleanEmail,
+        propertyAddress: cleanAddress,
+        stage: { in: ['QUOTE', 'NEW', 'ACCEPTED'] },
+      },
+    });
+
+    if (existingJob) {
+      // Update existing job rather than creating a duplicate
+      const updatedJob = await prisma.job.update({
+        where: { id: existingJob.id },
+        data: {
+          clientName: clientName.trim(),
+          clientPhone: clientPhone || existingJob.clientPhone,
+          serviceType: serviceType || existingJob.serviceType,
+          postcode: postcode.toUpperCase().trim(),
+          specialInstructions: specialInstructions || existingJob.specialInstructions,
+          keyCollectionDetails: keyCollectionDetails || existingJob.keyCollectionDetails,
+        },
+      });
+      return ApiResponse.success(res, { job: updatedJob }, 'Existing survey instruction updated without duplication');
+    }
+
     const count = await prisma.job.count();
     const reference = `JOB-2026-${String(count + 101).padStart(3, '0')}`;
 

@@ -65,7 +65,7 @@ const mapBackendJobToFrontend = (bj) => {
   const canBook = termsSigned && invoicePaid;
 
   const hasAllocatedSurveyor = Boolean(bj.surveyor?.name || bj.surveyorId);
-  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Pending Allocation';
+  const surveyorName = hasAllocatedSurveyor ? (bj.surveyor?.name || 'Assigned Surveyor') : 'Unassigned';
   const sId = hasAllocatedSurveyor ? (bj.surveyorId ? `srv-${bj.surveyorId}` : 'srv-assigned') : null;
 
   return {
@@ -74,8 +74,8 @@ const mapBackendJobToFrontend = (bj) => {
     jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
     date: bj.inspectionDate
       ? new Date(bj.inspectionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-      : 'Pending Allocation',
-    timeSlot: bj.inspectionTime || 'Pending Allocation',
+      : null,
+    timeSlot: bj.inspectionTime || null,
     customer: bj.clientName || 'Private Client',
     customerEmail: bj.clientEmail || 'client@example.com',
     customerPhone: bj.clientPhone || '+44 7700 900000',
@@ -138,7 +138,17 @@ export const AdminDashboardPage = () => {
             const email = (bj.customerEmail || '').toLowerCase().trim();
             return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
           });
-          setJobs(mapped);
+          // Deduplicate multiple entries for identical client instruction
+          const seen = new Set();
+          const deduplicated = [];
+          for (const item of mapped) {
+            const key = `${(item.customerEmail || '').toLowerCase()}_${(item.property || '').toLowerCase().replace(/\s+/g, '')}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              deduplicated.push(item);
+            }
+          }
+          setJobs(deduplicated);
         }
       }
 
@@ -417,12 +427,18 @@ export const AdminDashboardPage = () => {
 
                     {/* Assigned Surveyor & Inspection Date */}
                     <div className="flex items-center justify-between md:justify-end gap-2 text-slate-500">
-                      <span className="font-medium text-slate-700 truncate">
-                        {job.surveyor || 'Unallocated'}
+                      <span className="font-medium text-slate-600 truncate text-[11px]">
+                        {job.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned' && job.surveyor !== 'Unallocated'
+                          ? job.surveyor
+                          : 'Surveyor: Unassigned'}
                       </span>
-                      {job.date && (
-                        <span className="font-mono text-[11px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0">
+                      {job.date && job.date !== 'Pending Allocation' ? (
+                        <span className="font-mono text-[11px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0 text-slate-700 font-semibold">
                           {job.date}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[11px] text-slate-400 bg-slate-50/70 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0">
+                          Date: TBD
                         </span>
                       )}
                     </div>
