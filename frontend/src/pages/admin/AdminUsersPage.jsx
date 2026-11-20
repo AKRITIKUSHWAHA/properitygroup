@@ -49,7 +49,7 @@ export const AdminUsersPage = () => {
             role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
             roleLabel: roleLabelMap[u.role] || u.role,
             org: u.role === 'ADMIN' ? 'NJS Property Group HQ' : u.role === 'SURVEYOR' ? 'Thorne Chartered Surveyors' : 'Private Client',
-            status: u.status === 'ACTIVE' ? 'Active' : 'Inactive',
+            status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
             phone: u.phone || '',
           }));
           if (mapped.length > 0) {
@@ -193,9 +193,26 @@ export const AdminUsersPage = () => {
       customer: 'Customer',
     };
 
+    const targetEmail = (editingUser.email || '').toLowerCase().trim();
+    const isBlocking = editFormData.status === 'Blocked' || editFormData.status === 'Inactive' || editFormData.status?.toUpperCase()?.includes('BLOCK');
+
+    // Update localStorage blocked list
+    try {
+      const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+      if (isBlocking && targetEmail) {
+        if (!blockedList.includes(targetEmail)) {
+          blockedList.push(targetEmail);
+          localStorage.setItem('property_group_blocked_users', JSON.stringify(blockedList));
+        }
+      } else if (targetEmail) {
+        const filtered = blockedList.filter((em) => em !== targetEmail);
+        localStorage.setItem('property_group_blocked_users', JSON.stringify(filtered));
+      }
+    } catch {}
+
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === editingUser.id
+        u.id === editingUser.id || (editingUser.dbId && u.dbId === editingUser.dbId) || (targetEmail && u.email?.toLowerCase() === targetEmail)
           ? {
               ...u,
               name: editFormData.name.trim(),
@@ -208,17 +225,19 @@ export const AdminUsersPage = () => {
       )
     );
 
-    if (typeof editingUser.id === 'number' || /^\d+$/.test(editingUser.id)) {
+    const numericId = editingUser.dbId || (typeof editingUser.id === 'string' ? editingUser.id.replace(/\D/g, '') : editingUser.id);
+    if (numericId) {
       try {
         const payload = {
           name: editFormData.name.trim(),
           role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
-          status: editFormData.status.toUpperCase(),
+          status: isBlocking ? 'INACTIVE' : 'ACTIVE',
         };
         if (editFormData.password && editFormData.password.trim().length >= 6) {
           payload.password = editFormData.password.trim();
         }
-        await adminUsersAndRolesApi.updateUser(editingUser.id, payload);
+        await adminUsersAndRolesApi.updateUser(numericId, payload);
+        fetchUsers();
       } catch (err) {
         console.warn('Backend update error:', err?.message || err);
       }
@@ -228,7 +247,7 @@ export const AdminUsersPage = () => {
     addToast({
       type: 'success',
       title: 'User Profile Updated',
-      message: `${editFormData.name} has been successfully updated.${editFormData.password ? ' Password reset successfully.' : ''}`,
+      message: `${editFormData.name} has been updated (${editFormData.status}).${editFormData.password ? ' Password reset successfully.' : ''}`,
     });
   };
 

@@ -54,6 +54,10 @@ export const verifyJWT = async (req, res, next) => {
       touchUserPresence(user.id, user.email);
     }
 
+    if (user && user.status !== 'ACTIVE') {
+      throw ApiError.forbidden('Your account has been deactivated or blocked by management.');
+    }
+
     // Role-aware fallback according to request endpoint path (Customer never falls back to Admin!)
     if (!user) {
       const isCustomerPath = req.originalUrl?.includes('/customer');

@@ -205,7 +205,7 @@ export const login = async (req, res, next) => {
     }
 
     if (user.status !== 'ACTIVE') {
-      throw ApiError.forbidden('Your account is currently inactive. Please contact support.');
+      throw ApiError.forbidden('Your account has been deactivated or blocked by management. Please contact support.');
     }
 
     const token = jwt.sign(

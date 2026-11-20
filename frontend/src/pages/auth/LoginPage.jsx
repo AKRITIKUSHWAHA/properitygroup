@@ -143,6 +143,13 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
     if (urlEmail) {
       const cleanEmail = urlEmail.toLowerCase().trim();
       setEmail(cleanEmail);
+
+      const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+      if (blockedList.includes(cleanEmail)) {
+        setErrorMessage('Your account has been deactivated or blocked by management. Please contact support.');
+        return;
+      }
+
       // Auto-switch to customer if currently unauthenticated or logged in as a different demo user
       if (!user || user.email?.toLowerCase().trim() !== cleanEmail) {
         let matchedCustomer = null;

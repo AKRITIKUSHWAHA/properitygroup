@@ -87,6 +87,18 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
 
     const trimmedEmail = (email || '').trim().toLowerCase();
+
+    // Check if account is in local blocked list
+    try {
+      const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+      if (blockedList.includes(trimmedEmail)) {
+        setIsLoading(false);
+        throw new Error('Your account has been deactivated or blocked by management. Please contact support.');
+      }
+    } catch (e) {
+      if (e.message?.includes('blocked') || e.message?.includes('deactivated')) throw e;
+    }
+
     let backendUser = null;
     let authToken = null;
 
@@ -99,13 +111,26 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (apiErr) {
       console.warn('Real backend authentication attempt:', apiErr.message);
+      const errMsg = apiErr.message || '';
+      // If backend explicitly rejected the login (blocked, inactive, bad password, access denied), STOP and throw!
       if (
-        apiErr.message?.includes('Access Denied') ||
-        apiErr.message?.includes('strictly reserved') ||
-        apiErr.message?.includes('strictly for')
+        errMsg.includes('blocked') ||
+        errMsg.includes('inactive') ||
+        errMsg.includes('deactivated') ||
+        errMsg.includes('suspended') ||
+        errMsg.includes('Invalid') ||
+        errMsg.includes('password') ||
+        errMsg.includes('Access Denied') ||
+        errMsg.includes('strictly') ||
+        errMsg.includes('Forbidden') ||
+        errMsg.includes('forbidden') ||
+        apiErr.status === 403 ||
+        apiErr.status === 401 ||
+        apiErr.response?.status === 403 ||
+        apiErr.response?.status === 401
       ) {
         setIsLoading(false);
-        throw apiErr;
+        throw new Error(errMsg || 'Your account is blocked or inactive. Please contact administration.');
       }
     }
 

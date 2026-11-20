@@ -142,7 +142,16 @@ export const updateUser = async (req, res, next) => {
     if (name) data.name = name;
     if (phone !== undefined) data.phone = phone;
     if (role) data.role = role.toUpperCase();
-    if (status) data.status = status.toUpperCase();
+    if (status) {
+      const upper = status.toUpperCase();
+      if (upper.includes('BLOCK') || upper.includes('INACTIVE') || upper.includes('DEACTIVAT')) {
+        data.status = 'INACTIVE';
+      } else if (upper.includes('PENDING')) {
+        data.status = 'PENDING';
+      } else {
+        data.status = 'ACTIVE';
+      }
+    }
     if (password && String(password).trim().length >= 6) {
       const salt = await bcrypt.genSalt(10);
       data.password = await bcrypt.hash(String(password).trim(), salt);
