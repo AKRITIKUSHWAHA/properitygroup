@@ -25,6 +25,7 @@ import { SurveyBookerWorkflowBuckets } from '../../components/dashboard/SurveyBo
 import { NewBookingModal } from '../../components/calendar/NewBookingModal';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { AdminMessagesModal } from '../../components/crm/AdminMessagesModal';
+import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useJobs } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
 import { useMessages } from '../../mock/messages';
@@ -108,14 +109,18 @@ const STAGES = [
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { jobs, setJobs, addJob } = useJobs();
-  const { leads, setLeads } = useLeads();
+  const { leads, setLeads, updateLeadStatus } = useLeads();
   const { addToast } = useToast();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
+  const [quotingLead, setQuotingLead] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchRef, setSearchRef] = useState('');
+  const [searchClient, setSearchClient] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
   const [activeBucketFilter, setActiveBucketFilter] = useState('all');
   const [backendBuckets, setBackendBuckets] = useState(null);
 
@@ -246,10 +251,54 @@ export const AdminDashboardPage = () => {
     }
   };
 
+  // Filter leads awaiting quotes when 'quotes-to-submit' is selected
+  const filteredLeads = useMemo(() => {
+    return leads.filter((l) => {
+      const s = String(l.status || '').toLowerCase();
+      const isUnquoted = s === 'new' || s === 'contacted' || s === 'qualified';
+      if (!isUnquoted) return false;
+
+      if (searchRef.trim() && !l.id?.toLowerCase().includes(searchRef.toLowerCase())) {
+        return false;
+      }
+      if (searchClient.trim() && !l.customerName?.toLowerCase().includes(searchClient.toLowerCase())) {
+        return false;
+      }
+      if (searchLocation.trim()) {
+        const loc = searchLocation.toLowerCase();
+        const matchesLoc = l.property?.toLowerCase().includes(loc) || l.location?.toLowerCase().includes(loc);
+        if (!matchesLoc) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesQuery =
+          l.id?.toLowerCase().includes(q) ||
+          l.customerName?.toLowerCase().includes(q) ||
+          l.property?.toLowerCase().includes(q) ||
+          l.location?.toLowerCase().includes(q) ||
+          l.enquiry?.toLowerCase().includes(q);
+        if (!matchesQuery) return false;
+      }
+      return true;
+    });
+  }, [leads, searchRef, searchClient, searchLocation, searchQuery]);
+
   // Filter jobs by search and active bucket
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
-      // Search match
+      // Column searches
+      if (searchRef.trim() && !job.jobNo?.toLowerCase().includes(searchRef.toLowerCase())) {
+        return false;
+      }
+      if (searchClient.trim() && !job.customer?.toLowerCase().includes(searchClient.toLowerCase())) {
+        return false;
+      }
+      if (searchLocation.trim()) {
+        const loc = searchLocation.toLowerCase();
+        const matchesLoc = job.property?.toLowerCase().includes(loc) || job.location?.toLowerCase().includes(loc);
+        if (!matchesLoc) return false;
+      }
+      // General search match
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesQuery =
@@ -270,18 +319,18 @@ export const AdminDashboardPage = () => {
         return job.termsStatus === 'Not Sent' || job.status === 'Accepted';
       }
       if (activeBucketFilter === 'jobs-to-book') {
-        return (job.paymentStatus === 'Paid' || job.termsStatus === 'Signed') && job.status !== 'Booked' && job.status !== 'Completed';
+        return !job.canBook || job.termsStatus !== 'Signed' || job.paymentStatus !== 'Paid';
       }
       if (activeBucketFilter === 'appointments') {
-        return job.status === 'Booked' || job.timelineStep === 7;
+        return job.status === 'Booked' || job.status === 'Scheduled' || job.timelineStep === 7;
       }
       if (activeBucketFilter === 'reports-to-upload') {
-        return job.status === 'Preparing report' || job.timelineStep === 8;
+        return job.status === 'Preparing report' || job.status === 'In Progress' || job.timelineStep === 8;
       }
 
       return true;
     });
-  }, [jobs, searchQuery, activeBucketFilter]);
+  }, [jobs, searchRef, searchClient, searchLocation, searchQuery, activeBucketFilter]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -306,28 +355,44 @@ export const AdminDashboardPage = () => {
 
       {/* Main Content: Active Survey Instructions Queue */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-6 space-y-4">
-        {/* Toolbar: Title, Search, and Active Filter indicator */}
+        {/* Toolbar: Title, Active Filter indicator, Quick Search & Reset */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-base font-bold text-[#0B1F4D] flex items-center gap-2">
+            <h3 className="text-base font-bold text-[#0B1F4D] flex items-center gap-2 flex-wrap">
               <Building className="w-5 h-5 text-[#2563EB]" />
-              <span>Active Survey Instructions &amp; Action Queue</span>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                {filteredJobs.length} {filteredJobs.length === 1 ? 'Job' : 'Jobs'}
+              <span>
+                {activeBucketFilter === 'quotes-to-submit'
+                  ? 'Quotes to Submit (Inbound Enquiries)'
+                  : activeBucketFilter === 'terms-to-send'
+                  ? 'Terms to Send Queue'
+                  : activeBucketFilter === 'jobs-to-book'
+                  ? 'Jobs to Book (Awaiting Booking)'
+                  : activeBucketFilter === 'appointments'
+                  ? 'Appointments (Booked Attendances)'
+                  : activeBucketFilter === 'reports-to-upload'
+                  ? 'Reports to Upload'
+                  : 'Active Survey Instructions & Action Queue'}
+              </span>
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
+                {activeBucketFilter === 'quotes-to-submit'
+                  ? `${filteredLeads.length} ${filteredLeads.length === 1 ? 'Enquiry' : 'Enquiries'}`
+                  : `${filteredJobs.length} ${filteredJobs.length === 1 ? 'Job' : 'Jobs'}`}
               </span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Current RICS residential surveys organized by SurveyBooker progression stages.
+              {activeBucketFilter === 'quotes-to-submit'
+                ? 'Incoming enquiries from Local Surveyors Direct and website awaiting quotation proposals.'
+                : 'Current RICS residential surveys organized by SurveyBooker progression stages.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {/* Search Box */}
-            <div className="relative w-full sm:w-64">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Quick General Search Box */}
+            <div className="relative w-full sm:w-60">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search client, address, job ID..."
+                placeholder="Quick search all..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -338,11 +403,11 @@ export const AdminDashboardPage = () => {
             <button
               type="button"
               onClick={() => setIsMessagesModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#0B1F4D] bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 transition-colors cursor-pointer flex items-center gap-2 shrink-0"
+              className="px-3 py-2 rounded-xl text-xs font-bold text-[#0B1F4D] bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
               title="Open Customer Messaging Inbox"
             >
               <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span className="hidden sm:inline">Client Messages</span>
+              <span className="hidden sm:inline">Messages</span>
               {totalUnreadMessages > 0 && (
                 <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
                   {totalUnreadMessages}
@@ -350,131 +415,259 @@ export const AdminDashboardPage = () => {
               )}
             </button>
 
-            {activeBucketFilter !== 'all' && (
+            {(activeBucketFilter !== 'all' || searchQuery || searchRef || searchClient || searchLocation) && (
               <button
                 type="button"
-                onClick={() => setActiveBucketFilter('all')}
-                className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
+                onClick={() => {
+                  setActiveBucketFilter('all');
+                  setSearchQuery('');
+                  setSearchRef('');
+                  setSearchClient('');
+                  setSearchLocation('');
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shrink-0"
               >
-                Clear Filter
+                Reset All Filters
               </button>
             )}
           </div>
         </div>
 
-        {/* Jobs List / Table */}
-        {filteredJobs.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-            <Building className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-700">No survey jobs found in this view</p>
-            <p className="text-xs text-slate-500 mt-1">
-              Try selecting "All records" above or clear your search query.
-            </p>
+        {/* SurveyBooker-Style Inline Column Filter Boxes (Matching SurveyBooker Image 1) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-50/90 border border-slate-200/70 text-xs">
+          <div>
+            <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              Search Survey ID / Ref
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. NJS-2026, JOB-101, LSD-..."
+              value={searchRef}
+              onChange={(e) => setSearchRef(e.target.value)}
+              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredJobs.map((job) => {
-              const stage = getJobStage(job);
-              const stageBadgeClass = getStageBadgeClass(stage);
+          <div>
+            <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              Search Customer / Name
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. akku, tanu, test k..."
+              value={searchClient}
+              onChange={(e) => setSearchClient(e.target.value)}
+              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+              Search Property Address / Postcode
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. London, MP Nagar, SW1A..."
+              value={searchLocation}
+              onChange={(e) => setSearchLocation(e.target.value)}
+              className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
 
-              return (
+        {/* Conditional Content: Leads Queue vs Survey Jobs Queue */}
+        {activeBucketFilter === 'quotes-to-submit' ? (
+          /* INBOUND LEADS / QUOTES TO SUBMIT VIEW */
+          filteredLeads.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+              <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-bold text-slate-700">No pending quotes found in this filter</p>
+              <p className="text-xs text-slate-500 mt-1">
+                All inbound inquiries from Local Surveyors Direct and website have been quoted!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredLeads.map((lead) => (
                 <div
-                  key={job.id}
-                  onClick={() => navigate(`/admin/jobs/${job.id}`)}
-                  className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer space-y-3 group"
+                  key={lead.id}
+                  className="p-4 sm:p-5 rounded-2xl border border-blue-100 bg-white hover:border-blue-300 hover:shadow-xs transition-all space-y-3"
                 >
-                  {/* Top Bar: Job No, Customer with Profile Shortcut, Stage Pill */}
+                  {/* Lead Top Bar */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-[#0B1F4D] text-white">
-                        {job.jobNo}
+                      <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-blue-900 text-white">
+                        {lead.id}
                       </span>
-
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                        lead.source === 'Local Surveyors Direct'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}>
+                        {lead.source || 'Website'}
+                      </span>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm">{job.customer}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => handleOpenClientProfile(e, job.customerEmail)}
-                          title="Open Client Call Notes & Complaints Log"
-                          className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2563EB] text-[11px] font-bold border border-blue-200/80 transition-colors cursor-pointer"
-                        >
-                          Client Profile
-                        </button>
+                        <span className="font-bold text-slate-900 text-sm">{lead.customerName}</span>
+                        {lead.customerEmail && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenClientProfile(e, lead.customerEmail)}
+                            title="Open Client Profile"
+                            className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2563EB] text-[11px] font-bold border border-blue-200/80 transition-colors cursor-pointer"
+                          >
+                            Client Profile
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    {/* Stage Badge & Manage Button */}
-                    <div className="flex items-center gap-2.5 self-end sm:self-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${stageBadgeClass}`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
-                        Stage: {stage}
-                      </span>
-
-                      <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-[#2563EB] group-hover:translate-x-0.5 transition-transform">
-                        <span>Manage</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setQuotingLead(lead)}
+                      className="px-4 py-2 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs shrink-0 self-end sm:self-auto"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Send Quote Proposal &rarr;</span>
+                    </button>
                   </div>
 
-                  {/* Middle Row: Property Address, Survey Type, and Assigned Surveyor */}
+                  {/* Lead Details Row */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100 text-xs">
-                    {/* Property Address */}
                     <div className="flex items-center gap-1.5 text-slate-700">
                       <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                       <span className="font-semibold truncate">
-                        {job.property || job.location}
+                        {lead.property} {lead.location ? `(${lead.location})` : ''}
                       </span>
                     </div>
 
-                    {/* Survey Type */}
                     <div className="flex items-center gap-1.5 text-slate-600">
                       <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="truncate">{job.surveyType}</span>
+                      <span className="truncate">{lead.enquiry}</span>
                     </div>
 
-                    {/* Assigned Surveyor & Inspection Date */}
                     <div className="flex items-center justify-between md:justify-end gap-2 text-slate-500">
-                      <span className="font-medium text-slate-600 truncate text-[11px]">
-                        {job.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned' && job.surveyor !== 'Unallocated'
-                          ? job.surveyor
-                          : 'Surveyor: Unassigned'}
-                      </span>
-                      {job.date && job.date !== 'Pending Allocation' ? (
-                        <span className="font-mono text-[11px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0 text-slate-700 font-semibold">
-                          {job.date}
-                        </span>
-                      ) : (
-                        <span className="font-mono text-[11px] text-slate-400 bg-slate-50/70 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0">
-                          Date: TBD
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Bottom Pipeline Micro-Stepper */}
-                  <div className="pt-2 border-t border-slate-100/80 flex items-center justify-between text-[11px] text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-slate-500 font-medium">Pipeline:</span>
-                      <span className="font-semibold text-slate-700">
-                        {job.termsStatus === 'Signed' ? 'Terms Signed ✓' : 'Terms Pending'}
-                      </span>
-                      <span>•</span>
-                      <span className="font-semibold text-slate-700">
-                        {job.paymentStatus === 'Paid' ? 'Paid Online ✓' : 'Payment Awaiting'}
+                      <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                        Pending Quote Proposal
                       </span>
                     </div>
-
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      Ref: {job.id}
-                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )
+        ) : (
+          /* STANDARD SURVEY JOBS VIEW */
+          filteredJobs.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
+              <Building className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-bold text-slate-700">No survey jobs found in this view</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Try selecting "All records" above or clear your column filters.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredJobs.map((job) => {
+                const stage = getJobStage(job);
+                const stageBadgeClass = getStageBadgeClass(stage);
+
+                return (
+                  <div
+                    key={job.id}
+                    onClick={() => navigate(`/admin/jobs/${job.id}`)}
+                    className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 bg-white hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer space-y-3 group"
+                  >
+                    {/* Top Bar: Job No, Customer with Profile Shortcut, Stage Pill */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-[#0B1F4D] text-white">
+                          {job.jobNo}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-sm">{job.customer}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenClientProfile(e, job.customerEmail)}
+                            title="Open Client Call Notes & Complaints Log"
+                            className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2563EB] text-[11px] font-bold border border-blue-200/80 transition-colors cursor-pointer"
+                          >
+                            Client Profile
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Stage Badge & Manage Button */}
+                      <div className="flex items-center gap-2.5 self-end sm:self-center">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${stageBadgeClass}`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+                          Stage: {stage}
+                        </span>
+
+                        <div className="hidden sm:flex items-center gap-1 text-xs font-bold text-[#2563EB] group-hover:translate-x-0.5 transition-transform">
+                          <span>Manage</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Middle Row: Property Address, Survey Type, and Assigned Surveyor */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100 text-xs">
+                      {/* Property Address */}
+                      <div className="flex items-center gap-1.5 text-slate-700">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <span className="font-semibold truncate">
+                          {job.property || job.location}
+                        </span>
+                      </div>
+
+                      {/* Survey Type */}
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span className="truncate">{job.surveyType}</span>
+                      </div>
+
+                      {/* Assigned Surveyor & Inspection Date */}
+                      <div className="flex items-center justify-between md:justify-end gap-2 text-slate-500">
+                        <span className="font-medium text-slate-600 truncate text-[11px]">
+                          {job.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned' && job.surveyor !== 'Unallocated'
+                            ? job.surveyor
+                            : 'Surveyor: Unassigned'}
+                        </span>
+                        {job.date && job.date !== 'Pending Allocation' ? (
+                          <span className="font-mono text-[11px] bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0 text-slate-700 font-semibold">
+                            {job.date}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[11px] text-slate-400 bg-slate-50/70 px-2 py-0.5 rounded-md border border-slate-200/60 shrink-0">
+                            Date: TBD
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bottom Pipeline Micro-Stepper */}
+                    <div className="pt-2 border-t border-slate-100/80 flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 font-medium">Pipeline:</span>
+                        <span className="font-semibold text-slate-700">
+                          {job.termsStatus === 'Signed' ? 'Terms Signed ✓' : 'Terms Pending'}
+                        </span>
+                        <span>•</span>
+                        <span className="font-semibold text-slate-700">
+                          {job.paymentStatus === 'Paid' ? 'Paid Online ✓' : 'Payment Awaiting'}
+                        </span>
+                      </div>
+
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Ref: {job.id}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
 
@@ -498,6 +691,27 @@ export const AdminDashboardPage = () => {
         isOpen={isMessagesModalOpen}
         onClose={() => setIsMessagesModalOpen(false)}
       />
+
+      {/* Send Quote Modal from Dashboard */}
+      {quotingLead && (
+        <SendQuoteModal
+          isOpen={!!quotingLead}
+          onClose={() => setQuotingLead(null)}
+          lead={quotingLead}
+          onQuoteSent={(leadId, quotedAmount, quoteRef) => {
+            updateLeadStatus(leadId, 'Quoted', {
+              estimatedValue: quotedAmount,
+              quoteRef: quoteRef,
+            });
+            setQuotingLead(null);
+            addToast({
+              type: 'success',
+              title: 'Quote Dispatched',
+              message: `Fee proposal sent for ${quotingLead.customerName || leadId}.`,
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

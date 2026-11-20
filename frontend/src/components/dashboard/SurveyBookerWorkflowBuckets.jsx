@@ -11,7 +11,8 @@ import {
   Layers,
   Sparkles,
   Clock,
-  ArrowRight
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
@@ -143,12 +144,15 @@ export const SurveyBookerWorkflowBuckets = ({
     },
   ];
 
-  const handleClick = (bucket) => {
+  const handleClick = (bucket, e) => {
+    if (e?.target?.closest('.open-full-menu-btn')) {
+      if (bucket.targetRoute) {
+        navigate(bucket.targetRoute);
+      }
+      return;
+    }
     if (onSelectFilter) {
       onSelectFilter(bucket.id);
-    }
-    if (bucket.targetRoute) {
-      navigate(bucket.targetRoute);
     }
   };
 
@@ -232,11 +236,30 @@ export const SurveyBookerWorkflowBuckets = ({
                 </div>
               </div>
 
-              <ChevronRight
-                className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-1 ${
-                  isSelected ? 'text-white' : 'text-slate-400'
-                }`}
-              />
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                {b.targetRoute && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(b.targetRoute);
+                    }}
+                    title={`Open full dedicated page for ${b.title}`}
+                    className={`open-full-menu-btn p-1.5 rounded-lg text-xs font-semibold flex items-center transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-white/20 text-white hover:bg-white/30'
+                        : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <ChevronRight
+                  className={`w-4 h-4 shrink-0 transition-transform group-hover:translate-x-0.5 ${
+                    isSelected ? 'text-white' : 'text-slate-400'
+                  }`}
+                />
+              </div>
             </div>
           );
         })}
