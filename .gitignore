@@ -43,4 +43,6 @@ backend/uploads/*
 
 # Live backend folder (protected - do not commit or push)
 live backend/
+njs-proprty-group/
+
 
