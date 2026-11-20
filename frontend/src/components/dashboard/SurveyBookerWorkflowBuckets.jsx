@@ -49,6 +49,7 @@ export const SurveyBookerWorkflowBuckets = ({ activeFilter, onSelectFilter, back
   );
   const bJobsToBook = getBackendCount('jobs_to_book');
   const jobsToBook = bJobsToBook !== null ? bJobsToBook : unbookedJobs.length;
+  const remindersSentCount = unbookedJobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
 
   const bAppointments = getBackendCount('appointments');
   const appointments = bAppointments !== null ? bAppointments : jobs.filter(
