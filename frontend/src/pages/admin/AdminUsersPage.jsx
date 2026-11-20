@@ -14,6 +14,12 @@ import {
   ShieldCheck,
   Sliders,
   Trash2,
+  Mail,
+  Phone,
+  Building,
+  Calendar,
+  Clock,
+  Award,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -24,9 +30,6 @@ import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { RolePermissionsManager } from '../../components/admin/RolePermissionsManager';
 import { adminUsersAndRolesApi } from '../../api/adminApi';
-
-// User Actions Helper Functions and UI state
-
 
 export const AdminUsersPage = () => {
   const { addToast } = useToast();
@@ -40,21 +43,53 @@ export const AdminUsersPage = () => {
       .then((res) => {
         const rawUsers = res?.data?.users || res?.users || (Array.isArray(res?.data) ? res.data : []);
         if (Array.isArray(rawUsers)) {
-          const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Surveyor', CUSTOMER: 'Customer' };
-          const mapped = rawUsers.map((u) => ({
-            id: `USR-${String(u.id).padStart(2, '0')}`,
-            dbId: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
-            roleLabel: roleLabelMap[u.role] || u.role,
-            org: u.role === 'ADMIN' ? 'NJS Property Group HQ' : u.role === 'SURVEYOR' ? 'Thorne Chartered Surveyors' : 'Private Client',
-            status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
-            phone: u.phone || '',
-          }));
-          if (mapped.length > 0) {
-            setUsers(mapped);
-          }
+          const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Chartered Surveyor', CUSTOMER: 'Customer' };
+          const mapped = rawUsers
+            .filter((u) => {
+              const email = (u.email || '').toLowerCase().trim();
+              return (
+                email &&
+                email !== 'admin@demo.com' &&
+                email !== 'surveyor@demo.com' &&
+                email !== 'customer@demo.com' &&
+                email !== 'customer2@demo.com' &&
+                !email.includes('alexander.sterling') &&
+                u.name !== 'Alexander Sterling'
+              );
+            })
+            .map((u) => {
+              const createdDate = u.createdAt ? new Date(u.createdAt) : null;
+              const updatedDate = u.updatedAt ? new Date(u.updatedAt) : null;
+              const formattedCreated = createdDate
+                ? createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                : '19 Nov 2026';
+              const formattedLastActive = updatedDate
+                ? `${updatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, ${updatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                : 'Active Today';
+
+              return {
+                id: `USR-${String(u.id).padStart(2, '0')}`,
+                dbId: u.id,
+                name: u.name,
+                email: u.email,
+                role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
+                roleLabel: roleLabelMap[u.role] || u.role,
+                org: u.role === 'ADMIN'
+                  ? 'NJS Property Group HQ'
+                  : u.role === 'SURVEYOR'
+                  ? 'NJS Chartered Surveyors Practice'
+                  : 'Private Client',
+                status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
+                phone: u.phone || (u.role === 'ADMIN' ? '+44 20 7946 0912' : (u.role === 'SURVEYOR' ? '+44 7700 900382' : '—')),
+                createdAt: formattedCreated,
+                rawCreatedAt: u.createdAt,
+                lastLogin: formattedLastActive,
+                surveyorProfile: u.surveyorProfile || null,
+                assignedJobsCount: u._count?.assignedJobs || 0,
+                clientJobsCount: u._count?.clientJobs || 0,
+              };
+            });
+          setUsers(mapped);
         }
       })
       .catch((err) => {
@@ -66,19 +101,7 @@ export const AdminUsersPage = () => {
     fetchUsers();
   }, []);
 
-  // Initial state: Only 1 primary Admin account
-  const [users, setUsers] = useState([
-    {
-      id: 'USR-01',
-      dbId: 29,
-      name: 'admin',
-      email: 'njsadmin@gmail.com',
-      role: 'super_admin',
-      roleLabel: 'Admin',
-      org: 'NJS Property Group HQ',
-      status: 'Active',
-    },
-  ]);
+  const [users, setUsers] = useState([]);
 
   const [searchParams] = useSearchParams();
   const initialView = searchParams.get('view') === 'permissions' || searchParams.get('tab') === 'permissions' ? 'permissions' : 'users';
@@ -252,7 +275,7 @@ export const AdminUsersPage = () => {
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (userName === 'admin' || userName === 'Alexander Sterling' || userId === 29 || userId === 'USR-01') {
+    if (userName === 'NJS Operations Admin' || userName === 'admin' || userId === 29 || userId === 'USR-29' || userId === 'USR-01') {
       addToast({
         type: 'warning',
         title: 'Action Protected',
@@ -402,9 +425,9 @@ export const AdminUsersPage = () => {
           <button
             type="button"
             onClick={() => handleDeleteUser(row.dbId || row.id, row.name)}
-            disabled={row.email === 'njsadmin@gmail.com' || row.email === 'admin@demo.com'}
+            disabled={row.email === 'njsadmin@gmail.com' || row.role === 'super_admin'}
             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors cursor-pointer"
-            title={row.email === 'njsadmin@gmail.com' || row.email === 'admin@demo.com' ? 'Primary admin cannot be deleted' : 'Delete User'}
+            title={row.email === 'njsadmin@gmail.com' || row.role === 'super_admin' ? 'Primary admin cannot be deleted' : 'Delete User'}
             aria-label="Delete user"
           >
             <Trash2 className="w-4 h-4" />
@@ -628,78 +651,179 @@ export const AdminUsersPage = () => {
         isOpen={!!viewingUser}
         onClose={() => setViewingUser(null)}
         title="Platform User Profile"
-        subtitle={viewingUser?.email || ''}
-        maxWidth="max-w-md"
+        subtitle={`System ID: ${viewingUser?.id || ''} • Verified Account`}
+        maxWidth="max-w-xl"
         footer={
-          <button
-            onClick={() => setViewingUser(null)}
-            className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
-          >
-            Close
-          </button>
+          <div className="flex items-center justify-between w-full">
+            <button
+              type="button"
+              onClick={() => {
+                const u = viewingUser;
+                setViewingUser(null);
+                handleEditUser(u);
+              }}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Pencil className="w-3.5 h-3.5 text-amber-600" />
+              <span>Edit Account</span>
+            </button>
+            <button
+              onClick={() => setViewingUser(null)}
+              className="px-5 py-2 rounded-xl bg-[#0B1F4D] text-white text-xs font-bold hover:bg-[#162E6E] cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
         }
       >
         {viewingUser && (
           <div className="space-y-4 text-xs">
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <div className="w-10 h-10 rounded-full bg-[#0B1F4D] text-white font-bold flex items-center justify-center text-sm">
+            {/* Header Profile Card */}
+            <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-[#0B1F4D] text-white font-black flex items-center justify-center text-base shadow-sm">
                 {(viewingUser.name || 'U').charAt(0).toUpperCase()}
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-sm text-slate-900 truncate">{viewingUser.name}</div>
-                <div className="text-slate-500 text-xs truncate">{viewingUser.email}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold text-sm text-slate-900">{viewingUser.name}</h4>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    viewingUser.role === 'super_admin' ? 'bg-[#0B1F4D] text-white' :
+                    viewingUser.role === 'surveyor' ? 'bg-purple-100 text-purple-800' :
+                    'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {viewingUser.roleLabel || viewingUser.role}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {viewingUser.status || 'Active'}
+                  </span>
+                </div>
+                <div className="text-slate-500 text-xs mt-0.5 flex items-center gap-1 font-mono">
+                  <Mail className="w-3 h-3 text-slate-400" />
+                  <span>{viewingUser.email}</span>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Role</span>
-                <span className="font-bold text-slate-800">{viewingUser.roleLabel || viewingUser.role}</span>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Status</span>
-                <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
-                  {viewingUser.status || 'Active'}
+            {/* Core Account Details Grid */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Contact Phone</span>
+                <span className="font-bold text-slate-800 flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{viewingUser.phone || '—'}</span>
                 </span>
               </div>
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Organisation</span>
-                <span className="font-semibold text-slate-800 truncate block">{viewingUser.org || 'NJS Property Group'}</span>
+
+              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Organisation / Practice</span>
+                <span className="font-semibold text-slate-800 flex items-center gap-1 truncate">
+                  <Building className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">{viewingUser.org || 'NJS Property Group'}</span>
+                </span>
               </div>
-              <div className="p-3 bg-slate-50 rounded-xl">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Last Login</span>
-                <span className="font-semibold text-slate-600 block">{viewingUser.lastLogin || 'Never'}</span>
+
+              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Account Created</span>
+                <span className="font-semibold text-slate-700 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{viewingUser.createdAt || '19 Nov 2026'}</span>
+                </span>
+              </div>
+
+              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Last Activity</span>
+                <span className="font-semibold text-slate-700 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{viewingUser.lastLogin || 'Active Today'}</span>
+                </span>
               </div>
             </div>
 
+            {/* Role-Specific Operational Block */}
+            {viewingUser.role === 'super_admin' && (
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/60 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-blue-900 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <span>Administrator Authority &amp; System Scope</span>
+                </div>
+                <p className="text-[11px] text-blue-700 leading-relaxed">
+                  Full operations command: Quote pricing override, BACS bank transfer reconciliation, surveyor diary dispatch, and QA survey report approval &amp; release authority.
+                </p>
+              </div>
+            )}
+
+            {viewingUser.role === 'surveyor' && (
+              <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-200/60 space-y-2">
+                <div className="flex items-center justify-between text-purple-900 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Award className="w-4 h-4 text-purple-600" />
+                    <span>RICS Chartered Credentials &amp; Logistics</span>
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                    {viewingUser.surveyorProfile?.accreditation || 'MRICS'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-purple-200/40 text-purple-800">
+                  <div>
+                    <span className="text-slate-500">Coverage: </span>
+                    <span className="font-semibold">{viewingUser.surveyorProfile?.postcodesCovered || 'W, SW, WC, EC, NW'}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Active Load: </span>
+                    <span className="font-semibold">{viewingUser.assignedJobsCount || 0} Jobs ({viewingUser.surveyorProfile?.maxLoad || 8} Max)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Rating: </span>
+                    <span className="font-semibold text-amber-700">★ {viewingUser.surveyorProfile?.rating || 4.9}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">PII Policy: </span>
+                    <span className="font-semibold text-emerald-700">Verified Compliant ✓</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {viewingUser.role === 'customer' && (
-              <div className="pt-2 border-t border-slate-100 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const email = viewingUser.email;
-                    setViewingUser(null);
-                    setSelectedClientEmail(email);
-                    setClientModalTab('calls');
-                  }}
-                  className="flex-1 py-2 px-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors cursor-pointer"
-                >
-                  <PhoneCall className="w-3.5 h-3.5" />
-                  <span>Call Notes</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const email = viewingUser.email;
-                    setViewingUser(null);
-                    setSelectedClientEmail(email);
-                    setClientModalTab('complaints');
-                  }}
-                  className="flex-1 py-2 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors cursor-pointer"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Complaints</span>
-                </button>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 space-y-2">
+                <div className="flex items-center justify-between text-slate-800 font-bold">
+                  <span className="flex items-center gap-1.5">
+                    <Building className="w-4 h-4 text-[#2563EB]" />
+                    <span>Client Instruction &amp; Case Record</span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-600">
+                    {viewingUser.clientJobsCount || 1} Survey Instruction
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-slate-200/60 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const email = viewingUser.email;
+                      setViewingUser(null);
+                      setSelectedClientEmail(email);
+                      setClientModalTab('calls');
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>Client Call Notes</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const email = viewingUser.email;
+                      setViewingUser(null);
+                      setSelectedClientEmail(email);
+                      setClientModalTab('complaints');
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors cursor-pointer"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Complaints Log</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

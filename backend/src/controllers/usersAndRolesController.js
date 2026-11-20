@@ -9,17 +9,25 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 export const getUsersAndRoles = async (req, res, next) => {
   try {
     const { role, status, search } = req.query;
-    const where = {};
+    const DEMO_EMAILS = ['admin@demo.com', 'surveyor@demo.com', 'customer@demo.com', 'customer2@demo.com'];
+    const where = {
+      email: { notIn: DEMO_EMAILS },
+    };
 
     if (role) where.role = role.toUpperCase();
     if (status && status.toUpperCase() !== 'ALL') {
       where.status = status.toUpperCase();
     }
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
-        { phone: { contains: search } },
+      where.AND = [
+        { email: { notIn: DEMO_EMAILS } },
+        {
+          OR: [
+            { name: { contains: search } },
+            { email: { contains: search } },
+            { phone: { contains: search } },
+          ],
+        },
       ];
     }
 
@@ -34,6 +42,7 @@ export const getUsersAndRoles = async (req, res, next) => {
         avatar: true,
         status: true,
         createdAt: true,
+        updatedAt: true,
         surveyorProfile: true,
         _count: {
           select: {
@@ -53,11 +62,14 @@ export const getUsersAndRoles = async (req, res, next) => {
 
 export const getUsersMetrics = async (req, res, next) => {
   try {
+    const DEMO_EMAILS = ['admin@demo.com', 'surveyor@demo.com', 'customer@demo.com', 'customer2@demo.com'];
+    const notDemo = { email: { notIn: DEMO_EMAILS } };
+
     const [totalUsers, adminCount, surveyorCount, customerCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { role: 'ADMIN' } }),
-      prisma.user.count({ where: { role: 'SURVEYOR' } }),
-      prisma.user.count({ where: { role: 'CUSTOMER' } }),
+      prisma.user.count({ where: notDemo }),
+      prisma.user.count({ where: { ...notDemo, role: 'ADMIN' } }),
+      prisma.user.count({ where: { ...notDemo, role: 'SURVEYOR' } }),
+      prisma.user.count({ where: { ...notDemo, role: 'CUSTOMER' } }),
     ]);
 
     return ApiResponse.success(res, {
