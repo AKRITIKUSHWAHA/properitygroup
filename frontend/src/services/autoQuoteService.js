@@ -115,7 +115,7 @@ export const dispatchAutoQuoteForLead = async (lead, customOverrides = {}) => {
     actionLink: `${window.location.origin}/login?ref=${lead.id}&action=accept_quote`,
     portalLink: `${window.location.origin}/login?ref=${lead.id}`,
     companyName: 'NJS Property Group',
-    companyPhone: '0800 169 9661',
+    companyPhone: '0333 305 2777',
     companyEmail: 'info@njspropertygroup.com',
   };
 
@@ -298,7 +298,7 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
     bookingLink: `${window.location.origin}/customer/my-bookings`,
     portalLink: `${window.location.origin}/customer/my-dashboard`,
     companyName: 'NJS Property Group',
-    companyPhone: '0800 169 9661',
+    companyPhone: '0333 305 2777',
     companyEmail: 'info@njspropertygroup.com',
   };
 
@@ -523,7 +523,7 @@ export const dispatchUnbookedBookingReminder = async (jobOrQuote, customOverride
     bookingLink: `${window.location.origin}/customer/my-bookings`,
     portalLink: `${window.location.origin}/customer/my-dashboard`,
     companyName: 'NJS Property Group',
-    companyPhone: '0800 169 9661',
+    companyPhone: '0333 305 2777',
     companyEmail: 'info@njspropertygroup.com',
   };
 
@@ -551,7 +551,7 @@ If your purchase timeline has changed or you are waiting for the estate agent/ve
 
 Warm regards,
 Bookings & Logistics Desk | NJS Property Group
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`;
 
   const resolvedBody = renderEmailTemplate(
     reminderAutomation?.templateBody || defaultBody,
@@ -800,7 +800,7 @@ export const dispatchPostInspectionUpdate = async (jobOrRecord, customOverrides 
     actionLink: `${window.location.origin}/customer/track-survey`,
     portalLink: `${window.location.origin}/customer/track-survey`,
     companyName: 'NJS Property Group',
-    companyPhone: '0800 169 9661',
+    companyPhone: '0333 305 2777',
     companyEmail: 'info@njspropertygroup.com',
   };
 
@@ -824,7 +824,7 @@ Track your report status in real time:
 
 Warm regards,
 Operations & Survey Logistics Desk | NJS Property Group
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`;
 
   const resolvedBody = renderEmailTemplate(
     inspectionAutomation?.templateBody || defaultBody,
@@ -964,7 +964,7 @@ export const dispatchFinalReportReadyEmail = async (jobOrRecord, customOverrides
     reviewLink: `${window.location.origin}/customer/leave-review`,
     trustpilotUrl: 'https://www.trustpilot.com/review/njspropertygroup.com',
     companyName: 'NJS Property Group',
-    companyPhone: '0800 169 9661',
+    companyPhone: '0333 305 2777',
     companyEmail: 'info@njspropertygroup.com',
   };
 
@@ -992,7 +992,7 @@ Thank you for choosing NJS Property Group.
 
 Warm regards,
 {{surveyor_name}} & The NJS Property Group Team
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`;
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`;
 
   const resolvedBody = renderEmailTemplate(
     reportReadyAutomation?.templateBody || defaultBody,

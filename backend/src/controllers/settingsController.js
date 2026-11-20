@@ -3,12 +3,12 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 
 const DEFAULT_PRACTICE_SETTINGS = [
   { key: 'practice_name', value: 'NJS Property Group Ltd', category: 'GENERAL' },
-  { key: 'rics_firm_number', value: 'RICS-084920-UK', category: 'RICS' },
+  { key: 'rics_firm_number', value: 'RICS Regulated Practice', category: 'RICS' },
   { key: 'vat_registration_number', value: 'GB 984 2190 44', category: 'FINANCIAL' },
   { key: 'standard_vat_rate', value: '20.0', category: 'FINANCIAL' },
-  { key: 'registered_office_address', value: '14 Berkeley Street, Mayfair, London W1J 8BN', category: 'GENERAL' },
+  { key: 'registered_office_address', value: 'Belmont House, Uxbridge UB8 1QS', category: 'GENERAL' },
   { key: 'operations_email', value: 'info@njspropertygroup.com', category: 'GENERAL' },
-  { key: 'operations_phone', value: '+44 20 7946 0912', category: 'GENERAL' },
+  { key: 'operations_phone', value: '0333 305 2777', category: 'GENERAL' },
   { key: 'default_turnaround_days', value: '5', category: 'GENERAL' },
   { key: 'email_notifications_active', value: 'true', category: 'NOTIFICATION' },
   { key: 'sms_reminders_active', value: 'true', category: 'NOTIFICATION' },

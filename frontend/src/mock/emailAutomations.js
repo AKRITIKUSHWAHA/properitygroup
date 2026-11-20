@@ -38,7 +38,7 @@ To accept this quotation and secure your priority inspection slot:
 
 Warm regards,
 Client Services Team | NJS Property Group
-Direct Helpline: 0800 169 9661`,
+Direct Helpline: 0333 305 2777`,
     tags: ['Auto-Quote', 'LSD Integration', 'Fixed Fee', 'RICS Standards'],
   },
   {
@@ -68,7 +68,7 @@ If there are specific defect concerns or questions for your chartered surveyor, 
 
 Warm regards,
 Client Services Coordination Team | NJS Property Group
-Direct Helpline: 0800 169 9661 • Email: info@njspropertygroup.com`,
+Direct Helpline: 0333 305 2777 • Email: info@njspropertygroup.com`,
     tags: ['Quote Accepted', 'SurveyBooker', 'Terms Signing', 'Booking Next Steps'],
   },
   {
@@ -100,7 +100,7 @@ If your purchase timeline has changed or you are waiting for the estate agent/ve
 
 Warm regards,
 Bookings & Logistics Desk | NJS Property Group
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`,
     tags: ['Chase Reminder', 'SurveyBooker', 'Calendar Booking', 'Unbooked Follow-Up'],
   },
   {
@@ -214,7 +214,7 @@ If you have urgent queries regarding immediate transaction deadlines, please rep
 
 Warm regards,
 Operations & Survey Logistics Desk | NJS Property Group
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`,
     tags: ['Inspection Done', 'Drafting Report', 'QA Protocol', '48h SLA'],
   },
   {
@@ -246,7 +246,7 @@ Thank you for choosing NJS Property Group.
 
 Warm regards,
 {{surveyor_name}} & The NJS Property Group Team
-Phone: 0800 169 9661 • Email: info@njspropertygroup.com`,
+Phone: 0333 305 2777 • Email: info@njspropertygroup.com`,
     tags: ['Final Report', 'PDF Download', 'Trustpilot Invite', 'Surveyor Debrief'],
   },
 ];
@@ -264,7 +264,7 @@ export const renderEmailTemplate = (text, data = {}) => {
   const timeSlot = data.timeSlot || data.arrivalWindow || '09:30 AM - 12:00 PM';
   const actionLink = data.actionLink || data.bookingLink || data.portalLink || 'https://njspropertygroup.com/customer/portal';
   const companyName = 'NJS Property Group';
-  const companyPhone = '0800 169 9661';
+  const companyPhone = '0333 305 2777';
   const companyEmail = 'info@njspropertygroup.com';
 
   return text

@@ -37,7 +37,7 @@ export const ROLES_CONFIG = {
       'Serving London, Surrey, Oxfordshire, Buckinghamshire, and Berkshire. Complete with 48h report delivery and direct telephone debrief.',
     image:
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85',
-    footerNote: 'Encrypted 256-bit SSL session • RICS Regulated Firm #084920',
+    footerNote: 'Encrypted 256-bit SSL session • Regulated by RICS',
   },
   surveyor: {
     id: 'surveyor',

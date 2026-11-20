@@ -23,7 +23,7 @@ const escapeHtml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Independent RICS-Regulated Practice • Firm #084920') => `
+export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Independent RICS-Regulated Practice') => `
   <div style="background: #ffffff; padding: 20px 26px; border-bottom: 1px solid #e2e8f0; text-align: left;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse;">
       <tr>
@@ -31,8 +31,8 @@ export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Indep
           <img src="${NJS_OFFICIAL_LOGO_URL}" alt="NJS Property Group" width="220" style="width: 220px; max-width: 240px; height: auto; display: block; border: 0;" />
         </td>
         <td align="right" style="vertical-align: middle; padding: 0; text-align: right;">
-          <div style="display: inline-block; font-size: 11px; font-weight: 700; color: #0B1F4D; background: #f8fafc; border: 1px solid #cbd5e1; padding: 5px 12px; border-radius: 6px; letter-spacing: 0.3px;">
-            RICS Regulated Firm #084920
+          <div style="display: inline-block; font-size: 11px; font-weight: 700; color: #0B1F4D; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 6px; letter-spacing: 0.3px; white-space: nowrap;">
+            Regulated by RICS
           </div>
         </td>
       </tr>
@@ -46,9 +46,9 @@ export const buildEmailHeader = (title = 'NJS PROPERTY GROUP', subtitle = 'Indep
 
 export const buildEmailFooter = () => `
   <div style="background: #f8fafc; padding: 18px 26px; text-align: center; font-size: 11.5px; color: #64748b; border-top: 1px solid #e2e8f0; line-height: 1.6;">
-    <div style="font-weight: 700; color: #0B1F4D; margin-bottom: 4px;">NJS Property Group Ltd &bull; Independent Chartered Surveyors</div>
-    <div>Regulated by RICS &bull; Firm #084920 &bull; Phone: 0800 169 9661 &bull; Email: info@njspropertygroup.com</div>
-    <div style="color: #94a3b8; font-size: 10.5px; margin-top: 6px;">&copy; ${new Date().getFullYear()} NJS Property Group. All rights reserved under UK Law.</div>
+    <div style="font-weight: 700; color: #0B1F4D; margin-bottom: 4px; font-size: 12px; line-height: 1.4;">NJS Property Group Ltd &bull; Chartered Surveyors</div>
+    <div>Regulated by RICS &bull; Phone: <a href="tel:03333052777" style="color: #0B1F4D; font-weight: 700; text-decoration: none;">0333 305 2777</a> &bull; Email: <a href="mailto:info@njspropertygroup.com" style="color: #2563EB; text-decoration: none;">info@njspropertygroup.com</a></div>
+    <div style="color: #94a3b8; font-size: 10.5px; margin-top: 6px;">&copy; ${new Date().getFullYear()} NJS Property Group Ltd. All rights reserved under UK Law.</div>
   </div>
 `;
 
@@ -198,7 +198,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
                 </div>
 
                 <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                  For urgent questions, contact our operations desk at <strong>0800 169 9661</strong> or reply directly to this email.
+                  For urgent questions, contact our operations desk at <strong>0333 305 2777</strong> or reply directly to this email.
                 </p>
               </div>
               
@@ -269,19 +269,21 @@ export const sendQuoteProposalEmail = async ({
         <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(clientName || 'Valued Client')},</h2>
         <p>Thank you for instructing NJS Property Group. We have prepared your comprehensive fee proposal for the property inspection below:</p>
         
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px 20px; margin: 22px 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-collapse: collapse; font-size: 13.5px;">
             <tr>
-              <td style="padding: 6px 0; color: #64748b;">Property:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+              <td style="padding: 10px 0; color: #64748b; font-weight: 500; vertical-align: top; width: 38%; border-bottom: 1px solid #e2e8f0;">Property:</td>
+              <td style="padding: 10px 0; font-weight: 700; color: #0f172a; text-align: right; vertical-align: top; width: 62%; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
             </tr>
             <tr>
-              <td style="padding: 6px 0; color: #64748b;">Survey Standard:</td>
-              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; text-align: right;">${escapeHtml(surveyType || 'RICS Level 2 Home Survey')}</td>
+              <td style="padding: 12px 0; color: #64748b; font-weight: 500; vertical-align: top; width: 38%; border-bottom: 1px solid #e2e8f0;">Survey Standard:</td>
+              <td style="padding: 12px 0; font-weight: 700; color: #0B1F4D; text-align: right; vertical-align: top; width: 62%; line-height: 1.45; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${escapeHtml(surveyType || 'RICS Level 2 Home Survey')}</td>
             </tr>
             <tr>
-              <td style="padding: 6px 0; color: #64748b;">Fixed Fee (inc. 20% VAT):</td>
-              <td style="padding: 6px 0; font-weight: 900; color: #059669; font-size: 16px; text-align: right;">£${escapeHtml(quoteAmount || '770.00')}</td>
+              <td style="padding: 14px 0 6px 0; color: #475569; font-weight: 600; vertical-align: middle; width: 45%;">
+                Fixed Fee <span style="font-size: 11px; color: #64748b; font-weight: 400; display: block; margin-top: 2px;">(inc. 20% UK VAT)</span>
+              </td>
+              <td style="padding: 14px 0 6px 0; font-weight: 900; color: #059669; font-size: 18px; text-align: right; vertical-align: middle; width: 55%; white-space: nowrap;">£${escapeHtml(quoteAmount || '770.00')}</td>
             </tr>
           </table>
         </div>
@@ -293,7 +295,7 @@ export const sendQuoteProposalEmail = async ({
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-          Need assistance? Our operations team is available at <strong>0800 169 9661</strong> or reply directly to this email.
+          Need assistance? Our operations team is available at <strong>0333 305 2777</strong> or reply directly to this email.
         </p>
       </div>
       
@@ -461,7 +463,7 @@ export const sendQuoteAcceptedEmail = async ({
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-          Questions? Reply directly to this email or speak with our operations desk at <strong>0800 169 9661</strong>.
+          Questions? Reply directly to this email or speak with our operations desk at <strong>0333 305 2777</strong>.
         </p>
       </div>
       ${buildEmailFooter()}

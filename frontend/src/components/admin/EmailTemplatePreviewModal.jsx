@@ -333,7 +333,7 @@ export const EmailTemplatePreviewModal = ({
 
                       <div className="flex items-center gap-1.5 text-slate-700 text-[11px] font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>RICS Regulated Firm #084920</span>
+                        <span>Regulated by RICS</span>
                       </div>
                     </div>
                     <div className="bg-[#0B1F4D] px-5 py-2.5 flex items-center justify-between border-b-2 border-[#C5A059]">
@@ -361,9 +361,9 @@ export const EmailTemplatePreviewModal = ({
                       <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                         <div className="flex items-center gap-1.5 text-slate-500">
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Regulated by RICS Firm #084920</span>
+                          <span>Regulated by RICS</span>
                         </div>
-                        <div className="font-mono">Helpline: 0800 169 9661</div>
+                        <div className="font-mono">Helpline: 0333 305 2777</div>
                       </div>
                     </div>
                   </div>

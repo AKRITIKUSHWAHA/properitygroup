@@ -2348,7 +2348,7 @@ export const CustomerInvoicesPage = () => {
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start justify-between">
               <div>
                 <span className="font-extrabold text-[#0B1F4D] text-sm block">NJS PROPERTY GROUP</span>
-                <span className="text-[10px] text-slate-400 block">RICS Regulated Firm #084920</span>
+                <span className="text-[10px] text-slate-400 block">Regulated by RICS</span>
                 <span className="text-[10px] text-slate-400 block">VAT Reg: GB 384 9281 92</span>
               </div>
               <div className="text-right">

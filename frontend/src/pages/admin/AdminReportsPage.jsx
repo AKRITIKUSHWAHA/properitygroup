@@ -729,7 +729,7 @@ export const AdminReportsPage = () => {
                   RICS Quality Assurance Protocol
                 </span>
                 <span className="text-xs text-slate-300">•</span>
-                <span className="text-xs text-slate-300 font-semibold">Firm #084920</span>
+                <span className="text-xs text-slate-300 font-semibold">Regulated Practice</span>
               </div>
               <h3 className="text-lg font-extrabold text-white">
                 Technical QA Sign-Off &amp; Client Report Release
