@@ -130,15 +130,17 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
   const BadgeIcon = currentRoleConfig.badgeIcon;
 
   const [email, setEmail] = useState(
-    () => urlEmail || location.state?.prefilledEmail || location.state?.registeredEmail || ''
+    () => urlEmail || location.state?.registeredEmail || location.state?.prefilledEmail || ''
   );
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(
+    () => location.state?.registeredPassword || ''
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Handle direct link with email from proposal email
+  // Handle direct link with email from proposal email or registration
   useEffect(() => {
     if (urlEmail) {
       const cleanEmail = urlEmail.toLowerCase().trim();
@@ -150,9 +152,12 @@ export const LoginPage = ({ roleProp = null, initialMode = null }) => {
         setErrorMessage('Your account has been deactivated or blocked by management. Please contact support.');
         return;
       }
-    } else if (location.state?.prefilledEmail) {
-      setEmail(location.state.prefilledEmail);
-      setPassword('');
+    } else if (location.state?.registeredEmail || location.state?.prefilledEmail) {
+      const targetEmail = (location.state.registeredEmail || location.state.prefilledEmail).toLowerCase().trim();
+      setEmail(targetEmail);
+      if (location.state.registeredPassword) {
+        setPassword(location.state.registeredPassword);
+      }
     } else {
       setEmail('');
       setPassword('');

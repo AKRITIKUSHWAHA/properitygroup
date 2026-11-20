@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, ChevronDown, ChevronUp, Eye, EyeOff, Lock, User } from 'lucide-react';
 import { approvedServices } from '../../config/services';
 import { siteConfig } from '../../config/siteConfig';
@@ -9,6 +9,7 @@ import { FormField } from './FormField';
 import { Button } from '../common/Button';
 
 export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
+  const navigate = useNavigate();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -198,6 +199,21 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
 
       setSubmissionReceipt(receipt);
       setIsSubmitting(false);
+
+      // Instantly transition customer to Register page with prefilled information as requested
+      navigate('/register', {
+        state: {
+          fullName: formData.customerName,
+          email: cleanEmail,
+          phone: formData.customerPhone,
+          address: formData.propertyAddress,
+          postcode: formData.propertyPostcode,
+          serviceId: formData.serviceId,
+          serviceName: serviceName,
+          quoteReference: generatedRef,
+          fromQuote: true,
+        },
+      });
     } catch (err) {
       setIsSubmitting(false);
       setSubmitError(

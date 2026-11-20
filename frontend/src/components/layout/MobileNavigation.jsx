@@ -271,18 +271,6 @@ export function MobileNavigation({ isOpen, onClose }) {
             </span>
             <ChevronRight size={15} />
           </NavLink>
-
-          <NavLink
-            to="/register"
-            className={({ isActive }) => `mobile-link ${isActive ? 'active' : ''}`}
-            onClick={onClose}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-              <User size={15} />
-              <span>Create Customer Account</span>
-            </span>
-            <ChevronRight size={15} />
-          </NavLink>
         </nav>
 
         {/* Mobile Action Callouts */}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { User, Mail, Phone, MapPin, Building, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthLayout } from '../../layouts/AuthLayout';
@@ -7,21 +7,82 @@ import { AuthLayout } from '../../layouts/AuthLayout';
 export const RegisterPage = () => {
   const { registerCustomer } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const stateData = location.state || {};
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    address: '',
-    postcode: '',
+    fullName: stateData.fullName || stateData.customerName || '',
+    email: stateData.email || stateData.customerEmail || '',
+    phone: stateData.phone || stateData.customerPhone || '',
+    address: stateData.address || stateData.propertyAddress || '',
+    postcode: stateData.postcode || stateData.propertyPostcode || '',
     password: '',
     confirmPassword: '',
-    agreeTerms: false,
+    agreeTerms: true,
   });
 
+  const [isExistingCustomer, setIsExistingCustomer] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const checkAndAutofillExisting = (inputEmail) => {
+    const cleanEmail = (inputEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) return;
+
+    try {
+      // 1. Check registered customers in localStorage
+      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      if (registered[cleanEmail]) {
+        const cust = registered[cleanEmail];
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || cust.name || '',
+          phone: prev.phone || cust.phone || '',
+          address: prev.address || cust.address || '',
+          postcode: prev.postcode || cust.postcode || '',
+        }));
+        setIsExistingCustomer(true);
+        return;
+      }
+
+      // 2. Check CRM leads or stored jobs
+      const leads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const lead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase() === cleanEmail);
+      if (lead) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || lead.customer || lead.clientName || '',
+          phone: prev.phone || lead.customerPhone || '',
+          address: prev.address || lead.property || '',
+          postcode: prev.postcode || lead.postcode || lead.location || '',
+        }));
+        setIsExistingCustomer(true);
+        return;
+      }
+
+      const jobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+      const job = jobs.find((j) => (j.customerEmail || '').toLowerCase() === cleanEmail);
+      if (job) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || job.customer || '',
+          phone: prev.phone || job.customerPhone || '',
+          address: prev.address || job.property || '',
+          postcode: prev.postcode || job.postcode || job.location || '',
+        }));
+        setIsExistingCustomer(true);
+        return;
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    const initEmail = stateData.email || stateData.customerEmail || formData.email;
+    if (initEmail) {
+      checkAndAutofillExisting(initEmail);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -29,6 +90,10 @@ export const RegisterPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+
+    if (name === 'email' && value.includes('@')) {
+      checkAndAutofillExisting(value);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -61,10 +126,11 @@ export const RegisterPage = () => {
         password: formData.password,
       });
 
-      // Navigate to login pre-filling the customer's email
+      // Navigate to login pre-filling the customer's email and password
       navigate('/login', {
         state: {
-          registeredEmail: formData.email,
+          registeredEmail: formData.email.trim().toLowerCase(),
+          registeredPassword: formData.password,
           registrationSuccess: true,
           message: 'Account registered successfully! Please sign in with your email and password.'
         }
@@ -80,13 +146,38 @@ export const RegisterPage = () => {
       title="Create Client Account"
       subtitle="Register as a property owner or buyer to request quotes, book surveys, and sign documents."
     >
+      {/* Quotation Logged Alert */}
+      {stateData.fromQuote && (
+        <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs text-emerald-950">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold block text-emerald-900">
+              Quotation Request Received {stateData.quoteReference ? `(${stateData.quoteReference})` : ''}
+            </span>
+            <span className="text-emerald-800">
+              Your details are prefilled below. Set your password to activate your customer portal and track your survey.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Existing Customer Recognized Alert */}
+      {isExistingCustomer && !stateData.fromQuote && (
+        <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 text-xs text-blue-900">
+          <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+          <span>Existing client record recognized — your details have been auto-filled. Set your password to proceed.</span>
+        </div>
+      )}
+
       {/* Notice Banner */}
-      <div className="mb-4 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center gap-2.5 text-xs text-blue-900">
-        <ShieldCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
-        <span>
-          Customer Portal Registration only. Staff and Surveyors are invited by the Admin.
-        </span>
-      </div>
+      {!stateData.fromQuote && !isExistingCustomer && (
+        <div className="mb-4 p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center gap-2.5 text-xs text-blue-900">
+          <ShieldCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
+          <span>
+            Customer Portal Registration only. Staff and Surveyors are invited by the Admin.
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
@@ -130,6 +221,7 @@ export const RegisterPage = () => {
               required
               value={formData.email}
               onChange={handleChange}
+              onBlur={() => checkAndAutofillExisting(formData.email)}
               disabled={isLoading}
               placeholder="e.g. eleanor@example.co.uk"
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB] focus:bg-white transition-all disabled:opacity-50"

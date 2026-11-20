@@ -120,9 +120,6 @@ export function Header() {
                       <span>Customer Login</span>
                       <ChevronRight size={13} aria-hidden="true" />
                     </Link>
-                    <Link to="/register" className="announcement-register-btn hide-mobile" title="Create Customer Account">
-                      <span>Create Account / Register</span>
-                    </Link>
                   </div>
                 )}
                 <button

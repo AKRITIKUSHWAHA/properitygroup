@@ -18,12 +18,39 @@ export const register = async (req, res, next) => {
       throw ApiError.badRequest('Name, email, and password are required');
     }
 
+    const cleanEmail = email.toLowerCase().trim();
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: cleanEmail },
     });
 
     if (existingUser) {
-      throw ApiError.badRequest('User with this email already exists');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      const updatedUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: name || existingUser.name,
+          phone: phone || existingUser.phone,
+          password: hashedPassword,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      const token = jwt.sign(
+        { id: updatedUser.id, email: updatedUser.email, role: updatedUser.role },
+        env.JWT_SECRET,
+        { expiresIn: env.JWT_EXPIRES_IN }
+      );
+
+      return ApiResponse.ok(res, { user: updatedUser, token }, 'Registration updated successfully');
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -32,7 +59,7 @@ export const register = async (req, res, next) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email: email.toLowerCase(),
+        email: cleanEmail,
         password: hashedPassword,
         role,
         phone,
