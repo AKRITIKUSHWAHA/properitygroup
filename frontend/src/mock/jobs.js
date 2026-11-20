@@ -48,7 +48,11 @@ export const getStoredJobs = () => {
 
 export const saveStoredJobs = (jobs) => {
   try {
-    localStorage.setItem('propertygroup_jobs', JSON.stringify(jobs));
+    const serialized = JSON.stringify(jobs);
+    if (localStorage.getItem('propertygroup_jobs') === serialized) {
+      return;
+    }
+    localStorage.setItem('propertygroup_jobs', serialized);
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
   } catch (e) {
     console.error(e);

@@ -64,7 +64,11 @@ export const getStoredLeads = () => {
 
 export const saveStoredLeads = (leads) => {
   try {
-    localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
+    const serialized = JSON.stringify(leads);
+    if (localStorage.getItem(LEADS_STORAGE_KEY) === serialized) {
+      return;
+    }
+    localStorage.setItem(LEADS_STORAGE_KEY, serialized);
     window.dispatchEvent(new Event('propertygroup_leads_updated'));
   } catch (e) {
     console.error('Failed saving leads to storage', e);

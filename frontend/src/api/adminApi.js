@@ -4,11 +4,47 @@ import { api } from './apiClient';
  * Superadmin API Client — All 11 Menus
  */
 
+// In-flight deduplication and short in-memory cache to prevent redundant UI fetch storms
+const createCache = (fetcher, ttlMs = 20000) => {
+  let cachedPromise = null;
+  let cachedTime = 0;
+  return {
+    get: (params = '') => {
+      const now = Date.now();
+      if (!params && cachedPromise && now - cachedTime < ttlMs) {
+        return cachedPromise;
+      }
+      const p = fetcher(params).catch((err) => {
+        cachedPromise = null;
+        throw err;
+      });
+      if (!params) {
+        cachedPromise = p;
+        cachedTime = now;
+      }
+      return p;
+    },
+    invalidate: () => {
+      cachedPromise = null;
+      cachedTime = 0;
+    },
+  };
+};
+
+const statsCache = createCache(() => api.get('/dashboard/stats'));
+const bucketsCache = createCache(() => api.get('/dashboard/action-buckets'));
+const jobsCache = createCache((params = '') => api.get(`/survey-jobs${params ? `?${params}` : ''}`));
+const leadsCache = createCache((params = '') => api.get(`/crm-and-leads${params ? `?${params}` : ''}`));
+
 // Menu 1: Dashboard
 export const adminDashboardApi = {
-  getStats: () => api.get('/dashboard/stats'),
-  getActionBuckets: () => api.get('/dashboard/action-buckets'),
+  getStats: () => statsCache.get(),
+  getActionBuckets: () => bucketsCache.get(),
   getRecentActivity: () => api.get('/dashboard/recent-activity'),
+  invalidateCache: () => {
+    statsCache.invalidate();
+    bucketsCache.invalidate();
+  },
 };
 
 // Menu 2: Users & Roles
@@ -64,24 +100,63 @@ export const adminSurveyorsApi = {
 
 // Menu 5: CRM & Leads
 export const adminCrmAndLeadsApi = {
-  getLeads: (params = '') => api.get(`/crm-and-leads${params ? `?${params}` : ''}`),
+  getLeads: (params = '') => leadsCache.get(params),
   getMetrics: () => api.get('/crm-and-leads/metrics'),
-  createLead: (leadData) => api.post('/crm-and-leads', leadData),
-  updateStatus: (id, status) => api.patch(`/crm-and-leads/${id}/status`, { status }),
-  addCallLog: (callData) => api.post('/crm-and-leads/call-logs', callData),
-  addComplaint: (complaintData) => api.post('/crm-and-leads/complaints', complaintData),
-  resolveComplaint: (id, notes) => api.patch(`/crm-and-leads/complaints/${id}/resolve`, { resolutionNotes: notes }),
+  createLead: (leadData) => {
+    leadsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.post('/crm-and-leads', leadData);
+  },
+  updateStatus: (id, status) => {
+    leadsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.patch(`/crm-and-leads/${id}/status`, { status });
+  },
+  addCallLog: (callData) => {
+    leadsCache.invalidate();
+    return api.post('/crm-and-leads/call-logs', callData);
+  },
+  addComplaint: (complaintData) => {
+    leadsCache.invalidate();
+    return api.post('/crm-and-leads/complaints', complaintData);
+  },
+  resolveComplaint: (id, notes) => {
+    leadsCache.invalidate();
+    return api.patch(`/crm-and-leads/complaints/${id}/resolve`, { resolutionNotes: notes });
+  },
 };
 
 // Menu 6: Survey Jobs
 export const adminSurveyJobsApi = {
-  getJobs: (params = '') => api.get(`/survey-jobs${params ? `?${params}` : ''}`),
+  getJobs: (params = '') => jobsCache.get(params),
   getMetrics: () => api.get('/survey-jobs/metrics'),
   getJobById: (id) => api.get(`/survey-jobs/${id}`),
-  createJob: (jobData) => api.post('/survey-jobs', jobData),
-  updateStage: (id, newStage, reason = '') => api.patch(`/survey-jobs/${id}/stage`, { newStage, reason }),
-  assignSurveyor: (id, assignmentData) => api.patch(`/survey-jobs/${id}/assign-surveyor`, assignmentData),
-  rescheduleJob: (id, rescheduleData) => api.patch(`/survey-jobs/${id}/reschedule`, rescheduleData),
+  createJob: (jobData) => {
+    jobsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.post('/survey-jobs', jobData);
+  },
+  updateStage: (id, newStage, reason = '') => {
+    jobsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.patch(`/survey-jobs/${id}/stage`, { newStage, reason });
+  },
+  assignSurveyor: (id, assignmentData) => {
+    jobsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.patch(`/survey-jobs/${id}/assign-surveyor`, assignmentData);
+  },
+  rescheduleJob: (id, rescheduleData) => {
+    jobsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.patch(`/survey-jobs/${id}/reschedule`, rescheduleData);
+  },
 };
 
 // Menu 7: Messages Inbox

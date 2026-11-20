@@ -48,11 +48,12 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging in dev - skip routine polling / background reads so terminal stays clean
+// Request logging in dev - skip routine polling / background reads and 304 Not Modified cache hits so terminal stays clean
 if (env.NODE_ENV === 'development') {
   app.use(
     morgan('dev', {
-      skip: (req) => {
+      skip: (req, res) => {
+        if (res.statusCode === 304) return true;
         const u = req.originalUrl || req.url || '';
         return (
           u.includes('contacts') ||
@@ -61,6 +62,7 @@ if (env.NODE_ENV === 'development') {
           u.includes('permissions') ||
           u.includes('messages') ||
           u.includes('surveyors') ||
+          u.includes('dashboard') ||
           u.includes('health')
         );
       },
