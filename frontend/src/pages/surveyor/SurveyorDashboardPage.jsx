@@ -212,7 +212,7 @@ export const SurveyorDashboardPage = () => {
       id: Date.now(),
       room: selectedRoom,
       note: defectNote,
-      url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=300&q=80',
+      url: null,
       time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -657,11 +657,18 @@ export const SurveyorDashboardPage = () => {
                 key={photo.id}
                 className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-3"
               >
-                <img
-                  src={photo.url}
-                  alt={photo.room}
-                  className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
-                />
+                {photo.url && !photo.url.includes('unsplash.com') ? (
+                  <img
+                    src={photo.url}
+                    alt={photo.room}
+                    className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-blue-50 border border-blue-200 text-[#2563EB] flex flex-col items-center justify-center shrink-0">
+                    <Camera className="w-5 h-5 mb-0.5" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">Evidence</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 truncate">

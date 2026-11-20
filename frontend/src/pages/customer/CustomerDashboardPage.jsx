@@ -185,7 +185,7 @@ export const CustomerDashboardPage = () => {
     location: b.location,
     surveyType: b.surveyType,
     surveyor: b.surveyor || 'Assigned Surveyor',
-    surveyorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
+    surveyorAvatar: (b.surveyorAvatar && !b.surveyorAvatar.includes('unsplash.com')) ? b.surveyorAvatar : null,
     date: b.date || '27/10/2026',
     timeSlot: b.timeSlot || '10:00 - 13:00',
     status: b.status,
@@ -698,11 +698,17 @@ export const CustomerDashboardPage = () => {
 
                   <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2.5">
-                      <img
-                        src={booking.surveyorAvatar}
-                        alt={booking.surveyor}
-                        className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
-                      />
+                      {booking.surveyorAvatar ? (
+                        <img
+                          src={booking.surveyorAvatar}
+                          alt={booking.surveyor}
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-slate-200"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-[#0B1F4D] text-white flex items-center justify-center font-bold text-[10px] ring-1 ring-slate-200">
+                          {booking.surveyor?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                        </div>
+                      )}
                       <div>
                         <span className="font-bold text-slate-800">{booking.surveyor}</span>
                         <span className="text-[10px] text-slate-400 block">{booking.surveyType}</span>

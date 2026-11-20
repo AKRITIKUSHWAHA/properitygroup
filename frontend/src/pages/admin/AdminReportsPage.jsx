@@ -421,7 +421,7 @@ export const AdminReportsPage = () => {
         id: 'srv-1',
         name: 'David Thorne MRICS',
         credentials: 'Chartered Valuation Surveyor',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         postcodes: 'GU, KT, SW',
         surveys: 46,
         onTimeRate: '98.5%',
@@ -434,7 +434,7 @@ export const AdminReportsPage = () => {
         id: 'srv-2',
         name: 'Oliver Hughes MRICS',
         credentials: 'Senior Building Surveyor',
-        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         postcodes: 'W, NW, WC',
         surveys: 38,
         onTimeRate: '96.2%',
@@ -447,7 +447,7 @@ export const AdminReportsPage = () => {
         id: 'srv-3',
         name: 'Claire Bennet AssocRICS',
         credentials: 'Residential Defect Specialist',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         postcodes: 'TW, UB, SL',
         surveys: 34,
         onTimeRate: '100%',
@@ -460,7 +460,7 @@ export const AdminReportsPage = () => {
         id: 'srv-4',
         name: 'Jonathan Cross FRICS',
         credentials: 'Fellow Chartered Surveyor',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         postcodes: 'EC, SE, E',
         surveys: 32,
         onTimeRate: '97.0%',
@@ -473,7 +473,7 @@ export const AdminReportsPage = () => {
         id: 'srv-5',
         name: 'Fiona Macintyre MRICS',
         credentials: 'Historic Buildings Consultant',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         postcodes: 'OX, RG, HP',
         surveys: 26,
         onTimeRate: '95.8%',
@@ -565,11 +565,17 @@ export const AdminReportsPage = () => {
       className: 'w-[28%] min-w-[145px]',
       render: (val, row) => (
         <div className="flex items-center gap-2.5 min-w-0">
-          <img
-            src={row.avatar}
-            alt={val}
-            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-          />
+          {row.avatar && !row.avatar.includes('unsplash.com') ? (
+            <img
+              src={row.avatar}
+              alt={val}
+              className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+              {val?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+            </div>
+          )}
           <div className="min-w-0">
             <button
               onClick={() => setViewingSurveyor(row)}
@@ -1302,11 +1308,17 @@ export const AdminReportsPage = () => {
         >
           <div className="space-y-4 text-xs">
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-              <img
-                src={viewingSurveyor.avatar}
-                alt={viewingSurveyor.name}
-                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs"
-              />
+              {viewingSurveyor.avatar && !viewingSurveyor.avatar.includes('unsplash.com') ? (
+                <img
+                  src={viewingSurveyor.avatar}
+                  alt={viewingSurveyor.name}
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-sm border-2 border-white shadow-xs">
+                  {viewingSurveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                </div>
+              )}
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">{viewingSurveyor.name}</h4>
                 <div className="text-[11px] text-slate-500 font-medium">{viewingSurveyor.specialism}</div>

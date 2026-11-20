@@ -58,7 +58,7 @@ export const BookingCalendar = () => {
         credentials: s.surveyorProfile?.accreditation || 'MRICS Chartered Surveyor',
         color: ['#2563EB', '#7C3AED', '#059669', '#D97706', '#E11D48'][idx % 5],
         bgLight: 'bg-blue-50 border-blue-200 text-blue-900',
-        avatar: s.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+        avatar: (s.avatar && !s.avatar.includes('unsplash.com')) ? s.avatar : null,
         postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
       }));
     }

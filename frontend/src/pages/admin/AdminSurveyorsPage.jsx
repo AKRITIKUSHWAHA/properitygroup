@@ -24,18 +24,8 @@ import {
 import { PageHeader } from '../../components/PageHeader';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
-import { SURVEYORS } from '../../mock/jobs';
 import { adminSurveyorsApi } from '../../api/adminApi';
 import { useEffect } from 'react';
-
-// Preset professional surveyor avatars
-const DEFAULT_AVATARS = [
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80',
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=128&q=80',
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=128&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=128&q=80',
-];
 
 export const AdminSurveyorsPage = () => {
   const { addToast } = useToast();
@@ -52,31 +42,37 @@ export const AdminSurveyorsPage = () => {
           if (raw.length === 0) {
             setSurveyorsList([]);
           } else {
-            setSurveyorsList(raw.map((s, idx) => ({
-              id: `srv-${s.id}`,
-              dbId: s.id,
-              name: s.name,
-              credentials: s.surveyorProfile?.accreditation
-                ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
-                : 'MRICS Chartered Surveyor',
-              postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
-                ? s.surveyorProfile.postcodesCovered
-                : (s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W']),
-              activeJobs: s.surveyorProfile?.activeLoad || s.assignedJobs?.length || 0,
-              maxJobs: s.surveyorProfile?.maxLoad || 8,
-              piiExpiry: s.surveyorProfile?.piiExpiryDate || (idx % 2 === 0 ? '15/12/2026' : '22/01/2027'),
-              assignedJobs: s.assignedJobs?.length ? s.assignedJobs.length * 4 : (s.surveyorProfile?.activeLoad || 0),
-              status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
-              phone: s.phone || `+44 7700 900${idx + 1}84`,
-              email: s.email,
-              avatar: s.avatar || DEFAULT_AVATARS[idx % DEFAULT_AVATARS.length],
-              specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
-                ? 'Dispute & Expert Witness'
-                : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
-                ? 'Residential Defect Specialist'
-                : 'RICS Valuation, Level 2 & Level 3'),
-              color: '#2563EB',
-            })));
+            setSurveyorsList(raw.map((s, idx) => {
+              const cleanEmail = (s.email || '').toLowerCase().trim();
+              const storedPhone = typeof window !== 'undefined' ? localStorage.getItem(`njs_user_phone_${cleanEmail}`) : null;
+              const realAvatar = (s.avatar && !s.avatar.includes('unsplash.com')) ? s.avatar : null;
+
+              return {
+                id: `srv-${s.id}`,
+                dbId: s.id,
+                name: s.name,
+                credentials: s.surveyorProfile?.accreditation
+                  ? (s.surveyorProfile.accreditation.includes('Surveyor') ? s.surveyorProfile.accreditation : `${s.surveyorProfile.accreditation} Chartered Surveyor`)
+                  : 'MRICS Chartered Surveyor',
+                postcodes: Array.isArray(s.surveyorProfile?.postcodesCovered)
+                  ? s.surveyorProfile.postcodesCovered
+                  : (s.surveyorProfile?.postcodesCovered?.split(',').map((p) => p.trim()) || ['SW', 'W']),
+                activeJobs: s.surveyorProfile?.activeLoad || s.assignedJobs?.length || 0,
+                maxJobs: s.surveyorProfile?.maxLoad || 8,
+                piiExpiry: s.surveyorProfile?.piiExpiryDate || (idx % 2 === 0 ? '15/12/2026' : '22/01/2027'),
+                assignedJobs: s.assignedJobs?.length ? s.assignedJobs.length * 4 : (s.surveyorProfile?.activeLoad || 0),
+                status: s.status === 'ACTIVE' ? 'Active Field' : (s.status || 'Active Field'),
+                phone: s.phone || storedPhone || '—',
+                email: s.email,
+                avatar: realAvatar,
+                specialism: s.surveyorProfile?.accreditation?.includes('FRICS')
+                  ? 'Dispute & Expert Witness'
+                  : (s.surveyorProfile?.accreditation?.includes('AssocRICS')
+                  ? 'Residential Defect Specialist'
+                  : 'RICS Valuation, Level 2 & Level 3'),
+                color: '#2563EB',
+              };
+            }));
           }
         }
       })
@@ -156,11 +152,11 @@ export const AdminSurveyorsPage = () => {
         credentials: formData.credentials,
         postcodes: formData.postcodes.split(',').map((p) => p.trim()),
         color: formData.color,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+        avatar: null,
         piiExpiry: formData.piiExpiry || '31/12/2027',
         assignedJobs: 0,
         status: 'Active Field',
-        phone: formData.phone || '+44 7700 900999',
+        phone: formData.phone || '—',
         email: formData.email,
         specialism: 'RICS Residential Inspections',
       };
@@ -405,7 +401,7 @@ export const AdminSurveyorsPage = () => {
                     <td className="py-3.5 px-4 sm:px-5 min-w-[240px]">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                          {surveyor.avatar ? (
+                          {surveyor.avatar && !surveyor.avatar.includes('unsplash.com') ? (
                             <img
                               src={surveyor.avatar}
                               alt={surveyor.name}
@@ -417,13 +413,11 @@ export const AdminSurveyorsPage = () => {
                               }}
                               className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white shadow-xs"
                             />
-                          ) : null}
-                          <div
-                            style={{ display: surveyor.avatar ? 'none' : 'flex' }}
-                            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white items-center justify-center font-bold text-xs ring-2 ring-white shadow-xs"
-                          >
-                            {surveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
-                          </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-xs ring-2 ring-white shadow-xs tracking-wider">
+                              {surveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                            </div>
+                          )}
                           <span
                             className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
                             style={{ backgroundColor: surveyor.color || '#2563EB' }}
@@ -723,7 +717,7 @@ export const AdminSurveyorsPage = () => {
             {/* Header Identity Card */}
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center gap-3.5">
               <div className="relative shrink-0">
-                {viewingSurveyor.avatar ? (
+                {viewingSurveyor.avatar && !viewingSurveyor.avatar.includes('unsplash.com') ? (
                   <img
                     src={viewingSurveyor.avatar}
                     alt={viewingSurveyor.name}
@@ -735,13 +729,11 @@ export const AdminSurveyorsPage = () => {
                     }}
                     className="w-14 h-14 rounded-2xl object-cover ring-2 ring-white shadow-sm"
                   />
-                ) : null}
-                <div
-                  style={{ display: viewingSurveyor.avatar ? 'none' : 'flex' }}
-                  className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white items-center justify-center font-bold text-base ring-2 ring-white shadow-sm"
-                >
-                  {viewingSurveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
-                </div>
+                ) : (
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-base ring-2 ring-white shadow-sm tracking-wider">
+                    {viewingSurveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                  </div>
+                )}
               </div>
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">{viewingSurveyor.name}</h4>

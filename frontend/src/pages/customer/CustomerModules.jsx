@@ -3340,7 +3340,7 @@ export const CustomerAssignedSurveyorPage = () => {
       ? `${assignedSurveyor.accreditation} Chartered Surveyor`
       : 'RICS Chartered Surveyor',
     postcodes: assignedSurveyor?.postcodeCoverage || 'London & Home Counties',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+    avatar: (assignedSurveyor?.avatar && !assignedSurveyor.avatar.includes('unsplash.com')) ? assignedSurveyor.avatar : null,
   };
 
   const handleRequestCall = () => {
@@ -3374,11 +3374,17 @@ export const CustomerAssignedSurveyorPage = () => {
         ) : (
           <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pb-6 border-b border-slate-100">
-              <img
-                src={surveyor.avatar}
-                alt={surveyor.name}
-                className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
-              />
+              {surveyor.avatar ? (
+                <img
+                  src={surveyor.avatar}
+                  alt={surveyor.name}
+                  className="w-24 h-24 rounded-2xl object-cover border-2 border-slate-200 shadow-sm"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#0B1F4D] to-[#1E3A8A] text-white flex items-center justify-center font-bold text-2xl border-2 border-slate-200 shadow-sm tracking-wider">
+                  {surveyor.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'SR'}
+                </div>
+              )}
 
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">

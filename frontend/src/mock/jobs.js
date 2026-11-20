@@ -10,7 +10,7 @@ export const SURVEYORS = [
     credentials: 'RICS Chartered Surveyor (MRICS)',
     color: '#2563EB', // Blue
     bgLight: 'bg-blue-50 border-blue-200 text-blue-900',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80',
+    avatar: null,
     postcodes: 'W, SW, WC',
   },
 ];
