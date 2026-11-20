@@ -99,6 +99,20 @@ export const AuthProvider = ({ children }) => {
       if (e.message?.includes('blocked') || e.message?.includes('deactivated')) throw e;
     }
 
+    // Strict local credential check: If password was registered or set by Admin, enforce exact match
+    const localKnownPassword = localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
+    let registeredCust = null;
+    try {
+      const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
+      registeredCust = registered[trimmedEmail] || null;
+    } catch {}
+
+    const requiredPassword = localKnownPassword || registeredCust?.password;
+    if (requiredPassword && String(password || '').trim() !== String(requiredPassword).trim()) {
+      setIsLoading(false);
+      throw new Error('Invalid password. Please enter the password you registered with.');
+    }
+
     let backendUser = null;
     let authToken = null;
 
@@ -166,21 +180,19 @@ export const AuthProvider = ({ children }) => {
         matchedUser = demoUser;
       }
 
-      // Check registered customers with exact password verification
+      // Check registered or Admin-created customers
       if (!matchedUser) {
-        try {
-          const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
-          if (registered[trimmedEmail]) {
-            const customerObj = registered[trimmedEmail];
-            const storedPw = customerObj.password || localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
-            if (storedPw && storedPw.trim() !== (password || '').trim()) {
-              setIsLoading(false);
-              throw new Error('Invalid password. Please enter the password you registered with.');
-            }
-            matchedUser = customerObj;
-          }
-        } catch (regErr) {
-          if (regErr.message?.includes('password') || regErr.message?.includes('Invalid')) throw regErr;
+        if (registeredCust) {
+          matchedUser = registeredCust;
+        } else if (localKnownPassword) {
+          matchedUser = {
+            id: `usr_client_${Date.now()}`,
+            email: trimmedEmail,
+            name: trimmedEmail.split('@')[0],
+            role: 'customer',
+            roleLabel: 'Property Client',
+            company: 'Private Client',
+          };
         }
       }
 

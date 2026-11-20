@@ -188,7 +188,20 @@ export const AdminUsersPage = () => {
       };
 
       try {
-        localStorage.setItem(`njs_user_pw_${formData.email.toLowerCase().trim()}`, formData.password.trim());
+        const cleanEmail = formData.email.toLowerCase().trim();
+        localStorage.setItem(`njs_user_pw_${cleanEmail}`, formData.password.trim());
+        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+        registered[cleanEmail] = {
+          id: newUser.id,
+          name: newUser.name,
+          email: cleanEmail,
+          role: formData.role,
+          roleLabel: newUser.roleLabel,
+          password: formData.password.trim(),
+          company: newUser.org,
+          status: 'Active',
+        };
+        localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
       } catch {}
 
       setUsers((prev) => [newUser, ...prev]);
@@ -442,7 +455,7 @@ export const AdminUsersPage = () => {
       key: 'name',
       header: 'Full Legal Name',
       sortable: true,
-      className: 'w-[24%] min-w-[190px]',
+      className: 'w-[32%] min-w-[210px]',
       render: (val, row) => {
         if (row.role === 'customer') {
           return (
@@ -473,7 +486,7 @@ export const AdminUsersPage = () => {
       key: 'roleLabel',
       header: 'Assigned Role',
       sortable: true,
-      className: 'w-[14%] min-w-[110px]',
+      className: 'w-[18%] min-w-[130px]',
       render: (val, row) => {
         let badgeColor = 'bg-[#0B1F4D] text-white';
         if (row.role === 'surveyor') badgeColor = 'bg-purple-100 text-purple-800 border border-purple-200';
@@ -487,57 +500,16 @@ export const AdminUsersPage = () => {
       },
     },
     {
-      key: 'credentials',
-      header: 'Login Password',
-      sortable: false,
-      className: 'w-[20%] min-w-[155px]',
-      render: (_, row) => {
-        const pw = getUserPassword(row.email);
-        const clean = (row.email || '').toLowerCase().trim();
-        const isRevealed = !!revealedPasswords[clean];
-        return (
-          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-              {isRevealed ? pw : '••••••••'}
-            </span>
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility(row.email)}
-              className="p-1 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-              title={isRevealed ? 'Hide Password' : 'Show Password'}
-            >
-              {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard?.writeText(pw);
-                addToast({
-                  type: 'info',
-                  title: 'Password Copied',
-                  message: `Password copied for ${row.name}: ${pw}`,
-                });
-              }}
-              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Copy Password"
-            >
-              <Copy className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        );
-      },
-    },
-    {
       key: 'org',
       header: 'Organisation / Practice',
       sortable: true,
-      className: 'w-[18%] min-w-[140px] text-xs text-slate-700 font-medium',
+      className: 'w-[26%] min-w-[170px] text-xs text-slate-700 font-medium',
     },
     {
       key: 'status',
       header: 'Status',
       sortable: true,
-      className: 'w-[12%] min-w-[90px]',
+      className: 'w-[12%] min-w-[100px]',
       render: (val) => (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 whitespace-nowrap">
           <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
@@ -549,8 +521,8 @@ export const AdminUsersPage = () => {
       key: 'actions',
       header: 'Actions',
       sortable: false,
-      headerClassName: 'text-center w-[12%] min-w-[90px]',
-      className: 'text-center w-[12%] min-w-[90px] whitespace-nowrap',
+      headerClassName: 'text-center w-[12%] min-w-[100px]',
+      className: 'text-center w-[12%] min-w-[100px] whitespace-nowrap',
       render: (_, row) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {/* 1. View User */}
