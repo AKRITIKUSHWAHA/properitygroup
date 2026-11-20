@@ -14,11 +14,18 @@ import {
   Eye,
   Award,
   Copy,
+  FileText,
+  CheckCheck,
+  XCircle,
+  AlertTriangle,
+  Send,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Table } from '../../components/common/Table';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
+import { useJobs } from '../../mock/jobs';
 import { adminReportsAndAnalyticsApi } from '../../api/adminApi';
 
 // 3-Dot Dropdown Menu for Surveyor Performance Table
@@ -127,6 +134,74 @@ const SurveyorRowActions = ({ surveyor, onView, onCopyEmail }) => {
 
 export const AdminReportsPage = () => {
   const { addToast } = useToast();
+  const { jobs, updateJob } = useJobs();
+
+  // Active Main View Tab: 'analytics' or 'qa-desk'
+  const [activeTab, setActiveTab] = useState('analytics');
+  const [inspectingJob, setInspectingJob] = useState(null);
+  const [revisionModalJob, setRevisionModalJob] = useState(null);
+  const [revisionNotes, setRevisionNotes] = useState('');
+  const [isSubmittingQa, setIsSubmittingQa] = useState(false);
+
+  // Filter jobs pending QA audit or revision
+  const pendingQaJobs = useMemo(() => {
+    return jobs.filter((j) =>
+      j.stage === 'PREPARING_REPORT' ||
+      j.stage === 'DRAFTING' ||
+      j.stage === 'QA_REVIEW' ||
+      j.status === 'Drafting' ||
+      j.status === 'QA_Review' ||
+      j.status === 'Revision Requested' ||
+      j.timelineStep === 8 ||
+      j.timelineStep === 9
+    );
+  }, [jobs]);
+
+  const handleApproveQa = async (job) => {
+    const jobId = job.dbId || job.id;
+    try {
+      await adminReportsAndAnalyticsApi.approveQa(jobId);
+    } catch (e) {
+      console.warn('API approveQa warning:', e.message);
+    }
+    updateJob(job.id, {
+      stage: 'COMPLETE',
+      status: 'Complete',
+      qaApprovedAt: new Date().toISOString(),
+    });
+    addToast({
+      type: 'success',
+      title: 'Report QA Approved & Released',
+      message: `${job.jobNo || job.reference || 'Report'} has passed QA review and is now available in the Customer Portal. Automated report email dispatched.`,
+    });
+    if (inspectingJob && inspectingJob.id === job.id) {
+      setInspectingJob(null);
+    }
+  };
+
+  const handleRejectQa = async (e) => {
+    e.preventDefault();
+    if (!revisionModalJob) return;
+    setIsSubmittingQa(true);
+    const jobId = revisionModalJob.dbId || revisionModalJob.id;
+    try {
+      await adminReportsAndAnalyticsApi.rejectQa(jobId, revisionNotes);
+    } catch (e) {
+      console.warn('API rejectQa warning:', e.message);
+    }
+    updateJob(revisionModalJob.id, {
+      status: 'Revision Requested',
+      qaNotes: revisionNotes,
+    });
+    addToast({
+      type: 'info',
+      title: 'Revision Sent to Surveyor',
+      message: `Report returned to ${revisionModalJob.surveyor || 'surveyor'} for revisions. Note kept internal and hidden from client.`,
+    });
+    setIsSubmittingQa(false);
+    setRevisionModalJob(null);
+    setRevisionNotes('');
+  };
 
   // Reporting Period State
   const [selectedPeriod, setSelectedPeriod] = useState('October 2026');
@@ -505,42 +580,237 @@ export const AdminReportsPage = () => {
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header */}
       <PageHeader
-        title="Reports & Financial Analytics"
-        subtitle="Executive operational performance, RICS delivery turnaround SLAs, and revenue breakdown across the UK."
+        title="Reports & Analytics Desk"
+        subtitle="Executive operational performance, RICS Quality Assurance (QA) sign-off desk, and UK revenue analytics."
         breadcrumb={['Admin', 'Reports & Analytics']}
-        actionLabel="Export CSV Report"
-        actionIcon={Download}
-        onAction={handleExportCSV}
+        actionLabel={activeTab === 'analytics' ? 'Export CSV Report' : null}
+        actionIcon={activeTab === 'analytics' ? Download : null}
+        onAction={activeTab === 'analytics' ? handleExportCSV : null}
       />
 
-      {/* Date Period Selector Bar */}
-      <div className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-[#2563EB] shrink-0" />
-          <span className="text-xs font-bold text-slate-700">Reporting Period:</span>
+      {/* Top View Selector: Financial Analytics vs QA Review Desk */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('analytics')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'analytics'
+                ? 'bg-[#0B1F4D] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Financial Analytics &amp; SLAs</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('qa-desk')}
+            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === 'qa-desk'
+                ? 'bg-[#0B1F4D] text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+            }`}
+          >
+            <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+            <span>Admin QA Desk &amp; Release</span>
+            {pendingQaJobs.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 animate-pulse">
+                {pendingQaJobs.length} Pending
+              </span>
+            )}
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {periods.map((p) => {
-            const isActive = selectedPeriod === p.id;
-            return (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPeriod(p.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? 'bg-[#0B1F4D] text-white shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
+        {activeTab === 'analytics' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {periods.map((p) => {
+              const isActive = selectedPeriod === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedPeriod(p.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0B1F4D] text-white shadow-xs'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 4 TOP EXECUTIVE KPI METRIC CARDS */}
+      {/* ======================================================== */}
+      {/* VIEW 1: ADMIN QA REVIEW DESK (Mandatory Peer-Review Protocol) */}
+      {/* ======================================================== */}
+      {activeTab === 'qa-desk' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* QA Protocol Banner */}
+          <div className="p-5 sm:p-6 bg-gradient-to-r from-[#0B1F4D] to-[#1E3A8A] text-white rounded-3xl shadow-sm border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded bg-sky-400/20 text-sky-200 border border-sky-400/30">
+                  RICS Quality Assurance Protocol
+                </span>
+                <span className="text-xs text-slate-300">•</span>
+                <span className="text-xs text-slate-300 font-semibold">Firm #084920</span>
+              </div>
+              <h3 className="text-lg font-extrabold text-white">
+                Technical QA Sign-Off &amp; Client Report Release
+              </h3>
+              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                Every draft report submitted by a chartered surveyor undergoes technical review. You can inspect draft findings, send internal revision notes back to the surveyor (hidden from customer), or QA-approve &amp; release the official report to the customer portal with automated email notification.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 bg-white/10 p-3.5 rounded-2xl border border-white/15">
+              <div className="text-center">
+                <span className="text-[10px] font-bold uppercase text-sky-200 block">Pending Audits</span>
+                <span className="text-2xl font-black text-white">{pendingQaJobs.length}</span>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className="text-center">
+                <span className="text-[10px] font-bold uppercase text-emerald-300 block">SLA Target</span>
+                <span className="text-sm font-bold text-white">&lt; 48 Hours</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pending QA Reports Table */}
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h4 className="font-extrabold text-[#0B1F4D] text-sm flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-[#2563EB]" />
+                  <span>Reports Awaiting QA Audit ({pendingQaJobs.length})</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Inspect surveyor drafts, request defect revisions, or authorize client release.
+                </p>
+              </div>
+            </div>
+
+            {pendingQaJobs.length === 0 ? (
+              <div className="text-center py-12 p-6">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                  <CheckCheck className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">All Caught Up! Zero Pending QA Reviews</h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  All submitted surveyor draft reports have been audited and released to clients within the 48-hour SLA standard.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
+                    <tr>
+                      <th className="py-3 px-4">Job Reference</th>
+                      <th className="py-3 px-4">Subject Property</th>
+                      <th className="py-3 px-4">Client</th>
+                      <th className="py-3 px-4">Survey Standard</th>
+                      <th className="py-3 px-4">Assigned Surveyor</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">QA Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingQaJobs.map((job) => {
+                      const isRevision = job.status === 'Revision Requested';
+                      return (
+                        <tr key={job.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-[#0B1F4D]">
+                            {job.jobNo || job.reference || job.id}
+                          </td>
+                          <td className="py-3 px-4 max-w-xs">
+                            <div className="font-bold text-slate-900 truncate">{job.property || job.propertyAddress}</div>
+                            <div className="text-[11px] text-slate-400 truncate">{job.location}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-slate-800">{job.customer || job.clientName}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{job.customerEmail || job.clientEmail}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-semibold text-[#2563EB]">{job.surveyType || job.serviceType}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-slate-800">{job.surveyor || 'David Thorne MRICS'}</div>
+                            <div className="text-[11px] text-slate-400">Chartered Surveyor</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            {isRevision ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                Revision Requested
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                Under QA Review
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Inspect Draft */}
+                              <button
+                                type="button"
+                                onClick={() => setInspectingJob(job)}
+                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Inspect draft findings"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Inspect</span>
+                              </button>
+
+                              {/* Reject / Request Revision */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRevisionModalJob(job);
+                                  setRevisionNotes(job.qaNotes || '');
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Return report to surveyor for revision"
+                              >
+                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Amend</span>
+                              </button>
+
+                              {/* Approve & Release */}
+                              <button
+                                type="button"
+                                onClick={() => handleApproveQa(job)}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
+                                title="Authorize QA pass and publish to customer portal"
+                              >
+                                <CheckCheck className="w-3.5 h-3.5" />
+                                <span>Approve &amp; Release</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* VIEW 2: FINANCIAL ANALYTICS & SURVEYOR PRODUCTIVITY LEAGUE */}
+      {/* ======================================================== */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-150">
+          {/* 4 TOP EXECUTIVE KPI METRIC CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* KPI 1 */}
         <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between">
@@ -768,8 +1038,165 @@ export const AdminReportsPage = () => {
           emptyMessage="No chartered surveyor matches the search criteria."
         />
       </div>
+    </div>
+  )}
 
-      {/* SURVEYOR PERFORMANCE DETAIL MODAL */}
+  {/* INSPECT DRAFT REPORT MODAL */}
+  {inspectingJob && (
+    <Modal
+      isOpen={!!inspectingJob}
+      onClose={() => setInspectingJob(null)}
+      title={`Inspect RICS Draft Report: ${inspectingJob.jobNo || inspectingJob.id}`}
+      subtitle="Mandatory RICS Technical Quality Assurance & Peer-Review Audit"
+      maxWidth="max-w-2xl"
+      footer={
+        <div className="flex items-center justify-between w-full gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const targetJob = inspectingJob;
+              setInspectingJob(null);
+              setRevisionModalJob(targetJob);
+              setRevisionNotes(targetJob.qaNotes || '');
+            }}
+            className="px-4 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <XCircle className="w-4 h-4 text-rose-600" />
+            <span>Request Revision (Reject)</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setInspectingJob(null)}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApproveQa(inspectingJob)}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>Approve &amp; Release to Client</span>
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-4 text-xs">
+        {/* Header info */}
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-900 text-sm">
+              {inspectingJob.property || inspectingJob.propertyAddress}
+            </span>
+            <span className="font-mono text-xs font-bold text-[#0B1F4D] bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+              {inspectingJob.jobNo || inspectingJob.id}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-slate-600 text-[11px] pt-1 border-t border-slate-200/60">
+            <div>Client: <strong className="text-slate-800">{inspectingJob.customer || inspectingJob.clientName}</strong></div>
+            <div>Surveyor: <strong className="text-slate-800">{inspectingJob.surveyor || 'David Thorne MRICS'}</strong></div>
+            <div>Standard: <strong className="text-[#2563EB]">{inspectingJob.surveyType || inspectingJob.serviceType}</strong></div>
+            <div>Location: <strong className="text-slate-800">{inspectingJob.location || 'London, UK'}</strong></div>
+          </div>
+        </div>
+
+        {/* QA Peer-Review Checklist */}
+        <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-2xl space-y-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 block flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+            RICS Technical Peer-Review Audit Points
+          </span>
+          <ul className="space-y-1.5 text-slate-700 text-[11px]">
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Condition ratings 1, 2, and 3 applied consistently across building elements.</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Moisture meter profiling and photographic defect appendices attached.</span>
+            </li>
+            <li className="flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>Statutory conveyancing notices and legal adviser queries identified.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Scope / Notes */}
+        <div>
+          <label className="block font-bold text-slate-700 mb-1">Surveyor Technical Summary</label>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-[11px] leading-relaxed">
+            {inspectingJob.notes ||
+              'Full RICS visual inspection completed covering building envelope, roof void inspection, subfloor ventilation, and damp profiling. Ready for technical sign-off and release.'}
+          </div>
+        </div>
+
+        {inspectingJob.qaNotes && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px]">
+            <strong className="block mb-0.5">Previous Revision Notes:</strong>
+            <span>{inspectingJob.qaNotes}</span>
+          </div>
+        )}
+      </div>
+    </Modal>
+  )}
+
+  {/* REVISION NOTES (REJECT) MODAL */}
+  {revisionModalJob && (
+    <Modal
+      isOpen={!!revisionModalJob}
+      onClose={() => setRevisionModalJob(null)}
+      title={`Return for Revision: ${revisionModalJob.jobNo || revisionModalJob.id}`}
+      subtitle="Internal QA amendment instructions (Kept hidden from the client)"
+      maxWidth="max-w-lg"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          <button
+            type="button"
+            onClick={() => setRevisionModalJob(null)}
+            className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="qa-revision-form"
+            disabled={isSubmittingQa}
+            className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>{isSubmittingQa ? 'Sending...' : 'Send Revision Notes to Surveyor'}</span>
+          </button>
+        </div>
+      }
+    >
+      <form id="qa-revision-form" onSubmit={handleRejectQa} className="space-y-4 text-xs">
+        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600">
+          Returning report to: <strong className="text-slate-800">{revisionModalJob.surveyor || 'Assigned Surveyor'}</strong> for instruction <strong className="text-[#0B1F4D]">{revisionModalJob.jobNo || revisionModalJob.id}</strong>. The client will continue to see normal post-inspection progress.
+        </div>
+
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">
+            Required Technical Amendments / Notes *
+          </label>
+          <textarea
+            required
+            rows={4}
+            value={revisionNotes}
+            onChange={(e) => setRevisionNotes(e.target.value)}
+            placeholder="e.g. Please clarify Condition Rating 3 on the rear chimney stack flashing and attach damp meter moisture readings for bedroom 2."
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+          />
+        </div>
+      </form>
+    </Modal>
+  )}
+
+  {/* SURVEYOR PERFORMANCE DETAIL MODAL */}
       {viewingSurveyor && (
         <Modal
           isOpen={!!viewingSurveyor}

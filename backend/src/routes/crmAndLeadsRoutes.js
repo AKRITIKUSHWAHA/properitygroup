@@ -7,10 +7,14 @@ import {
   addCallLog,
   addComplaint,
   resolveComplaint,
+  ingestLsdLead,
 } from '../controllers/crmAndLeadsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
 const router = Router();
+
+// Public / External Webhook for Local Surveyors Direct (LSD) Ingestion
+router.post('/lsd', ingestLsdLead);
 
 router.use(verifyJWT);
 router.use(authorizeRoles('ADMIN'));

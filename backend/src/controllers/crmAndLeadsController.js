@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendWebsiteEnquiryNotificationEmail } from '../services/emailService.js';
 
 /**
  * Superadmin Menu 5: CRM & Leads (Leads, Call Notes, Complaints Log)
@@ -200,6 +201,136 @@ export const resolveComplaint = async (req, res, next) => {
     });
 
     return ApiResponse.success(res, { complaint }, 'Complaint marked as resolved');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Webhook / Intake for Local Surveyors Direct (LSD) Leads
+ * Endpoint: POST /api/v1/crm-and-leads/lsd
+ * Parses incoming payload, prevents duplicate enquiries within 24h,
+ * tags source as "Local Surveyors Direct", and dispatches instant Admin notification.
+ */
+export const ingestLsdLead = async (req, res, next) => {
+  try {
+    const body = req.body || {};
+
+    const clientName = String(body.clientName || body.name || body.customerName || body.contactName || '').trim();
+    const clientEmail = String(body.clientEmail || body.email || body.customerEmail || '').trim().toLowerCase();
+    const clientPhone = String(body.clientPhone || body.phone || body.customerPhone || body.telephone || '').trim();
+    const postcode = String(body.postcode || body.propertyPostcode || '').trim().toUpperCase();
+    const propertyAddress = String(body.propertyAddress || body.address || body.propertyLocation || postcode || 'UK Property').trim();
+    const serviceType = String(body.serviceType || body.surveyType || body.serviceName || 'RICS Level 2 Home Survey').trim();
+    const propertyType = body.propertyType ? String(body.propertyType).trim() : null;
+    const estimatedValue = body.estimatedValue ? parseFloat(body.estimatedValue) : null;
+    const notes = String(body.notes || body.additionalNotes || body.comments || body.details || '').trim();
+
+    if (!clientName || (!clientEmail && !clientPhone)) {
+      throw ApiError.badRequest('Client name and at least email or phone number are required for LSD ingestion');
+    }
+
+    // 1. Duplicate Enquiry Prevention (check within last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const duplicateOr = [];
+    if (clientEmail) {
+      duplicateOr.push({ clientEmail, postcode: postcode || undefined });
+    }
+    if (clientPhone) {
+      duplicateOr.push({ clientPhone });
+    }
+
+    if (duplicateOr.length > 0) {
+      const existingLead = await prisma.lead.findFirst({
+        where: {
+          createdAt: { gte: oneDayAgo },
+          OR: duplicateOr,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existingLead) {
+        return ApiResponse.success(
+          res,
+          { lead: existingLead, duplicate: true, reference: existingLead.reference },
+          'Duplicate LSD enquiry detected within 24 hours. Existing lead preserved without duplication.'
+        );
+      }
+    }
+
+    // 2. Generate LSD-2026-XXXX reference
+    const count = await prisma.lead.count();
+    const reference = `LSD-2026-${String(count + 101).padStart(4, '0')}`;
+
+    // 3. Create lead in database
+    const lead = await prisma.lead.create({
+      data: {
+        reference,
+        clientName,
+        clientEmail: clientEmail || 'client@demo.com',
+        clientPhone: clientPhone || null,
+        propertyAddress: propertyAddress || postcode || 'UK Property',
+        postcode: postcode || 'N/A',
+        serviceType,
+        propertyType,
+        estimatedValue,
+        source: 'Local Surveyors Direct',
+        status: 'NEW',
+      },
+    });
+
+    // 4. Attach notes if provided
+    if (notes) {
+      try {
+        await prisma.callLog.create({
+          data: {
+            leadId: lead.id,
+            callerName: 'LSD Ingestion Gateway',
+            summary: `[LSD Enquiry Notes]: ${notes}`,
+            durationMinutes: 0,
+          },
+        });
+      } catch (logErr) {
+        console.warn('Call log attachment warning:', logErr.message);
+      }
+    }
+
+    // 5. Instant Admin Email Notification & Customer Acknowledgment
+    try {
+      await sendWebsiteEnquiryNotificationEmail({
+        referenceId: reference,
+        enquiryCategory: 'SURVEY_QUOTE',
+        customerName: clientName,
+        customerEmail: clientEmail,
+        customerPhone: clientPhone,
+        serviceName: serviceType,
+        propertyAddress,
+        propertyPostcode: postcode,
+        additionalNotes: notes,
+        sourcePage: 'Local Surveyors Direct (LSD) Lead Ingestion',
+      });
+    } catch (emailErr) {
+      console.warn('LSD lead notification email warning:', emailErr.message);
+    }
+
+    // 6. In-App Notification for Admin
+    try {
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: 'New LSD Lead Received',
+          desc: `Local Surveyors Direct lead received for ${clientName} (${postcode || propertyAddress}). Ref: ${reference}`,
+          type: 'ENQUIRY',
+          link: '/admin/crm-and-leads',
+        },
+      });
+    } catch (_) {}
+
+    return ApiResponse.created(
+      res,
+      { lead, reference, source: 'Local Surveyors Direct' },
+      'LSD lead ingested successfully and admin notified'
+    );
   } catch (error) {
     next(error);
   }

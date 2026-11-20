@@ -169,3 +169,44 @@ export const uploadReportUrl = async (req, res, next) => {
   }
 };
 
+export const rejectQaReport = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+    const jobId = parseInt(id);
+
+    const job = await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        stage: 'PREPARING_REPORT',
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        jobId: job.id,
+        userId: req.user.id,
+        action: 'REPORT_QA_REJECTED',
+        details: `QA Revision requested by Admin: ${notes || 'Revisions required on defect analysis'}`,
+      },
+    });
+
+    if (job.surveyorId) {
+      await prisma.notification.create({
+        data: {
+          userId: job.surveyorId,
+          role: 'SURVEYOR',
+          title: `QA Revision Requested - ${job.reference}`,
+          desc: `Admin requested revisions: ${notes || 'Please review defect observations.'}`,
+          type: 'REPORT',
+          link: '/surveyor/upload-reports',
+        },
+      }).catch(() => {});
+    }
+
+    return ApiResponse.success(res, { job }, 'Report returned to surveyor for revision');
+  } catch (error) {
+    next(error);
+  }
+};
+

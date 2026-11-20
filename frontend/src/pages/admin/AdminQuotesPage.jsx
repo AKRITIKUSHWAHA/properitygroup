@@ -189,23 +189,10 @@ const QuoteRowActions = ({
                     setIsOpen(false);
                     onRecordBacs(quote);
                   }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-blue-900 bg-blue-50/70 hover:bg-blue-100/80 transition-colors cursor-pointer text-left"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/90 hover:bg-emerald-100 transition-colors cursor-pointer text-left"
                 >
-                  <PoundSterling className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>Record BACS Payment</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(false);
-                    onMarkPaid(quote.id);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-emerald-950 bg-emerald-50/70 hover:bg-emerald-100/80 transition-colors cursor-pointer text-left"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Mark as Paid (£{Number(quote.totalAmount || 0).toFixed(2)})</span>
+                  <PoundSterling className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Verify &amp; Mark as Paid</span>
                 </button>
               </>
             ) : (
@@ -905,6 +892,15 @@ export const AdminQuotesPage = () => {
   // Status badge renderer: Draft, Sent, Viewed, Accepted, Paid
   const renderStatusBadge = (status, row) => {
     switch (status) {
+      case 'Claimed':
+      case 'Claimed — Verification Pending':
+      case 'BACS_CLAIMED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+            <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+            <span>Claimed — Verification Pending</span>
+          </span>
+        );
       case 'Paid':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">

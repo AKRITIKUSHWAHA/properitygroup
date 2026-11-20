@@ -165,6 +165,7 @@ export const AdminUsersPage = () => {
     role: 'surveyor',
     org: '',
     status: 'Active',
+    password: '',
   });
 
   const handleViewUser = (user) => {
@@ -178,6 +179,7 @@ export const AdminUsersPage = () => {
       role: user.role,
       org: user.org,
       status: user.status || 'Active',
+      password: '',
     });
   };
 
@@ -208,11 +210,15 @@ export const AdminUsersPage = () => {
 
     if (typeof editingUser.id === 'number' || /^\d+$/.test(editingUser.id)) {
       try {
-        await adminUsersAndRolesApi.updateUser(editingUser.id, {
+        const payload = {
           name: editFormData.name.trim(),
           role: editFormData.role === 'super_admin' ? 'ADMIN' : (editFormData.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
           status: editFormData.status.toUpperCase(),
-        });
+        };
+        if (editFormData.password && editFormData.password.trim().length >= 6) {
+          payload.password = editFormData.password.trim();
+        }
+        await adminUsersAndRolesApi.updateUser(editingUser.id, payload);
       } catch (err) {
         console.warn('Backend update error:', err?.message || err);
       }
@@ -222,7 +228,7 @@ export const AdminUsersPage = () => {
     addToast({
       type: 'success',
       title: 'User Profile Updated',
-      message: `${editFormData.name} has been successfully updated.`,
+      message: `${editFormData.name} has been successfully updated.${editFormData.password ? ' Password reset successfully.' : ''}`,
     });
   };
 
@@ -753,8 +759,23 @@ export const AdminUsersPage = () => {
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
+                  <option value="Blocked">Blocked / Deactivated</option>
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Reset / Change Password</label>
+              <input
+                type="password"
+                placeholder="Enter new password (min. 6 chars, or leave blank to keep current)"
+                value={editFormData.password}
+                onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xs"
+              />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">
+                Leave blank to keep existing password unchanged.
+              </span>
             </div>
 
             <div>

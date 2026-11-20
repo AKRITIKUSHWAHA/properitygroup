@@ -68,8 +68,8 @@ export const RecordBacsPaymentModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Record Offline BACS Bank Settlement"
-      subtitle="Manually confirm incoming direct bank transfer / BACS payment and generate official HMRC VAT receipt."
+      title="Verify & Mark as Paid (BACS Bank Transfer)"
+      subtitle="Verify incoming direct bank transfer reference, clearance date, and dispatch official HMRC VAT receipt."
       maxWidth="max-w-lg"
       footer={
         <>
@@ -86,7 +86,7 @@ export const RecordBacsPaymentModal = ({
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>Confirm Settlement (£{totalAmount.toFixed(2)})</span>
+            <span>Verify &amp; Mark as Paid (£{totalAmount.toFixed(2)})</span>
           </button>
         </>
       }

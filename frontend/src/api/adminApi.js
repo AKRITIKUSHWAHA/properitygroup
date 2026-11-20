@@ -95,6 +95,7 @@ export const adminReportsAndAnalyticsApi = {
   getReports: (params = '') => api.get(`/reports-and-analytics${params ? `?${params}` : ''}`),
   getMetrics: () => api.get('/reports-and-analytics/metrics'),
   approveQa: (id) => api.patch(`/reports-and-analytics/${id}/qa-approve`),
+  rejectQa: (id, notes) => api.patch(`/reports-and-analytics/${id}/qa-reject`, { notes }),
   uploadReport: (id, pdfUrl) => api.post(`/reports-and-analytics/${id}/upload`, { reportPdfUrl: pdfUrl }),
 };
 
