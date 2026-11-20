@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Send,
   ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Table } from '../../components/common/Table';
@@ -134,7 +135,7 @@ const SurveyorRowActions = ({ surveyor, onView, onCopyEmail }) => {
 
 export const AdminReportsPage = () => {
   const { addToast } = useToast();
-  const { jobs, updateJob } = useJobs();
+  const { jobs, updateJob, addJob } = useJobs();
 
   // Active Main View Tab: 'analytics' or 'qa-desk'
   const [activeTab, setActiveTab] = useState('analytics');
@@ -145,17 +146,49 @@ export const AdminReportsPage = () => {
 
   // Filter jobs pending QA audit or revision
   const pendingQaJobs = useMemo(() => {
-    return jobs.filter((j) =>
-      j.stage === 'PREPARING_REPORT' ||
-      j.stage === 'DRAFTING' ||
-      j.stage === 'QA_REVIEW' ||
-      j.status === 'Drafting' ||
-      j.status === 'QA_Review' ||
-      j.status === 'Revision Requested' ||
-      j.timelineStep === 8 ||
-      j.timelineStep === 9
-    );
+    return jobs.filter((j) => {
+      const s = (j.stage || '').toUpperCase();
+      const st = (j.status || '').toLowerCase();
+      return (
+        s === 'PREPARING_REPORT' ||
+        s === 'DRAFTING' ||
+        s === 'QA_REVIEW' ||
+        s === 'INSPECTED' ||
+        st.includes('draft') ||
+        st.includes('qa') ||
+        st.includes('revision') ||
+        st.includes('preparing') ||
+        j.timelineStep === 8 ||
+        j.timelineStep === 9
+      );
+    });
   }, [jobs]);
+
+  const handleCreateSampleQaJob = () => {
+    const randomId = Math.floor(100 + Math.random() * 900);
+    const sample = {
+      id: `JOB-2026-QA${randomId}`,
+      jobNo: `JOB-2026-QA${randomId}`,
+      reference: `JOB-2026-QA${randomId}`,
+      customer: 'Dr. James Harrison',
+      customerEmail: 'j.harrison@example.com',
+      property: '24 Kensington Church Street, London',
+      location: 'W8 4EP, London',
+      surveyType: 'RICS Level 2 Home Survey',
+      surveyor: 'David Thorne MRICS',
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      stage: 'QA_REVIEW',
+      status: 'QA_Review',
+      timelineStep: 9,
+      notes: 'Physical on-site inspection completed. Structural hairline cracks recorded at rear elevation. Moisture meter readings within normal RICS parameters. Draft report submitted for QA review.',
+    };
+    addJob(sample);
+    addToast({
+      type: 'success',
+      title: 'Sample Draft Report Added to QA Desk',
+      message: `${sample.jobNo} is now ready for QA Audit. You can Inspect, Amend, or Approve & Release.`,
+    });
+  };
 
   const handleApproveQa = async (job) => {
     const jobId = job.dbId || job.id;
@@ -704,6 +737,16 @@ export const AdminReportsPage = () => {
                 <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
                   All submitted surveyor draft reports have been audited and released to clients within the 48-hour SLA standard.
                 </p>
+                <div className="mt-5 flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCreateSampleQaJob}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-[#0B1F4D] hover:bg-[#162E6E] shadow-sm transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-emerald-400" />
+                    <span>Generate Sample Draft Report for QA Testing</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="overflow-x-auto">
