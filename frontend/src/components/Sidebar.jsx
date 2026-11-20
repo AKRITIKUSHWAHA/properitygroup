@@ -137,7 +137,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         checkUnread();
       }
-    }, 20000);
+    }, 60000);
 
     return () => {
       isMounted = false;

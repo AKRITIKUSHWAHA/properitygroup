@@ -58,7 +58,9 @@ if (env.NODE_ENV === 'development') {
           u.includes('contacts') ||
           u.includes('notifications') ||
           u.includes('action-buckets') ||
-          u.includes('permissions')
+          u.includes('permissions') ||
+          u.includes('messages') ||
+          u.includes('health')
         );
       },
     })

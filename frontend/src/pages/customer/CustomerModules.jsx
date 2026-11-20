@@ -3436,14 +3436,15 @@ export const CustomerMessagesPage = () => {
 
     fetchContactsRef.current = fetchContacts;
     fetchContacts();
-    const interval = setInterval(fetchContacts, 4000);
+    const handleConvUpdate = () => fetchContacts();
+    window.addEventListener('propertygroup_conversations_updated', handleConvUpdate);
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      window.removeEventListener('propertygroup_conversations_updated', handleConvUpdate);
     };
   }, [userRole, user?.email, user?.id, effectiveUserId, myConvId, isCustomer, isSurveyor, urlConvId]);
 
-  // Fetch remote messages for active channel from Database with strict isolation & live polling
+  // Fetch remote messages for active channel from Database with strict isolation & event-driven updates
   useEffect(() => {
     const targetChannel = isCustomer || isSurveyor ? (people[0]?.id || myConvId) : activeChannelId;
     if (!targetChannel) return;
@@ -3483,12 +3484,25 @@ export const CustomerMessagesPage = () => {
 
     fetchMsgsRef.current = fetchMsgs;
     fetchMsgs();
-    const interval = setInterval(fetchMsgs, 3000);
+
+    const handleNewMsgEvent = () => fetchMsgs();
+    window.addEventListener('njs_new_message_notification', handleNewMsgEvent);
+    window.addEventListener('propertygroup_messages_updated', handleNewMsgEvent);
+
+    // Relaxed background check (every 30s only when document is visible)
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchMsgs();
+      }
+    }, 30000);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      window.removeEventListener('njs_new_message_notification', handleNewMsgEvent);
+      window.removeEventListener('propertygroup_messages_updated', handleNewMsgEvent);
     };
-  }, [activeChannelId, isCustomer, isSurveyor, myConvId, people]);
+  }, [activeChannelId, isCustomer, isSurveyor, myConvId]);
 
   // Find active contact or default to first contact
   const activeContact =

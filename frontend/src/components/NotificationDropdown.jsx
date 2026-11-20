@@ -33,7 +33,7 @@ export const NotificationDropdown = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         fetchNotifications(true);
       }
-    }, 20000);
+    }, 60000);
     return () => clearInterval(interval);
   }, [fetchNotifications, user?.id]);
 
