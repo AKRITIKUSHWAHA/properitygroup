@@ -156,7 +156,12 @@ export const RegisterPage = () => {
       setSuccessMsg('Account registered successfully! Click "Sign In to Customer Dashboard" below to access your portal.');
       setIsLoading(false);
     } catch (err) {
-      setError(err.message || 'Registration failed.');
+      const msg = err.message || 'Registration failed.';
+      setError(msg);
+      if (msg.includes('already exists') || msg.includes('existing password') || msg.includes('sign in')) {
+        setLoginEmail(formData.email.trim().toLowerCase());
+        setActiveTab('login');
+      }
       setIsLoading(false);
     }
   };

@@ -24,33 +24,7 @@ export const register = async (req, res, next) => {
     });
 
     if (existingUser) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      const updatedUser = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          name: name || existingUser.name,
-          phone: phone || existingUser.phone,
-          password: hashedPassword,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          phone: true,
-          status: true,
-          createdAt: true,
-        },
-      });
-
-      const token = jwt.sign(
-        { id: updatedUser.id, email: updatedUser.email, role: updatedUser.role },
-        env.JWT_SECRET,
-        { expiresIn: env.JWT_EXPIRES_IN }
-      );
-
-      return ApiResponse.ok(res, { user: updatedUser, token }, 'Registration updated successfully');
+      throw ApiError.badRequest('An account with this email already exists. Please sign in with your existing password.');
     }
 
     const salt = await bcrypt.genSalt(10);
