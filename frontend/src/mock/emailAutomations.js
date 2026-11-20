@@ -251,15 +251,36 @@ Phone: 0333 305 2777 • Email: info@njspropertygroup.com`,
   },
 ];
 
+// Helper to auto-capitalize names (Title Case for first name and surname)
+export const capitalizeName = (str) => {
+  if (!str || typeof str !== 'string') return 'Valued Client';
+  const trimmed = str.trim();
+  if (!trimmed) return 'Valued Client';
+  return trimmed
+    .split(/\s+/)
+    .map((word) => {
+      if (word.includes('-')) {
+        return word
+          .split('-')
+          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : ''))
+          .join('-');
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
+
 // Helper to resolve template variables with actual job or quotation data
 export const renderEmailTemplate = (text, data = {}) => {
   if (!text) return '';
-  const customerName = data.customer || data.customerName || data.clientName || 'Valued Client';
+  const rawCustomer = data.customer || data.customerName || data.clientName || 'Valued Client';
+  const customerName = capitalizeName(rawCustomer);
   const propertyAddress = data.property || data.propertyAddress || data.location || '14 Mayfair Gate, Mayfair, London W1K 2PB';
   const surveyType = data.surveyType || data.serviceName || 'RICS Level 2 Home Survey';
   const quoteTotal = data.quoteTotal || data.totalAmount || data.price || '650.00';
   const jobNo = data.jobNo || data.reference || data.lead_ref || data.jobRef || 'JOB-2026-080';
-  const surveyorName = data.surveyor || data.surveyorName || 'Assigned Chartered Surveyor';
+  const rawSurveyor = data.surveyor || data.surveyorName || 'Assigned Chartered Surveyor';
+  const surveyorName = capitalizeName(rawSurveyor);
   const inspectionDate = data.date || data.inspectionDate || 'Wednesday, 28 October 2026';
   const timeSlot = data.timeSlot || data.arrivalWindow || '09:30 AM - 12:00 PM';
   const actionLink = data.actionLink || data.bookingLink || data.portalLink || 'https://njspropertygroup.com/customer/portal';
@@ -381,7 +402,7 @@ export const useEmailAutomations = () => {
       stageLabel: automation.stageLabel,
       subject: resolvedSubject,
       to: recipientEmail,
-      recipientName: jobData.customer || jobData.customerName || 'Customer',
+      recipientName: capitalizeName(jobData.customer || jobData.customerName || 'Customer'),
       date: formattedDate,
       status: 'Delivered',
       body: resolvedBody,
