@@ -237,7 +237,7 @@ export const AdminUsersPage = () => {
   };
 
   const getUserPassword = (email) => {
-    if (!email) return 'Password123!';
+    if (!email) return null;
     const cleanEmail = email.toLowerCase().trim();
     try {
       const stored = localStorage.getItem(`njs_user_pw_${cleanEmail}`);
@@ -249,9 +249,7 @@ export const AdminUsersPage = () => {
         return registered[cleanEmail].password;
       }
     } catch {}
-    if (cleanEmail === 'njsadmin@gmail.com' || cleanEmail.includes('admin')) return 'admin123';
-    if (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail.includes('surveyor')) return 'surveyor123';
-    return 'Password123!';
+    return null;
   };
 
   const [editingUser, setEditingUser] = useState(null);
@@ -735,7 +733,7 @@ export const AdminUsersPage = () => {
                 type={showModalPassword ? 'text' : 'password'}
                 required
                 minLength={6}
-                placeholder="Enter password (e.g. Password123!)"
+                placeholder="Create password (min 6 characters)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:border-[#2563EB]"
@@ -885,34 +883,53 @@ export const AdminUsersPage = () => {
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[11px] font-semibold text-slate-400">Password:</span>
                   <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
-                    {showViewingPassword ? getUserPassword(viewingUser.email) : '••••••••••••'}
+                    {(() => {
+                      const pw = getUserPassword(viewingUser.email);
+                      if (!pw) {
+                        return (
+                          <span className="text-slate-500 font-sans font-medium text-[11px] inline-flex items-center gap-1.5">
+                            <span>••••••••</span>
+                            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-emerald-200">
+                              Encrypted in Database
+                            </span>
+                          </span>
+                        );
+                      }
+                      return showViewingPassword ? pw : '••••••••••••';
+                    })()}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setShowViewingPassword(!showViewingPassword)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-colors cursor-pointer"
-                    title={showViewingPassword ? 'Hide Password' : 'Show Password'}
-                  >
-                    {showViewingPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const pw = getUserPassword(viewingUser.email);
-                      navigator.clipboard?.writeText(pw);
-                      addToast({
-                        type: 'info',
-                        title: 'Password Copied',
-                        message: `Password copied: ${pw}`,
-                      });
-                    }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-                    title="Copy Password"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
+                  {getUserPassword(viewingUser.email) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowViewingPassword(!showViewingPassword)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                        title={showViewingPassword ? 'Hide Password' : 'Show Password'}
+                      >
+                        {showViewingPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const pw = getUserPassword(viewingUser.email);
+                          if (pw) {
+                            navigator.clipboard?.writeText(pw);
+                            addToast({
+                              type: 'info',
+                              title: 'Password Copied',
+                              message: `Password copied: ${pw}`,
+                            });
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Copy Password"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => setIsResettingPassword(!isResettingPassword)}
@@ -927,7 +944,7 @@ export const AdminUsersPage = () => {
                 <div className="pt-1.5 flex items-center gap-2">
                   <input
                     type="text"
-                    placeholder="Enter new password (e.g. Password123!)"
+                    placeholder="Enter new password (min 6 characters)"
                     value={newQuickPassword}
                     onChange={(e) => setNewQuickPassword(e.target.value)}
                     className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 font-mono"
