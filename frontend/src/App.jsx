@@ -280,6 +280,7 @@ function AppRoutes() {
             <Route path="/admin/calendar" element={<StaffCalendarPage />} />
             <Route path="/admin/booking-calendar" element={<StaffCalendarPage />} />
             <Route path="/admin/surveys/schedule" element={<Navigate to="/admin/calendar" replace />} />
+            <Route path="/staff/calendar" element={<Navigate to="/admin/calendar" replace />} />
 
             {/* Quotations & Payments + Friendly Aliases */}
             <Route path="/admin/quotes" element={<AdminQuotesPage />} />
@@ -359,6 +360,7 @@ function AppRoutes() {
             <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
             <Route path="/staff/companies" element={<StaffCompaniesPage />} />
             <Route path="/staff/crm-and-leads" element={<StaffLeadsPage />} />
+            <Route path="/staff/calendar" element={<StaffCalendarPage />} />
             <Route path="/staff/booking-calendar" element={<StaffCalendarPage />} />
             <Route path="/staff/survey-jobs" element={<AdminJobsPage />} />
             <Route path="/staff/survey-jobs/:jobId" element={<JobDetailsPage />} />
