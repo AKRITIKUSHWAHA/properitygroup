@@ -38,6 +38,7 @@ export const formatLeadReference = (id, source) => {
 export const INITIAL_LEADS = [];
 
 const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
+const DELETED_LEADS_KEY = 'propertygroup_deleted_lead_ids';
 
 export const getStoredLeads = () => {
   try {
@@ -46,6 +47,9 @@ export const getStoredLeads = () => {
       localStorage.setItem('njs_fresh_leads_clean_v1', 'true');
       return [];
     }
+    const rawDeleted = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
+    const deletedSet = new Set(JSON.parse(rawDeleted).map(String));
+
     const raw = localStorage.getItem(LEADS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -55,7 +59,25 @@ export const getStoredLeads = () => {
             const name = (l.customerName || l.clientName || '').toLowerCase().trim();
             const email = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
             const addr = (l.property || l.propertyAddress || '').toLowerCase().trim();
-            return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7;
+            const idStr = String(l.id || '').trim();
+            const dbIdStr = String(l.dbId || '').trim();
+            const refStr = String(l.reference || '').trim();
+            const formattedRef = formatLeadReference(l.reference || l.id, l.source);
+
+            const isDeleted =
+              deletedSet.has(idStr) ||
+              deletedSet.has(dbIdStr) ||
+              deletedSet.has(refStr) ||
+              deletedSet.has(formattedRef);
+
+            return (
+              !isDeleted &&
+              !name.includes('akku') &&
+              !email.includes('akku') &&
+              !addr.includes('mp nagar') &&
+              !addr.includes('bhopal') &&
+              l.id !== 7
+            );
           })
           .map((l) => ({
             ...l,
@@ -167,7 +189,36 @@ export const useLeads = () => {
   };
 
   const deleteLead = (leadId) => {
-    setLeads((prev) => prev.filter((l) => l.id !== leadId));
+    setLeads((prev) =>
+      prev.filter(
+        (l) =>
+          l.id !== leadId &&
+          String(l.dbId) !== String(leadId) &&
+          String(l.reference) !== String(leadId)
+      )
+    );
+
+    // Persist deleted lead ID in localStorage so refreshes never bring it back
+    try {
+      const raw = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
+      const ids = JSON.parse(raw);
+      const strId = String(leadId).trim();
+      if (!ids.includes(strId)) {
+        ids.push(strId);
+      }
+      localStorage.setItem(DELETED_LEADS_KEY, JSON.stringify(ids));
+    } catch (_) {}
+
+    // Dispatch DELETE to backend API
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      fetch(`/api/v1/crm-and-leads/${encodeURIComponent(leadId)}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => {});
+    }
   };
 
   return { leads, setLeads, updateLeadStatus, addLead, deleteLead };

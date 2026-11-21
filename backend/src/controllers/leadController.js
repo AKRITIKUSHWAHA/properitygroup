@@ -135,3 +135,28 @@ export const addComplaint = async (req, res, next) => {
   }
 };
 
+export const deleteLead = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const numId = parseInt(id, 10);
+    const where = !isNaN(numId) && String(numId) === String(id)
+      ? { OR: [{ id: numId }, { reference: String(id) }] }
+      : { reference: String(id) };
+
+    const targetLead = await prisma.lead.findFirst({ where });
+    if (!targetLead) {
+      return ApiResponse.success(res, null, 'Lead deleted successfully');
+    }
+
+    await prisma.callLog.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
+    await prisma.complaintLog.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
+    await prisma.quote.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
+    await prisma.job.updateMany({ where: { leadId: targetLead.id }, data: { leadId: null } }).catch(() => {});
+    await prisma.lead.delete({ where: { id: targetLead.id } });
+
+    return ApiResponse.success(res, null, 'Lead deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

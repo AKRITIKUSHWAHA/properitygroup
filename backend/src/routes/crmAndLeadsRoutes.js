@@ -4,6 +4,7 @@ import {
   getCrmMetrics,
   createLead,
   updateLeadStatus,
+  deleteLead,
   addCallLog,
   addComplaint,
   resolveComplaint,
@@ -23,6 +24,7 @@ router.use(authorizeRoles('ADMIN'));
 router.get('/', getCrmAndLeads);
 router.get('/metrics', getCrmMetrics);
 router.post('/', createLead);
+router.delete('/:id', deleteLead);
 router.patch('/:id/status', updateLeadStatus);
 router.post('/call-logs', addCallLog);
 router.post('/complaints', addComplaint);

@@ -108,6 +108,12 @@ export const adminCrmAndLeadsApi = {
     statsCache.invalidate();
     return api.post('/crm-and-leads', leadData);
   },
+  deleteLead: (id) => {
+    leadsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.delete(`/crm-and-leads/${encodeURIComponent(id)}`);
+  },
   updateStatus: (id, status) => {
     leadsCache.invalidate();
     bucketsCache.invalidate();

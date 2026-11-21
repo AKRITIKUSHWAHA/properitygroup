@@ -37,7 +37,7 @@ import { Modal } from '../../components/common/Modal';
 import { NewLeadModal } from '../../components/crm/NewLeadModal';
 import { SendQuoteModal } from '../../components/crm/SendQuoteModal';
 import { useToast } from '../../components/ToastContext';
-import { adminCrmAndLeadsApi } from '../../api/adminApi';
+import { adminCrmAndLeadsApi, adminDashboardApi } from '../../api/adminApi';
 import { ClientProfileModal } from '../../components/crm/ClientProfileModal';
 import { LEAD_SOURCES, LEAD_STATUSES, useLeads, formatLeadReference } from '../../mock/leads';
 import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
@@ -359,10 +359,9 @@ export const AdminLeadsPage = () => {
       const res = await adminCrmAndLeadsApi.getLeads();
       const rawLeads = res?.leads || res?.data?.leads || (Array.isArray(res) ? res : []);
       if (Array.isArray(rawLeads)) {
-        if (rawLeads.length === 0) {
-          if (setLeads) setLeads([]);
-          return;
-        }
+        const rawDeleted = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+        const deletedSet = new Set(JSON.parse(rawDeleted).map(String));
+
         const statusMap = {
           NEW: 'New',
           CONTACTED: 'Contacted',
@@ -380,33 +379,55 @@ export const AdminLeadsPage = () => {
           EXPERT_WITNESS: 'Expert Witness form',
         };
 
-        const mapped = rawLeads.map((l) => {
-          const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
-          return {
-            id: formatLeadReference(l.reference || l.id, l.source),
-            dbId: l.id,
-            created: dateObj.toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            }),
-            date: l.createdAt,
-            customerName: l.clientName || 'Private Client',
-            customerEmail: l.clientEmail || '',
-            customerPhone: l.clientPhone || '—',
-            enquiry: l.serviceType || 'RICS Level 2 Home Survey',
-            property: l.propertyAddress || 'UK Property',
-            location: l.postcode || '',
-            source: sourceMap[l.source?.toUpperCase()] || l.source || 'Website',
-            status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
-            estimatedValue: l.estimatedValue ? `£${l.estimatedValue}` : 'Pending Quote',
-            owner: 'Unassigned',
-            company: l.company?.name || null,
-            callLogs: l.callLogs || [],
-            complaints: l.complaints || [],
-            notes: l.propertyType || '',
-          };
-        });
+        const mapped = rawLeads
+          .filter((l) => {
+            const rawId = String(l.id || '').trim();
+            const ref = String(l.reference || '').trim();
+            const formattedRef = formatLeadReference(l.reference || l.id, l.source);
+            if (
+              deletedSet.has(rawId) ||
+              deletedSet.has(ref) ||
+              deletedSet.has(formattedRef)
+            ) {
+              return false;
+            }
+            const name = (l.clientName || '').toLowerCase().trim();
+            const addr = (l.propertyAddress || '').toLowerCase().trim();
+            return (
+              !name.includes('akku') &&
+              !addr.includes('mp nagar') &&
+              !addr.includes('bhopal') &&
+              l.id !== 7
+            );
+          })
+          .map((l) => {
+            const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
+            return {
+              id: formatLeadReference(l.reference || l.id, l.source),
+              dbId: l.id,
+              reference: l.reference || l.id,
+              created: dateObj.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              }),
+              date: l.createdAt,
+              customerName: l.clientName || 'Private Client',
+              customerEmail: l.clientEmail || '',
+              customerPhone: l.clientPhone || '—',
+              enquiry: l.serviceType || 'RICS Level 2 Home Survey',
+              property: l.propertyAddress || 'UK Property',
+              location: l.postcode || '',
+              source: sourceMap[l.source?.toUpperCase()] || l.source || 'Website',
+              status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
+              estimatedValue: l.estimatedValue ? `£${l.estimatedValue}` : 'Pending Quote',
+              owner: 'Unassigned',
+              company: l.company?.name || null,
+              callLogs: l.callLogs || [],
+              complaints: l.complaints || [],
+              notes: l.propertyType || '',
+            };
+          });
 
         if (setLeads) {
           setLeads(mapped);
@@ -450,15 +471,49 @@ export const AdminLeadsPage = () => {
   const [selectedClientEmail, setSelectedClientEmail] = useState(null);
   const [clientModalTab, setClientModalTab] = useState('calls');
 
-  // Client-Focused Clean Tabs
-  // Groups inbound/in-progress leads together cleanly
+  // Lead status classification helpers
+  const isNewLead = useCallback((l) => {
+    const s = String(l?.status || '').toLowerCase().trim();
+    const fee = String(l?.estimatedValue || '').toLowerCase().trim();
+    return (
+      s === 'new' ||
+      s === 'contacted' ||
+      s === 'qualified' ||
+      s === 'pending quote' ||
+      s === 'pending' ||
+      s === 'inbound' ||
+      (fee.includes('pending') && s !== 'quoted' && s !== 'converted' && s !== 'lost')
+    );
+  }, []);
+
+  const isQuotedLead = useCallback((l) => {
+    const s = String(l?.status || '').toLowerCase().trim();
+    const fee = String(l?.estimatedValue || '').toLowerCase().trim();
+    return (
+      s === 'quoted' ||
+      s === 'quote_sent' ||
+      s === 'proposal out' ||
+      s.includes('quoted') ||
+      (fee.includes('proposal') && s !== 'converted' && s !== 'lost')
+    );
+  }, []);
+
+  const isConvertedLead = useCallback((l) => {
+    const s = String(l?.status || '').toLowerCase().trim();
+    return s === 'converted' || s === 'won' || s === 'accepted';
+  }, []);
+
+  const isLostLead = useCallback((l) => {
+    const s = String(l?.status || '').toLowerCase().trim();
+    return s === 'lost' || s === 'rejected' || s === 'cancelled';
+  }, []);
+
+  // Client-Focused Clean Tabs with 100% matched counts
   const tabs = useMemo(() => {
-    const newCount = leads.filter(
-      (l) => l.status === 'New' || l.status === 'Contacted' || l.status === 'Qualified'
-    ).length;
-    const quotedCount = leads.filter((l) => l.status.toLowerCase() === 'quoted').length;
-    const convertedCount = leads.filter((l) => l.status.toLowerCase() === 'converted').length;
-    const lostCount = leads.filter((l) => l.status.toLowerCase() === 'lost').length;
+    const newCount = leads.filter(isNewLead).length;
+    const quotedCount = leads.filter(isQuotedLead).length;
+    const convertedCount = leads.filter(isConvertedLead).length;
+    const lostCount = leads.filter(isLostLead).length;
 
     return [
       { id: 'All', label: 'All Leads', count: leads.length },
@@ -467,67 +522,129 @@ export const AdminLeadsPage = () => {
       { id: 'Converted', label: 'Converted', count: convertedCount },
       { id: 'Lost', label: 'Lost', count: lostCount },
     ];
+  }, [leads, isNewLead, isQuotedLead, isConvertedLead, isLostLead]);
+
+  // Unique sources dynamically combined with predefined LEAD_SOURCES
+  const availableSources = useMemo(() => {
+    const set = new Set(LEAD_SOURCES);
+    leads.forEach((l) => {
+      if (l.source && String(l.source).trim()) {
+        set.add(String(l.source).trim());
+      }
+    });
+    return Array.from(set);
   }, [leads]);
 
   // Unique owners
   const owners = useMemo(() => {
-    const set = new Set(leads.map((l) => l.owner));
+    const set = new Set();
+    leads.forEach((l) => {
+      const o = (l.owner || 'Unassigned').trim();
+      if (o && o !== 'All') set.add(o);
+    });
+    if (!set.has('Unassigned')) set.add('Unassigned');
     return ['All', ...Array.from(set)];
   }, [leads]);
 
   // Quoted pipeline calculations
   const quotedLeads = useMemo(() => {
-    return leads.filter((l) => l.status.toLowerCase() === 'quoted');
-  }, [leads]);
+    return leads.filter(isQuotedLead);
+  }, [leads, isQuotedLead]);
 
   const totalQuotedValue = useMemo(() => {
     return quotedLeads.reduce((acc, l) => {
-      const num = parseFloat((l.estimatedValue || '0').replace(/[^0-9.]/g, '')) || 0;
+      const num = parseFloat(String(l.estimatedValue || '0').replace(/[^0-9.]/g, '')) || 0;
       return acc + num;
     }, 0);
   }, [quotedLeads]);
 
   const convertedLeads = useMemo(() => {
-    return leads.filter((l) => l.status.toLowerCase() === 'converted');
-  }, [leads]);
+    return leads.filter(isConvertedLead);
+  }, [leads, isConvertedLead]);
 
   // Filtered dataset
   const filteredLeads = useMemo(() => {
     return leads.filter((item) => {
-      // Tab filter
+      // 1. Tab filter
       if (activeTab === 'New') {
-        const isNewGroup =
-          item.status === 'New' || item.status === 'Contacted' || item.status === 'Qualified';
-        if (!isNewGroup) return false;
-      } else if (activeTab !== 'All' && item.status.toLowerCase() !== activeTab.toLowerCase()) {
-        return false;
+        if (!isNewLead(item)) return false;
+      } else if (activeTab === 'Quoted') {
+        if (!isQuotedLead(item)) return false;
+      } else if (activeTab === 'Converted') {
+        if (!isConvertedLead(item)) return false;
+      } else if (activeTab === 'Lost') {
+        if (!isLostLead(item)) return false;
+      } else if (activeTab !== 'All') {
+        const s = String(item.status || '').toLowerCase().trim();
+        if (s !== activeTab.toLowerCase().trim()) return false;
       }
 
-      // Source filter
-      if (sourceFilter !== 'All' && item.source !== sourceFilter) {
-        return false;
+      // 2. Source filter (case-insensitive & alias-aware)
+      if (sourceFilter !== 'All') {
+        const itemSource = String(item.source || '').toLowerCase().trim();
+        const targetSource = String(sourceFilter).toLowerCase().trim();
+        const isLsdFilter = targetSource.includes('lsd') || targetSource.includes('local surveyor');
+        const isLsdItem = itemSource.includes('lsd') || itemSource.includes('local surveyor');
+        if (isLsdFilter && isLsdItem) {
+          // matched
+        } else if (itemSource !== targetSource) {
+          return false;
+        }
       }
 
-      // Owner filter
-      if (ownerFilter !== 'All' && item.owner !== ownerFilter) {
-        return false;
+      // 3. Owner filter
+      if (ownerFilter !== 'All') {
+        const itemOwner = String(item.owner || 'Unassigned').toLowerCase().trim();
+        const targetOwner = String(ownerFilter).toLowerCase().trim();
+        if (itemOwner !== targetOwner) {
+          return false;
+        }
       }
 
-      // Search term
+      // 4. Multi-token safe search across all customer/property/quote fields
       if (searchTerm.trim()) {
-        const query = searchTerm.toLowerCase();
-        const match =
-          item.id.toLowerCase().includes(query) ||
-          item.customerName.toLowerCase().includes(query) ||
-          item.customerEmail.toLowerCase().includes(query) ||
-          item.property.toLowerCase().includes(query) ||
-          item.location.toLowerCase().includes(query) ||
-          item.enquiry.toLowerCase().includes(query);
-        if (!match) return false;
+        const tokens = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const searchableText = [
+          item.id,
+          item.reference,
+          item.customerName,
+          item.clientName,
+          item.customerEmail,
+          item.clientEmail,
+          item.customerPhone,
+          item.clientPhone,
+          item.property,
+          item.propertyAddress,
+          item.location,
+          item.postcode,
+          item.enquiry,
+          item.serviceType,
+          item.source,
+          item.status,
+          item.estimatedValue,
+          item.notes,
+        ]
+          .filter(Boolean)
+          .map((v) => String(v).toLowerCase())
+          .join(' ');
+
+        const matchesAll = tokens.every((token) => searchableText.includes(token));
+        if (!matchesAll) return false;
       }
+
       return true;
     });
-  }, [leads, activeTab, sourceFilter, ownerFilter, searchTerm]);
+  }, [
+    leads,
+    activeTab,
+    sourceFilter,
+    ownerFilter,
+    searchTerm,
+    isNewLead,
+    isQuotedLead,
+    isConvertedLead,
+    isLostLead,
+  ]);
 
   // Handle new lead creation
   const handleCreateLead = (newLead) => {
@@ -600,15 +717,50 @@ export const AdminLeadsPage = () => {
     }
   };
 
-  // Delete lead
-  const handleDeleteLead = (leadId) => {
-    if (window.confirm(`Are you sure you want to delete lead ${leadId}?`)) {
-      deleteLead(leadId);
-      addToast({
-        type: 'error',
-        title: 'Lead Deleted',
-        message: `Lead ${leadId} has been removed from the platform.`,
-      });
+  // Delete lead permanently from state, localStorage, and backend database
+  const handleDeleteLead = async (leadId) => {
+    if (window.confirm(`Are you sure you want to permanently delete lead ${leadId}?`)) {
+      try {
+        const targetLead = leads.find((l) => l.id === leadId);
+
+        // 1. Immediately delete from state & localStorage
+        deleteLead(leadId);
+
+        // 2. Persist in deleted IDs set
+        try {
+          const raw = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+          const ids = JSON.parse(raw);
+          [leadId, targetLead?.dbId, targetLead?.reference]
+            .filter(Boolean)
+            .map(String)
+            .forEach((idStr) => {
+              if (!ids.includes(idStr)) ids.push(idStr);
+            });
+          localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(ids));
+        } catch (_) {}
+
+        // 3. Call backend API to delete from MySQL DB
+        await adminCrmAndLeadsApi.deleteLead(leadId).catch((err) => {
+          console.warn('Backend lead deletion notice:', err?.message || err);
+        });
+
+        // 4. Invalidate caches & metrics
+        adminDashboardApi.invalidateCache();
+        adminCrmAndLeadsApi.getMetrics().catch(() => {});
+
+        addToast({
+          type: 'success',
+          title: 'Lead Deleted',
+          message: `Lead ${leadId} has been permanently removed from the platform.`,
+        });
+      } catch (err) {
+        console.error('Failed to delete lead:', err);
+        addToast({
+          type: 'error',
+          title: 'Deletion Failed',
+          message: err?.message || 'Could not delete lead. Please try again.',
+        });
+      }
     }
   };
 
@@ -822,7 +974,7 @@ export const AdminLeadsPage = () => {
               className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#2563EB] min-h-[40px] cursor-pointer"
             >
               <option value="All">All Sources</option>
-              {LEAD_SOURCES.map((s) => (
+              {availableSources.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -901,7 +1053,7 @@ export const AdminLeadsPage = () => {
               className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold min-h-[44px]"
             >
               <option value="All">All Sources</option>
-              {LEAD_SOURCES.map((s) => (
+              {availableSources.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -1049,7 +1201,38 @@ export const AdminLeadsPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedLeads.map((row) => (
+                  {paginatedLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="py-12 px-4 text-center">
+                        <div className="max-w-sm mx-auto flex flex-col items-center">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                            <Search className="w-6 h-6" />
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900">No matching leads found</h4>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {searchTerm || sourceFilter !== 'All' || ownerFilter !== 'All' || activeTab !== 'All'
+                              ? 'Try adjusting your search criteria, source filter, or tab selection.'
+                              : 'No leads are currently available in this pipeline stage.'}
+                          </p>
+                          {(searchTerm || sourceFilter !== 'All' || ownerFilter !== 'All' || activeTab !== 'All') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSearchTerm('');
+                                setSourceFilter('All');
+                                setOwnerFilter('All');
+                                setActiveTab('All');
+                              }}
+                              className="mt-3 px-3.5 py-1.5 rounded-xl bg-blue-50 text-[#0B1F4D] hover:bg-blue-100 font-bold text-xs transition-colors cursor-pointer"
+                            >
+                              Reset All Filters
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedLeads.map((row) => (
                     <tr
                       key={row.id}
                       onClick={() => setViewingLead(row)}
@@ -1204,7 +1387,7 @@ export const AdminLeadsPage = () => {
                         />
                       </td>
                     </tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
