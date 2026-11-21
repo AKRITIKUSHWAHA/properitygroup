@@ -1085,19 +1085,6 @@ export const AdminUsersPage = () => {
                 <div className="flex-1 h-px bg-slate-100" />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Organisation / Firm (Optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Private Client or Company"
-                  value={formData.org}
-                  onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                />
-              </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1126,64 +1113,6 @@ export const AdminUsersPage = () => {
                     className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
                   />
                 </div>
-              </div>
-            </div>
-          )}
-
-          {formData.role === 'super_admin' && (
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                  2. Administrator Role &amp; Access Scope
-                </span>
-                <div className="flex-1 h-px bg-slate-100" />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Administrative Job Title / Position <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formData.adminTitle}
-                    onChange={(e) => setFormData({ ...formData, adminTitle: e.target.value })}
-                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
-                  >
-                    <option value="Operations & Dispatch Manager">
-                      Operations &amp; Dispatch Manager
-                    </option>
-                    <option value="Lead Senior Administrator">
-                      Lead Senior Administrator
-                    </option>
-                    <option value="Billing & Invoicing Specialist">
-                      Billing &amp; Invoicing Specialist
-                    </option>
-                    <option value="Super Administrator (HQ)">
-                      Super Administrator (HQ)
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Headquarters / Organisation
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. NJS Property Group HQ"
-                    value={formData.org}
-                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 flex items-center gap-2 text-slate-600">
-                <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="text-[11px] leading-tight">
-                  <strong className="text-slate-800">Full System Access:</strong> Unrestricted control across all 11 modules, surveyor dispatch rota, QA desk, and financial billing.
-                </span>
               </div>
             </div>
           )}
