@@ -11,12 +11,14 @@ export const getUsersAndRoles = async (req, res, next) => {
     const { role, status, search } = req.query;
     const DEMO_EMAILS = ['admin@demo.com', 'surveyor@demo.com', 'customer@demo.com', 'customer2@demo.com'];
     const where = {
-      email: { notIn: DEMO_EMAILS },
+      email: { notIn: DEMO_EMAILS, not: { startsWith: 'deleted_' } },
     };
 
     if (role) where.role = role.toUpperCase();
     if (status && status.toUpperCase() !== 'ALL') {
       where.status = status.toUpperCase();
+    } else if (!status) {
+      where.status = { not: 'INACTIVE' };
     }
     if (search) {
       where.AND = [
@@ -192,23 +194,58 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = parseInt(id);
-
-    // Prevent deleting self
-    if (req.user.id === userId) {
-      throw ApiError.badRequest('You cannot delete your own administrative account');
+    let userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      const digits = String(id).replace(/\D/g, '');
+      if (digits) {
+        userId = parseInt(digits, 10);
+      }
     }
 
-    try {
-      await prisma.surveyorProfile.deleteMany({ where: { userId } });
-      await prisma.notification.deleteMany({ where: { userId } });
-      await prisma.user.delete({ where: { id: userId } });
-    } catch {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { status: 'INACTIVE' },
+    let targetUser = null;
+    if (!isNaN(userId) && userId > 0) {
+      targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    }
+    if (!targetUser && typeof id === 'string') {
+      const cleanEmail = id.toLowerCase().trim();
+      targetUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            { name: cleanEmail },
+          ],
+        },
       });
+      if (targetUser) userId = targetUser.id;
     }
+
+    if (!targetUser) {
+      return ApiResponse.success(res, null, 'User account removed successfully');
+    }
+
+    // Prevent deleting self or primary admin
+    if (targetUser.email === 'njsadmin@gmail.com' || (req.user && req.user.id === targetUser.id)) {
+      throw ApiError.badRequest('The primary administrator account cannot be deleted');
+    }
+
+    // Cascade cleanups
+    await prisma.surveyorProfile.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
+    await prisma.notification.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
+    await prisma.customerReview.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
+    await prisma.supportTicket.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
+    await prisma.auditLog.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
+    await prisma.message.deleteMany({ where: { senderId: targetUser.id } }).catch(() => {});
+    // Unlink any jobs so foreign keys don't block deletion
+    await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } }).catch(() => {});
+    await prisma.job.updateMany({ where: { surveyorId: targetUser.id }, data: { surveyorId: null } }).catch(() => {});
+
+    // Delete user from database
+    await prisma.user.delete({ where: { id: targetUser.id } }).catch(async () => {
+      await prisma.user.update({
+        where: { id: targetUser.id },
+        data: { status: 'INACTIVE', email: `deleted_${Date.now()}_${targetUser.email}` },
+      });
+    });
 
     return ApiResponse.success(res, null, 'User account removed successfully');
   } catch (error) {

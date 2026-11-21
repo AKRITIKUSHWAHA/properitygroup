@@ -45,10 +45,18 @@ export const AdminUsersPage = () => {
       .then((res) => {
         const rawUsers = res?.data?.users || res?.users || (Array.isArray(res?.data) ? res.data : []);
         if (Array.isArray(rawUsers)) {
+          const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+          const deletedSet = new Set(JSON.parse(rawDeleted).map((k) => String(k).toLowerCase().trim()));
+
           const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Chartered Surveyor', CUSTOMER: 'Customer' };
           const mapped = rawUsers
             .filter((u) => {
               const email = (u.email || '').toLowerCase().trim();
+              const idStr = String(u.id).toLowerCase();
+              const formattedId = `usr-${String(u.id).padStart(2, '0')}`.toLowerCase();
+              if (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId)) {
+                return false;
+              }
               return (
                 email &&
                 email !== 'admin@demo.com' &&
@@ -56,7 +64,9 @@ export const AdminUsersPage = () => {
                 email !== 'customer@demo.com' &&
                 email !== 'customer2@demo.com' &&
                 !email.includes('alexander.sterling') &&
-                u.name !== 'Alexander Sterling'
+                u.name !== 'Alexander Sterling' &&
+                u.status !== 'INACTIVE' &&
+                !email.startsWith('deleted_')
               );
             })
             .map((u) => {
@@ -95,7 +105,11 @@ export const AdminUsersPage = () => {
             const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
             Object.values(registered).forEach((regCust) => {
               const regEmail = (regCust.email || '').toLowerCase().trim();
-              if (regEmail && !mapped.some((u) => u.email?.toLowerCase().trim() === regEmail)) {
+              if (
+                regEmail &&
+                !deletedSet.has(regEmail) &&
+                !mapped.some((u) => u.email?.toLowerCase().trim() === regEmail)
+              ) {
                 mapped.push({
                   id: `USR-C-${mapped.length + 1}`,
                   dbId: null,
@@ -486,8 +500,21 @@ export const AdminUsersPage = () => {
     });
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (userName === 'NJS Operations Admin' || userName === 'admin' || userId === 29 || userId === 'USR-29' || userId === 'USR-01') {
+  const handleDeleteUser = async (userOrId, maybeName, maybeEmail) => {
+    const targetUser = typeof userOrId === 'object' && userOrId !== null ? userOrId : null;
+    const userId = targetUser ? (targetUser.dbId || targetUser.id) : userOrId;
+    const userName = targetUser ? targetUser.name : (maybeName || 'User');
+    const userEmail = targetUser ? targetUser.email : (maybeEmail || '');
+    const cleanEmail = (userEmail || (typeof userId === 'string' && userId.includes('@') ? userId : '')).toLowerCase().trim();
+
+    if (
+      cleanEmail === 'njsadmin@gmail.com' ||
+      userName === 'NJS Operations Admin' ||
+      userName === 'admin' ||
+      userId === 29 ||
+      userId === 'USR-29' ||
+      userId === 'USR-01'
+    ) {
       addToast({
         type: 'warning',
         title: 'Action Protected',
@@ -496,11 +523,55 @@ export const AdminUsersPage = () => {
       return;
     }
 
-    setUsers((prev) => prev.filter((u) => u.id !== userId && u.dbId !== userId));
+    // 1. Immediately remove from local state
+    setUsers((prev) =>
+      prev.filter(
+        (u) =>
+          u.id !== userId &&
+          (!targetUser?.dbId || u.dbId !== targetUser.dbId) &&
+          (!cleanEmail || (u.email || '').toLowerCase().trim() !== cleanEmail)
+      )
+    );
 
+    // 2. Remove from localStorage registered customers & credentials
     try {
-      await adminUsersAndRolesApi.deleteUser(userId);
-      fetchUsers();
+      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      if (cleanEmail && registered[cleanEmail]) {
+        delete registered[cleanEmail];
+      }
+      Object.keys(registered).forEach((key) => {
+        if (key.toLowerCase().trim() === cleanEmail) {
+          delete registered[key];
+        }
+      });
+      localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+
+      if (cleanEmail) {
+        localStorage.removeItem(`njs_user_pw_${cleanEmail}`);
+        localStorage.removeItem(`njs_user_phone_${cleanEmail}`);
+      }
+    } catch {}
+
+    // 3. Persist deleted user keys in localStorage so refreshes NEVER bring it back
+    try {
+      const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+      const deletedKeys = JSON.parse(rawDeleted);
+      [userId, targetUser?.dbId, targetUser?.id, cleanEmail]
+        .filter(Boolean)
+        .map(String)
+        .forEach((k) => {
+          const lower = k.toLowerCase().trim();
+          if (!deletedKeys.includes(lower)) {
+            deletedKeys.push(lower);
+          }
+        });
+      localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(deletedKeys));
+    } catch {}
+
+    // 4. Call backend API to delete from database
+    try {
+      const apiTarget = targetUser?.dbId || cleanEmail || userId;
+      await adminUsersAndRolesApi.deleteUser(apiTarget);
     } catch (err) {
       console.warn('Backend delete error:', err?.message || err);
     }
@@ -508,7 +579,7 @@ export const AdminUsersPage = () => {
     addToast({
       type: 'info',
       title: 'User Removed',
-      message: `${userName} has been removed from platform users.`,
+      message: `${userName} has been permanently removed from platform users.`,
     });
   };
 
@@ -654,7 +725,7 @@ export const AdminUsersPage = () => {
           {/* 3. Delete User */}
           <button
             type="button"
-            onClick={() => handleDeleteUser(row.dbId || row.id, row.name)}
+            onClick={() => handleDeleteUser(row)}
             disabled={row.email === 'njsadmin@gmail.com' || row.role === 'super_admin'}
             className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors cursor-pointer"
             title={row.email === 'njsadmin@gmail.com' || row.role === 'super_admin' ? 'Primary admin cannot be deleted' : 'Delete User'}
