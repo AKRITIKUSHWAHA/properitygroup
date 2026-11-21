@@ -145,7 +145,7 @@ export const executeDigitalSignature = async (req, res, next) => {
       const clientDisplayName = bodyClientName || req.user?.name || term?.clientName || term?.job?.clientName || 'Valued Client';
       const resolvedJobRef = term?.job?.reference || `JOB-2026-${termId || id || '328'}`;
       const resolvedSurveyType = surveyType || term?.job?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
-      const resolvedProperty = property || term?.job?.propertyAddress || 'Plot No 45, MP Nagar, Bhopal, 462011';
+      const resolvedProperty = property || term?.job?.propertyAddress || '14 Mayfair Gate, Mayfair, London W1K 2PB';
 
       if (recipientEmail && recipientEmail.includes('@')) {
         sendTermsSignedEmail({

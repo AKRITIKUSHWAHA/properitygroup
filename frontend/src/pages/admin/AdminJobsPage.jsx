@@ -373,7 +373,22 @@ export const AdminJobsPage = () => {
             } else {
               const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
                 const email = (bj.customerEmail || '').toLowerCase().trim();
-                return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
+                const name = (bj.customer || '').toLowerCase().trim();
+                const prop = (bj.property || '').toLowerCase().trim();
+                const id = String(bj.id || '').trim();
+                const jobNo = String(bj.jobNo || '').trim().toUpperCase();
+                return (
+                  email !== 'customer@demo.com' &&
+                  email !== 'customer2@demo.com' &&
+                  !email.includes('akku') &&
+                  !name.includes('akku') &&
+                  !prop.includes('mp nagar') &&
+                  !prop.includes('bhopal') &&
+                  !prop.includes('plot no 45') &&
+                  id !== '7' &&
+                  id !== 'JOB-2026-101' &&
+                  jobNo !== 'JOB-2026-101'
+                );
               });
               // Deduplicate multiple entries for identical client instruction
               const seen = new Set();

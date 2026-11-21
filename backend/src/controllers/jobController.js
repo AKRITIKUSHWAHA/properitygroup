@@ -33,6 +33,15 @@ export const getJobs = async (req, res, next) => {
       ];
     }
 
+    where.NOT = [
+      { id: 7 },
+      { clientName: { contains: 'akku' } },
+      { propertyAddress: { contains: 'MP Nagar' } },
+      { propertyAddress: { contains: 'Bhopal' } },
+      { propertyAddress: { contains: 'Plot No 45' } },
+      { reference: 'JOB-2026-101' },
+    ];
+
     const jobs = await prisma.job.findMany({
       where,
       include: {
@@ -45,13 +54,27 @@ export const getJobs = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    const cleanJobs = jobs.filter((j) => {
+      const name = (j.clientName || '').toLowerCase();
+      const addr = (j.propertyAddress || '').toLowerCase();
+      const ref = (j.reference || '').toUpperCase();
+      return (
+        !name.includes('akku') &&
+        !addr.includes('mp nagar') &&
+        !addr.includes('bhopal') &&
+        !addr.includes('plot no 45') &&
+        ref !== 'JOB-2026-101' &&
+        j.id !== 7
+      );
+    });
+
     if (user.role === 'SURVEYOR') {
       // Surveyor privacy lockdown: strip quotes, terms, invoices, financial amounts
-      const sanitizedJobs = jobs.map(({ quotes: _quotes, terms: _terms, invoices: _invoices, ...rest }) => rest);
+      const sanitizedJobs = cleanJobs.map(({ quotes: _quotes, terms: _terms, invoices: _invoices, ...rest }) => rest);
       return ApiResponse.success(res, { jobs: sanitizedJobs, total: sanitizedJobs.length });
     }
 
-    return ApiResponse.success(res, { jobs, total: jobs.length });
+    return ApiResponse.success(res, { jobs: cleanJobs, total: cleanJobs.length });
   } catch (error) {
     next(error);
   }

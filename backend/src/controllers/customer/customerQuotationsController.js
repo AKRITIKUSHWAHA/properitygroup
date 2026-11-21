@@ -203,7 +203,7 @@ export const acceptCustomerQuotation = async (req, res, next) => {
     const clientName = req.user?.name || quote?.job?.clientName || quote?.lead?.clientName || 'Valued Client';
     const quoteRef = quote?.reference || (String(id).startsWith('QUO') ? String(id) : `QUO-${id}`);
     const surveyType = quote?.job?.serviceType || quote?.lead?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
-    const propertyAddress = quote?.job?.propertyAddress || quote?.lead?.propertyAddress || 'Plot No 45, MP Nagar, Bhopal, 462011';
+    const propertyAddress = quote?.job?.propertyAddress || quote?.lead?.propertyAddress || '14 Mayfair Gate, Mayfair, London W1K 2PB';
     const totalAmount = quote?.totalAmount ? quote.totalAmount.toString() : '660.00';
 
     if (recipientEmail && recipientEmail.includes('@')) {

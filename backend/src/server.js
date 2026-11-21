@@ -11,6 +11,40 @@ async function bootstrap() {
     try {
       await prisma.$connect();
       logger.success('Connected successfully to MySQL database via Prisma ORM.');
+
+      // Purge obsolete test / dummy records permanently
+      try {
+        await prisma.job.deleteMany({
+          where: {
+            OR: [
+              { id: 7 },
+              { clientName: { contains: 'akku' } },
+              { propertyAddress: { contains: 'MP Nagar' } },
+              { propertyAddress: { contains: 'Bhopal' } },
+              { propertyAddress: { contains: 'Plot No 45' } },
+              { reference: 'JOB-2026-101' },
+            ],
+          },
+        });
+        await prisma.lead.deleteMany({
+          where: {
+            OR: [
+              { id: 7 },
+              { clientName: { contains: 'akku' } },
+              { propertyAddress: { contains: 'MP Nagar' } },
+              { propertyAddress: { contains: 'Bhopal' } },
+            ],
+          },
+        });
+        await prisma.user.deleteMany({
+          where: {
+            OR: [
+              { name: { contains: 'akku' } },
+              { email: { contains: 'akku' } },
+            ],
+          },
+        });
+      } catch {}
     } catch (dbErr) {
       logger.warn(`MySQL database server not reachable at startup (${dbErr.message}). Server running in resilient mode with live Resend email dispatch active.`);
     }

@@ -50,10 +50,17 @@ export const getStoredLeads = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.map((l) => ({
-          ...l,
-          id: formatLeadReference(l.id, l.source),
-        }));
+        return parsed
+          .filter((l) => {
+            const name = (l.customerName || l.clientName || '').toLowerCase().trim();
+            const email = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+            const addr = (l.property || l.propertyAddress || '').toLowerCase().trim();
+            return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7;
+          })
+          .map((l) => ({
+            ...l,
+            id: formatLeadReference(l.id, l.source),
+          }));
       }
     }
   } catch (e) {

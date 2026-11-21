@@ -594,7 +594,12 @@ export const getStoredAgreements = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed;
+        return parsed.filter((a) => {
+          const name = (a.customer || a.clientName || '').toLowerCase().trim();
+          const email = (a.customerEmail || a.clientEmail || '').toLowerCase().trim();
+          const addr = (a.property || a.propertyAddress || '').toLowerCase().trim();
+          return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && a.id !== 7;
+        });
       }
     }
   } catch (e) {

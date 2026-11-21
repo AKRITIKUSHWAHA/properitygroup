@@ -140,7 +140,7 @@ export const payInvoiceWithCard = async (req, res, next) => {
       const clientDisplayName = bodyClientName || req.user?.name || invoice?.clientName || invoice?.job?.clientName || 'Valued Client';
       const resolvedInvoiceRef = invoice?.invoiceNumber || `INV-2026-${invoiceId || id || '328'}`;
       const resolvedTotal = invoice?.total ? invoice.total.toString() : (amount ? String(amount) : '660.00');
-      const resolvedProperty = property || invoice?.job?.propertyAddress || 'Plot No 45, MP Nagar, Bhopal, 462011';
+      const resolvedProperty = property || invoice?.job?.propertyAddress || '14 Mayfair Gate, Mayfair, London W1K 2PB';
 
       if (recipientEmail && recipientEmail.includes('@')) {
         sendInvoiceReceiptEmail({

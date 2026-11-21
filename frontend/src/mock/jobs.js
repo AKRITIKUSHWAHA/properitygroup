@@ -19,6 +19,34 @@ export const INITIAL_JOBS = [];
 
 export const syncRealCustomerJobs = () => [];
 
+// Auto-purge any obsolete test / dummy records from browser localStorage
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    ['propertygroup_jobs', 'propertygroup_leads', 'propertygroup_quotes', 'property_group_registered_customers'].forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (raw && (raw.includes('akku') || raw.includes('MP Nagar') || raw.includes('Bhopal') || raw.includes('JOB-2026-101') || raw.includes('Plot No 45'))) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed.filter((item) => {
+              const str = JSON.stringify(item).toLowerCase();
+              return !str.includes('akku') && !str.includes('mp nagar') && !str.includes('bhopal') && !str.includes('plot no 45') && item.id !== 7 && item.id !== '7';
+            });
+            localStorage.setItem(key, JSON.stringify(cleaned));
+          } else if (typeof parsed === 'object' && parsed !== null) {
+            Object.keys(parsed).forEach((k) => {
+              if (k.toLowerCase().includes('akku') || JSON.stringify(parsed[k]).toLowerCase().includes('akku')) {
+                delete parsed[k];
+              }
+            });
+            localStorage.setItem(key, JSON.stringify(parsed));
+          }
+        } catch {}
+      }
+    });
+  } catch {}
+}
+
 export const getStoredJobs = () => {
   try {
     const raw = localStorage.getItem('propertygroup_jobs');
@@ -27,6 +55,10 @@ export const getStoredJobs = () => {
       if (Array.isArray(parsed)) {
         return parsed.filter((j) => {
           const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+          const name = (j.customer || j.clientName || j.name || '').toLowerCase().trim();
+          const addr = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
+          const idStr = String(j.id || '').toUpperCase().trim();
+          const jobNoStr = String(j.jobNo || '').toUpperCase().trim();
           return (
             email &&
             email !== 'customer@demo.com' &&
@@ -35,7 +67,15 @@ export const getStoredJobs = () => {
             email !== 'oliver.vance@example.com' &&
             email !== 'charlotte.b@outlook.com' &&
             !email.includes('emma.watson') &&
-            !email.includes('kensingtonestates')
+            !email.includes('kensingtonestates') &&
+            !email.includes('akku') &&
+            !name.includes('akku') &&
+            !addr.includes('mp nagar') &&
+            !addr.includes('bhopal') &&
+            !addr.includes('plot no 45') &&
+            idStr !== '7' &&
+            idStr !== 'JOB-2026-101' &&
+            jobNoStr !== 'JOB-2026-101'
           );
         });
       }

@@ -9,7 +9,14 @@ export const getStoredQuotes = () => {
     const raw = localStorage.getItem('propertygroup_quotes');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((q) => {
+          const name = (q.customer || q.clientName || '').toLowerCase().trim();
+          const email = (q.customerEmail || q.clientEmail || '').toLowerCase().trim();
+          const addr = (q.property || q.propertyAddress || '').toLowerCase().trim();
+          return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && q.id !== 7;
+        });
+      }
     }
   } catch (e) {
     console.error(e);

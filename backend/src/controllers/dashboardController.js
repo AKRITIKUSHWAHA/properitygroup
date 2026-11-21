@@ -40,14 +40,25 @@ export const getDashboardStats = async (req, res, next) => {
 
 export const getActionBuckets = async (req, res, next) => {
   try {
+    const excludedWhere = {
+      NOT: [
+        { id: 7 },
+        { clientName: { contains: 'akku' } },
+        { propertyAddress: { contains: 'MP Nagar' } },
+        { propertyAddress: { contains: 'Bhopal' } },
+        { propertyAddress: { contains: 'Plot No 45' } },
+        { reference: 'JOB-2026-101' },
+      ],
+    };
+
     const [quotesToSubmit, jobsToBook, reportsToUpload, termsToSign, paymentsToCollect, completed] =
       await Promise.all([
-        prisma.lead.count({ where: { status: { in: ['NEW', 'CONTACTED'] } } }),
-        prisma.job.count({ where: { stage: { in: ['PAID', 'ACCEPTED'] } } }),
-        prisma.job.count({ where: { stage: 'PREPARING_REPORT' } }),
+        prisma.lead.count({ where: { status: { in: ['NEW', 'CONTACTED'] }, ...excludedWhere } }),
+        prisma.job.count({ where: { stage: { in: ['PAID', 'ACCEPTED'] }, ...excludedWhere } }),
+        prisma.job.count({ where: { stage: 'PREPARING_REPORT', ...excludedWhere } }),
         prisma.term.count({ where: { signed: false } }),
         prisma.invoice.count({ where: { status: 'PENDING' } }),
-        prisma.job.count({ where: { stage: 'COMPLETE' } }),
+        prisma.job.count({ where: { stage: 'COMPLETE', ...excludedWhere } }),
       ]);
 
     return ApiResponse.success(res, {

@@ -141,7 +141,22 @@ export const AdminDashboardPage = () => {
         if (Array.isArray(apiJobs)) {
           const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
             const email = (bj.customerEmail || '').toLowerCase().trim();
-            return email !== 'customer@demo.com' && email !== 'customer2@demo.com';
+            const name = (bj.customer || '').toLowerCase().trim();
+            const prop = (bj.property || '').toLowerCase().trim();
+            const id = String(bj.id || '').trim();
+            const jobNo = String(bj.jobNo || '').trim().toUpperCase();
+            return (
+              email !== 'customer@demo.com' &&
+              email !== 'customer2@demo.com' &&
+              !email.includes('akku') &&
+              !name.includes('akku') &&
+              !prop.includes('mp nagar') &&
+              !prop.includes('bhopal') &&
+              !prop.includes('plot no 45') &&
+              id !== '7' &&
+              id !== 'JOB-2026-101' &&
+              jobNo !== 'JOB-2026-101'
+            );
           });
           // Deduplicate multiple entries for identical client instruction
           const seen = new Set();
@@ -161,6 +176,12 @@ export const AdminDashboardPage = () => {
       if (leadsRes.status === 'fulfilled') {
         const rawLeads = leadsRes.value?.leads || leadsRes.value?.data?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
         if (Array.isArray(rawLeads)) {
+          const cleanLeads = rawLeads.filter((l) => {
+            const name = (l.clientName || '').toLowerCase().trim();
+            const email = (l.clientEmail || '').toLowerCase().trim();
+            const addr = (l.propertyAddress || '').toLowerCase().trim();
+            return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7;
+          });
           const statusMap = {
             NEW: 'New',
             CONTACTED: 'Contacted',
@@ -169,7 +190,7 @@ export const AdminDashboardPage = () => {
             CONVERTED: 'Converted',
             LOST: 'Lost',
           };
-          const mappedLeads = rawLeads.map((l) => ({
+          const mappedLeads = cleanLeads.map((l) => ({
             id: l.reference || `NJS-2026-${l.id}`,
             customerName: l.clientName || 'Private Client',
             customerEmail: l.clientEmail || '',
@@ -453,7 +474,7 @@ export const AdminDashboardPage = () => {
             </label>
             <input
               type="text"
-              placeholder="e.g. akku, tanu, test k..."
+              placeholder="e.g. John, Fiona, Smith..."
               value={searchClient}
               onChange={(e) => setSearchClient(e.target.value)}
               className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -465,7 +486,7 @@ export const AdminDashboardPage = () => {
             </label>
             <input
               type="text"
-              placeholder="e.g. London, MP Nagar, SW1A..."
+              placeholder="e.g. London, Mayfair, SW1A..."
               value={searchLocation}
               onChange={(e) => setSearchLocation(e.target.value)}
               className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
