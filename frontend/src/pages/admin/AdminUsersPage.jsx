@@ -62,12 +62,12 @@ export const AdminUsersPage = () => {
             .map((u) => {
               const createdDate = u.createdAt ? new Date(u.createdAt) : null;
               const updatedDate = u.updatedAt ? new Date(u.updatedAt) : null;
-              const formattedCreated = createdDate
+              const formattedCreated = createdDate && !isNaN(createdDate.getTime())
                 ? createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                : '19 Nov 2026';
-              const formattedLastActive = updatedDate
+                : '—';
+              const formattedLastActive = updatedDate && !isNaN(updatedDate.getTime())
                 ? `${updatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, ${updatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
-                : 'Active Today';
+                : '—';
 
               const cleanEmail = (u.email || '').toLowerCase().trim();
               const storedPhone = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
@@ -78,11 +78,7 @@ export const AdminUsersPage = () => {
                 email: u.email,
                 role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
                 roleLabel: roleLabelMap[u.role] || u.role,
-                org: u.role === 'ADMIN'
-                  ? 'NJS Property Group HQ'
-                  : u.role === 'SURVEYOR'
-                  ? 'NJS Chartered Surveyors Practice'
-                  : 'Private Client',
+                org: u.companyName || u.company?.name || null,
                 status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
                 phone: u.phone || storedPhone || '—',
                 createdAt: formattedCreated,
@@ -107,11 +103,11 @@ export const AdminUsersPage = () => {
                   email: regEmail,
                   role: 'customer',
                   roleLabel: 'Customer',
-                  org: regCust.company || 'Private Client',
+                  org: regCust.company || null,
                   status: 'Active',
                   phone: regCust.phone || '—',
-                  createdAt: regCust.dateJoined || '20 Nov 2026',
-                  lastLogin: 'Active Today',
+                  createdAt: regCust.dateJoined || '—',
+                  lastLogin: '—',
                   clientJobsCount: 0,
                   assignedJobsCount: 0,
                 });
@@ -212,11 +208,7 @@ export const AdminUsersPage = () => {
         }).catch((err) => console.warn('Surveyor panel auto-sync note:', err));
       }
 
-      const defaultOrg = formData.role === 'surveyor'
-        ? (formData.org.trim() || 'NJS Chartered Surveyors Practice')
-        : (formData.role === 'super_admin'
-          ? (formData.org.trim() || 'NJS Property Group HQ')
-          : (formData.org.trim() || 'Private Client'));
+      const defaultOrg = formData.org?.trim() || null;
 
       const newUser = {
         id: `USR-${String(users.length + 1).padStart(2, '0')}`,
@@ -615,6 +607,7 @@ export const AdminUsersPage = () => {
       header: 'Organisation / Practice',
       sortable: true,
       className: 'w-[20%] min-w-[140px] text-xs text-slate-700 font-medium',
+      render: (val) => (val && val !== '—') ? val : <span className="text-slate-400">—</span>,
     },
     {
       key: 'status',
@@ -1123,8 +1116,8 @@ export const AdminUsersPage = () => {
       <Modal
         isOpen={!!viewingUser}
         onClose={() => setViewingUser(null)}
-        title="Platform User Profile"
-        subtitle={`System ID: ${viewingUser?.id || ''} • Verified Account`}
+        title="User Profile"
+        subtitle={`User ID: #${viewingUser?.dbId || viewingUser?.id?.replace('USR-', '') || viewingUser?.id || ''}`}
         maxWidth="max-w-xl"
         footer={
           <div className="flex items-center justify-between w-full">
@@ -1167,7 +1160,7 @@ export const AdminUsersPage = () => {
                     {viewingUser.roleLabel || viewingUser.role}
                   </span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     {viewingUser.status || 'Active'}
                   </span>
                 </div>
@@ -1184,75 +1177,75 @@ export const AdminUsersPage = () => {
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Contact Phone</span>
                 <span className="font-bold text-slate-800 flex items-center gap-1 font-mono text-xs">
                   <Phone className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{(viewingUser.phone && viewingUser.phone !== '—') ? viewingUser.phone : (getUserPhone(viewingUser.email) || '—')}</span>
+                  <span>{(viewingUser.phone && viewingUser.phone !== '—') ? viewingUser.phone : 'Not provided'}</span>
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Organisation / Practice</span>
-                <span className="font-semibold text-slate-800 flex items-center gap-1 truncate">
-                  <Building className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">{viewingUser.org || 'NJS Property Group'}</span>
-                </span>
-              </div>
+              {viewingUser.org && viewingUser.org !== '—' && (
+                <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Organisation / Practice</span>
+                  <span className="font-semibold text-slate-800 flex items-center gap-1 truncate">
+                    <Building className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate">{viewingUser.org}</span>
+                  </span>
+                </div>
+              )}
 
               <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Account Created</span>
                 <span className="font-semibold text-slate-700 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{viewingUser.createdAt || '19 Nov 2026'}</span>
+                  <span>{viewingUser.createdAt && viewingUser.createdAt !== '19 Nov 2026' ? viewingUser.createdAt : '—'}</span>
                 </span>
               </div>
 
-              <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Last Activity</span>
-                <span className="font-semibold text-slate-700 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{viewingUser.lastLogin || 'Active Today'}</span>
-                </span>
-              </div>
+              {viewingUser.lastLogin && viewingUser.lastLogin !== '—' && viewingUser.lastLogin !== 'Active Today' && (
+                <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Last Updated</span>
+                  <span className="font-semibold text-slate-700 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{viewingUser.lastLogin}</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Role-Specific Operational Block */}
             {viewingUser.role === 'super_admin' && (
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/60 space-y-1.5">
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/60 space-y-1">
                 <div className="flex items-center gap-1.5 text-blue-900 font-bold">
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <span>Administrator Authority &amp; System Scope</span>
+                  <span>Administrative Access</span>
                 </div>
                 <p className="text-[11px] text-blue-700 leading-relaxed">
-                  Full operations command: Quote pricing override, BACS bank transfer reconciliation, surveyor diary dispatch, and QA survey report approval &amp; release authority.
+                  Full administrative privileges across practice operations and user management.
                 </p>
               </div>
             )}
 
-            {viewingUser.role === 'surveyor' && (
+            {viewingUser.role === 'surveyor' && viewingUser.surveyorProfile && (
               <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-200/60 space-y-2">
                 <div className="flex items-center justify-between text-purple-900 font-bold">
                   <span className="flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-purple-600" />
-                    <span>RICS Chartered Credentials &amp; Logistics</span>
+                    <span>Chartered Credentials &amp; Logistics</span>
                   </span>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                    {viewingUser.surveyorProfile?.accreditation || 'MRICS'}
-                  </span>
+                  {viewingUser.surveyorProfile?.accreditation && (
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                      {viewingUser.surveyorProfile.accreditation}
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-purple-200/40 text-purple-800">
-                  <div>
-                    <span className="text-slate-500">Coverage: </span>
-                    <span className="font-semibold">{viewingUser.surveyorProfile?.postcodesCovered || 'W, SW, WC, EC, NW'}</span>
-                  </div>
+                  {viewingUser.surveyorProfile?.postcodesCovered && (
+                    <div>
+                      <span className="text-slate-500">Coverage: </span>
+                      <span className="font-semibold">{viewingUser.surveyorProfile.postcodesCovered}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-slate-500">Active Load: </span>
-                    <span className="font-semibold">{viewingUser.assignedJobsCount || 0} Jobs ({viewingUser.surveyorProfile?.maxLoad || 8} Max)</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Rating: </span>
-                    <span className="font-semibold text-amber-700">★ {viewingUser.surveyorProfile?.rating || 4.9}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">PII Policy: </span>
-                    <span className="font-semibold text-emerald-700">Verified Compliant ✓</span>
+                    <span className="font-semibold">{viewingUser.assignedJobsCount || 0} Assigned Jobs</span>
                   </div>
                 </div>
               </div>
@@ -1266,7 +1259,7 @@ export const AdminUsersPage = () => {
                     <span>Client Instruction &amp; Case Record</span>
                   </span>
                   <span className="text-[11px] font-semibold text-slate-600">
-                    {viewingUser.clientJobsCount || 1} Survey Instruction
+                    {viewingUser.clientJobsCount || 0} Survey Instructions
                   </span>
                 </div>
                 <div className="pt-2 border-t border-slate-200/60 flex gap-2">
