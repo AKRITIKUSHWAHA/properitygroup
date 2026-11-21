@@ -234,9 +234,6 @@ export const AdminSurveyorsPage = () => {
         title="Chartered Surveyors Directory"
         subtitle="Manage certified MRICS / FRICS / AssocRICS surveyors, PII insurance validations, and regional UK allocations."
         breadcrumb={['Admin', 'Surveyors']}
-        actionLabel="Onboard Surveyor"
-        actionIcon={Plus}
-        onAction={() => setIsAddModalOpen(true)}
       />
 
       {/* 3 Compact Metric Highlight Cards */}
