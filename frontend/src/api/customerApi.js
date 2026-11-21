@@ -58,7 +58,10 @@ export const customerReportsApi = {
 // Menu 10 & Real-Time Chat Hub: Messages (Shared across Admin, Surveyor, Customer)
 export const customerMessagesApi = {
   getContacts: () => api.get('/messages/contacts'),
-  getMessages: (params = {}) => api.get('/messages', { params }),
+  getMessages: (params = {}) => {
+    const queryParams = typeof params === 'string' ? { conversationId: params } : params;
+    return api.get('/messages', { params: queryParams });
+  },
   sendMessage: (payload) =>
     api.post('/messages', typeof payload === 'string' ? { content: payload } : payload),
 };

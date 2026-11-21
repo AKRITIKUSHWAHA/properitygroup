@@ -28,7 +28,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token } = {}) {
+export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token, params } = {}) {
   const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null);
   let sessionUser = null;
   try {
@@ -54,7 +54,27 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
 
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${baseUrl}${cleanEndpoint}`;
+  let url = `${baseUrl}${cleanEndpoint}`;
+
+  if (params) {
+    let queryString = '';
+    if (typeof params === 'string') {
+      queryString = params.startsWith('?') ? params.slice(1) : params;
+    } else if (params instanceof URLSearchParams) {
+      queryString = params.toString();
+    } else if (typeof params === 'object') {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          searchParams.append(key, String(val));
+        }
+      });
+      queryString = searchParams.toString();
+    }
+    if (queryString) {
+      url += (url.includes('?') ? '&' : '?') + queryString;
+    }
+  }
 
   try {
     const response = await fetch(url, config);
