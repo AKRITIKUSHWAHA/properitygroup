@@ -81,6 +81,13 @@ export const AdminUsersPage = () => {
 
               const cleanEmail = (u.email || '').toLowerCase().trim();
               const storedPhone = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
+              const storedOrg = localStorage.getItem(`njs_user_org_${cleanEmail}`);
+              const defaultRoleOrg = u.role === 'ADMIN'
+                ? 'NJS Property Group HQ'
+                : u.role === 'SURVEYOR'
+                ? 'NJS Chartered Surveyors Practice'
+                : 'Private Client';
+              const resolvedOrg = u.companyName || u.company?.name || storedOrg || defaultRoleOrg;
               return {
                 id: `USR-${String(u.id).padStart(2, '0')}`,
                 dbId: u.id,
@@ -88,7 +95,7 @@ export const AdminUsersPage = () => {
                 email: u.email,
                 role: u.role === 'ADMIN' ? 'super_admin' : u.role.toLowerCase(),
                 roleLabel: roleLabelMap[u.role] || u.role,
-                org: u.companyName || u.company?.name || null,
+                org: resolvedOrg,
                 status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
                 phone: u.phone || storedPhone || '—',
                 createdAt: formattedCreated,
@@ -105,6 +112,8 @@ export const AdminUsersPage = () => {
             const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
             Object.values(registered).forEach((regCust) => {
               const regEmail = (regCust.email || '').toLowerCase().trim();
+              const regStoredOrg = localStorage.getItem(`njs_user_org_${regEmail}`);
+              const regOrg = regCust.company || regStoredOrg || 'Private Client';
               if (
                 regEmail &&
                 !deletedSet.has(regEmail) &&
@@ -117,7 +126,7 @@ export const AdminUsersPage = () => {
                   email: regEmail,
                   role: 'customer',
                   roleLabel: 'Customer',
-                  org: regCust.company || null,
+                  org: regOrg,
                   status: 'Active',
                   phone: regCust.phone || '—',
                   createdAt: regCust.dateJoined || '—',
@@ -209,20 +218,11 @@ export const AdminUsersPage = () => {
         postcodesCovered: formData.role === 'surveyor' ? formData.postcodes.trim() : undefined,
       });
 
-      // If surveyor, auto-sync to field surveyor rota
-      if (formData.role === 'surveyor') {
-        adminSurveyorsApi.onboardSurveyor({
-          name: formData.name.trim(),
-          credentials: formData.credentials,
-          postcodes: formData.postcodes,
-          phone: cleanPhone,
-          email: cleanEmail,
-          color: formData.color,
-          piiExpiry: formData.piiExpiry,
-        }).catch((err) => console.warn('Surveyor panel auto-sync note:', err));
-      }
-
-      const defaultOrg = formData.org?.trim() || null;
+      const defaultOrg = formData.org?.trim() || (
+        formData.role === 'super_admin' ? 'NJS Property Group HQ' :
+        formData.role === 'surveyor' ? 'NJS Chartered Surveyors Practice' :
+        'Private Client'
+      );
 
       const newUser = {
         id: `USR-${String(users.length + 1).padStart(2, '0')}`,
@@ -242,6 +242,9 @@ export const AdminUsersPage = () => {
         }
         if (cleanPhone) {
           localStorage.setItem(`njs_user_phone_${cleanEmail}`, cleanPhone);
+        }
+        if (defaultOrg) {
+          localStorage.setItem(`njs_user_org_${cleanEmail}`, defaultOrg);
         }
         const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
         registered[cleanEmail] = {
@@ -405,12 +408,19 @@ export const AdminUsersPage = () => {
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+    const cleanEmail = (user.email || '').toLowerCase().trim();
     const cleanPhone = (user.phone && user.phone !== '—') ? user.phone : (getUserPhone(user.email) !== '—' ? getUserPhone(user.email) : '');
+    const defaultRoleOrg = user.role === 'super_admin'
+      ? 'NJS Property Group HQ'
+      : (user.role === 'surveyor' ? 'NJS Chartered Surveyors Practice' : 'Private Client');
+    const storedOrg = cleanEmail ? localStorage.getItem(`njs_user_org_${cleanEmail}`) : null;
+    const cleanOrg = (user.org && user.org !== '—') ? user.org : (storedOrg || defaultRoleOrg);
+
     setEditFormData({
       name: user.name,
       phone: cleanPhone,
       role: user.role,
-      org: user.org,
+      org: cleanOrg,
       status: user.status || 'Active',
       password: '',
     });
@@ -429,6 +439,7 @@ export const AdminUsersPage = () => {
     const targetEmail = (editingUser.email || '').toLowerCase().trim();
     const isBlocking = editFormData.status === 'Blocked' || editFormData.status === 'Inactive' || editFormData.status?.toUpperCase()?.includes('BLOCK');
     const cleanPhone = editFormData.phone?.trim() || '';
+    const cleanOrg = editFormData.org?.trim() || '';
 
     // Update localStorage blocked list
     try {
@@ -450,6 +461,21 @@ export const AdminUsersPage = () => {
       } catch {}
     }
 
+    if (targetEmail) {
+      try {
+        if (cleanOrg) {
+          localStorage.setItem(`njs_user_org_${targetEmail}`, cleanOrg);
+        } else {
+          localStorage.removeItem(`njs_user_org_${targetEmail}`);
+        }
+        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+        if (registered[targetEmail]) {
+          registered[targetEmail].company = cleanOrg;
+          localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+        }
+      } catch {}
+    }
+
     setUsers((prev) =>
       prev.map((u) =>
         u.id === editingUser.id || (editingUser.dbId && u.dbId === editingUser.dbId) || (targetEmail && u.email?.toLowerCase() === targetEmail)
@@ -459,7 +485,7 @@ export const AdminUsersPage = () => {
               phone: cleanPhone || u.phone || '—',
               role: editFormData.role,
               roleLabel: roleMap[editFormData.role] || u.roleLabel,
-              org: editFormData.org.trim() || u.org,
+              org: cleanOrg || u.org,
               status: editFormData.status,
             }
           : u
@@ -549,6 +575,7 @@ export const AdminUsersPage = () => {
       if (cleanEmail) {
         localStorage.removeItem(`njs_user_pw_${cleanEmail}`);
         localStorage.removeItem(`njs_user_phone_${cleanEmail}`);
+        localStorage.removeItem(`njs_user_org_${cleanEmail}`);
       }
     } catch {}
 
@@ -1175,6 +1202,62 @@ export const AdminUsersPage = () => {
                     value={formData.postcode}
                     onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
                     className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono uppercase text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Organisation / Firm (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Private Client or Company"
+                  value={formData.org}
+                  onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {formData.role === 'super_admin' && (
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                  2. Administrator Role &amp; Access Scope
+                </span>
+                <div className="flex-1 h-px bg-slate-100" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Administrative Job Title / Position <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.adminTitle}
+                    onChange={(e) => setFormData({ ...formData, adminTitle: e.target.value })}
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
+                  >
+                    <option value="Operations & Dispatch Manager">Operations &amp; Dispatch Manager</option>
+                    <option value="Senior Operations Director">Senior Operations Director</option>
+                    <option value="Client Relationship Manager">Client Relationship Manager</option>
+                    <option value="Accounts & Finance Controller">Accounts &amp; Finance Controller</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Headquarters / Organisation
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. NJS Property Group HQ"
+                    value={formData.org}
+                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition-all"
                   />
                 </div>
               </div>
