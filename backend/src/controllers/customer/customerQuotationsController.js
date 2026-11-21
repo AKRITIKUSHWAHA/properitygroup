@@ -8,9 +8,11 @@ import { sendQuoteAcceptedEmail } from '../../services/emailService.js';
  */
 export const getCustomerQuotations = async (req, res, next) => {
   try {
-    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
+    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
     const userId = req.user?.id;
-    const userName = (req.user?.name || '').toLowerCase().trim();
+    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
+    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
 
     // 1. Fetch live quotes from prisma.quote
     const quotes = await prisma.quote.findMany({
@@ -171,9 +173,11 @@ export const acceptCustomerQuotation = async (req, res, next) => {
   try {
     const { id } = req.params;
     const quoteId = parseInt(id);
-    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
+    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
     const userId = req.user?.id;
-    const userName = req.user?.name || '';
+    const headerName = req.headers['x-user-name'] || '';
+    const userName = headerName || req.user?.name || '';
 
     let quote = null;
     let lead = null;

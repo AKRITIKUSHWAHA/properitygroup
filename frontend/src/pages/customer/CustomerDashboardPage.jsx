@@ -81,8 +81,9 @@ export const CustomerDashboardPage = () => {
   useEffect(() => {
     customerDashboardApi.getDashboard()
       .then((res) => {
-        if (res?.data?.activeJob) {
-          setApiActiveJob(res.data.activeJob);
+        const payload = res?.activeJob ? res : (res?.data || res);
+        if (payload?.activeJob) {
+          setApiActiveJob(payload.activeJob);
         }
       })
       .catch(() => {});

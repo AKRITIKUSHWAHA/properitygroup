@@ -3052,12 +3052,14 @@ export const CustomerReportsPage = () => {
 // 6. TRACK MY SURVEY PAGE (Dedicated 10-Stage Tracker)
 // ==========================================
 export const CustomerTrackSurveyPage = () => {
+  const navigate = useNavigate();
   const [apiTracking, setApiTracking] = useState(null);
   useEffect(() => {
     customerTrackSurveyApi.getTracking()
       .then((res) => {
-        if (res?.data) {
-          setApiTracking(res.data);
+        const payload = res?.currentStage || res?.currentStep || res?.jobReference || res?.reference ? res : (res?.data || res);
+        if (payload && (payload.currentStage || payload.jobReference || payload.reference || payload.currentStep || payload.propertyAddress || payload.property)) {
+          setApiTracking(payload);
         }
       })
       .catch(() => {});
@@ -3101,20 +3103,21 @@ export const CustomerTrackSurveyPage = () => {
     regUser = reg[userEmail] || {};
   } catch {}
 
+  const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
   const propertyAddress = myJob?.property
     ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}`
     : myQuote?.property
     ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}`
     : myLead?.property
     ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}`
-    : apiTracking?.propertyAddress
-    ? apiTracking.propertyAddress
+    : trackProperty
+    ? trackProperty
     : regUser.address
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
     : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
 
-  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || apiTracking?.jobReference || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
-  const surveyorName = myJob?.surveyor || 'Pending Allocation';
+  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || apiTracking?.jobReference || apiTracking?.reference || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
+  const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
   const targetEmail = userEmail || 'client@example.com';
@@ -3135,22 +3138,25 @@ export const CustomerTrackSurveyPage = () => {
   const hasSurveyor = myJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(myJob.surveyor.toLowerCase().trim());
   const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || (hasSurveyor && myJob?.paymentStatus === 'Paid') || timelineStep >= 6;
 
+  const apiStep = Number(apiTracking?.currentStep) || 0;
+  const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
+
   let currentStep = 1;
   if (isDemo) {
     currentStep = 7;
-  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || (isHistoricalJob && isLocalDelivered) || jStatus === 'completed') {
+  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || (isHistoricalJob && isLocalDelivered) || jStatus === 'completed' || apiStep >= 10 || apiStage === 'COMPLETE' || apiStage === 'COMPLETED') {
     currentStep = 10;
-  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || (isHistoricalJob && isLocalQA) || jStatus === 'qa_review' || jStatus === 'qa review') {
+  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || (isHistoricalJob && isLocalQA) || jStatus === 'qa_review' || jStatus === 'qa review' || apiStep === 9 || apiStage === 'QA_REVIEW') {
     currentStep = 9;
-  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || (isHistoricalJob && isLocalDrafting) || jStatus === 'drafting' || jStatus === 'preparing report') {
+  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || (isHistoricalJob && isLocalDrafting) || jStatus === 'drafting' || jStatus === 'preparing report' || apiStep === 8 || apiStage === 'PREPARING_REPORT' || apiStage === 'DRAFTING') {
     currentStep = 8;
-  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || (isHistoricalJob && isLocalInspected) || jStatus === 'inspected') {
+  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || (isHistoricalJob && isLocalInspected) || jStatus === 'inspected' || apiStep === 7 || apiStage === 'INSPECTED') {
     currentStep = 7;
-  } else if (isBookedOrScheduled || timelineStep === 6) {
+  } else if (isBookedOrScheduled || timelineStep === 6 || apiStep === 6 || apiStage === 'BOOKED' || apiStage === 'SCHEDULED') {
     currentStep = 6;
-  } else if (myJob?.paymentStatus === 'Paid' || (myJob?.paymentStatus || '').toLowerCase().includes('claimed') || timelineStep === 5) {
+  } else if (myJob?.paymentStatus === 'Paid' || (myJob?.paymentStatus || '').toLowerCase().includes('claimed') || timelineStep === 5 || apiStep === 5 || apiStage === 'PAID') {
     currentStep = 5;
-  } else if (myJob?.termsStatus === 'Signed' || timelineStep === 4) {
+  } else if (myJob?.termsStatus === 'Signed' || timelineStep === 4 || apiStep === 4 || apiStage === 'SIGNED') {
     currentStep = 4;
   } else if (
     myJob?.quoteStatus === 'Accepted' ||
@@ -3159,7 +3165,8 @@ export const CustomerTrackSurveyPage = () => {
     timelineStep === 3 ||
     myLead?.status === 'Converted' ||
     myLead?.status === 'CONVERTED' ||
-    apiTracking?.currentStage === 'ACCEPTED'
+    apiStage === 'ACCEPTED' ||
+    apiStep === 3
   ) {
     currentStep = 3;
   } else if (
@@ -3170,10 +3177,12 @@ export const CustomerTrackSurveyPage = () => {
     myLead?.status === 'Quoted' ||
     myLead?.status === 'QUOTE_SENT' ||
     (myLead?.estimatedValue && !String(myLead?.estimatedValue).toLowerCase().includes('pending')) ||
-    apiTracking?.currentStage === 'QUOTE'
+    apiStage === 'QUOTE' ||
+    apiStage === 'QUOTED' ||
+    apiStep === 2
   ) {
     currentStep = 2;
-  } else if (jStatus === 'enquiry' || jStage === 'enquiry' || timelineStep === 1) {
+  } else if (jStatus === 'enquiry' || jStage === 'enquiry' || timelineStep === 1 || apiStep === 1 || apiStage === 'ENQUIRY') {
     currentStep = 1;
   } else {
     currentStep = 1;
@@ -3309,7 +3318,42 @@ export const CustomerTrackSurveyPage = () => {
         </div>
       )}
 
-      <SurveyProgressTracker currentStep={currentStep} job={myJob || { property: propertyAddress, surveyor: surveyorName }} />
+      {/* Stage 2 Action Prompt Banner when Quote Issued */}
+      {currentStep === 2 && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-slate-50 border border-blue-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-[#0B1F4D] text-white shrink-0 shadow-2xs">
+              <Sparkles className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200">
+                  Stage 2 Ready • Action Required
+                </span>
+                <span className="text-xs font-bold text-slate-700">Formal Proposal Issued</span>
+              </div>
+              <h4 className="text-sm font-bold text-[#0B1F4D] mt-0.5">
+                Fixed Fee Quotation is Ready for Review &amp; Acceptance
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Our surveying desk has calculated your fixed fee proposal for {propertyAddress}. Review fees and accept to lock in your RICS instruction.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate('/customer/quotations')}
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Review &amp; Accept Quote</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <SurveyProgressTracker currentStep={currentStep} job={myJob || { property: propertyAddress, surveyor: surveyorName, surveyType: apiTracking?.serviceType || 'RICS Level 2 Home Survey' }} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
@@ -4877,8 +4921,9 @@ export const CustomerSupportPage = () => {
     customerSupportApi
       .getTickets()
       .then((res) => {
-        if (res?.data?.tickets && Array.isArray(res.data.tickets) && res.data.tickets.length > 0) {
-          setTickets(res.data.tickets);
+        const ticketsList = res?.tickets || res?.data?.tickets || (Array.isArray(res) ? res : []);
+        if (Array.isArray(ticketsList) && ticketsList.length > 0) {
+          setTickets(ticketsList);
         }
       })
       .catch(() => {

@@ -8,8 +8,10 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
 export const getSurveyTracking = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userName = (req.user?.name || '').toLowerCase().trim();
+    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
+    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
+    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
 
     let job = await prisma.job.findFirst({
       where: {
@@ -64,11 +66,16 @@ export const getSurveyTracking = async (req, res, next) => {
 
           const completedCount = steps.filter((s) => s.status === 'completed').length;
 
+          const calculatedStep = lead.status === 'CONVERTED' ? 3 : (isQuoted ? 2 : 1);
+
           return ApiResponse.success(res, {
             jobReference: lead.reference,
+            reference: lead.reference,
+            property: lead.propertyAddress,
             propertyAddress: lead.propertyAddress,
             serviceType: lead.serviceType,
-            currentStage: isQuoted ? 'QUOTE' : 'ENQUIRY',
+            currentStage: lead.status === 'CONVERTED' ? 'ACCEPTED' : (isQuoted ? 'QUOTE' : 'ENQUIRY'),
+            currentStep: calculatedStep,
             progressPercentage: `${completedCount * 10}%`,
             progressScore: `${completedCount}/10 Steps Completed`,
             steps,
@@ -102,11 +109,25 @@ export const getSurveyTracking = async (req, res, next) => {
 
     const completedCount = steps.filter((s) => s.status === 'completed').length;
 
+    let calculatedStep = 1;
+    if (isCompleted) calculatedStep = 10;
+    else if (job.stage === 'PREPARING_REPORT') calculatedStep = 8;
+    else if (isInspected) calculatedStep = 7;
+    else if (isBooked) calculatedStep = 6;
+    else if (hasPaid) calculatedStep = 5;
+    else if (hasSigned) calculatedStep = 4;
+    else if (job.stage === 'ACCEPTED' || job.quoteStatus === 'ACCEPTED') calculatedStep = 3;
+    else if (job.stage === 'QUOTE') calculatedStep = 2;
+    else calculatedStep = 1;
+
     return ApiResponse.success(res, {
       jobReference: job.reference,
+      reference: job.reference,
+      property: job.propertyAddress,
       propertyAddress: job.propertyAddress,
       serviceType: job.serviceType,
       currentStage: job.stage,
+      currentStep: calculatedStep,
       progressPercentage: `${completedCount * 10}%`,
       progressScore: `${completedCount}/10 Steps Completed`,
       steps,

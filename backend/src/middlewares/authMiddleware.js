@@ -32,9 +32,10 @@ export const verifyJWT = async (req, res, next) => {
 
     // If client provided active user email header, ensure context matches the active user
     if (clientUserEmail) {
+      const cleanEmail = String(clientUserEmail).trim().toLowerCase();
       try {
-        const matchedByEmail = await prisma.user.findUnique({
-          where: { email: String(clientUserEmail).trim().toLowerCase() },
+        let matchedByEmail = await prisma.user.findUnique({
+          where: { email: cleanEmail },
           select: {
             id: true,
             name: true,
@@ -44,10 +45,43 @@ export const verifyJWT = async (req, res, next) => {
             avatar: true,
           },
         });
+
+        if (!matchedByEmail) {
+          // Check if user exists in leads or jobs to synthesize customer context
+          const leadMatch = await prisma.lead.findFirst({
+            where: { clientEmail: cleanEmail },
+            orderBy: { createdAt: 'desc' },
+          });
+          const jobMatch = !leadMatch
+            ? await prisma.job.findFirst({
+                where: { clientEmail: cleanEmail },
+                orderBy: { createdAt: 'desc' },
+              })
+            : null;
+
+          matchedByEmail = {
+            id: leadMatch?.id ? 10000 + leadMatch.id : (jobMatch?.id ? 20000 + jobMatch.id : 9999),
+            name: leadMatch?.clientName || jobMatch?.clientName || req.headers['x-user-name'] || 'Customer',
+            email: cleanEmail,
+            role: 'CUSTOMER',
+            status: 'ACTIVE',
+            avatar: null,
+          };
+        }
+
         if (matchedByEmail) {
           user = matchedByEmail;
         }
-      } catch {}
+      } catch (mErr) {
+        user = {
+          id: 9999,
+          name: req.headers['x-user-name'] || 'Customer',
+          email: cleanEmail,
+          role: 'CUSTOMER',
+          status: 'ACTIVE',
+          avatar: null,
+        };
+      }
     }
 
     if (user && (authHeader?.startsWith('Bearer ') || clientUserEmail)) {

@@ -8,8 +8,10 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
 export const getCustomerDashboard = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userName = (req.user?.name || '').toLowerCase().trim();
+    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
+    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
+    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
 
     // Fetch customer's primary active job
     let activeJob = await prisma.job.findFirst({

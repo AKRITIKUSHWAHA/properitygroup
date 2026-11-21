@@ -44,6 +44,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(sessionUser?.email ? { 'x-user-email': sessionUser.email } : {}),
+      ...(sessionUser?.name ? { 'x-user-name': sessionUser.name } : {}),
       ...headers,
     },
   };
