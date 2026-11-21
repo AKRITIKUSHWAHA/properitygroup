@@ -3028,7 +3028,16 @@ export const CustomerReportsPage = () => {
 // 6. TRACK MY SURVEY PAGE (Dedicated 10-Stage Tracker)
 // ==========================================
 export const CustomerTrackSurveyPage = () => {
-  useEffect(() => { customerTrackSurveyApi.getTracking().catch(() => {}); }, []);
+  const [apiTracking, setApiTracking] = useState(null);
+  useEffect(() => {
+    customerTrackSurveyApi.getTracking()
+      .then((res) => {
+        if (res?.data) {
+          setApiTracking(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
   const [, setTick] = useState(0);
@@ -3074,11 +3083,13 @@ export const CustomerTrackSurveyPage = () => {
     ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}`
     : myLead?.property
     ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}`
+    : apiTracking?.propertyAddress
+    ? apiTracking.propertyAddress
     : regUser.address
     ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
     : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
 
-  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
+  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || apiTracking?.jobReference || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
   const surveyorName = myJob?.surveyor || 'Pending Allocation';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
@@ -3117,9 +3128,26 @@ export const CustomerTrackSurveyPage = () => {
     currentStep = 5;
   } else if (myJob?.termsStatus === 'Signed' || timelineStep === 4) {
     currentStep = 4;
-  } else if (myJob?.quoteStatus === 'Accepted' || jStatus === 'accepted' || jStage === 'accepted' || timelineStep === 3) {
+  } else if (
+    myJob?.quoteStatus === 'Accepted' ||
+    jStatus === 'accepted' ||
+    jStage === 'accepted' ||
+    timelineStep === 3 ||
+    myLead?.status === 'Converted' ||
+    myLead?.status === 'CONVERTED' ||
+    apiTracking?.currentStage === 'ACCEPTED'
+  ) {
     currentStep = 3;
-  } else if (myJob?.status === 'Quoted' || jStatus === 'quoted' || jStage === 'quote' || timelineStep === 2) {
+  } else if (
+    myJob?.status === 'Quoted' ||
+    jStatus === 'quoted' ||
+    jStage === 'quote' ||
+    timelineStep === 2 ||
+    myLead?.status === 'Quoted' ||
+    myLead?.status === 'QUOTE_SENT' ||
+    (myLead?.estimatedValue && !String(myLead?.estimatedValue).toLowerCase().includes('pending')) ||
+    apiTracking?.currentStage === 'QUOTE'
+  ) {
     currentStep = 2;
   } else if (jStatus === 'enquiry' || jStage === 'enquiry' || timelineStep === 1) {
     currentStep = 1;

@@ -127,6 +127,126 @@ export const updateLeadStatus = async (req, res, next) => {
       data: updateData,
     });
 
+    const upperStatus = (status || '').toUpperCase();
+
+    // 1. If status is QUOTE_SENT or QUOTED, sync/create prisma.quote
+    if (upperStatus === 'QUOTE_SENT' || upperStatus === 'QUOTED') {
+      try {
+        const total = lead.estimatedValue || (estimatedValue ? parseFloat(estimatedValue) : 660.0);
+        const baseFee = Math.round((total / 1.2) * 100) / 100;
+        const vatAmount = Math.round((total - baseFee) * 100) / 100;
+
+        const existingQuote = await prisma.quote.findFirst({
+          where: { leadId: lead.id },
+        });
+
+        if (existingQuote) {
+          await prisma.quote.update({
+            where: { id: existingQuote.id },
+            data: {
+              baseFee,
+              vatAmount,
+              totalAmount: total,
+              status: 'SENT',
+            },
+          });
+        } else {
+          const qCount = await prisma.quote.count().catch(() => 0);
+          const quoteRef = `QTE-2026-${String(qCount + 101).padStart(3, '0')}`;
+          await prisma.quote.create({
+            data: {
+              reference: quoteRef,
+              leadId: lead.id,
+              baseFee,
+              vatRate: 20.0,
+              vatAmount,
+              totalAmount: total,
+              status: 'SENT',
+              validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+            },
+          });
+        }
+      } catch (qErr) {
+        console.warn('[updateLeadStatus] quote sync warning:', qErr.message);
+      }
+    }
+
+    // 2. If status is CONVERTED (e.g. Admin clicked "Convert to Won Job"), create prisma.job, term & invoice
+    if (upperStatus === 'CONVERTED') {
+      try {
+        const existingJob = await prisma.job.findFirst({
+          where: { leadId: lead.id },
+        });
+
+        let jobId = existingJob?.id;
+        if (!existingJob) {
+          const jobRef = lead.reference?.startsWith('NJS-')
+            ? lead.reference.replace('NJS-', 'JOB-')
+            : `JOB-2026-${lead.id}`;
+
+          const newJob = await prisma.job.create({
+            data: {
+              reference: jobRef,
+              clientName: lead.clientName,
+              clientEmail: lead.clientEmail,
+              clientPhone: lead.clientPhone,
+              propertyAddress: lead.propertyAddress,
+              postcode: lead.postcode,
+              serviceType: lead.serviceType,
+              stage: 'ACCEPTED',
+              leadId: lead.id,
+            },
+          });
+          jobId = newJob.id;
+        } else if (existingJob.stage === 'QUOTE') {
+          await prisma.job.update({
+            where: { id: existingJob.id },
+            data: { stage: 'ACCEPTED' },
+          });
+        }
+
+        // Ensure terms record exists
+        if (jobId) {
+          const existingTerm = await prisma.term.findFirst({ where: { jobId } });
+          if (!existingTerm) {
+            await prisma.term.create({
+              data: {
+                reference: `TRM-2026-${jobId}`,
+                jobId,
+                clientName: lead.clientName,
+                clientEmail: lead.clientEmail,
+                documentTitle: `${lead.serviceType} Terms of Engagement`,
+                content: 'RICS Standard Terms of Engagement',
+                signed: false,
+              },
+            }).catch(() => {});
+          }
+
+          // Ensure invoice record exists
+          const existingInvoice = await prisma.invoice.findFirst({ where: { jobId } });
+          if (!existingInvoice) {
+            const total = lead.estimatedValue || 660.0;
+            const subtotal = Math.round((total / 1.2) * 100) / 100;
+            const vat = Math.round((total - subtotal) * 100) / 100;
+            await prisma.invoice.create({
+              data: {
+                invoiceNumber: `INV-2026-${String(jobId).padStart(3, '0')}`,
+                jobId,
+                clientName: lead.clientName,
+                clientEmail: lead.clientEmail,
+                subtotal,
+                vatAmount: vat,
+                total,
+                status: 'PENDING',
+              },
+            }).catch(() => {});
+          }
+        }
+      } catch (cErr) {
+        console.warn('[updateLeadStatus] convert to job warning:', cErr.message);
+      }
+    }
+
     return ApiResponse.success(res, { lead }, `Lead status updated to ${status}`);
   } catch (error) {
     next(error);

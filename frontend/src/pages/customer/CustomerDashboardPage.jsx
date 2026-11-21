@@ -71,7 +71,9 @@ export const CustomerDashboardPage = () => {
     return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
   });
 
-  const activeJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || null;
+  const [apiActiveJob, setApiActiveJob] = useState(null);
+
+  const activeJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || apiActiveJob || null;
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
   const customerJob = activeJob;
 
@@ -79,8 +81,8 @@ export const CustomerDashboardPage = () => {
   useEffect(() => {
     customerDashboardApi.getDashboard()
       .then((res) => {
-        if (res?.data) {
-          // Customer live dashboard synced
+        if (res?.data?.activeJob) {
+          setApiActiveJob(res.data.activeJob);
         }
       })
       .catch(() => {});
