@@ -245,7 +245,7 @@ function AppRoutes() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/register"
-          element={<RegisterPage />}
+          element={<LoginPage roleProp="customer" initialTab="register" />}
         />
 
         {/* 4. Error Routes */}

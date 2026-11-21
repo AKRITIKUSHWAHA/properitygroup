@@ -143,6 +143,20 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errMsg || 'Your account is blocked or inactive. Please contact administration.');
       }
 
+      // If backend rejected login because not registered (status 404 or message)
+      if (
+        errMsg.toLowerCase().includes('not found') ||
+        errMsg.toLowerCase().includes('no registered account') ||
+        errMsg.toLowerCase().includes('create your account') ||
+        apiErr.status === 404 ||
+        apiErr.response?.status === 404
+      ) {
+        setIsLoading(false);
+        const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
+        notFoundErr.isNotRegistered = true;
+        throw notFoundErr;
+      }
+
       // If no local password was configured, enforce backend password validation result
       if (!requiredPassword) {
         if (
@@ -292,7 +306,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Customer registration
-  const registerCustomer = async ({ fullName, email, phone, address, postcode, password = 'password123' }) => {
+  const registerCustomer = async ({
+    fullName,
+    email,
+    phone,
+    address,
+    postcode,
+    password = 'password123',
+    autoLogin = true,
+  }) => {
     if (!isClientPortalEnabled()) {
       setIsLoading(false);
       throw new Error('Client portal registration is currently deactivated. Please submit an enquiry instead.');
@@ -300,9 +322,11 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
 
     const trimmedEmail = (email || '').trim().toLowerCase();
+    let backendUser = null;
+    let authToken = null;
 
     try {
-      await authApi.register({
+      const res = await authApi.register({
         name: fullName,
         email: trimmedEmail,
         password,
@@ -311,12 +335,34 @@ export const AuthProvider = ({ children }) => {
         postcode,
         role: 'CUSTOMER',
       });
+      if (res?.user) {
+        backendUser = res.user;
+        authToken = res.token;
+        if (authToken) {
+          localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+        }
+      }
     } catch (err) {
       console.warn('Backend registration API note:', err.message);
+      const msg = err.message || '';
+      if (
+        msg.toLowerCase().includes('already exists') ||
+        msg.toLowerCase().includes('existing password') ||
+        msg.toLowerCase().includes('sign in')
+      ) {
+        setIsLoading(false);
+        const existErr = new Error('An account with this email already exists. Please sign in with your password.');
+        existErr.alreadyRegistered = true;
+        throw existErr;
+      }
+      if (err.status && err.status !== 0) {
+        setIsLoading(false);
+        throw err;
+      }
     }
 
     const newCustomer = {
-      id: 'usr_cust_' + Date.now(),
+      id: backendUser ? `usr_${backendUser.id}` : 'usr_cust_' + Date.now(),
       email: trimmedEmail,
       name: fullName,
       role: 'customer',
@@ -330,6 +376,7 @@ export const AuthProvider = ({ children }) => {
       currency: 'GBP',
       dateJoined: new Date().toLocaleDateString('en-GB'),
       badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
+      token: authToken || null,
     };
 
     try {
@@ -340,6 +387,21 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(`njs_user_pw_${trimmedEmail}`, password);
     } catch {
       // ignore
+    }
+
+    if (autoLogin) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
+      setUser(newCustomer);
+      setIsLoading(false);
+
+      addToast({
+        type: 'success',
+        title: `Welcome, ${newCustomer.name}!`,
+        message: 'Your account has been created and you are now signed in.',
+      });
+
+      navigate('/customer/my-dashboard', { replace: true });
+      return newCustomer;
     }
 
     setIsLoading(false);
