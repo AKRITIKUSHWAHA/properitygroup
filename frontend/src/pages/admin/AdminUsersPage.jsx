@@ -1085,43 +1085,17 @@ export const AdminUsersPage = () => {
                 <div className="flex-1 h-px bg-slate-100" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Client Category / Type <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    value={formData.clientType}
-                    onChange={(e) => setFormData({ ...formData, clientType: e.target.value })}
-                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                  >
-                    <option value="Private Residential Buyer / Homeowner">
-                      Private Residential Buyer / Homeowner
-                    </option>
-                    <option value="Corporate / Portfolio Client">
-                      Corporate / Portfolio Client
-                    </option>
-                    <option value="Solicitor / Legal Representative">
-                      Solicitor / Legal Representative
-                    </option>
-                    <option value="Estate Agent / Partner Firm">
-                      Estate Agent / Partner Firm
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Organisation / Firm (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Private Client or Company"
-                    value={formData.org}
-                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
-                    className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Organisation / Firm (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Private Client or Company"
+                  value={formData.org}
+                  onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                  className="w-full h-9.5 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-all"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
