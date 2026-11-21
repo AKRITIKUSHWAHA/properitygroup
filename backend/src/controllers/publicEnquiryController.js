@@ -111,7 +111,7 @@ export const submitPublicEnquiry = async (req, res, next) => {
         await prisma.notification.create({
           data: {
             userId: existingUser.id,
-            role: 'CLIENT',
+            role: 'CUSTOMER',
             title: 'Quote Request Received',
             desc: `Your quote request for ${serviceName} (${propertyAddress || propertyPostcode || 'Subject Property'}) has been logged. Ref: ${referenceId}`,
             type: 'ENQUIRY',

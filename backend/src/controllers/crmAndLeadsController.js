@@ -1,7 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { sendWebsiteEnquiryNotificationEmail } from '../services/emailService.js';
+import { sendWebsiteEnquiryNotificationEmail, sendQuoteProposalEmail } from '../services/emailService.js';
 
 /**
  * Superadmin Menu 5: CRM & Leads (Leads, Call Notes, Complaints Log)
@@ -129,7 +129,7 @@ export const updateLeadStatus = async (req, res, next) => {
 
     const upperStatus = (status || '').toUpperCase();
 
-    // 1. If status is QUOTE_SENT or QUOTED, sync/create prisma.quote
+    // 1. If status is QUOTE_SENT or QUOTED, sync/create prisma.quote, dispatch proposal email & in-app notification
     if (upperStatus === 'QUOTE_SENT' || upperStatus === 'QUOTED') {
       try {
         const total = lead.estimatedValue || (estimatedValue ? parseFloat(estimatedValue) : 660.0);
@@ -140,7 +140,9 @@ export const updateLeadStatus = async (req, res, next) => {
           where: { leadId: lead.id },
         });
 
+        let quoteRef = `QTE-2026-${lead.id}`;
         if (existingQuote) {
+          quoteRef = existingQuote.reference;
           await prisma.quote.update({
             where: { id: existingQuote.id },
             data: {
@@ -152,7 +154,7 @@ export const updateLeadStatus = async (req, res, next) => {
           });
         } else {
           const qCount = await prisma.quote.count().catch(() => 0);
-          const quoteRef = `QTE-2026-${String(qCount + 101).padStart(3, '0')}`;
+          quoteRef = `QTE-2026-${String(qCount + 101).padStart(3, '0')}`;
           await prisma.quote.create({
             data: {
               reference: quoteRef,
@@ -166,6 +168,48 @@ export const updateLeadStatus = async (req, res, next) => {
             },
           });
         }
+
+        // Dispatch Proposal Email (Resend)
+        if (lead.clientEmail) {
+          const frontendBase = process.env.CLIENT_URL?.split(',')[0] || process.env.FRONTEND_URL || 'http://localhost:5175';
+          const quoteLink = `${frontendBase}/customer/quotations?quoteRef=${encodeURIComponent(quoteRef)}&property=${encodeURIComponent(lead.propertyAddress || '')}&email=${encodeURIComponent(lead.clientEmail)}`;
+          sendQuoteProposalEmail({
+            to: lead.clientEmail,
+            clientName: lead.clientName || 'Valued Client',
+            quoteAmount: total.toFixed(2),
+            surveyType: lead.serviceType || 'RICS Level 2 Home Survey',
+            propertyAddress: lead.propertyAddress || 'Subject Property',
+            quoteLink,
+          }).catch((err) => console.warn('[sendQuoteProposalEmail lead] warning:', err.message));
+        }
+
+        // In-App Notification for Customer & Admin
+        const targetUser = await prisma.user.findFirst({
+          where: { email: lead.clientEmail },
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: targetUser?.id || null,
+            role: 'CUSTOMER',
+            title: 'Formal Survey Quotation Ready',
+            desc: `A formal RICS quotation of £${total.toFixed(2)} has been prepared for ${lead.propertyAddress || 'your property'}.`,
+            type: 'QUOTE',
+            amount: `£${total.toFixed(2)}`,
+            link: '/customer/quotations',
+          },
+        }).catch((err) => console.warn('Customer quote notification error:', err.message));
+
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Quote Proposal Issued - £${total.toFixed(2)}`,
+            desc: `Quote proposal ${quoteRef} issued for ${lead.clientName} (${lead.clientEmail}).`,
+            type: 'QUOTE',
+            amount: `£${total.toFixed(2)}`,
+            link: '/admin/finance/quotations',
+          },
+        }).catch(() => {});
       } catch (qErr) {
         console.warn('[updateLeadStatus] quote sync warning:', qErr.message);
       }

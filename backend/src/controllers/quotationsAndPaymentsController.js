@@ -238,29 +238,27 @@ export const createQuote = async (req, res, next) => {
         console.warn('Resend quotation email warning:', emailErr.message);
       }
 
-      // In-App Notification for Client & Admin
+      // In-App Notification for Customer & Admin
       try {
         const targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
-        if (targetUser) {
-          await prisma.notification.create({
-            data: {
-              userId: targetUser.id,
-              role: 'CLIENT',
-              title: 'Formal Quote Proposal Issued',
-              desc: `A formal RICS quote of £${totalAmount.toFixed(2)} has been prepared for ${targetProperty}.`,
-              type: 'QUOTE',
-              amount: totalAmount,
-              link: '/customer/my-quotations',
-            },
-          });
-        }
+        await prisma.notification.create({
+          data: {
+            userId: targetUser?.id || null,
+            role: 'CUSTOMER',
+            title: 'Formal Survey Quotation Ready',
+            desc: `A formal RICS quote of £${totalAmount.toFixed(2)} has been prepared for ${targetProperty}.`,
+            type: 'QUOTE',
+            amount: `£${totalAmount.toFixed(2)}`,
+            link: '/customer/quotations',
+          },
+        });
         await prisma.notification.create({
           data: {
             role: 'ADMIN',
             title: `Quote Proposal Issued - £${totalAmount.toFixed(2)}`,
             desc: `Quote proposal ${quote?.reference || reference} sent to ${recipientName} (${recipientEmail}).`,
             type: 'QUOTE',
-            amount: totalAmount,
+            amount: `£${totalAmount.toFixed(2)}`,
             link: '/admin/finance/quotations',
           },
         });
@@ -531,11 +529,11 @@ export const settleBacsPayment = async (req, res, next) => {
         await prisma.notification.create({
           data: {
             userId: targetUser ? targetUser.id : invoice.job?.clientId,
-            role: 'CLIENT',
+            role: 'CUSTOMER',
             title: `BACS Payment Reconciled - £${invoice.total}`,
             desc: `Your BACS bank transfer for invoice ${invoice.invoiceNumber} has been verified and settled. HMRC 20% VAT receipt issued.`,
             type: 'PAYMENT',
-            amount: parseFloat(invoice.total) || 0,
+            amount: `£${parseFloat(invoice.total || 0).toFixed(2)}`,
             link: '/customer/invoices-and-payments',
           },
         });
@@ -546,7 +544,7 @@ export const settleBacsPayment = async (req, res, next) => {
           title: `BACS Payment Reconciled - £${invoice.total}`,
           desc: `BACS payment for invoice ${invoice.invoiceNumber} confirmed. Ref: ${bacsReference || 'Bank Transfer'}.`,
           type: 'PAYMENT',
-          amount: parseFloat(invoice.total) || 0,
+          amount: `£${parseFloat(invoice.total || 0).toFixed(2)}`,
           link: '/admin/finance/invoices',
         },
       });

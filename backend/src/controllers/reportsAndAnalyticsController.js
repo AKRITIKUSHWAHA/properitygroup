@@ -154,7 +154,7 @@ export const approveQaReport = async (req, res, next) => {
           await prisma.notification.create({
             data: {
               userId: targetUser ? targetUser.id : job.clientId,
-              role: 'CLIENT',
+              role: 'CUSTOMER',
               title: 'RICS Survey Report Ready',
               desc: `Your accredited RICS survey report for ${job.propertyAddress} has passed QA review and is ready for download.`,
               type: 'REPORT',

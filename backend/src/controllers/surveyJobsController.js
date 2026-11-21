@@ -284,7 +284,7 @@ export const updateJobStage = async (req, res, next) => {
             await prisma.notification.create({
               data: {
                 userId: targetUser ? targetUser.id : job.clientId,
-                role: 'CLIENT',
+                role: 'CUSTOMER',
                 title: 'RICS Survey Report Ready',
                 desc: `Your accredited RICS survey report for ${job.propertyAddress || 'Subject Property'} has been published and is ready for download.`,
                 type: 'REPORT',
@@ -355,7 +355,7 @@ export const assignSurveyor = async (req, res, next) => {
           await prisma.notification.create({
             data: {
               userId: targetUser ? targetUser.id : job.clientId,
-              role: 'CLIENT',
+              role: 'CUSTOMER',
               title: 'Inspection Appointment Booked',
               desc: `Your property survey for ${job.propertyAddress} is confirmed for ${formattedDate} (${inspectionTime || 'Morning'}).`,
               type: 'INSPECTION',
@@ -529,7 +529,7 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           await prisma.notification.create({
             data: {
               userId: targetUser ? targetUser.id : updated.clientId,
-              role: 'CLIENT',
+              role: 'CUSTOMER',
               title: 'Inspection Appointment Rescheduled',
               desc: `Your property survey for ${updated.propertyAddress} has been rescheduled to ${formattedDate} (${updated.inspectionTime || 'Morning'}).`,
               type: 'INSPECTION',
