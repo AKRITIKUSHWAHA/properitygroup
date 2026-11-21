@@ -1,10 +1,10 @@
 {
-  "name": "UK Property Surveying Practice",
-  "short_name": "UK Property Survey",
-  "description": "INDEPENDENT RICS-ALIGNED SURVEYORS - Residential & Commercial Survey Management Platform",
+  "name": "NJS Property Group",
+  "short_name": "NJS Property",
+  "description": "NJS Property Group – Independent RICS-Aligned Surveyors & Valuations across London and Home Counties",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F3F5F9",
+  "background_color": "#FFFFFF",
   "theme_color": "#0B1F4D",
   "orientation": "portrait-primary",
   "icons": [
@@ -12,6 +12,17 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
