@@ -420,22 +420,6 @@ export const AdminDashboardPage = () => {
               />
             </div>
 
-            {/* Messaging Desk Quick Shortcut Button */}
-            <button
-              type="button"
-              onClick={() => setIsMessagesModalOpen(true)}
-              className="px-3 py-2 rounded-xl text-xs font-bold text-[#0B1F4D] bg-blue-50/80 hover:bg-blue-100 border border-blue-200/80 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-              title="Open Customer Messaging Inbox"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span className="hidden sm:inline">Messages</span>
-              {totalUnreadMessages > 0 && (
-                <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {totalUnreadMessages}
-                </span>
-              )}
-            </button>
-
             {(activeBucketFilter !== 'all' || searchQuery || searchRef || searchClient || searchLocation) && (
               <button
                 type="button"
