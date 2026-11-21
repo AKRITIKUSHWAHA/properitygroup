@@ -2751,7 +2751,15 @@ export const CustomerInvoicesPage = () => {
 // 5. REPORTS PAGE (Real PDF + Sample Reports)
 // ==========================================
 export const CustomerReportsPage = () => {
-  useEffect(() => { customerReportsApi.getReports().catch(() => {}); }, []);
+  const [apiReports, setApiReports] = useState([]);
+  useEffect(() => {
+    customerReportsApi.getReports()
+      .then((res) => {
+        const list = res?.data?.reports || res?.reports || (Array.isArray(res) ? res : []);
+        if (Array.isArray(list)) setApiReports(list);
+      })
+      .catch(() => {});
+  }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
@@ -2770,7 +2778,7 @@ export const CustomerReportsPage = () => {
     (j) => isJobForCustomer(j, user) && (j.status === 'Preparing report' || j.timelineStep === 7 || j.timelineStep === 8) && !(j.status === 'Completed' || j.qaApproved === true || j.reportReleased === true)
   );
 
-  const reports = myCompletedJobs.map((j) => ({
+  const localReports = myCompletedJobs.map((j) => ({
     id: `RPT-${j.id.replace('JOB-2026-', '')}`,
     jobRef: j.id,
     title: `RICS_${j.surveyType?.replace(/[^a-zA-Z0-9]/g, '_')}_${j.property?.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
@@ -2780,6 +2788,22 @@ export const CustomerReportsPage = () => {
     surveyor: j.surveyor || 'Assigned Chartered Surveyor',
     conditionRating: 'Condition 1 & 2 (Official RICS Traffic-Light Audit)',
   }));
+
+  const apiFormattedReports = (apiReports || []).map((r) => ({
+    id: `RPT-${String(r.reference || r.id).replace('JOB-2026-', '')}`,
+    jobRef: r.reference || `JOB-${r.id}`,
+    title: `RICS_${(r.serviceType || 'Survey').replace(/[^a-zA-Z0-9]/g, '_')}_${(r.propertyAddress || 'Property').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+    property: `${r.propertyAddress || 'Subject Property'}${r.postcode ? `, ${r.postcode}` : ''}`,
+    date: r.inspectionDate ? new Date(r.inspectionDate).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+    size: '14.2 MB',
+    surveyor: r.surveyor?.name || 'Assigned Chartered Surveyor',
+    conditionRating: 'Condition 1 & 2 (Official RICS Traffic-Light Audit)',
+  }));
+
+  const reports = [
+    ...localReports,
+    ...apiFormattedReports.filter((ar) => !localReports.some((lr) => lr.jobRef === ar.jobRef || lr.id === ar.id)),
+  ];
 
   const handleDownloadReport = (r) => {
     downloadReportPDF({

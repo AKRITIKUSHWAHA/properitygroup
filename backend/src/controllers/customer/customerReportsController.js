@@ -6,12 +6,17 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
  */
 export const getCustomerReports = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const userEmail = req.user.email;
+    const userId = req.user?.id;
+    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userName = (req.user?.name || '').toLowerCase().trim();
 
     const reports = await prisma.job.findMany({
       where: {
-        OR: [{ clientId: userId }, { clientEmail: userEmail }],
+        OR: [
+          ...(userId ? [{ clientId: userId }] : []),
+          ...(userEmail ? [{ clientEmail: userEmail }] : []),
+          ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
+        ],
         stage: { in: ['PREPARING_REPORT', 'COMPLETE'] },
       },
       select: {
@@ -37,4 +42,3 @@ export const getCustomerReports = async (req, res, next) => {
     next(error);
   }
 };
-
