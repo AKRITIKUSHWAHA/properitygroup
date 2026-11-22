@@ -24,13 +24,36 @@ if (typeof window !== 'undefined' && window.localStorage) {
   try {
     ['propertygroup_jobs', 'propertygroup_leads', 'propertygroup_quotes', 'property_group_registered_customers'].forEach((key) => {
       const raw = localStorage.getItem(key);
-      if (raw && (raw.includes('akku') || raw.includes('MP Nagar') || raw.includes('Bhopal') || raw.includes('JOB-2026-101') || raw.includes('Plot No 45'))) {
+      if (
+        raw &&
+        (raw.includes('akku') ||
+          raw.includes('MP Nagar') ||
+          raw.includes('Bhopal') ||
+          raw.includes('JOB-2026-101') ||
+          raw.includes('Plot No 45') ||
+          raw.includes('QUO-PENDING') ||
+          raw.includes('Subject Property'))
+      ) {
         try {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
             const cleaned = parsed.filter((item) => {
               const str = JSON.stringify(item).toLowerCase();
-              return !str.includes('akku') && !str.includes('mp nagar') && !str.includes('bhopal') && !str.includes('plot no 45') && item.id !== 7 && item.id !== '7';
+              const prop = (item.property || item.propertyAddress || item.location || '').toLowerCase().trim();
+              const id = String(item.id || '').toUpperCase().trim();
+              const jobNo = String(item.jobNo || '').toUpperCase().trim();
+              return (
+                !str.includes('akku') &&
+                !str.includes('mp nagar') &&
+                !str.includes('bhopal') &&
+                !str.includes('plot no 45') &&
+                prop !== 'subject property' &&
+                !prop.startsWith('subject property') &&
+                id !== 'QUO-PENDING' &&
+                jobNo !== 'QUO-PENDING' &&
+                item.id !== 7 &&
+                item.id !== '7'
+              );
             });
             localStorage.setItem(key, JSON.stringify(cleaned));
           } else if (typeof parsed === 'object' && parsed !== null) {
@@ -72,6 +95,10 @@ export const getStoredJobs = () => {
             !addr.includes('mp nagar') &&
             !addr.includes('bhopal') &&
             !addr.includes('plot no 45') &&
+            addr !== 'subject property' &&
+            !addr.startsWith('subject property') &&
+            idStr !== 'QUO-PENDING' &&
+            jobNoStr !== 'QUO-PENDING' &&
             idStr !== '7' &&
             idStr !== 'JOB-2026-101' &&
             jobNoStr !== 'JOB-2026-101'

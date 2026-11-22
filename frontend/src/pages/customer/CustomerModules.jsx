@@ -1539,7 +1539,14 @@ export const CustomerQuotationsPage = () => {
     }
   } catch {}
 
-  const myJobs = effectiveJobs.filter((j) => isJobForCustomer(j, user));
+  const myJobs = effectiveJobs
+    .filter((j) => isJobForCustomer(j, user))
+    .filter((j) => {
+      const p = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
+      const id = String(j.id || '').toUpperCase().trim();
+      const jobNo = String(j.jobNo || '').toUpperCase().trim();
+      return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
+    });
   const jobQuotes = myJobs.map((j) => {
     const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
     const vat = net * 0.2;
@@ -3101,15 +3108,29 @@ export const CustomerTrackSurveyPage = () => {
   const userEmail = (user?.email || '').toLowerCase().trim();
   const isDemo = userEmail === 'customer@demo.com';
 
-  const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const myCustomerJobs = jobs
+    .filter((j) => isJobForCustomer(j, user))
+    .filter((j) => {
+      const p = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
+      const id = String(j.id || '').toUpperCase().trim();
+      const jobNo = String(j.jobNo || '').toUpperCase().trim();
+      return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
+    });
+
   const [activeJobId, setActiveJobId] = useState(() => {
     return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
   });
   const myJob = myCustomerJobs.find((j) => j.id === activeJobId) || myCustomerJobs[0] || null;
   const historyJobs = myCustomerJobs.filter((j) => j.id !== myJob?.id);
 
-  const myQuote = quotes.find((q) => (q.clientEmail || '').toLowerCase().trim() === userEmail);
-  const myLead = leads.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail);
+  const myQuote = quotes.find((q) => {
+    const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+    return qEmail && (qEmail === userEmail || userEmail.includes(qEmail) || qEmail.includes(userEmail));
+  });
+  const myLead = leads.find((l) => {
+    const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+    return lEmail && (lEmail === userEmail || userEmail.includes(lEmail) || lEmail.includes(userEmail));
+  });
   const myAgreement = agreements.find((a) => {
     const aEmail = (a.signerEmail || '').toLowerCase().trim();
     return (userEmail && aEmail === userEmail) || (myJob && a.jobNo === myJob.id);
@@ -3121,20 +3142,27 @@ export const CustomerTrackSurveyPage = () => {
     regUser = reg[userEmail] || {};
   } catch {}
 
-  const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
-  const propertyAddress = myJob?.property
-    ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}`
-    : myQuote?.property
-    ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}`
-    : myLead?.property
-    ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}`
-    : trackProperty
-    ? trackProperty
-    : regUser.address
-    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
-    : (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
+  const activeQuoteOrLeadProp =
+    (myQuote?.property ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}` : '') ||
+    (myLead?.property ? `${myLead.property}${myLead.location ? `, ${myLead.location}` : ''}` : '') ||
+    (myLead?.propertyAddress ? myLead.propertyAddress : '');
 
-  const refNo = myJob?.id || myJob?.jobNo || myQuote?.id || myLead?.id || apiTracking?.jobReference || apiTracking?.reference || (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
+  const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
+  const propertyAddress =
+    activeQuoteOrLeadProp ||
+    (myJob?.property ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}` : '') ||
+    trackProperty ||
+    (regUser.address ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}` : '') ||
+    (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
+
+  const refNo =
+    myQuote?.id ||
+    myLead?.id ||
+    myJob?.id ||
+    myJob?.jobNo ||
+    apiTracking?.jobReference ||
+    apiTracking?.reference ||
+    (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
   const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
@@ -3159,6 +3187,33 @@ export const CustomerTrackSurveyPage = () => {
   const apiStep = Number(apiTracking?.currentStep) || 0;
   const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
 
+  // Strict check: terms must actually be signed, and payment must actually be claimed/settled
+  const termsSigned = Boolean(
+    myJob?.termsStatus === 'Signed' ||
+    myAgreement?.signed ||
+    (apiStage === 'SIGNED')
+  );
+
+  const paymentSettled = Boolean(
+    myJob?.paymentStatus === 'Paid' ||
+    (myJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    apiStage === 'PAID'
+  );
+
+  const isQuotationAccepted = Boolean(
+    myJob?.quoteStatus === 'Accepted' ||
+    myQuote?.status === 'Accepted' ||
+    myQuote?.status === 'ACCEPTED' ||
+    myQuote?.isAccepted ||
+    myLead?.status === 'Converted' ||
+    myLead?.status === 'CONVERTED' ||
+    jStatus === 'accepted' ||
+    jStage === 'accepted' ||
+    timelineStep === 3 ||
+    apiStage === 'ACCEPTED' ||
+    apiStep === 3
+  );
+
   let currentStep = 1;
   if (isDemo) {
     currentStep = 7;
@@ -3172,23 +3227,15 @@ export const CustomerTrackSurveyPage = () => {
     currentStep = 7;
   } else if (isBookedOrScheduled || timelineStep === 6 || apiStep === 6 || apiStage === 'BOOKED' || apiStage === 'SCHEDULED') {
     currentStep = 6;
-  } else if (myJob?.paymentStatus === 'Paid' || (myJob?.paymentStatus || '').toLowerCase().includes('claimed') || timelineStep === 5 || apiStep === 5 || apiStage === 'PAID') {
+  } else if (paymentSettled && termsSigned) {
     currentStep = 5;
-  } else if (myJob?.termsStatus === 'Signed' || timelineStep === 4 || apiStep === 4 || apiStage === 'SIGNED') {
+  } else if (termsSigned) {
     currentStep = 4;
-  } else if (
-    myJob?.quoteStatus === 'Accepted' ||
-    jStatus === 'accepted' ||
-    jStage === 'accepted' ||
-    timelineStep === 3 ||
-    myLead?.status === 'Converted' ||
-    myLead?.status === 'CONVERTED' ||
-    apiStage === 'ACCEPTED' ||
-    apiStep === 3
-  ) {
+  } else if (isQuotationAccepted) {
     currentStep = 3;
   } else if (
     myJob?.status === 'Quoted' ||
+    myQuote?.status === 'Quoted' ||
     jStatus === 'quoted' ||
     jStage === 'quote' ||
     timelineStep === 2 ||
