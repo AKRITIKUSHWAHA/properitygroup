@@ -20,7 +20,7 @@ router.use(authorizeRoles('ADMIN', 'SURVEYOR', 'CUSTOMER'));
 router.get('/', getSurveyJobs);
 router.get('/metrics', getSurveyJobsMetrics);
 router.get('/:id', getSurveyJobById);
-router.post('/', authorizeRoles('ADMIN'), createSurveyJob);
+router.post('/', authorizeRoles('ADMIN', 'CUSTOMER'), createSurveyJob);
 router.patch('/:id/stage', updateJobStage);
 router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN'), assignSurveyor);
 router.patch('/:id/reschedule', rescheduleSurveyJob);

@@ -110,8 +110,19 @@ export const CustomerTermsPage = () => {
   const { jobs, updateJob, addJob } = useJobs();
   const { agreements, setAgreements, markAgreementSigned } = useTerms();
 
-  // 1. Strict customer job isolation
-  const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const userName = (user?.name || '').toLowerCase().trim();
+  const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
+
+  // 1. Strict customer job isolation (filter out dummy 'Subject Property' or pending placeholders)
+  const myJobs = jobs
+    .filter((j) => isJobForCustomer(j, user))
+    .filter((j) => {
+      const p = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
+      const id = String(j.id || '').toUpperCase().trim();
+      const jobNo = String(j.jobNo || '').toUpperCase().trim();
+      return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
+    });
   const currentJob = myJobs[0] || null;
 
   // 2. Locate linked agreement in terms repository
@@ -124,11 +135,24 @@ export const CustomerTermsPage = () => {
     return false;
   });
 
-  const isAlreadySigned =
-    currentAgreement?.status === 'Signed' || currentJob?.termsStatus === 'Signed';
+  const storedTermsSigned =
+    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true');
+  const storedPaymentClaimed =
+    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true');
 
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const userName = (user?.name || '').toLowerCase().trim();
+  const isAlreadySigned =
+    storedTermsSigned ||
+    currentAgreement?.status === 'Signed' ||
+    currentAgreement?.signed === true ||
+    currentJob?.termsStatus === 'Signed';
+
+  const isPaymentClaimed =
+    storedPaymentClaimed ||
+    currentJob?.paymentStatus === 'Paid' ||
+    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed');
+
   const isEmma = userEmail === 'customer@demo.com';
   const { quotes: storedQuotes = [] } = useQuotes();
   const { leads: storedLeads = [] } = useLeads();
@@ -150,16 +174,22 @@ export const CustomerTermsPage = () => {
   const leadTotal = userLead?.estimatedValue ? parseFloat(userLead.estimatedValue.replace(/[^0-9.]/g, '')) : null;
   const leadNet = leadTotal ? Math.round((leadTotal / 1.2) * 100) / 100 : null;
 
-  // 3. Dynamic property and fee values
-  const propertyAddress = currentJob?.property
-    ? `${currentJob.property}, ${currentJob.location || ''}`
-    : userQuote?.property
+  // 3. Dynamic property and fee values (prioritize lead/quote real property over dummy 'Subject Property')
+  const propertyAddress = (currentJob?.property && currentJob.property !== 'Subject Property' && !currentJob.property.startsWith('Subject Property'))
+    ? `${currentJob.property}${currentJob.location ? `, ${currentJob.location}` : ''}`
+    : (userQuote?.property && userQuote.property !== 'Subject Property')
     ? `${userQuote.property}${userQuote.location ? `, ${userQuote.location}` : ''}`
-    : userLead?.property
+    : (userQuote?.propertyAddress && userQuote.propertyAddress !== 'Subject Property')
+    ? userQuote.propertyAddress
+    : (userLead?.property && userLead.property !== 'Subject Property')
     ? `${userLead.property}${userLead.location ? `, ${userLead.location}` : ''}`
+    : (userLead?.propertyAddress && userLead.propertyAddress !== 'Subject Property')
+    ? userLead.propertyAddress
     : regUser.address
-    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}`
-    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
+    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}${regUser.postcode ? ` ${regUser.postcode}` : ''}`
+    : (user?.address && user.address !== 'Subject Property')
+    ? user.address
+    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
   const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || 'RICS Level 2 Home Survey';
   const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
@@ -193,7 +223,12 @@ export const CustomerTermsPage = () => {
   }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
-  const [stage, setStage] = useState('sign');
+  // When already signed, stay on 'payment' so user never gets reset back to sign form on navigation
+  const [stage, setStage] = useState(() => {
+    if (isPaymentClaimed) return 'confirmed';
+    if (isAlreadySigned) return 'payment';
+    return 'sign';
+  });
   const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
   // Sign Form State
@@ -201,7 +236,6 @@ export const CustomerTermsPage = () => {
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
   const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || '');
 
-  const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
   const [savedSignatureDataUrl, setSavedSignatureDataUrl] = useState(() => {
     try {
       return localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`) || currentAgreement?.signatureValue || '';
@@ -326,24 +360,60 @@ export const CustomerTermsPage = () => {
     } catch {}
 
     // Immediately execute terms in state & storage so Step 4 registers immediately
+    const nowSignDate = new Date().toLocaleDateString('en-GB');
+    const nowSignTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const nowSignString = `${nowSignDate}, ${nowSignTime}`;
+    const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
+
+    localStorage.setItem(`propertygroup_terms_signed_${userStorageKey}`, 'true');
+    localStorage.setItem(`propertygroup_terms_signed_date_${userStorageKey}`, nowSignString);
+    if (userEmail) {
+      localStorage.setItem(`propertygroup_terms_signed_${userEmail}`, 'true');
+    }
+
     if (currentAgreement?.id) {
       markAgreementSigned(currentAgreement.id, {
-        signedDate: new Date().toLocaleDateString('en-GB'),
+        signedDate: nowSignString,
         signerIp: '86.142.19.42 (London, UK)',
-        auditCode: `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`,
+        auditCode: generatedAuditCode,
         signatureType: signatureType,
         signatureValue: capturedSignature,
+        signed: true,
       });
+    } else {
+      const newAgreement = {
+        id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+        refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+        jobNo: currentJob?.id || jobNo,
+        client: user?.name || typedName || 'Customer',
+        signerEmail: userEmail,
+        property: propertyAddress,
+        location: regUser.postcode || 'London, UK',
+        serviceKey: activeTemplate.serviceKey,
+        templateName: activeTemplate.name,
+        versionYear: `${activeTemplate.version} / ${activeTemplate.year}`,
+        status: 'Signed',
+        signed: true,
+        sentDate: nowSignDate,
+        signedDate: nowSignString,
+        signerIp: '86.142.19.42 (London, UK)',
+        auditCode: generatedAuditCode,
+        signatureType: signatureType,
+        signatureValue: capturedSignature,
+        downloadUrl: '#download-signed-pdf',
+      };
+      setAgreements((prev) => [newAgreement, ...prev]);
     }
 
     if (currentJob?.id) {
       updateJob(currentJob.id, {
         termsStatus: 'Signed',
+        property: propertyAddress,
         timelineStep: Math.max(currentJob.timelineStep || 0, 4),
         activityLog: [
           {
             id: Date.now(),
-            time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+            time: nowSignString,
             text: `Client ${user?.name || 'Customer'} digitally executed Terms of Engagement.`,
           },
           ...(currentJob.activityLog || []),
@@ -356,15 +426,75 @@ export const CustomerTermsPage = () => {
             return {
               ...j,
               termsStatus: 'Signed',
+              property: propertyAddress,
               timelineStep: Math.max(j.timelineStep || 0, 4),
             };
           }
           return j;
         });
         localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
-        window.dispatchEvent(new Event('propertygroup_jobs_updated'));
       } catch {}
+    } else {
+      addJob({
+        id: jobNo || `JOB-2026-880`,
+        jobNo: jobNo || `JOB-2026-880`,
+        customer: user?.name || typedName || 'Client',
+        clientName: user?.name || typedName || 'Client',
+        customerEmail: userEmail || 'client@example.com',
+        clientEmail: userEmail || 'client@example.com',
+        customerPhone: regUser.phone || user?.phone || userLead?.phone || '',
+        clientPhone: regUser.phone || user?.phone || userLead?.phone || '',
+        surveyType: surveyType,
+        property: propertyAddress,
+        propertyAddress: propertyAddress,
+        location: regUser.postcode || userLead?.location || '',
+        postcode: regUser.postcode || userLead?.postcode || 'SW1A 1AA',
+        surveyor: 'Pending Allocation',
+        status: 'Action Required',
+        termsStatus: 'Signed',
+        paymentStatus: 'Pending',
+        timelineStep: 4,
+        date: 'Date: TBD',
+        timeSlot: 'Time: TBD',
+        quote: {
+          baseFee: baseFee,
+          total: grossTotal,
+        },
+        activityLog: [
+          {
+            id: Date.now(),
+            time: nowSignString,
+            text: `Client ${user?.name || typedName || 'Customer'} digitally executed Terms of Engagement.`,
+          },
+        ],
+      });
     }
+
+    try {
+      const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      const updatedQuotes = storedQuotes.map((q) => {
+        if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === userName) {
+          return { ...q, termsStatus: 'Signed', timelineStep: Math.max(q.timelineStep || 0, 4) };
+        }
+        return q;
+      });
+      localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
+    } catch {}
+
+    try {
+      const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const updatedLeads = storedLeads.map((l) => {
+        if ((l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail || (l.customerName || l.clientName || '').toLowerCase().trim() === userName) {
+          return { ...l, termsStatus: 'Signed', status: 'Converted' };
+        }
+        return l;
+      });
+      localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+      window.dispatchEvent(new Event('propertygroup_leads_updated'));
+    } catch {}
+
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('propertygroup_agreements_updated'));
 
     // Call backend API to record execution and trigger Terms Signed confirmation email
     try {
@@ -417,6 +547,12 @@ export const CustomerTermsPage = () => {
       const nowString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
       const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
 
+      // Persist payment claim so navigation maintains confirmed/payment state
+      localStorage.setItem(`propertygroup_payment_claimed_${userStorageKey}`, 'true');
+      if (userEmail) {
+        localStorage.setItem(`propertygroup_payment_claimed_${userEmail}`, 'true');
+      }
+
       // 1. Update in useTerms store
       if (currentAgreement?.id) {
         markAgreementSigned(currentAgreement.id, {
@@ -425,22 +561,23 @@ export const CustomerTermsPage = () => {
           auditCode: generatedAuditCode,
           signatureType: finalSigType,
           signatureValue: signatureVal,
+          signed: true,
         });
-      } else if (currentJob?.id) {
-        // Create new executed agreement in store
+      } else {
         setAgreements((prev) => [
           {
             id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
             refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
-            jobNo: currentJob.id,
-            client: user?.name || currentJob.customer || 'Customer',
-            signerEmail: user?.email || currentJob.customerEmail,
+            jobNo: currentJob?.id || jobNo,
+            client: user?.name || currentJob?.customer || typedName || 'Customer',
+            signerEmail: user?.email || currentJob?.customerEmail || userEmail,
             property: propertyAddress,
-            location: currentJob.location || 'London, UK',
+            location: currentJob?.location || regUser.postcode || 'London, UK',
             serviceKey: activeTemplate.serviceKey,
             templateName: activeTemplate.name,
             versionYear: `${activeTemplate.version} / ${activeTemplate.year}`,
             status: 'Signed',
+            signed: true,
             sentDate: new Date().toLocaleDateString('en-GB'),
             signedDate: nowString,
             signerIp: '86.142.19.42 (London, UK)',
@@ -462,6 +599,8 @@ export const CustomerTermsPage = () => {
         canBook: true,
         timelineStep: 5,
         status: 'Action Required',
+        property: propertyAddress,
+        propertyAddress: propertyAddress,
       };
 
       if (currentJob?.id) {
@@ -482,16 +621,23 @@ export const CustomerTermsPage = () => {
           id: jobNo || `JOB-2026-880`,
           jobNo: jobNo || `JOB-2026-880`,
           customer: user?.name || typedName || 'Client',
+          clientName: user?.name || typedName || 'Client',
           customerEmail: userEmail || 'client@example.com',
-          customerPhone: regUser.phone || user?.phone || '',
+          clientEmail: userEmail || 'client@example.com',
+          customerPhone: regUser.phone || user?.phone || userLead?.phone || '',
+          clientPhone: regUser.phone || user?.phone || userLead?.phone || '',
           surveyType: surveyType,
           property: propertyAddress,
-          location: regUser.postcode || '',
-          postcode: regUser.postcode || '',
-          surveyor: 'Unassigned',
+          propertyAddress: propertyAddress,
+          location: regUser.postcode || userLead?.location || '',
+          postcode: regUser.postcode || userLead?.postcode || 'SW1A 1AA',
+          surveyor: 'Pending Allocation',
           status: 'Action Required',
           termsStatus: 'Signed',
           paymentStatus: 'Claimed (Verification Pending)',
+          paymentMethod: 'Bank Transfer (BACS Faster Payments)',
+          transferReference: bankProofRef || '',
+          canBook: true,
           timelineStep: 5,
           date: 'Date: TBD',
           timeSlot: 'Time: TBD',
@@ -506,8 +652,8 @@ export const CustomerTermsPage = () => {
       try {
         const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
         const updatedQuotes = storedQuotes.map((q) => {
-          if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === (user?.name || '').toLowerCase().trim()) {
-            return { ...q, termsStatus: 'Signed', paymentStatus: 'Claimed (Verification Pending)' };
+          if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === userName) {
+            return { ...q, termsStatus: 'Signed', paymentStatus: 'Claimed (Verification Pending)', timelineStep: 5 };
           }
           return q;
         });
@@ -518,13 +664,17 @@ export const CustomerTermsPage = () => {
       try {
         const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
         const updatedLeads = storedLeads.map((l) => {
-          if ((l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail || (l.customerName || l.clientName || '').toLowerCase().trim() === (user?.name || '').toLowerCase().trim()) {
-            return { ...l, status: 'Converted' };
+          if ((l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail || (l.customerName || l.clientName || '').toLowerCase().trim() === userName) {
+            return { ...l, status: 'Converted', termsStatus: 'Signed', paymentStatus: 'Claimed (Verification Pending)' };
           }
           return l;
         });
         localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+        window.dispatchEvent(new Event('propertygroup_leads_updated'));
       } catch {}
+
+      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+      window.dispatchEvent(new Event('propertygroup_agreements_updated'));
 
       // Call backend API to record payment and trigger VAT receipt / payment confirmation email
       try {
@@ -595,9 +745,9 @@ export const CustomerTermsPage = () => {
   };
 
   // ==========================================
-  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
+  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED (Shown only if both signed and paid/confirmed)
   // ==========================================
-  if (isAlreadySigned && stage !== 'confirmed') {
+  if (isAlreadySigned && isPaymentClaimed && stage !== 'confirmed' && stage !== 'payment') {
     return (
       <div className="space-y-6 max-w-4xl mx-auto pb-12">
         <PageHeader
@@ -3150,10 +3300,11 @@ export const CustomerTrackSurveyPage = () => {
   const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
   const propertyAddress =
     activeQuoteOrLeadProp ||
-    (myJob?.property ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}` : '') ||
+    (myJob?.property && myJob.property !== 'Subject Property' ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}` : '') ||
     trackProperty ||
     (regUser.address ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}` : '') ||
-    (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : regUser.address || user?.address || 'Subject Property');
+    (user?.address && user.address !== 'Subject Property' ? user.address : '') ||
+    (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
 
   const refNo =
     myQuote?.id ||
@@ -3178,6 +3329,13 @@ export const CustomerTrackSurveyPage = () => {
   const isLocalDrafting = isUniversalDrafting || localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
   const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
 
+  const storedTermsSigned =
+    localStorage.getItem(`propertygroup_terms_signed_${targetEmail}`) === 'true' ||
+    localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true';
+  const storedPaymentClaimed =
+    localStorage.getItem(`propertygroup_payment_claimed_${targetEmail}`) === 'true' ||
+    localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true';
+
   const jStatus = (myJob?.status || '').toLowerCase().trim();
   const jStage = (myJob?.stage || '').toLowerCase().trim();
   const timelineStep = Number(myJob?.timelineStep) || (jStatus === 'enquiry' || jStatus === 'new' ? 1 : 0);
@@ -3189,12 +3347,17 @@ export const CustomerTrackSurveyPage = () => {
 
   // Strict check: terms must actually be signed, and payment must actually be claimed/settled
   const termsSigned = Boolean(
+    storedTermsSigned ||
     myJob?.termsStatus === 'Signed' ||
+    myAgreement?.status === 'Signed' ||
     myAgreement?.signed ||
-    (apiStage === 'SIGNED')
+    Boolean(myAgreement?.signedDate) ||
+    (apiStage === 'SIGNED') ||
+    (apiStage === 'PAID')
   );
 
   const paymentSettled = Boolean(
+    storedPaymentClaimed ||
     myJob?.paymentStatus === 'Paid' ||
     (myJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
     apiStage === 'PAID'
@@ -3418,7 +3581,19 @@ export const CustomerTrackSurveyPage = () => {
         </div>
       )}
 
-      <SurveyProgressTracker currentStep={currentStep} job={myJob || { property: propertyAddress, surveyor: surveyorName, surveyType: apiTracking?.serviceType || 'RICS Level 2 Home Survey' }} />
+      <SurveyProgressTracker
+        currentStep={currentStep}
+        job={myJob || {
+          id: refNo,
+          jobNo: refNo,
+          property: propertyAddress,
+          surveyor: surveyorName,
+          surveyType: surveyType || apiTracking?.serviceType || 'RICS Level 2 Home Survey',
+          timelineStep: currentStep,
+          termsStatus: termsSigned ? 'Signed' : 'Pending',
+          paymentStatus: paymentSettled ? 'Claimed (Verification Pending)' : 'Pending',
+        }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="md:col-span-2 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">

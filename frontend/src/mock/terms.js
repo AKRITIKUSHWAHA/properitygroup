@@ -651,6 +651,7 @@ export const useTerms = () => {
         return {
           ...a,
           status: 'Signed',
+          signed: true,
           signedDate:
             details.signedDate ||
             `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,

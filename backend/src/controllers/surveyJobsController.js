@@ -121,6 +121,7 @@ export const createSurveyJob = async (req, res, next) => {
       companyId,
       specialInstructions,
       keyCollectionDetails,
+      stage,
     } = req.body;
 
     if (!propertyAddress || !postcode || !clientName || !clientEmail) {
@@ -130,12 +131,22 @@ export const createSurveyJob = async (req, res, next) => {
     const cleanEmail = clientEmail.toLowerCase().trim();
     const cleanAddress = propertyAddress.trim();
 
+    let targetStage = 'QUOTE';
+    if (stage) {
+      const s = String(stage).toUpperCase().trim();
+      if (STAGE_ORDER.includes(s)) {
+        targetStage = s;
+      }
+    } else if (req.user?.role === 'CUSTOMER') {
+      targetStage = 'ACCEPTED';
+    }
+
     // Check for duplicate pending job instruction within same client and property
     const existingJob = await prisma.job.findFirst({
       where: {
         clientEmail: cleanEmail,
         propertyAddress: cleanAddress,
-        stage: { in: ['QUOTE', 'NEW', 'ACCEPTED'] },
+        stage: { in: ['QUOTE', 'NEW', 'ACCEPTED', 'PAID'] },
       },
     });
 
@@ -147,6 +158,7 @@ export const createSurveyJob = async (req, res, next) => {
           clientName: clientName.trim(),
           clientPhone: clientPhone || existingJob.clientPhone,
           serviceType: serviceType || existingJob.serviceType,
+          stage: targetStage !== 'QUOTE' ? targetStage : existingJob.stage,
           postcode: postcode.toUpperCase().trim(),
           specialInstructions: specialInstructions || existingJob.specialInstructions,
           keyCollectionDetails: keyCollectionDetails || existingJob.keyCollectionDetails,
@@ -165,24 +177,31 @@ export const createSurveyJob = async (req, res, next) => {
         propertyAddress,
         postcode: postcode.toUpperCase(),
         clientName,
-        clientEmail: clientEmail.toLowerCase(),
+        clientEmail: cleanEmail,
         clientPhone,
+        clientId: req.user?.id ? parseInt(req.user.id) : null,
         surveyorId: surveyorId ? parseInt(surveyorId) : null,
         companyId: companyId ? parseInt(companyId) : null,
         specialInstructions,
         keyCollectionDetails,
-        stage: 'QUOTE',
+        stage: targetStage,
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        jobId: job.id,
-        userId: req.user.id,
-        action: 'JOB_CREATED',
-        details: `Survey job created under ref: ${reference}`,
-      },
-    });
+    if (req.user?.id) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            jobId: job.id,
+            userId: req.user.id,
+            action: 'JOB_CREATED',
+            details: `Survey job created under ref: ${reference}`,
+          },
+        });
+      } catch (logErr) {
+        console.warn('Audit log write error:', logErr.message);
+      }
+    }
 
     return ApiResponse.created(res, { job }, 'Survey job instruction initialized');
   } catch (error) {

@@ -255,12 +255,13 @@ export const useJobs = () => {
         },
         body: JSON.stringify({
           serviceType: newJob.surveyType || 'RICS Level 2 Home Survey',
-          propertyAddress: newJob.property || newJob.location || 'London Property',
+          propertyAddress: newJob.property || newJob.propertyAddress || newJob.location || 'London Property',
           postcode: newJob.postcode || 'SW1A 1AA',
           clientName: newJob.customer || newJob.clientName || 'Private Client',
-          clientEmail: newJob.customerEmail || 'client@example.com',
-          clientPhone: newJob.customerPhone || '+44 7700 900000',
-          baseFee: 650.0,
+          clientEmail: newJob.customerEmail || newJob.clientEmail || 'client@example.com',
+          clientPhone: newJob.customerPhone || newJob.clientPhone || '+44 7700 900000',
+          baseFee: newJob.quote?.baseFee || 650.0,
+          stage: newJob.timelineStep >= 5 ? 'PAID' : newJob.timelineStep === 4 ? 'ACCEPTED' : 'QUOTE',
         }),
       }).catch(() => {});
     }
