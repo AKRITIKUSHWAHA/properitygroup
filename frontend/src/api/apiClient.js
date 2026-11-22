@@ -9,15 +9,17 @@ export function getApiBaseUrl() {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    // If running in production / live domain (njspropertygroup.com, netlify, etc.)
-    if (!isLocalhost) {
-      if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('localhost')) {
-        return envUrl;
-      }
-      return 'https://njs-proprty-group-production.up.railway.app/api/v1';
+    // When running in local development on localhost, route through Vite proxy (/api/v1) to permanently eliminate CORS
+    if (isLocalhost) {
+      return '/api/v1';
     }
+    // If running in production / live domain (njspropertygroup.com, netlify, etc.)
+    if (envUrl && envUrl.startsWith('https://') && !envUrl.includes('localhost')) {
+      return envUrl;
+    }
+    return 'https://njs-proprty-group-production.up.railway.app/api/v1';
   }
-  return envUrl || 'https://njs-proprty-group-production.up.railway.app/api/v1';
+  return '/api/v1';
 }
 
 export class ApiError extends Error {
