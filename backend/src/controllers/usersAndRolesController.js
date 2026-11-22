@@ -56,6 +56,83 @@ export const getUsersAndRoles = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Auto-sync any customer leads that don't yet have a user record into prisma.user
+    try {
+      const existingEmails = new Set(users.map((u) => (u.email || '').toLowerCase().trim()));
+      const leads = await prisma.lead.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const salt = await bcrypt.genSalt(10);
+      const defaultHash = await bcrypt.hash('password123', salt);
+
+      for (const lead of leads) {
+        const cleanEmail = (lead.clientEmail || '').toLowerCase().trim();
+        if (!cleanEmail || existingEmails.has(cleanEmail) || DEMO_EMAILS.includes(cleanEmail) || cleanEmail.startsWith('deleted_')) continue;
+
+        try {
+          const newUser = await prisma.user.create({
+            data: {
+              name: lead.clientName || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              password: defaultHash,
+              role: 'CUSTOMER',
+              phone: lead.clientPhone || null,
+              status: 'ACTIVE',
+            },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              phone: true,
+              avatar: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+              surveyorProfile: true,
+              _count: {
+                select: {
+                  assignedJobs: true,
+                  clientJobs: true,
+                },
+              },
+            },
+          });
+          users.push(newUser);
+          existingEmails.add(cleanEmail);
+        } catch (uErr) {
+          const existing = await prisma.user.findUnique({
+            where: { email: cleanEmail },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              phone: true,
+              avatar: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+              surveyorProfile: true,
+              _count: {
+                select: {
+                  assignedJobs: true,
+                  clientJobs: true,
+                },
+              },
+            },
+          }).catch(() => null);
+          if (existing && !existingEmails.has(cleanEmail)) {
+            users.push(existing);
+            existingEmails.add(cleanEmail);
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.warn('Sync leads to users warning:', syncErr.message);
+    }
+
     return ApiResponse.success(res, { users, total: users.length });
   } catch (error) {
     next(error);

@@ -151,26 +151,32 @@ export const AuthProvider = ({ children }) => {
         apiErr.status === 404 ||
         apiErr.response?.status === 404
       ) {
-        if (registeredCust || localKnownPassword) {
+        const leadsStorage = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+        const matchingLead = Array.isArray(leadsStorage)
+          ? leadsStorage.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === trimmedEmail)
+          : null;
+
+        if (registeredCust || localKnownPassword || matchingLead) {
           // Attempt automatic sync registration to backend so credentials persist forever
           try {
             const regRes = await authApi.register({
-              name: registeredCust?.name || trimmedEmail.split('@')[0],
+              name: registeredCust?.name || matchingLead?.customerName || matchingLead?.clientName || trimmedEmail.split('@')[0],
               email: trimmedEmail,
               password: cleanPassword,
               role: 'CUSTOMER',
-              phone: registeredCust?.phone || null,
+              phone: registeredCust?.phone || matchingLead?.customerPhone || null,
             });
             if (regRes?.user) {
               backendUser = regRes.user;
               authToken = regRes.token;
               if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+              localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
             }
           } catch (syncErr) {
             console.warn('Backend auto-sync registration skipped:', syncErr.message);
           }
         }
-        if (!backendUser && !registeredCust && !localKnownPassword) {
+        if (!backendUser && !registeredCust && !localKnownPassword && !matchingLead) {
           setIsLoading(false);
           const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
           notFoundErr.isNotRegistered = true;

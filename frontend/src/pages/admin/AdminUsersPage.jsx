@@ -138,6 +138,39 @@ export const AdminUsersPage = () => {
             });
           } catch {}
 
+          // Also include any customer leads from CRM so Admin sees every customer in Users & Roles
+          try {
+            const rawLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+            if (Array.isArray(rawLeads)) {
+              rawLeads.forEach((lead) => {
+                const lEmail = (lead.customerEmail || lead.clientEmail || '').toLowerCase().trim();
+                const lName = lead.customerName || lead.clientName || 'Private Client';
+                const lPhone = lead.customerPhone || lead.clientPhone || '—';
+                if (
+                  lEmail &&
+                  !deletedSet.has(lEmail) &&
+                  !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)
+                ) {
+                  mapped.push({
+                    id: `USR-C-${mapped.length + 1}`,
+                    dbId: lead.dbId || lead.id || null,
+                    name: lName,
+                    email: lEmail,
+                    role: 'customer',
+                    roleLabel: 'Customer',
+                    org: 'Private Client',
+                    status: 'Active',
+                    phone: lPhone,
+                    createdAt: lead.created || '—',
+                    lastLogin: '—',
+                    clientJobsCount: lead.status === 'Converted' ? 1 : 0,
+                    assignedJobsCount: 0,
+                  });
+                }
+              });
+            }
+          } catch {}
+
           setUsers(mapped);
         }
       })
