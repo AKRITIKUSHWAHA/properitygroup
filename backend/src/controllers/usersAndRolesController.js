@@ -271,19 +271,9 @@ export const updateUser = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    let userId = parseInt(id, 10);
-    if (isNaN(userId)) {
-      const digits = String(id).replace(/\D/g, '');
-      if (digits) {
-        userId = parseInt(digits, 10);
-      }
-    }
-
     let targetUser = null;
-    if (!isNaN(userId) && userId > 0) {
-      targetUser = await prisma.user.findUnique({ where: { id: userId } });
-    }
-    if (!targetUser && typeof id === 'string') {
+
+    if (typeof id === 'string' && id.includes('@')) {
       const cleanEmail = id.toLowerCase().trim();
       targetUser = await prisma.user.findFirst({
         where: {
@@ -293,10 +283,35 @@ export const deleteUser = async (req, res, next) => {
           ],
         },
       });
-      if (targetUser) userId = targetUser.id;
+    } else {
+      let userId = parseInt(id, 10);
+      if (isNaN(userId)) {
+        const digits = String(id).replace(/\D/g, '');
+        if (digits) {
+          userId = parseInt(digits, 10);
+        }
+      }
+      if (!isNaN(userId) && userId > 0) {
+        targetUser = await prisma.user.findUnique({ where: { id: userId } });
+      }
+      if (!targetUser && typeof id === 'string') {
+        const cleanEmail = id.toLowerCase().trim();
+        targetUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: cleanEmail },
+              { name: cleanEmail },
+            ],
+          },
+        });
+      }
     }
 
     if (!targetUser) {
+      // Also clean up any lead by email if passed
+      if (typeof id === 'string' && id.includes('@')) {
+        await prisma.lead.deleteMany({ where: { clientEmail: id.toLowerCase().trim() } }).catch(() => {});
+      }
       return ApiResponse.success(res, null, 'User account removed successfully');
     }
 
@@ -315,6 +330,10 @@ export const deleteUser = async (req, res, next) => {
     // Unlink any jobs so foreign keys don't block deletion
     await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } }).catch(() => {});
     await prisma.job.updateMany({ where: { surveyorId: targetUser.id }, data: { surveyorId: null } }).catch(() => {});
+    // Clean up any lead with this user's email
+    if (targetUser.email) {
+      await prisma.lead.deleteMany({ where: { clientEmail: targetUser.email.toLowerCase().trim() } }).catch(() => {});
+    }
 
     // Delete user from database
     await prisma.user.delete({ where: { id: targetUser.id } }).catch(async () => {

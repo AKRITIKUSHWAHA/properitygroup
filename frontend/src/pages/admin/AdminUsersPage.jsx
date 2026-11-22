@@ -92,41 +92,7 @@ export const AdminUsersPage = () => {
         ? (leadsRes.value?.data?.leads || leadsRes.value?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []))
         : [];
 
-      // 1. Sanitize local storage deleted keys:
-      // Any user returned by the backend with status === 'ACTIVE' or registered locally MUST NOT be suppressed!
-      try {
-        const activeEmails = new Set(
-          rawUsers
-            .filter((u) => u.status === 'ACTIVE')
-            .map((u) => (u.email || '').toLowerCase().trim())
-            .filter(Boolean)
-        );
-        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        Object.keys(registered).forEach((em) => activeEmails.add(em.toLowerCase().trim()));
-        const localLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-        if (Array.isArray(localLeads)) {
-          localLeads.forEach((l) => {
-            const em = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
-            if (em) activeEmails.add(em);
-          });
-        }
-
-        const rawDel = localStorage.getItem('propertygroup_deleted_user_keys');
-        if (rawDel) {
-          const parsed = JSON.parse(rawDel);
-          const cleaned = parsed.filter((k) => {
-            const lower = String(k).toLowerCase().trim();
-            // If the user has re-registered, created a new lead, or is active in DB, un-delete it!
-            if (activeEmails.has(lower)) return false;
-            return (
-              !PROTECTED_PLATFORM_EMAILS.has(lower) &&
-              !['29', '45', 'usr-29', 'usr-45', 'usr-01', 'usr-02'].includes(lower)
-            );
-          });
-          localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
-        }
-      } catch {}
-
+      // 1. Strict persistent deletion registry
       const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
       const deletedSet = new Set(JSON.parse(rawDeleted).map((k) => String(k).toLowerCase().trim()));
 
@@ -149,7 +115,7 @@ export const AdminUsersPage = () => {
           ) {
             return false;
           }
-          if (u.status !== 'ACTIVE' && !PROTECTED_PLATFORM_EMAILS.has(email) && (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId))) {
+          if (!PROTECTED_PLATFORM_EMAILS.has(email) && (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId))) {
             return false;
           }
           return Boolean(email);
@@ -208,9 +174,17 @@ export const AdminUsersPage = () => {
 
       leadsList.forEach((lead) => {
         const lEmail = (lead.clientEmail || lead.customerEmail || '').toLowerCase().trim();
+        const lId = String(lead.id || '').toLowerCase().trim();
+        const lRef = String(lead.reference || '').toLowerCase().trim();
         const lName = lead.clientName || lead.customerName || lead.customer || 'Private Client';
         const lPhone = lead.clientPhone || lead.customerPhone || '—';
-        if (lEmail && !deletedSet.has(lEmail) && !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)) {
+        if (
+          lEmail &&
+          !deletedSet.has(lEmail) &&
+          !deletedSet.has(lId) &&
+          !deletedSet.has(lRef) &&
+          !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)
+        ) {
           mapped.push({
             id: `USR-C-${lead.id || mapped.length + 1}`,
             dbId: lead.id,
@@ -401,6 +375,10 @@ export const AdminUsersPage = () => {
           status: 'Active',
         };
         localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+
+        const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+        const updatedDeleted = JSON.parse(rawDeleted).filter((k) => k !== cleanEmail && k !== newUser.id.toLowerCase());
+        localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(updatedDeleted));
       } catch {}
 
       setUsers((prev) => [newUser, ...prev]);
@@ -674,16 +652,19 @@ export const AdminUsersPage = () => {
 
     if (
       cleanEmail === 'njsadmin@gmail.com' ||
+      cleanEmail === 'njssurveyor@gmail.com' ||
       userName === 'NJS Operations Admin' ||
       userName === 'admin' ||
       userId === 29 ||
+      userId === 45 ||
       userId === 'USR-29' ||
+      userId === 'USR-45' ||
       userId === 'USR-01'
     ) {
       addToast({
         type: 'warning',
         title: 'Action Protected',
-        message: 'The primary Admin account cannot be deleted.',
+        message: 'This platform system account cannot be deleted.',
       });
       return;
     }
@@ -698,7 +679,31 @@ export const AdminUsersPage = () => {
       )
     );
 
-    // 2. Remove from localStorage registered customers & credentials
+    // 2. Persist deleted user keys in localStorage so refreshes NEVER bring it back
+    try {
+      const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+      const deletedKeys = JSON.parse(rawDeleted);
+      [userId, targetUser?.dbId, targetUser?.id, cleanEmail, userName?.toLowerCase()?.trim()]
+        .filter(Boolean)
+        .map(String)
+        .forEach((k) => {
+          const lower = k.toLowerCase().trim();
+          if (!deletedKeys.includes(lower)) {
+            deletedKeys.push(lower);
+          }
+        });
+      localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(deletedKeys));
+
+      // Also persist in deleted leads registry
+      const rawDelLeads = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+      const delLeads = JSON.parse(rawDelLeads);
+      if (cleanEmail && !delLeads.includes(cleanEmail)) delLeads.push(cleanEmail);
+      if (targetUser?.dbId && !delLeads.includes(String(targetUser.dbId))) delLeads.push(String(targetUser.dbId));
+      if (userId && !delLeads.includes(String(userId))) delLeads.push(String(userId));
+      localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(delLeads));
+    } catch {}
+
+    // 3. Remove from localStorage registered customers & credentials
     try {
       const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
       if (cleanEmail && registered[cleanEmail]) {
@@ -721,9 +726,14 @@ export const AdminUsersPage = () => {
         localStorage.removeItem(`propertygroup_active_job_${cleanEmail}`);
         localStorage.removeItem(`propertygroup_user_signature_${cleanEmail}`);
         localStorage.removeItem(`propertygroup_user_sig_type_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_delivered_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_payment_paid_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_qareview_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_drafting_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_inspection_completed_${cleanEmail}`);
       }
 
-      // Purge this customer's mock jobs, quotes, agreements, and leads so no ghost stage 5 remains
+      // Purge this customer's mock jobs, quotes, agreements, and leads
       const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
       const filteredJobs = storedJobs.filter((j) => {
         const jEmail = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
@@ -763,37 +773,32 @@ export const AdminUsersPage = () => {
       window.dispatchEvent(new Event('propertygroup_jobs_updated'));
       window.dispatchEvent(new Event('propertygroup_leads_updated'));
       window.dispatchEvent(new Event('propertygroup_agreements_updated'));
+      window.dispatchEvent(new Event('propertygroup_users_updated'));
       window.dispatchEvent(new Event('storage'));
     } catch {}
 
-    // 3. Persist deleted user keys in localStorage so refreshes NEVER bring it back
-    try {
-      const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
-      const deletedKeys = JSON.parse(rawDeleted);
-      [userId, targetUser?.dbId, targetUser?.id, cleanEmail]
-        .filter(Boolean)
-        .map(String)
-        .forEach((k) => {
-          const lower = k.toLowerCase().trim();
-          if (!deletedKeys.includes(lower)) {
-            deletedKeys.push(lower);
-          }
-        });
-      localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(deletedKeys));
-    } catch {}
-
-    // 4. Call backend API to delete from database
+    // 4. Call backend API to delete from database (User and Lead)
     try {
       const apiTarget = targetUser?.dbId || cleanEmail || userId;
       await adminUsersAndRolesApi.deleteUser(apiTarget);
     } catch (err) {
-      console.warn('Backend delete error:', err?.message || err);
+      console.warn('Backend user delete error:', err?.message || err);
+    }
+    try {
+      if (cleanEmail) {
+        await adminCrmAndLeadsApi.deleteLead(cleanEmail);
+      }
+      if (targetUser?.dbId) {
+        await adminCrmAndLeadsApi.deleteLead(targetUser.dbId);
+      }
+    } catch (err) {
+      console.warn('Backend lead delete error:', err?.message || err);
     }
 
     addToast({
       type: 'info',
       title: 'User Removed',
-      message: `${userName} has been permanently removed from platform users.`,
+      message: `${userName} has been permanently deleted from platform users.`,
     });
   };
 

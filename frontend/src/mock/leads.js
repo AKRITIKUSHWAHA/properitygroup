@@ -69,7 +69,8 @@ export const getStoredLeads = () => {
               deletedSet.has(idStr) ||
               deletedSet.has(dbIdStr) ||
               deletedSet.has(refStr) ||
-              deletedSet.has(formattedRef);
+              deletedSet.has(formattedRef) ||
+              (email && (deletedSet.has(email) || deletedSet.has(email.toLowerCase())));
 
             return (
               !isDeleted &&
@@ -199,13 +200,19 @@ export const useLeads = () => {
   };
 
   const deleteLead = (leadId) => {
+    const isEmail = typeof leadId === 'string' && leadId.includes('@');
+    const cleanEmail = isEmail ? leadId.toLowerCase().trim() : '';
+
     setLeads((prev) =>
-      prev.filter(
-        (l) =>
+      prev.filter((l) => {
+        const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+        if (cleanEmail && lEmail === cleanEmail) return false;
+        return (
           l.id !== leadId &&
           String(l.dbId) !== String(leadId) &&
           String(l.reference) !== String(leadId)
-      )
+        );
+      })
     );
 
     // Persist deleted lead ID in localStorage so refreshes never bring it back
@@ -215,6 +222,9 @@ export const useLeads = () => {
       const strId = String(leadId).trim();
       if (!ids.includes(strId)) {
         ids.push(strId);
+      }
+      if (cleanEmail && !ids.includes(cleanEmail)) {
+        ids.push(cleanEmail);
       }
       localStorage.setItem(DELETED_LEADS_KEY, JSON.stringify(ids));
     } catch (_) {}
