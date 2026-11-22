@@ -165,7 +165,14 @@ export const useJobs = () => {
     }
     if (updates.status === 'Completed' || updates.timelineStep >= 10) {
       localStorage.setItem('propertygroup_delivered', 'true');
-      if (customerEmail) localStorage.setItem(`propertygroup_delivered_${customerEmail}`, 'true');
+      localStorage.setItem('propertygroup_payment_paid', 'true');
+      if (customerEmail) {
+        localStorage.setItem(`propertygroup_delivered_${customerEmail}`, 'true');
+        localStorage.setItem(`propertygroup_payment_paid_${customerEmail}`, 'true');
+      }
+      if (!updates.paymentStatus) {
+        updates.paymentStatus = 'Paid';
+      }
     }
 
     setJobs((prev) => {
@@ -181,12 +188,23 @@ export const useJobs = () => {
         const normJobNo = cleanJobNo.replace('NJS-', 'JOB-');
         const normRef = cleanRef.replace('NJS-', 'JOB-');
 
+        const digitsId = cleanId.replace(/[^0-9]/g, '');
+        const digitsJId = cleanJId.replace(/[^0-9]/g, '');
+        const digitsJobNo = cleanJobNo.replace(/[^0-9]/g, '');
+        const digitsRef = cleanRef.replace(/[^0-9]/g, '');
+        const hasMatchingDigits = Boolean(
+          digitsId &&
+          digitsId.length >= 4 &&
+          (digitsJId.includes(digitsId) || digitsJobNo.includes(digitsId) || digitsRef.includes(digitsId) || digitsId.includes(digitsJId) || digitsId.includes(digitsJobNo))
+        );
+
         const matches =
           cleanJId === cleanId ||
           cleanJobNo === cleanId ||
           cleanRef === cleanId ||
           (j.dbId && String(j.dbId) === cleanId) ||
           (normId && (normJId === normId || normJobNo === normId || normRef === normId)) ||
+          hasMatchingDigits ||
           (updates.customerEmail && j.customerEmail && j.customerEmail.toLowerCase() === updates.customerEmail.toLowerCase()) ||
           (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase()) ||
           (!id && j.customerEmail);

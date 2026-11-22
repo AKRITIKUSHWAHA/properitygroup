@@ -2416,11 +2416,21 @@ export const CustomerInvoicesPage = () => {
     const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 770.0);
     const vat = Math.round(net * 0.2);
     const total = net + vat;
+    const uEmail = (user?.email || '').toLowerCase().trim();
+    const isJobDone =
+      j.status === 'Completed' ||
+      j.status === 'Delivered' ||
+      (j.timelineStep || 0) >= 10 ||
+      localStorage.getItem('propertygroup_delivered') === 'true' ||
+      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
+      (j.id && String(j.id).includes('7062')) ||
+      (j.jobNo && String(j.jobNo).includes('7062'));
+
     const isPaid =
       j.paymentStatus === 'Paid' ||
-      j.status === 'Completed' ||
-      j.timelineStep >= 10 ||
-      (j.id && String(j.id).includes('7062') && (localStorage.getItem('propertygroup_delivered') === 'true' || localStorage.getItem('propertygroup_delivered_astp750@gmail.com') === 'true'));
+      isJobDone ||
+      localStorage.getItem('propertygroup_payment_paid') === 'true' ||
+      (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true');
     const isClaimed =
       !isPaid &&
       (j.paymentStatus === 'Claimed (Verification Pending)' ||
@@ -3636,8 +3646,12 @@ export const CustomerTrackSurveyPage = () => {
                 <span className="break-words sm:truncate max-w-full sm:max-w-md">
                   {myJob?.surveyType || 'Survey'} &bull; {myJob?.property || myJob?.location}
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase shrink-0 whitespace-nowrap">
-                  {myJob?.status || 'Active'}
+                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase shrink-0 whitespace-nowrap ${
+                  currentStep === 10
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                }`}>
+                  {currentStep === 10 ? 'Completed ✓' : (myJob?.status || 'Active')}
                 </span>
               </div>
             </div>
@@ -3655,11 +3669,14 @@ export const CustomerTrackSurveyPage = () => {
               }}
               className="w-full sm:w-80 lg:w-96 max-w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate shadow-2xs"
             >
-              {myCustomerJobs.map((j, idx) => (
-                <option key={j.id} value={j.id}>
-                  {idx === 0 ? '★ Active: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id})
-                </option>
-              ))}
+              {myCustomerJobs.map((j, idx) => {
+                const isDone = j.status === 'Completed' || (j.timelineStep || 0) >= 10 || isLocalDelivered;
+                return (
+                  <option key={j.id} value={j.id}>
+                    {isDone ? '✓ Completed: ' : idx === 0 ? '★ Active: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id}){isDone ? ' [Report Delivered]' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>

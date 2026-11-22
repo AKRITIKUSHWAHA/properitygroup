@@ -277,9 +277,14 @@ export const JobDetailsPage = () => {
     handleStepClick(5); // Complete stage
     const targetEmail = job?.customerEmail || '';
     localStorage.setItem('propertygroup_delivered', 'true');
-    localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
-    updateJob(job.id, {
+    localStorage.setItem('propertygroup_payment_paid', 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
+      localStorage.setItem(`propertygroup_payment_paid_${targetEmail}`, 'true');
+    }
+    updateJob(job.jobNo || job.id, {
       status: 'Completed',
+      paymentStatus: 'Paid',
       timelineStep: 10,
       customerEmail: targetEmail,
       activityLog: [
@@ -328,8 +333,14 @@ export const JobDetailsPage = () => {
   };
 
   const handleBacsPaymentRecorded = (bacsData) => {
-    updateJob(job.id, {
+    const targetEmail = job?.customerEmail || '';
+    localStorage.setItem('propertygroup_payment_paid', 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_payment_paid_${targetEmail}`, 'true');
+    }
+    updateJob(job.jobNo || job.id, {
       paymentStatus: 'Paid',
+      customerEmail: targetEmail,
       canBook: true,
       timelineStep: Math.max(job.timelineStep || 0, 6),
       activityLog: [
@@ -544,9 +555,11 @@ export const JobDetailsPage = () => {
 
     if (stepIndex === 5) {
       localStorage.setItem('propertygroup_delivered', 'true');
+      localStorage.setItem('propertygroup_payment_paid', 'true');
       const cEmail = (job.customerEmail || '').toLowerCase().trim();
       if (cEmail) {
         localStorage.setItem(`propertygroup_delivered_${cEmail}`, 'true');
+        localStorage.setItem(`propertygroup_payment_paid_${cEmail}`, 'true');
       }
     }
 

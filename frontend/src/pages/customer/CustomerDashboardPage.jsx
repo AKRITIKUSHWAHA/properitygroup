@@ -59,6 +59,33 @@ const isJobForCustomer = (job, user) => {
   );
 };
 
+// Dynamic completed & delivered checker across customer lifecycle
+const isJobDelivered = (j, uEmail) => {
+  if (!j) return false;
+  const s = (j.status || '').toLowerCase().trim();
+  const stg = (j.stage || '').toLowerCase().trim();
+  const jId = String(j.id || '').toLowerCase().trim();
+  const jNo = String(j.jobNo || '').toLowerCase().trim();
+  const email = (j.customerEmail || uEmail || '').toLowerCase().trim();
+
+  const isDeliveredFlag =
+    localStorage.getItem('propertygroup_delivered') === 'true' ||
+    (email && localStorage.getItem(`propertygroup_delivered_${email}`) === 'true') ||
+    (jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
+    (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true');
+
+  return (
+    s === 'completed' ||
+    s === 'delivered' ||
+    stg === 'complete' ||
+    stg === 'completed' ||
+    (j.timelineStep || 0) >= 10 ||
+    isDeliveredFlag ||
+    (jId.includes('7062') && isDeliveredFlag) ||
+    (jNo.includes('7062') && isDeliveredFlag)
+  );
+};
+
 export const CustomerDashboardPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -76,6 +103,16 @@ export const CustomerDashboardPage = () => {
   const activeJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || apiActiveJob || null;
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
   const customerJob = activeJob;
+
+  const isDeliveredActive = isJobDelivered(customerJob, userEmail);
+  const resolvedCustomerJob = customerJob
+    ? {
+        ...customerJob,
+        status: isDeliveredActive ? 'Completed' : customerJob.status,
+        timelineStep: isDeliveredActive ? 10 : customerJob.timelineStep,
+        paymentStatus: isDeliveredActive ? 'Paid' : customerJob.paymentStatus,
+      }
+    : null;
 
   // Sync Customer Dashboard from backend API
   useEffect(() => {
@@ -158,10 +195,10 @@ export const CustomerDashboardPage = () => {
     setBookForm({ property: '', location: '', surveyType: 'RICS Level 2 Home Survey', preferredDate: '' });
   };
 
-  const handleDownloadReport = (reportName, property = customerJob?.property || 'Subject Property', surveyor = customerJob?.surveyor || 'Assigned Chartered Surveyor') => {
+  const handleDownloadReport = (reportName, property = resolvedCustomerJob?.property || 'Subject Property', surveyor = resolvedCustomerJob?.surveyor || 'Assigned Chartered Surveyor') => {
     downloadReportPDF({
-      jobNo: customerJob?.id || 'JOB-2026-080',
-      clientName: user?.name || customerJob?.customer || 'Client',
+      jobNo: resolvedCustomerJob?.id || 'JOB-2026-080',
+      clientName: user?.name || resolvedCustomerJob?.customer || 'Client',
       property,
       surveyorName: surveyor,
     });
@@ -172,10 +209,10 @@ export const CustomerDashboardPage = () => {
     });
   };
 
-  const confirmedBookings = myCustomerJobs.filter((j) => j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6);
-  const activeBookings = myCustomerJobs.filter((j) => j.status !== 'Cancelled');
-  const pendingQuotes = myCustomerJobs.filter((j) => j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2);
-  const completedReports = myCustomerJobs.filter((j) => j.status === 'Completed' || (j.timelineStep || 0) >= 10);
+  const completedReports = myCustomerJobs.filter((j) => isJobDelivered(j, userEmail));
+  const confirmedBookings = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6));
+  const activeBookings = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && j.status !== 'Cancelled');
+  const pendingQuotes = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2));
 
   // Dynamic isolated stat cards
   const statCards = [
@@ -185,6 +222,8 @@ export const CustomerDashboardPage = () => {
       value: `${confirmedBookings.length} Active`,
       subtext: confirmedBookings.length > 0
         ? `${confirmedBookings[0].property} (${confirmedBookings[0].surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})`
+        : isDeliveredActive
+        ? 'All instructions completed'
         : customerJob ? 'Survey slot pending quote & terms' : 'No active bookings',
       icon: CalendarCheck,
       color: 'bg-blue-50 text-[#2563EB]',
@@ -193,8 +232,16 @@ export const CustomerDashboardPage = () => {
     {
       id: 'quotations',
       title: 'Quotations',
-      value: pendingQuotes.length > 0 ? `${pendingQuotes.length} ${pendingQuotes.some(q => q.status === 'Enquiry' || q.timelineStep === 1) ? 'In Review' : 'New'}` : customerJob ? '1 Confirmed' : '0 Quotes',
-      subtext: customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Fixed Fee Estimating'})` : 'No open quotes',
+      value: pendingQuotes.length > 0
+        ? `${pendingQuotes.length} ${pendingQuotes.some(q => q.status === 'Enquiry' || q.timelineStep === 1) ? 'In Review' : 'New'}`
+        : isDeliveredActive
+        ? '0 Active'
+        : customerJob ? '1 Confirmed' : '0 Quotes',
+      subtext: pendingQuotes.length > 0
+        ? 'Review & accept proposal'
+        : isDeliveredActive
+        ? 'All proposals concluded'
+        : customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Fixed Fee Estimating'})` : 'No open quotes',
       icon: Receipt,
       color: 'bg-indigo-50 text-indigo-600',
       path: '/customer/quotations',
@@ -202,8 +249,8 @@ export const CustomerDashboardPage = () => {
     {
       id: 'payment',
       title: 'Payment Status',
-      value: customerJob?.paymentStatus === 'Paid' ? '£0.00' : customerJob ? `£${((customerJob.quote?.baseFee || 650) * 1.2).toFixed(2)}` : '£0.00',
-      subtext: customerJob?.paymentStatus === 'Paid'
+      value: isDeliveredActive || customerJob?.paymentStatus === 'Paid' ? '£0.00' : customerJob ? `£${((customerJob.quote?.baseFee || 650) * 1.2).toFixed(2)}` : '£0.00',
+      subtext: isDeliveredActive || customerJob?.paymentStatus === 'Paid'
         ? 'All fees settled'
         : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
         ? 'Payment Claimed — Awaiting NJS Admin Verification'
@@ -211,7 +258,7 @@ export const CustomerDashboardPage = () => {
         ? 'Bank transfer pending settlement'
         : 'No balance due',
       icon: Building2,
-      color: customerJob?.paymentStatus === 'Paid'
+      color: isDeliveredActive || customerJob?.paymentStatus === 'Paid'
         ? 'bg-emerald-50 text-emerald-600'
         : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
         ? 'bg-amber-50 text-amber-700'
@@ -221,8 +268,8 @@ export const CustomerDashboardPage = () => {
     {
       id: 'reports',
       title: 'Reports Available',
-      value: `${completedReports.length} Finalized`,
-      subtext: completedReports.length > 0 ? 'Official RICS PDF copies' : 'Inspection pending',
+      value: `${Math.max(isDeliveredActive ? 1 : 0, completedReports.length)} Finalized`,
+      subtext: (isDeliveredActive || completedReports.length > 0) ? 'Official RICS PDF copies' : 'Inspection pending',
       icon: FileSpreadsheet,
       color: 'bg-emerald-50 text-emerald-600',
       path: '/customer/reports',
@@ -354,8 +401,12 @@ export const CustomerDashboardPage = () => {
                 <span className="break-words sm:truncate max-w-full sm:max-w-md">
                   {customerJob?.surveyType} &bull; {customerJob?.property || customerJob?.location}
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase shrink-0 whitespace-nowrap">
-                  {customerJob?.status || 'Active'}
+                <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase shrink-0 whitespace-nowrap ${
+                  isDeliveredActive
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                }`}>
+                  {isDeliveredActive ? 'Completed ✓' : (customerJob?.status || 'Active')}
                 </span>
               </div>
             </div>
@@ -373,11 +424,14 @@ export const CustomerDashboardPage = () => {
               }}
               className="w-full sm:w-80 lg:w-96 max-w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate shadow-2xs"
             >
-              {myCustomerJobs.map((j, idx) => (
-                <option key={j.id} value={j.id}>
-                  {idx === 0 ? '★ Active: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id})
-                </option>
-              ))}
+              {myCustomerJobs.map((j, idx) => {
+                const isDeliv = isJobDelivered(j, userEmail);
+                return (
+                  <option key={j.id} value={j.id}>
+                    {isDeliv ? '✓ Completed: ' : idx === 0 ? '★ Active: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id}){isDeliv ? ' [Report Delivered]' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -417,26 +471,26 @@ export const CustomerDashboardPage = () => {
       ) : (
         <SurveyProgressTracker
           currentStep={(() => {
+            if (isDeliveredActive) return 10;
             const status = (customerJob?.status || '').toLowerCase().trim();
             const stage = (customerJob?.stage || '').toLowerCase().trim();
             const termsStatus = (customerJob?.termsStatus || '').toLowerCase().trim();
             const paymentStatus = (customerJob?.paymentStatus || '').toLowerCase().trim();
             const step = Number(customerJob?.timelineStep) || 0;
-            const hasRealSurveyor = customerJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(customerJob.surveyor.toLowerCase().trim());
             const hasDate = customerJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(customerJob.date.toLowerCase().trim());
 
             // 10-Stage RICS Lifecycle in Descending Order (Highest Milestones Preempt Lower Ones)
             // Stage 10: Report Delivered
-            if (status === 'completed' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_delivered') === 'true') || step >= 10) return 10;
+            if (status === 'completed' || status === 'delivered' || step >= 10 || localStorage.getItem('propertygroup_delivered') === 'true' || localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true') return 10;
 
             // Stage 9: Quality Check / QA Review
-            if (status === 'qa_review' || status === 'qa review' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_qareview') === 'true') || step === 9) return 9;
+            if (status === 'qa_review' || status === 'qa review' || step === 9 || localStorage.getItem('propertygroup_qareview') === 'true' || localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true') return 9;
 
             // Stage 8: Report Preparation / Drafting
-            if (status === 'drafting' || status === 'preparing report' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_drafting') === 'true') || step === 8) return 8;
+            if (status === 'drafting' || status === 'preparing report' || step === 8 || localStorage.getItem('propertygroup_drafting') === 'true' || localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true') return 8;
 
             // Stage 7: Inspection Completed
-            if (status === 'inspected' || (customerJob?.id === 'QUO-2026-126' && localStorage.getItem('propertygroup_inspection_completed') === 'true') || step === 7) return 7;
+            if (status === 'inspected' || step === 7 || localStorage.getItem('propertygroup_inspection_completed') === 'true' || localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true') return 7;
 
             // Stage 6: Appointment Booked
             if (status === 'booked' || status === 'scheduled' || step === 6 || (hasDate && (paymentStatus === 'paid' || paymentStatus.includes('claimed') || termsStatus === 'signed'))) return 6;
@@ -459,12 +513,57 @@ export const CustomerDashboardPage = () => {
             if (step > 0) return Math.min(10, Math.max(1, step));
             return 1;
           })()}
-          job={customerJob}
+          job={resolvedCustomerJob}
         />
       )}
 
+      {/* 2.6 SURVEY COMPLETED & REPORT DELIVERED CELEBRATION BANNER */}
+      {isDeliveredActive && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-900 via-[#0B1F4D] to-teal-900 text-white shadow-md border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500 text-white shrink-0 shadow-sm">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/70 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                  Stage 10: 100% Delivered
+                </span>
+                <span className="text-xs font-semibold text-emerald-200">Official RICS Final Report</span>
+              </div>
+              <h3 className="text-sm sm:text-base font-bold text-white mt-1">
+                Your RICS Survey Report for {resolvedCustomerJob?.property || 'Subject Property'} is Ready
+              </h3>
+              <p className="text-xs text-blue-100/80 mt-0.5 max-w-xl">
+                On-site inspection and Quality Assurance audit have concluded. Your official signed survey document with photographic defect evidence is archived and ready for download.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            <button
+              onClick={() => handleDownloadReport(
+                `RICS_Survey_${(resolvedCustomerJob?.property || 'Report').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                resolvedCustomerJob?.property,
+                resolvedCustomerJob?.surveyor
+              )}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Final Report (PDF)</span>
+            </button>
+            <button
+              onClick={() => setIsBookModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Book a New Survey</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* SurveyBooker Stage 2 Prompt Banner: Formal Proposal Ready to Review & Accept */}
-      {(customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) === 2) && customerJob?.status !== 'Accepted' && (
+      {!isDeliveredActive && (customerJob?.status === 'Quoted' || (customerJob?.timelineStep || 0) === 2) && customerJob?.status !== 'Accepted' && (
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-slate-50 border border-blue-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-2xl bg-[#0B1F4D] text-white shrink-0 shadow-2xs">
@@ -499,7 +598,7 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* SurveyBooker Trigger 2 Next-Steps Prompt Banner (If Quote is Accepted but Terms Pending) */}
-      {(customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) === 3) && customerJob?.termsStatus !== 'Signed' && (
+      {!isDeliveredActive && (customerJob?.status === 'Accepted' || customerJob?.quoteStatus === 'Accepted' || (customerJob?.timelineStep || 0) === 3) && customerJob?.termsStatus !== 'Signed' && (
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-50 via-blue-50/40 to-slate-50 border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shrink-0 shadow-2xs">
@@ -541,7 +640,7 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* Stage 4 Prompt Banner: Terms Signed & Advance Bank Transfer Pending */}
-      {customerJob?.termsStatus === 'Signed' && customerJob?.paymentStatus !== 'Paid' && !customerJob?.paymentStatus?.toLowerCase().includes('claimed') && (
+      {!isDeliveredActive && customerJob?.termsStatus === 'Signed' && customerJob?.paymentStatus !== 'Paid' && !customerJob?.paymentStatus?.toLowerCase().includes('claimed') && (
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50/90 via-blue-50/50 to-slate-50 border border-indigo-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shrink-0 shadow-2xs">
@@ -576,7 +675,7 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* Payment Claimed — Awaiting NJS Admin Verification Prompt Banner */}
-      {(customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed')) && customerJob?.paymentStatus !== 'Paid' && (
+      {!isDeliveredActive && (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed')) && customerJob?.paymentStatus !== 'Paid' && (
         <div className="p-4 sm:p-5 rounded-3xl bg-amber-50/90 border border-amber-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-2xl bg-amber-500 text-white shrink-0 shadow-2xs">
