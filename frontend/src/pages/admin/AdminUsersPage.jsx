@@ -92,13 +92,32 @@ export const AdminUsersPage = () => {
         ? (leadsRes.value?.data?.leads || leadsRes.value?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []))
         : [];
 
-      // 1. Sanitize local storage deleted keys to ensure core active accounts are never suppressed
+      // 1. Sanitize local storage deleted keys:
+      // Any user returned by the backend with status === 'ACTIVE' or registered locally MUST NOT be suppressed!
       try {
+        const activeEmails = new Set(
+          rawUsers
+            .filter((u) => u.status === 'ACTIVE')
+            .map((u) => (u.email || '').toLowerCase().trim())
+            .filter(Boolean)
+        );
+        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+        Object.keys(registered).forEach((em) => activeEmails.add(em.toLowerCase().trim()));
+        const localLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+        if (Array.isArray(localLeads)) {
+          localLeads.forEach((l) => {
+            const em = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+            if (em) activeEmails.add(em);
+          });
+        }
+
         const rawDel = localStorage.getItem('propertygroup_deleted_user_keys');
         if (rawDel) {
           const parsed = JSON.parse(rawDel);
           const cleaned = parsed.filter((k) => {
             const lower = String(k).toLowerCase().trim();
+            // If the user has re-registered, created a new lead, or is active in DB, un-delete it!
+            if (activeEmails.has(lower)) return false;
             return (
               !PROTECTED_PLATFORM_EMAILS.has(lower) &&
               !['29', '45', 'usr-29', 'usr-45', 'usr-01', 'usr-02'].includes(lower)
@@ -117,20 +136,23 @@ export const AdminUsersPage = () => {
           const email = (u.email || '').toLowerCase().trim();
           const idStr = String(u.id).toLowerCase();
           const formattedId = `usr-${String(u.id).padStart(2, '0')}`.toLowerCase();
-          if (!PROTECTED_PLATFORM_EMAILS.has(email) && (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId))) {
+          if (u.status === 'INACTIVE' || (email && email.startsWith('deleted_'))) {
             return false;
           }
-          return (
-            email &&
-            email !== 'admin@demo.com' &&
-            email !== 'surveyor@demo.com' &&
-            email !== 'customer@demo.com' &&
-            email !== 'customer2@demo.com' &&
-            !email.includes('alexander.sterling') &&
-            u.name !== 'Alexander Sterling' &&
-            u.status !== 'INACTIVE' &&
-            !email.startsWith('deleted_')
-          );
+          if (
+            email === 'admin@demo.com' ||
+            email === 'surveyor@demo.com' ||
+            email === 'customer@demo.com' ||
+            email === 'customer2@demo.com' ||
+            email.includes('alexander.sterling') ||
+            u.name === 'Alexander Sterling'
+          ) {
+            return false;
+          }
+          if (u.status !== 'ACTIVE' && !PROTECTED_PLATFORM_EMAILS.has(email) && (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId))) {
+            return false;
+          }
+          return Boolean(email);
         })
         .map((u) => {
           const createdDate = u.createdAt ? new Date(u.createdAt) : null;
@@ -170,31 +192,42 @@ export const AdminUsersPage = () => {
           };
         });
 
-      // Integrate customer leads from Railway CRM & Leads into Users & Roles
-      if (Array.isArray(apiLeads)) {
-        apiLeads.forEach((lead) => {
-          const lEmail = (lead.clientEmail || lead.customerEmail || '').toLowerCase().trim();
-          const lName = lead.clientName || lead.customerName || 'Private Client';
-          const lPhone = lead.clientPhone || lead.customerPhone || '—';
-          if (lEmail && !deletedSet.has(lEmail) && !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)) {
-            mapped.push({
-              id: `USR-C-${lead.id || mapped.length + 1}`,
-              dbId: lead.id,
-              name: lName,
-              email: lEmail,
-              role: 'customer',
-              roleLabel: 'Customer',
-              org: 'Private Client',
-              status: 'Active',
-              phone: lPhone,
-              createdAt: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '21 Nov 2026',
-              lastLogin: 'Active Today',
-              clientJobsCount: 1,
-              assignedJobsCount: 0,
-            });
-          }
-        });
-      }
+      // Integrate customer leads from Railway CRM & Leads and local leads into Users & Roles
+      const leadsList = [...(Array.isArray(apiLeads) ? apiLeads : [])];
+      try {
+        const localLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+        if (Array.isArray(localLeads)) {
+          localLeads.forEach((ll) => {
+            const llEmail = (ll.clientEmail || ll.customerEmail || '').toLowerCase().trim();
+            if (llEmail && !leadsList.some((al) => (al.clientEmail || al.customerEmail || '').toLowerCase().trim() === llEmail)) {
+              leadsList.push(ll);
+            }
+          });
+        }
+      } catch {}
+
+      leadsList.forEach((lead) => {
+        const lEmail = (lead.clientEmail || lead.customerEmail || '').toLowerCase().trim();
+        const lName = lead.clientName || lead.customerName || lead.customer || 'Private Client';
+        const lPhone = lead.clientPhone || lead.customerPhone || '—';
+        if (lEmail && !deletedSet.has(lEmail) && !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)) {
+          mapped.push({
+            id: `USR-C-${lead.id || mapped.length + 1}`,
+            dbId: lead.id,
+            name: lName,
+            email: lEmail,
+            role: 'customer',
+            roleLabel: 'Customer',
+            org: 'Private Client',
+            status: 'Active',
+            phone: lPhone,
+            createdAt: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '21 Nov 2026',
+            lastLogin: 'Active Today',
+            clientJobsCount: 1,
+            assignedJobsCount: 0,
+          });
+        }
+      });
 
       // Also include any registered customers from local storage so Admin can see and manage them immediately
       try {
@@ -245,6 +278,17 @@ export const AdminUsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
+    const handleSync = () => fetchUsers();
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('propertygroup_leads_updated', handleSync);
+    window.addEventListener('propertygroup_users_updated', handleSync);
+    window.addEventListener('focus', handleSync);
+    return () => {
+      window.removeEventListener('storage', handleSync);
+      window.removeEventListener('propertygroup_leads_updated', handleSync);
+      window.removeEventListener('propertygroup_users_updated', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, []);
 
   const [searchParams] = useSearchParams();

@@ -144,7 +144,14 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           createdAt: new Date().toISOString(),
         };
         localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter(l => l.id !== generatedRef)]));
+        // Remove email from deleted keys so it immediately appears in Admin Users & Roles
+        try {
+          const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+          const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== cleanEmail);
+          localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
+        } catch {}
         window.dispatchEvent(new Event('propertygroup_leads_updated'));
+        window.dispatchEvent(new Event('propertygroup_users_updated'));
       } catch {}
 
       // Create new fresh job entry (Step 1 Enquiry) in customer jobs storage

@@ -391,6 +391,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(existing));
       // Store exact password for Admin Users & Roles visibility and login verification
       localStorage.setItem(`njs_user_pw_${trimmedEmail}`, password);
+      // Remove email from deleted keys so it immediately appears in Admin Users & Roles
+      const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+      const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== trimmedEmail);
+      localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
+      window.dispatchEvent(new Event('propertygroup_users_updated'));
     } catch {
       // ignore
     }
