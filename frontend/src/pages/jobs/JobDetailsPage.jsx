@@ -262,6 +262,17 @@ export const JobDetailsPage = () => {
 
   // QA and BACS handlers
   const handleApproveQaReport = async () => {
+    const hasSurveyor = job?.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned Surveyor';
+    if (!hasSurveyor) {
+      setIsRescheduleModalOpen(true);
+      addToast({
+        type: 'warning',
+        title: 'Surveyor Required',
+        message: 'Please allocate an accredited surveyor before approving and releasing the final RICS report.',
+      });
+      return;
+    }
+
     setQaStatus('Approved');
     handleStepClick(5); // Complete stage
     const targetEmail = job?.customerEmail || '';
@@ -428,6 +439,20 @@ export const JobDetailsPage = () => {
 
   // Handle Timeline Step Click to advance / change stage
   const handleStepClick = (stepIndex) => {
+    // Enforce surveyor allocation for Booked, Preparing report, and Complete stages
+    if (stepIndex >= 3) {
+      const hasSurveyor = job?.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned Surveyor';
+      if (!hasSurveyor) {
+        setIsRescheduleModalOpen(true);
+        addToast({
+          type: 'warning',
+          title: 'Surveyor Required',
+          message: 'Please allocate an accredited surveyor and inspection slot before advancing to this stage.',
+        });
+        return;
+      }
+    }
+
     const stepName = STATUS_TIMELINE_STEPS[stepIndex];
     let newTimelineStep = 1;
     let newStatus = 'Quote requested';
@@ -562,9 +587,29 @@ export const JobDetailsPage = () => {
       handleStepClick(3);
     } else if (currentStepIndex === 2) {
       // Accepted -> advance to Booked
+      const hasSurveyor = job?.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned Surveyor';
+      if (!hasSurveyor) {
+        setIsRescheduleModalOpen(true);
+        addToast({
+          type: 'info',
+          title: 'Allocate Surveyor & Slot',
+          message: 'Please select an assigned surveyor and inspection date before marking as Booked.',
+        });
+        return;
+      }
       handleStepClick(3);
     } else if (currentStepIndex === 3) {
       // Booked -> Confirm inspection went ahead -> Advance to Preparing report
+      const hasSurveyor = job?.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned Surveyor';
+      if (!hasSurveyor) {
+        setIsRescheduleModalOpen(true);
+        addToast({
+          type: 'warning',
+          title: 'Surveyor Required',
+          message: 'Please allocate a surveyor before confirming inspection attendance.',
+        });
+        return;
+      }
       handleStepClick(4);
       addToast({
         type: 'success',
@@ -573,6 +618,16 @@ export const JobDetailsPage = () => {
       });
     } else if (currentStepIndex === 4) {
       // Preparing report -> Upload report PDF -> Advance to Complete
+      const hasSurveyor = job?.surveyor && job.surveyor !== 'Pending Allocation' && job.surveyor !== 'Unassigned Surveyor';
+      if (!hasSurveyor) {
+        setIsRescheduleModalOpen(true);
+        addToast({
+          type: 'warning',
+          title: 'Surveyor Required',
+          message: 'Please allocate an accredited surveyor before releasing the final RICS report.',
+        });
+        return;
+      }
       if (!reportFileName && !reportUrl) {
         addToast({
           type: 'warning',
