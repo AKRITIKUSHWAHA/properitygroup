@@ -64,43 +64,11 @@ const DEFAULT_PLATFORM_USERS = [
     clientJobsCount: 0,
     assignedJobsCount: 8,
   },
-  {
-    id: 'USR-46',
-    dbId: 46,
-    name: 'test k',
-    email: 'astp750@gmail.com',
-    role: 'customer',
-    roleLabel: 'Customer',
-    org: 'Private Client',
-    status: 'Active',
-    phone: '1234567890',
-    createdAt: '21 Nov 2026',
-    lastLogin: 'Active Today',
-    clientJobsCount: 1,
-    assignedJobsCount: 0,
-  },
-  {
-    id: 'USR-47',
-    dbId: 47,
-    name: 'Niamh Richmond',
-    email: 'niamhrichmond@gmail.com',
-    role: 'customer',
-    roleLabel: 'Customer',
-    org: 'Private Client',
-    status: 'Active',
-    phone: '07882109667',
-    createdAt: '21 Nov 2026',
-    lastLogin: 'Active Today',
-    clientJobsCount: 1,
-    assignedJobsCount: 0,
-  },
 ];
 
 const PROTECTED_PLATFORM_EMAILS = new Set([
   'njsadmin@gmail.com',
   'njssurveyor@gmail.com',
-  'astp750@gmail.com',
-  'niamhrichmond@gmail.com',
 ]);
 
 export const AdminUsersPage = () => {
@@ -133,7 +101,7 @@ export const AdminUsersPage = () => {
             const lower = String(k).toLowerCase().trim();
             return (
               !PROTECTED_PLATFORM_EMAILS.has(lower) &&
-              !['29', '45', '46', '47', 'usr-29', 'usr-45', 'usr-46', 'usr-47', 'usr-01', 'usr-02'].includes(lower)
+              !['29', '45', 'usr-29', 'usr-45', 'usr-01', 'usr-02'].includes(lower)
             );
           });
           localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
@@ -703,7 +671,55 @@ export const AdminUsersPage = () => {
         localStorage.removeItem(`njs_user_pw_${cleanEmail}`);
         localStorage.removeItem(`njs_user_phone_${cleanEmail}`);
         localStorage.removeItem(`njs_user_org_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_terms_signed_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_terms_signed_date_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_payment_claimed_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_active_job_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_user_signature_${cleanEmail}`);
+        localStorage.removeItem(`propertygroup_user_sig_type_${cleanEmail}`);
       }
+
+      // Purge this customer's mock jobs, quotes, agreements, and leads so no ghost stage 5 remains
+      const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+      const filteredJobs = storedJobs.filter((j) => {
+        const jEmail = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+        const jName = (j.customer || j.customerName || j.client || '').toLowerCase().trim();
+        return jEmail !== cleanEmail && (!userName || jName !== userName.toLowerCase().trim());
+      });
+      localStorage.setItem('propertygroup_jobs', JSON.stringify(filteredJobs));
+
+      const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      const filteredQuotes = storedQuotes.filter((q) => {
+        const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+        return qEmail !== cleanEmail;
+      });
+      localStorage.setItem('propertygroup_quotes', JSON.stringify(filteredQuotes));
+
+      const storedAgreements = JSON.parse(localStorage.getItem('propertygroup_terms_agreements') || '[]');
+      const filteredAgreements = storedAgreements.filter((a) => {
+        const aEmail = (a.signerEmail || '').toLowerCase().trim();
+        return aEmail !== cleanEmail;
+      });
+      localStorage.setItem('propertygroup_terms_agreements', JSON.stringify(filteredAgreements));
+
+      const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const filteredLeads = storedLeads.filter((l) => {
+        const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+        return lEmail !== cleanEmail;
+      });
+      localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(filteredLeads));
+
+      // If active session is this user, clear active session
+      const curSession = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+      if ((curSession.email || '').toLowerCase().trim() === cleanEmail) {
+        localStorage.removeItem('property_group_user_session');
+        localStorage.removeItem('property_group_auth_token');
+      }
+
+      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+      window.dispatchEvent(new Event('propertygroup_leads_updated'));
+      window.dispatchEvent(new Event('propertygroup_agreements_updated'));
+      window.dispatchEvent(new Event('storage'));
     } catch {}
 
     // 3. Persist deleted user keys in localStorage so refreshes NEVER bring it back

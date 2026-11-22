@@ -221,6 +221,7 @@ export const CustomerTermsPage = () => {
     (userLead?.propertyAddress && userLead.propertyAddress !== 'Subject Property' ? userLead.propertyAddress : '');
 
   const isEmma = userEmail === 'customer@demo.com';
+  const isTestK = userEmail.includes('astp750') || userName.includes('test k');
 
   const propertyAddress =
     activeQuoteOrLeadProp ||
@@ -232,48 +233,47 @@ export const CustomerTermsPage = () => {
       : '') ||
     (currentUser?.address && currentUser.address !== 'Subject Property'
       ? currentUser.address
-      : isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
+      : isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : (isTestK ? 'abc,road,UK' : '14 High Street, Guildford GU1 3AA'));
 
   const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || userLead?.surveyType || 'RICS Level 2 Home Survey';
   const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
     : 'Pending Scheduling';
-  const jobNo = currentJob?.id || currentJob?.jobNo || userQuote?.id || userLead?.quoteRef || userLead?.id || (isEmma ? 'JOB-2026-080' : 'JOB-2026-PENDING');
+  const jobNo = currentJob?.id || currentJob?.jobNo || userQuote?.id || userLead?.quoteRef || userLead?.id || (isEmma ? 'JOB-2026-080' : (isTestK ? 'JOB-2026-5929' : 'JOB-2026-101'));
 
   const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || leadNet || (surveyType.includes('Level 3') ? 1450 : 550);
   const vatAmount = userQuote?.vatAmount || (leadTotal && leadNet ? Math.round((leadTotal - leadNet) * 100) / 100 : Math.round(baseFee * 0.2));
   const grossTotal = userQuote?.totalAmount || leadTotal || (baseFee + vatAmount);
 
+  // If instruction explicitly has termsStatus === 'Pending' or timelineStep === 1, it has NOT been signed yet
+  const isJobTermsPending = Boolean(currentJob && (currentJob.termsStatus === 'Pending' || currentJob.timelineStep === 1));
+  const isJobPaymentPending = Boolean(currentJob && (currentJob.paymentStatus === 'Pending' || !currentJob.paymentStatus || (currentJob.timelineStep || 0) <= 4));
+
   const storedTermsSigned =
     localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
-    localStorage.getItem(`propertygroup_terms_signed_client@example.com`) === 'true' ||
-    currentJob?.termsStatus === 'Signed' ||
-    userQuote?.termsStatus === 'Signed' ||
-    userLead?.termsStatus === 'Signed';
+    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true';
 
   const storedPaymentClaimed =
     localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
-    localStorage.getItem(`propertygroup_payment_claimed_client@example.com`) === 'true' ||
-    currentJob?.paymentStatus === 'Paid' ||
-    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
-    (userQuote?.paymentStatus || '').toLowerCase().includes('claimed') ||
-    (userLead?.paymentStatus || '').toLowerCase().includes('claimed');
+    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true';
 
   const isAlreadySigned =
-    storedTermsSigned ||
-    currentAgreement?.status === 'Signed' ||
-    currentAgreement?.signed === true ||
-    currentJob?.termsStatus === 'Signed' ||
-    (currentJob?.timelineStep || 0) >= 4;
+    !isJobTermsPending && Boolean(
+      currentJob?.termsStatus === 'Signed' ||
+      currentAgreement?.status === 'Signed' ||
+      currentAgreement?.signed === true ||
+      (storedTermsSigned && !currentJob) ||
+      (currentJob?.timelineStep || 0) >= 4
+    );
 
   const isPaymentClaimed =
-    storedPaymentClaimed ||
-    currentJob?.paymentStatus === 'Paid' ||
-    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
-    (currentJob?.timelineStep || 0) >= 5;
+    isAlreadySigned && !isJobPaymentPending && Boolean(
+      currentJob?.paymentStatus === 'Paid' ||
+      (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+      (storedPaymentClaimed && !currentJob) ||
+      (currentJob?.timelineStep || 0) >= 5
+    );
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
@@ -298,18 +298,20 @@ export const CustomerTermsPage = () => {
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
   const [stage, setStage] = useState(() => {
-    if (storedPaymentClaimed || isPaymentClaimed) return 'confirmed';
-    if (storedTermsSigned || isAlreadySigned) return 'payment';
+    if (isPaymentClaimed) return 'confirmed';
+    if (isAlreadySigned) return 'payment';
     return 'sign';
   });
 
   useEffect(() => {
-    if (storedPaymentClaimed || isPaymentClaimed) {
+    if (isPaymentClaimed) {
       setStage('confirmed');
-    } else if (storedTermsSigned || isAlreadySigned) {
+    } else if (isAlreadySigned) {
       setStage('payment');
+    } else {
+      setStage('sign');
     }
-  }, [storedPaymentClaimed, isPaymentClaimed, storedTermsSigned, isAlreadySigned]);
+  }, [isPaymentClaimed, isAlreadySigned]);
 
   const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
@@ -3390,13 +3392,16 @@ export const CustomerTrackSurveyPage = () => {
     (myLead?.propertyAddress ? myLead.propertyAddress : '');
 
   const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
+  const isEmma = userEmail === 'customer@demo.com';
+  const isTestK = userEmail.includes('astp750') || (currentUser?.name || '').toLowerCase().includes('test');
+
   const propertyAddress =
     activeQuoteOrLeadProp ||
     (myJob?.property && myJob.property !== 'Subject Property' ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}` : '') ||
     trackProperty ||
     (regUser.address ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}` : '') ||
     (user?.address && user.address !== 'Subject Property' ? user.address : '') ||
-    (isDemo ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
+    (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : (isTestK ? 'abc,road,UK' : '14 High Street, Guildford GU1 3AA'));
 
   const refNo =
     myQuote?.id ||
@@ -3405,7 +3410,7 @@ export const CustomerTrackSurveyPage = () => {
     myJob?.jobNo ||
     apiTracking?.jobReference ||
     apiTracking?.reference ||
-    (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
+    (isEmma ? 'JOB-2026-080' : (isTestK ? 'JOB-2026-5929' : 'JOB-2026-101'));
   const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
   const surveyType =
     myJob?.surveyType ||
@@ -3444,22 +3449,30 @@ export const CustomerTrackSurveyPage = () => {
   const apiStep = Number(apiTracking?.currentStep) || 0;
   const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
 
+  // If instruction explicitly has termsStatus === 'Pending' or timelineStep === 1, it has NOT been signed yet
+  const isJobTermsPending = Boolean(myJob && (myJob.termsStatus === 'Pending' || myJob.timelineStep === 1 || jStatus === 'enquiry'));
+  const isJobPaymentPending = Boolean(myJob && (myJob.paymentStatus === 'Pending' || !myJob.paymentStatus || (myJob.timelineStep || 0) <= 4));
+
   // Strict check: terms must actually be signed, and payment must actually be claimed/settled
   const termsSigned = Boolean(
-    storedTermsSigned ||
-    myJob?.termsStatus === 'Signed' ||
-    myAgreement?.status === 'Signed' ||
-    myAgreement?.signed ||
-    Boolean(myAgreement?.signedDate) ||
-    (apiStage === 'SIGNED') ||
-    (apiStage === 'PAID')
+    !isJobTermsPending && (
+      myJob?.termsStatus === 'Signed' ||
+      (myAgreement && (myAgreement.status === 'Signed' || myAgreement.signed === true || Boolean(myAgreement.signedDate))) ||
+      apiStage === 'SIGNED' ||
+      apiStage === 'PAID' ||
+      (storedTermsSigned && !myJob) ||
+      (timelineStep >= 4)
+    )
   );
 
   const paymentSettled = Boolean(
-    storedPaymentClaimed ||
-    myJob?.paymentStatus === 'Paid' ||
-    (myJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
-    apiStage === 'PAID'
+    termsSigned && !isJobPaymentPending && (
+      myJob?.paymentStatus === 'Paid' ||
+      (myJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+      apiStage === 'PAID' ||
+      (storedPaymentClaimed && !myJob) ||
+      (timelineStep >= 5)
+    )
   );
 
   const isQuotationAccepted = Boolean(
