@@ -43,6 +43,7 @@ import {
   surveyorAvailabilityApi,
 } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
+import { emitNotification } from '../../utils/notificationService';
 import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
 import {
   generateGoogleCalendarUrl,
@@ -73,34 +74,92 @@ export const SurveyorCalendarPage = () => {
   );
 
   const isAptInspected = (apt) => {
+    const jobRef = apt?.jobNo || apt?.id;
     return (
-      apt.status === 'Inspected' ||
-      apt.status === 'Drafting' ||
-      apt.status === 'QA_Review' ||
-      apt.status === 'Completed' ||
-      localStorage.getItem('propertygroup_inspection_completed') === 'true'
+      apt?.status === 'Inspected' ||
+      apt?.status === 'Drafting' ||
+      apt?.status === 'QA_Review' ||
+      apt?.status === 'Preparing report' ||
+      apt?.status === 'Completed' ||
+      apt?.timelineStep >= 7 ||
+      localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
+      (jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true')
     );
   };
 
-  const handleCompleteAppointment = (aptId) => {
+  const handleCompleteAppointment = async (aptId) => {
     const apt = myJobs.find((j) => j.id === aptId || j.jobNo === aptId);
-    const targetEmail = apt?.customerEmail || regUser?.email || '';
+    const targetEmail = (apt?.customerEmail || regUser?.email || '').toLowerCase().trim();
+    const customerName = apt?.customer || regUser?.name || 'Valued Client';
+    const propertyAddr = apt?.property || 'Subject Property, UK';
+    const currentSurveyor = user?.name || apt?.surveyor || 'test surveyor';
+    const jobRef = apt?.jobNo || apt?.id || aptId;
+
     localStorage.setItem('propertygroup_inspection_completed', 'true');
-    if (targetEmail) localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_inspection_completed_${jobRef}`, 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    }
+
     if (updateJob) {
       updateJob(aptId, {
         status: 'Inspected',
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+            text: `Physical on-site inspection completed by Chartered Surveyor ${currentSurveyor}. Status moved to Inspected / Preparing Report.`,
+          },
+          ...(apt?.activityLog || []),
+        ],
       });
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: apt?.clientId || apt?.userId,
+      title: '🔍 Site Inspection Completed',
+      desc: `Surveyor ${currentSurveyor} completed the physical site inspection for ${propertyAddr}. Your technical survey report is now being drafted.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Inspection Completed — ${jobRef}`,
+      desc: `Surveyor ${currentSurveyor} completed on-site inspection for ${propertyAddr}. Job moved to drafting & QA stage.`,
+      type: 'booking',
+      link: `/admin/jobs/${apt?.id || aptId}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Automated Customer Email
+    dispatchPostInspectionUpdate({
+      ...apt,
+      surveyor: currentSurveyor,
+      customerEmail: targetEmail,
+      customer: customerName,
+      property: propertyAddr,
+      jobNo: jobRef,
+    }).catch(() => {});
+
+    // 4. Sync backend stage
+    api.patch(`/survey-jobs/${apt?.id || aptId}/stage`, {
+      newStage: 'PREPARING_REPORT',
+      reason: `Surveyor ${currentSurveyor} completed site visit.`,
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
+
     addToast({
       type: 'success',
       title: 'Site Visit Concluded & Inspected',
-      message: 'On-site physical inspection logged as completed. RICS survey progress advanced to Stage 7.',
+      message: `On-site physical inspection logged as completed. Notifications & update email dispatched to Customer (${targetEmail || 'Client'}) and Admin desk.`,
     });
   };
 
@@ -293,18 +352,22 @@ export const SurveyorCalendarPage = () => {
                     <span>Apple / .ICS</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleCompleteAppointment(apt.id || apt.jobNo)}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                      isAptInspected(apt)
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>{isAptInspected(apt) ? '✓ Inspection Completed' : 'Mark Inspection Complete'}</span>
-                  </button>
+                  {isAptInspected(apt) ? (
+                    <div className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Inspection Concluded ✓</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleCompleteAppointment(apt.id || apt.jobNo)}
+                      className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-xs"
+                      title="Log physical site inspection completed"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Mark Inspection Complete</span>
+                    </button>
+                  )}
 
                   <a
                     href={`https://maps.google.com/?q=${encodeURIComponent(`${apt.property} ${apt.location || ''}`)}`}
@@ -327,10 +390,14 @@ export const SurveyorCalendarPage = () => {
 
                   <button
                     onClick={() => navigate(`/surveyor/upload-reports?jobId=${apt.jobNo}`)}
-                    className="px-3.5 py-1.5 bg-[#0B1F4D] hover:bg-[#162E6E] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs ${
+                      isAptInspected(apt)
+                        ? 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white shadow-md shadow-blue-900/20 ring-2 ring-blue-500/20'
+                        : 'bg-slate-800 hover:bg-slate-900 text-slate-200'
+                    }`}
                   >
-                    <UploadCloud className="w-3.5 h-3.5 text-blue-200" />
-                    <span>Upload Report PDF</span>
+                    <UploadCloud className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Upload Report PDF &rarr;</span>
                   </button>
                 </div>
               </div>
@@ -755,21 +822,68 @@ export const SurveyorSiteVisitsPage = () => {
   const handleFinished = () => {
     if (!primaryJob) return;
     setHasFinished(true);
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+
     localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
+    localStorage.setItem('propertygroup_inspection_completed', 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
+    }
+
     if (primaryJob?.id && updateJob) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+            text: `Physical on-site inspection completed by Chartered Surveyor ${surveyorName}. Status moved to Inspected / Preparing Report.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
       });
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      title: '🔍 Site Inspection Completed',
+      desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Inspection Completed — ${jobRef}`,
+      desc: `Surveyor ${surveyorName} finished on-site inspection for ${propertyAddr}. Stage moved to Drafting & QA Review.`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Automated Customer Email
+    dispatchPostInspectionUpdate({
+      ...primaryJob,
+      surveyor: surveyorName,
+      customerEmail: targetEmail,
+      customer: primaryJob?.customer || 'Valued Client',
+      property: propertyAddr,
+      jobNo: jobRef,
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
     addToast({
       type: 'success',
       title: 'Site Visit Concluded & Inspected',
-      message: 'Physical survey finished. Customer tracker updated to Stage 7.',
+      message: 'Physical survey finished. Customer and Admin have been notified.',
     });
   };
 
@@ -837,17 +951,20 @@ export const SurveyorSiteVisitsPage = () => {
                 <span>{hasArrived ? 'Arrived (10:02 AM)' : 'Log Arrival'}</span>
               </button>
 
-              <button
-                onClick={handleFinished}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  hasFinished
-                    ? 'bg-blue-50 text-blue-900 border border-blue-300'
-                    : 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white'
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                <span>{hasFinished ? 'Completed (12:45 PM)' : 'Inspection Complete'}</span>
-              </button>
+              {hasFinished ? (
+                <div className="px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  <span>Inspection Concluded ✓</span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleFinished}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-[#0B1F4D] hover:bg-[#162E6E] text-white"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Inspection Complete</span>
+                </button>
+              )}
             </div>
           </div>
 

@@ -31,6 +31,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useJobs } from '../../mock/jobs';
 import { surveyorDashboardApi, surveyorJobsApi } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
+import { emitNotification } from '../../utils/notificationService';
 import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
 import {
   generateGoogleCalendarUrl,
@@ -184,7 +185,15 @@ export const SurveyorDashboardPage = () => {
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
 
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+
     localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
+    localStorage.setItem('propertygroup_inspection_completed', 'true');
+    if (targetCustomerEmail) {
+      localStorage.setItem(`propertygroup_inspection_completed_${targetCustomerEmail}`, 'true');
+    }
 
     if (primaryJob.id) {
       updateJob(primaryJob.id, {
@@ -192,15 +201,46 @@ export const SurveyorDashboardPage = () => {
         timelineStep: 7,
         stage: 'PREPARING_REPORT',
         customerEmail: targetCustomerEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${timeStr}`,
+            text: `Physical on-site inspection completed by Chartered Surveyor ${surveyorName}. Status moved to Inspected / Preparing Report.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
       });
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      title: '🔍 Site Inspection Completed',
+      desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Inspection Completed — ${jobRef}`,
+      desc: `Surveyor ${surveyorName} finished on-site inspection for ${propertyAddr}. Stage moved to Drafting & QA Review.`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Automated Customer Email
+    dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',
       title: 'Inspection Completed',
-      message: `On-site survey marked complete at ${timeStr}. Please ensure keys are returned to agent/vendor.`,
+      message: `On-site survey marked complete at ${timeStr}. Notifications and emails dispatched to customer and admin.`,
     });
   };
 
@@ -611,23 +651,25 @@ export const SurveyorDashboardPage = () => {
             </button>
 
             {/* Button 2: Inspection Complete */}
-            <button
-              onClick={handleInspectionComplete}
-              disabled={jobStage === 'scheduled'}
-              className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${jobStage === 'completed' || jobStage === 'qa_submitted'
-                  ? 'bg-blue-50 text-blue-900 border border-blue-300'
-                  : jobStage === 'arrived'
+            {jobStage === 'completed' || jobStage === 'qa_submitted' ? (
+              <div className="min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>✓ Inspection Concluded ({completeTimestamp || 'Today'})</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleInspectionComplete}
+                disabled={jobStage === 'scheduled'}
+                className={`min-h-[48px] px-4 py-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs ${
+                  jobStage === 'arrived'
                     ? 'bg-[#0B1F4D] hover:bg-[#162E6E] text-white'
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
-            >
-              <Check className="w-4 h-4" />
-              <span>
-                {completeTimestamp
-                  ? `✓ Inspection Completed (${completeTimestamp})`
-                  : 'Mark Inspection Complete'}
-              </span>
-            </button>
+              >
+                <Check className="w-4 h-4" />
+                <span>Mark Inspection Complete</span>
+              </button>
+            )}
           </div>
         </div>
 
