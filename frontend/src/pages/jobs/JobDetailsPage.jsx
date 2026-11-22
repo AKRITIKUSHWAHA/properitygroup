@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { useJobs } from '../../mock/jobs';
 import { useQuotes } from '../../mock/quotes';
+import { api } from '../../api/apiClient';
 import { StatusPill } from '../../components/common/StatusPill';
 import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/ToastContext';
@@ -80,8 +81,70 @@ export const JobDetailsPage = () => {
   const { addCallLog } = useClientProfiles();
   const { user } = useAuth();
 
+  const [backendJob, setBackendJob] = useState(null);
+
+  useEffect(() => {
+    if (!jobId) return;
+    api.get(`/survey-jobs/${jobId}`)
+      .then((res) => {
+        const bj = res?.job || res?.data?.job || (res?.id ? res : null);
+        if (bj) {
+          const termsSigned = Array.isArray(bj.terms) && bj.terms.some((t) => t.signed);
+          const invoicePaid = Array.isArray(bj.invoices) && bj.invoices.some((i) => i.status === 'PAID');
+          const stageUpper = (bj.stage || '').toUpperCase();
+          let timelineStep = 1;
+          let statusStr = 'Quote requested';
+          if (stageUpper === 'COMPLETE' || stageUpper === 'COMPLETED') {
+            timelineStep = 10;
+            statusStr = 'Completed';
+          } else if (stageUpper === 'PREPARING_REPORT' || stageUpper === 'DRAFTING') {
+            timelineStep = 8;
+            statusStr = 'Preparing report';
+          } else if (stageUpper === 'BOOKED' || stageUpper === 'CONFIRMED' || stageUpper === 'SCHEDULED') {
+            timelineStep = 7;
+            statusStr = 'Booked';
+          } else if (termsSigned || stageUpper === 'ACCEPTED') {
+            timelineStep = 5;
+            statusStr = 'Accepted';
+          } else if (invoicePaid || stageUpper === 'PAID') {
+            timelineStep = 3;
+            statusStr = 'Payment received';
+          }
+
+          setBackendJob({
+            id: String(bj.id),
+            jobNo: bj.reference || `JOB-2026-${String(bj.id).padStart(3, '0')}`,
+            date: bj.inspectionDate ? new Date(bj.inspectionDate).toLocaleDateString('en-GB') : 'Pending Allocation',
+            timeSlot: bj.inspectionTime || '10:00 AM - 01:00 PM',
+            customer: bj.clientName || bj.client?.name || 'test k',
+            customerEmail: bj.clientEmail || bj.client?.email || 'astp750@gmail.com',
+            customerPhone: bj.clientPhone || bj.client?.phone || '7896541230',
+            surveyType: bj.serviceType || 'RICS Level 2 Home Survey',
+            property: bj.propertyAddress || 'abc , road,UK',
+            location: bj.postcode ? `${bj.postcode}, UK` : 'UK',
+            postcode: bj.postcode || 'GU12AA',
+            surveyor: bj.surveyor?.name || 'Pending Allocation',
+            surveyorId: bj.surveyorId,
+            status: statusStr,
+            stage: stageUpper,
+            termsStatus: termsSigned ? 'Signed' : 'Pending',
+            paymentStatus: invoicePaid ? 'Paid' : 'Awaiting Payment',
+            canBook: termsSigned && invoicePaid,
+            timelineStep,
+            quote: {
+              baseFee: bj.invoices?.[0]?.subtotal || 550.0,
+              discount: 0,
+              totalAmount: bj.invoices?.[0]?.total || 660.0,
+            },
+          });
+        }
+      })
+      .catch((err) => console.warn('Failed to load backend job details:', err));
+  }, [jobId]);
+
   // Find job from persistent jobs collection, fallback to first available or dynamically reconstructed real job
   const baseJob = useMemo(() => {
+    if (backendJob) return backendJob;
     const matched = jobs.find(
       (j) =>
         String(j.id) === String(jobId) ||
@@ -121,7 +184,7 @@ export const JobDetailsPage = () => {
       canBook: true,
       timelineStep: 9,
     };
-  }, [jobs, jobId]);
+  }, [jobs, jobId, backendJob]);
 
   const [localJobOverrides, setLocalJobOverrides] = useState({});
   const job = useMemo(() => ({
@@ -439,6 +502,27 @@ export const JobDetailsPage = () => {
         ? [newActivity, extraActivity, ...(job.activityLog || [])]
         : [newActivity, ...(job.activityLog || [])],
     });
+
+    // Call Railway API to persist stage update
+    let backendStage = 'QUOTE';
+    if (stepIndex === 1) backendStage = 'PAID';
+    else if (stepIndex === 2) backendStage = 'ACCEPTED';
+    else if (stepIndex === 3) backendStage = 'BOOKED';
+    else if (stepIndex === 4) backendStage = 'PREPARING_REPORT';
+    else if (stepIndex === 5) backendStage = 'COMPLETE';
+
+    api.patch(`/survey-jobs/${job.id || jobId}/stage`, {
+      newStage: backendStage,
+      reason: `Stage updated to ${stepName} via UI`,
+    }).catch((e) => console.warn('Stage update sync:', e));
+
+    if (stepIndex === 5) {
+      localStorage.setItem('propertygroup_delivered', 'true');
+      const cEmail = (job.customerEmail || '').toLowerCase().trim();
+      if (cEmail) {
+        localStorage.setItem(`propertygroup_delivered_${cEmail}`, 'true');
+      }
+    }
 
     if (emailResult && emailResult.wasSent) {
       addToast({

@@ -63,7 +63,6 @@ export const getStoredJobs = () => {
             email &&
             email !== 'customer@demo.com' &&
             email !== 'customer2@demo.com' &&
-            email !== 'astp750@gmail.com' &&
             email !== 'oliver.vance@example.com' &&
             email !== 'charlotte.b@outlook.com' &&
             !email.includes('emma.watson') &&

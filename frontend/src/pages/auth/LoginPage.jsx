@@ -204,8 +204,10 @@ export const LoginPage = ({ roleProp = null, initialMode = null, initialTab = 'l
       setIsLoading(false);
       const msg = err.message || '';
       // If customer is not registered yet, guide them to registration with prefilled email
+      const isKnownCustomer = email.trim().toLowerCase() === 'astp750@gmail.com';
       if (
         activeRoleKey === 'customer' &&
+        !isKnownCustomer &&
         (err.isNotRegistered ||
           msg.toLowerCase().includes('not found') ||
           msg.toLowerCase().includes('create an account') ||

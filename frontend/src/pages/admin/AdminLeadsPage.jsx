@@ -1339,24 +1339,38 @@ export const AdminLeadsPage = () => {
 
                       {/* 8. Quote / Fee */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span
-                          className={`font-mono text-xs font-bold ${
-                            row.estimatedValue && row.estimatedValue !== 'Pending Quote'
-                              ? 'text-slate-900'
-                              : 'text-amber-600 italic'
-                          }`}
-                        >
-                          {row.estimatedValue && row.estimatedValue !== 'Pending Quote'
+                        {(() => {
+                          const sLower = (row.status || '').toLowerCase();
+                          const isConverted = sLower === 'converted' || sLower === 'won job';
+                          const isQuoted = sLower === 'quoted' || sLower === 'quote sent';
+                          const hasValidValue = row.estimatedValue && row.estimatedValue !== 'Pending Quote';
+                          const displayFee = hasValidValue
                             ? row.estimatedValue
-                            : (row.status?.toLowerCase() === 'converted' || row.status?.toLowerCase() === 'quoted')
-                            ? '£660.00'
-                            : 'Pending Quote'}
-                        </span>
-                        {row.status.toLowerCase() === 'quoted' && (
-                          <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">
-                            Proposal Out
-                          </span>
-                        )}
+                            : (isConverted || isQuoted ? '£660.00' : 'Pending Quote');
+                          const isPending = displayFee === 'Pending Quote';
+
+                          return (
+                            <div>
+                              <span
+                                className={`font-mono text-xs font-bold ${
+                                  !isPending ? 'text-slate-900' : 'text-amber-600 italic'
+                                }`}
+                              >
+                                {displayFee}
+                              </span>
+                              {isQuoted && (
+                                <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">
+                                  Proposal Out
+                                </span>
+                              )}
+                              {isConverted && (
+                                <span className="text-[10px] text-emerald-700 font-semibold block mt-0.5">
+                                  Won • Accepted
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* 9. Status */}
