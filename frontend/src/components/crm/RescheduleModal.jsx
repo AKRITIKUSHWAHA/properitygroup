@@ -16,6 +16,7 @@ import { useToast } from '../ToastContext';
 import { useJobs, SURVEYORS } from '../../mock/jobs';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { adminSurveyJobsApi, adminSurveyorsApi } from '../../api/adminApi';
+import { emitNotification } from '../../utils/notificationService';
 
 const TIME_SLOTS = [
   { id: 'morning', label: 'Morning Slot (09:00 - 12:00)', range: '09:00 AM - 12:00 PM' },
@@ -181,6 +182,16 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSur
     try {
       window.dispatchEvent(new CustomEvent('propertygroup_jobs_updated', { detail: { id: job.id, updates } }));
     } catch (e) {}
+
+    // 5. Emit live in-app notification to the customer
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: job.clientId || job.userId,
+      title: `📅 Inspection Booked: ${targetSurveyorObj ? targetSurveyorObj.name : 'Surveyor'}`,
+      desc: `Physical inspection of ${job.property || job.location} scheduled for ${formattedDate} (${selectedSlot}).`,
+      type: 'booking',
+      link: '/customer/appointment-details',
+    }).catch(() => {});
 
     addToast({
       type: 'success',

@@ -59,6 +59,7 @@ import {
   dispatchFinalReportReadyEmail,
   dispatchPostInspectionUpdate,
 } from '../../services/autoQuoteService';
+import { emitNotification } from '../../utils/notificationService';
 
 // Canonical 6-Step SurveyBooker Pipeline (From Video 1)
 const STATUS_TIMELINE_STEPS = [
@@ -523,6 +524,16 @@ export const JobDetailsPage = () => {
         localStorage.setItem(`propertygroup_delivered_${cEmail}`, 'true');
       }
     }
+
+    // Dispatch live notification to Customer Portal
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: job.clientId || job.userId,
+      title: `Survey Progress: ${stepName}`,
+      desc: `Your property survey for ${job.property || job.propertyAddress || 'your property'} has moved to "${stepName}".`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
 
     if (emailResult && emailResult.wasSent) {
       addToast({
