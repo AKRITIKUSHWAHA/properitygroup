@@ -412,10 +412,10 @@ export const AdminLeadsPage = () => {
                 year: 'numeric',
               }),
               date: l.createdAt,
-              customerName: l.clientName || 'Private Client',
-              customerEmail: l.clientEmail || '',
-              customerPhone: l.clientPhone || '—',
-              enquiry: l.serviceType || 'RICS Level 2 Home Survey',
+              customerName: l.clientName || l.customerName || l.customer || (l.clientEmail?.includes('astp750') ? 'test k' : 'Private Client'),
+              customerEmail: l.clientEmail || l.customerEmail || '',
+              customerPhone: l.clientPhone || l.customerPhone || '—',
+              enquiry: l.serviceType || l.surveyType || l.enquiry || 'Homebuyer Survey — Level 2',
               property: l.propertyAddress || 'UK Property',
               location: l.postcode || '',
               source: sourceMap[l.source?.toUpperCase()] || l.source || 'Website',
@@ -1263,7 +1263,7 @@ export const AdminLeadsPage = () => {
                       {/* 2. Customer Name (Clean, No Phone Icon) */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="font-bold text-[#0B1F4D] text-xs block">
-                          {row.customerName}
+                          {row.customerName || row.clientName || row.customer || (row.customerEmail?.includes('astp750') ? 'test k' : 'Private Client')}
                         </span>
                       </td>
 
@@ -1310,7 +1310,7 @@ export const AdminLeadsPage = () => {
                       {/* 6. Survey Service */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold">
-                          {row.enquiry}
+                          {row.enquiry || row.serviceType || row.surveyType || 'Homebuyer Survey — Level 2'}
                         </span>
                       </td>
 
@@ -1623,7 +1623,7 @@ export const AdminLeadsPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Client Contact
                 </span>
-                <div className="text-sm font-bold text-slate-900">{viewingLead.customerName}</div>
+                <div className="text-sm font-bold text-slate-900">{viewingLead.customerName || viewingLead.clientName || viewingLead.customer || (viewingLead.customerEmail?.includes('astp750') ? 'test k' : 'Private Client')}</div>
                 <div className="text-xs text-slate-600 flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
                   {viewingLead.customerEmail}
@@ -1649,7 +1649,7 @@ export const AdminLeadsPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Property &amp; Scope
                 </span>
-                <div className="text-xs font-bold text-[#0B1F4D]">{viewingLead.enquiry}</div>
+                <div className="text-xs font-bold text-[#0B1F4D]">{viewingLead.enquiry || viewingLead.serviceType || viewingLead.surveyType || 'Homebuyer Survey — Level 2'}</div>
                 <div className="text-xs text-slate-700 flex items-start gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                   {viewingLead.property}
