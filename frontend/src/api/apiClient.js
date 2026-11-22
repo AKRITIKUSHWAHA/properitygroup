@@ -29,11 +29,20 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest(endpoint, { method = 'GET', body, headers = {}, token, params } = {}) {
-  const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null);
+  const isAuthEndpoint =
+    endpoint.includes('/auth/login') ||
+    endpoint.includes('/auth/register') ||
+    endpoint.includes('/auth/forgot-password');
+
+  const authToken = !isAuthEndpoint
+    ? token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null)
+    : null;
   let sessionUser = null;
-  try {
-    sessionUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('property_group_user_session') || '{}') : null;
-  } catch {}
+  if (!isAuthEndpoint) {
+    try {
+      sessionUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('property_group_user_session') || '{}') : null;
+    } catch {}
+  }
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
