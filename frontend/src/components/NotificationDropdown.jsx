@@ -4,6 +4,107 @@ import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, L
 import { apiRequest } from '../api/apiClient';
 import { useAuth } from '../auth/AuthContext';
 
+/**
+ * Robust notification time formatter converting UTC / database timestamps
+ * into the client browser's exact localized time and relative context.
+ */
+export const formatNotificationTime = (item) => {
+  if (!item) return '';
+
+  let dateObj = null;
+
+  // 1. Try ISO string from item.createdAt
+  if (item.createdAt) {
+    const parsed = new Date(item.createdAt);
+    if (!isNaN(parsed.getTime())) {
+      dateObj = parsed;
+    }
+  }
+
+  // 2. Try timestamp property
+  if (!dateObj && item.timestamp) {
+    const parsed = new Date(item.timestamp);
+    if (!isNaN(parsed.getTime())) {
+      dateObj = parsed;
+    }
+  }
+
+  // 3. Fallback: Parse string in format "DD/MM/YYYY, HH:mm" (which server formatted in UTC)
+  if (!dateObj && typeof item.time === 'string') {
+    const match = item.time.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})/);
+    if (match) {
+      const [, d, m, y, h, min] = match;
+      const utc = new Date(Date.UTC(+y, +m - 1, +d, +h, +min));
+      if (!isNaN(utc.getTime())) {
+        dateObj = utc;
+      }
+    } else {
+      const parsed = new Date(item.time);
+      if (!isNaN(parsed.getTime())) {
+        dateObj = parsed;
+      }
+    }
+  }
+
+  if (!dateObj) {
+    return item.time || '';
+  }
+
+  // Format in user's browser local time
+  const localDate = dateObj.toLocaleDateString('en-GB');
+  const localTime = dateObj.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `${localDate}, ${localTime}`;
+};
+
+export const getNotificationTimeTooltip = (item) => {
+  if (!item) return '';
+  let dateObj = null;
+  if (item.createdAt) {
+    const p = new Date(item.createdAt);
+    if (!isNaN(p.getTime())) dateObj = p;
+  }
+  if (!dateObj && typeof item.time === 'string') {
+    const match = item.time.match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})/);
+    if (match) {
+      const [, d, m, y, h, min] = match;
+      const utc = new Date(Date.UTC(+y, +m - 1, +d, +h, +min));
+      if (!isNaN(utc.getTime())) dateObj = utc;
+    }
+  }
+  if (!dateObj) return item.time || '';
+
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHour / 24);
+
+  let relative = 'Just now';
+  if (diffSec < 45) {
+    relative = 'Just now';
+  } else if (diffMin < 60) {
+    relative = `${diffMin}m ago`;
+  } else if (diffHour < 24) {
+    relative = `${diffHour}h ago`;
+  } else if (diffDays === 1) {
+    relative = 'Yesterday';
+  } else if (diffDays > 1) {
+    relative = `${diffDays} days ago`;
+  }
+
+  const localDate = dateObj.toLocaleDateString('en-GB');
+  const localTime = dateObj.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `${relative} • ${localDate}, ${localTime}`;
+};
+
 export const NotificationDropdown = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -312,7 +413,12 @@ export const NotificationDropdown = () => {
                         >
                           {item.title}
                         </p>
-                        <span className="text-[10px] text-slate-400 shrink-0">{item.time}</span>
+                        <span
+                          className="text-[10px] text-slate-400 shrink-0 font-medium select-none"
+                          title={getNotificationTimeTooltip(item)}
+                        >
+                          {formatNotificationTime(item)}
+                        </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5 leading-snug line-clamp-2">
                         {item.desc}

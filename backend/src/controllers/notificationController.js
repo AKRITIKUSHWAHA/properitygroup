@@ -187,9 +187,30 @@ export const getNotifications = async (req, res, next) => {
     const isAdmin = (user.role || '').toUpperCase() === 'ADMIN' || (user.role || '').toUpperCase() === 'SUPER_ADMIN';
     const isCustomer = !isAdmin && !isSurveyor;
 
+    const clientTz = (() => {
+      const h = req.headers['x-client-timezone'];
+      if (!h || typeof h !== 'string') return undefined;
+      try {
+        Intl.DateTimeFormat(undefined, { timeZone: h });
+        return h;
+      } catch {
+        return undefined;
+      }
+    })();
+
+    const formatNotificationTimeStr = (dateInput) => {
+      if (!dateInput) return '';
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return '';
+      try {
+        return `${d.toLocaleDateString('en-GB', clientTz ? { timeZone: clientTz } : undefined)}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...(clientTz ? { timeZone: clientTz } : {}) })}`;
+      } catch {
+        return `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      }
+    };
+
     let formatted = notifications.map((n) => {
-      const d = new Date(n.createdAt);
-      const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+      const timeStr = formatNotificationTimeStr(n.createdAt);
       return {
         id: n.id,
         title: n.title,
@@ -214,8 +235,7 @@ export const getNotifications = async (req, res, next) => {
           take: 15,
         });
         for (const l of recentLeads) {
-          const d = new Date(l.createdAt);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(l.createdAt);
           dynamicNotifs.push({
             id: `live-lead-${l.id}`,
             title: `📋 New Enquiry — ${l.clientName}`,
@@ -234,8 +254,7 @@ export const getNotifications = async (req, res, next) => {
           take: 10,
         });
         for (const l of clientLeads) {
-          const d = new Date(l.createdAt);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(l.createdAt);
           dynamicNotifs.push({
             id: `live-lead-${l.id}`,
             title: `📋 Survey Enquiry Registered (${l.reference})`,
@@ -261,8 +280,7 @@ export const getNotifications = async (req, res, next) => {
           const address = q.job?.propertyAddress || q.lead?.propertyAddress || 'Property';
           const isAccepted = q.status === 'ACCEPTED' || !!q.acceptedAt;
           const timestamp = q.acceptedAt || q.updatedAt || q.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (isAccepted) {
             dynamicNotifs.push({
@@ -306,8 +324,7 @@ export const getNotifications = async (req, res, next) => {
           const address = q.job?.propertyAddress || q.lead?.propertyAddress || 'Property';
           const isAccepted = q.status === 'ACCEPTED' || !!q.acceptedAt;
           const timestamp = q.acceptedAt || q.updatedAt || q.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (isAccepted) {
             dynamicNotifs.push({
@@ -347,8 +364,7 @@ export const getNotifications = async (req, res, next) => {
         for (const t of recentTerms) {
           const address = t.job?.propertyAddress || 'Subject Property';
           const timestamp = t.signedAt || t.updatedAt || t.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (t.signed) {
             dynamicNotifs.push({
@@ -389,8 +405,7 @@ export const getNotifications = async (req, res, next) => {
         for (const t of clientTerms) {
           const address = t.job?.propertyAddress || 'Subject Property';
           const timestamp = t.signedAt || t.updatedAt || t.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (t.signed) {
             dynamicNotifs.push({
@@ -428,8 +443,7 @@ export const getNotifications = async (req, res, next) => {
         for (const inv of recentInvoices) {
           const address = inv.job?.propertyAddress || 'Subject Property';
           const timestamp = inv.paidAt || inv.updatedAt || inv.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (inv.status === 'PAID') {
             dynamicNotifs.push({
@@ -460,8 +474,7 @@ export const getNotifications = async (req, res, next) => {
         for (const inv of clientInvoices) {
           const address = inv.job?.propertyAddress || 'Subject Property';
           const timestamp = inv.paidAt || inv.updatedAt || inv.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (inv.status === 'PAID') {
             dynamicNotifs.push({
@@ -500,8 +513,7 @@ export const getNotifications = async (req, res, next) => {
         });
         for (const j of recentJobs) {
           const timestamp = j.qaApprovedAt || j.reportGeneratedAt || j.updatedAt || j.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (j.qaApprovedAt || j.stage === 'COMPLETED') {
             dynamicNotifs.push({
@@ -562,8 +574,7 @@ export const getNotifications = async (req, res, next) => {
         });
         for (const j of surveyorJobs) {
           const timestamp = j.qaApprovedAt || j.reportGeneratedAt || j.updatedAt || j.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (j.qaApprovedAt || j.stage === 'COMPLETED') {
             dynamicNotifs.push({
@@ -625,8 +636,7 @@ export const getNotifications = async (req, res, next) => {
         });
         for (const j of clientJobs) {
           const timestamp = j.qaApprovedAt || j.updatedAt || j.createdAt;
-          const d = new Date(timestamp);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(timestamp);
 
           if (j.qaApprovedAt || j.stage === 'COMPLETED') {
             dynamicNotifs.push({
@@ -747,8 +757,7 @@ export const getNotifications = async (req, res, next) => {
         const cleanContent = (msg.content || '').trim();
         const snippet = cleanContent.length > 140 ? `${cleanContent.slice(0, 140)}...` : cleanContent;
         if (!existingNotifDescs.has(cleanContent) && !existingNotifDescs.has(snippet)) {
-          const d = new Date(msg.createdAt);
-          const timeStr = `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+          const timeStr = formatNotificationTimeStr(msg.createdAt);
           const msgLink =
             userRole === 'SURVEYOR'
               ? '/surveyor/messages'
@@ -761,6 +770,7 @@ export const getNotifications = async (req, res, next) => {
             title: `💬 New Message from ${msg.senderName || 'Operations Desk'}`,
             desc: snippet || 'You have an unread message.',
             time: timeStr,
+            createdAt: msg.createdAt,
             read: false,
             type: 'message',
             link: msgLink,

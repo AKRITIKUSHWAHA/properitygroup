@@ -47,6 +47,10 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
   }
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const clientTimezone =
+    typeof Intl !== 'undefined' && Intl.DateTimeFormat
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : null;
 
   const config = {
     method,
@@ -56,6 +60,7 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(sessionUser?.email ? { 'x-user-email': sessionUser.email } : {}),
       ...(sessionUser?.name ? { 'x-user-name': sessionUser.name } : {}),
+      ...(clientTimezone ? { 'x-client-timezone': clientTimezone } : {}),
       ...headers,
     },
   };
