@@ -145,7 +145,8 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
     return 'upcoming';
   };
 
-  const activeStageObj = stages.find((s) => s.step === selectedStep) || stages[currentStep - 1];
+  const safeStep = Math.min(10, Math.max(1, Number(currentStep) || 1));
+  const activeStageObj = stages.find((s) => s.step === selectedStep) || stages[safeStep - 1] || stages[0];
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 sm:p-5">
@@ -170,7 +171,7 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl self-start sm:self-auto">
           <span className="text-xs text-slate-600">Current Phase:</span>
           <span className="text-xs font-bold text-[#0B1F4D] bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-xs">
-            Stage {currentStep} of 10: {stages[currentStep - 1]?.title}
+            Stage {safeStep} of 10: {stages[safeStep - 1]?.title || 'Progress'}
           </span>
         </div>
       </div>

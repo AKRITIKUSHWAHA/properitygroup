@@ -3315,6 +3315,13 @@ export const CustomerTrackSurveyPage = () => {
     apiTracking?.reference ||
     (isDemo ? 'JOB-2026-080' : 'JOB-2026-PENDING');
   const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
+  const surveyType =
+    myJob?.surveyType ||
+    myQuote?.surveyType ||
+    myLead?.enquiry ||
+    myLead?.surveyType ||
+    apiTracking?.serviceType ||
+    'RICS Level 2 Home Survey';
 
   // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
   const targetEmail = userEmail || 'client@example.com';
