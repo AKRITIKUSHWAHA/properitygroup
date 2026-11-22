@@ -110,59 +110,98 @@ export const CustomerTermsPage = () => {
   const { jobs, updateJob, addJob } = useJobs();
   const { agreements, setAgreements, markAgreementSigned } = useTerms();
 
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const userName = (user?.name || '').toLowerCase().trim();
-  const userStorageKey = (user?.email || 'guest').toLowerCase().trim();
+  const sessionUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+
+  const currentUser = (user && user.email) ? user : (sessionUser && sessionUser.email ? sessionUser : (user || sessionUser));
+  const rememberedEmail = (localStorage.getItem('property_group_remembered_email') || '').toLowerCase().trim();
+  const userEmail = (currentUser?.email || rememberedEmail || '').toLowerCase().trim();
+  const userName = (currentUser?.name || '').toLowerCase().trim();
+  const userStorageKey = userEmail || 'guest';
+
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const handleUpdate = () => setTick((t) => t + 1);
+    window.addEventListener('propertygroup_jobs_updated', handleUpdate);
+    window.addEventListener('propertygroup_leads_updated', handleUpdate);
+    window.addEventListener('propertygroup_agreements_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('propertygroup_jobs_updated', handleUpdate);
+      window.removeEventListener('propertygroup_leads_updated', handleUpdate);
+      window.removeEventListener('propertygroup_agreements_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
+  const { quotes: storedQuotes = [] } = useQuotes();
+  const { leads: storedLeads = [] } = useLeads();
+
+  let allLeads = storedLeads;
+  if (!allLeads || allLeads.length === 0) {
+    try {
+      allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+    } catch {}
+  }
+  let allJobs = jobs;
+  if (!allJobs || allJobs.length === 0) {
+    try {
+      allJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    } catch {}
+  }
+  let allQuotes = storedQuotes;
+  if (!allQuotes || allQuotes.length === 0) {
+    try {
+      allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+    } catch {}
+  }
+
+  const activeJobId = localStorage.getItem(`propertygroup_active_job_${userEmail}`) || null;
 
   // 1. Strict customer job isolation (filter out dummy 'Subject Property' or pending placeholders)
-  const myJobs = jobs
-    .filter((j) => isJobForCustomer(j, user))
+  const myJobs = allJobs
+    .filter((j) => isJobForCustomer(j, currentUser))
     .filter((j) => {
       const p = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
       const id = String(j.id || '').toUpperCase().trim();
       const jobNo = String(j.jobNo || '').toUpperCase().trim();
       return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
     });
-  const currentJob = myJobs[0] || null;
+  const currentJob =
+    (activeJobId && allJobs.find((j) => j.id === activeJobId || j.jobNo === activeJobId)) ||
+    myJobs.find((j) => activeJobId && (j.id === activeJobId || j.jobNo === activeJobId)) ||
+    myJobs[0] ||
+    null;
 
   // 2. Locate linked agreement in terms repository
   const currentAgreement = agreements.find((a) => {
     if (currentJob?.id && a.jobNo === currentJob.id) return true;
-    const uEmail = (user?.email || '').toLowerCase().trim();
+    const uEmail = userEmail;
     const aEmail = (a.signerEmail || '').toLowerCase().trim();
-    if (uEmail && aEmail && uEmail === aEmail) return true;
+    if (uEmail && aEmail && (uEmail === aEmail || aEmail.includes(uEmail) || uEmail.includes(aEmail))) return true;
     if (uEmail.includes('harrison') && aEmail.includes('harrison')) return true;
     return false;
   });
 
-  const storedTermsSigned =
-    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true');
-  const storedPaymentClaimed =
-    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true');
+  const userQuote = allQuotes.find((q) => {
+    const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+    const qName = (q.client || q.customer || '').toLowerCase().trim();
+    return (userEmail && (qEmail === userEmail || qEmail.includes(userEmail) || userEmail.includes(qEmail))) ||
+           (userName && (qName === userName || qName.includes(userName)));
+  });
 
-  const isAlreadySigned =
-    storedTermsSigned ||
-    currentAgreement?.status === 'Signed' ||
-    currentAgreement?.signed === true ||
-    currentJob?.termsStatus === 'Signed';
-
-  const isPaymentClaimed =
-    storedPaymentClaimed ||
-    currentJob?.paymentStatus === 'Paid' ||
-    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed');
-
-  const isEmma = userEmail === 'customer@demo.com';
-  const { quotes: storedQuotes = [] } = useQuotes();
-  const { leads: storedLeads = [] } = useLeads();
-  const userQuote = storedQuotes.find(
-    (q) => (q.clientEmail || '').toLowerCase().trim() === userEmail
-  );
-  const userLead = storedLeads.find((l) => {
+  const userLead = allLeads.find((l) => {
     const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
     const lName = (l.customerName || l.clientName || '').toLowerCase().trim();
-    return (userEmail && (lEmail === userEmail || lEmail.includes(userEmail))) || (userName && (lName === userName || lName.includes(userName)));
+    const lId = String(l.id || l.reference || '').trim();
+    return (activeJobId && lId === activeJobId) ||
+           (userEmail && (lEmail === userEmail || lEmail.includes(userEmail) || userEmail.includes(lEmail))) ||
+           (userName && (lName === userName || lName.includes(userName)));
   });
 
   let regUser = {};
@@ -175,31 +214,66 @@ export const CustomerTermsPage = () => {
   const leadNet = leadTotal ? Math.round((leadTotal / 1.2) * 100) / 100 : null;
 
   // 3. Dynamic property and fee values (prioritize lead/quote real property over dummy 'Subject Property')
-  const propertyAddress = (currentJob?.property && currentJob.property !== 'Subject Property' && !currentJob.property.startsWith('Subject Property'))
-    ? `${currentJob.property}${currentJob.location ? `, ${currentJob.location}` : ''}`
-    : (userQuote?.property && userQuote.property !== 'Subject Property')
-    ? `${userQuote.property}${userQuote.location ? `, ${userQuote.location}` : ''}`
-    : (userQuote?.propertyAddress && userQuote.propertyAddress !== 'Subject Property')
-    ? userQuote.propertyAddress
-    : (userLead?.property && userLead.property !== 'Subject Property')
-    ? `${userLead.property}${userLead.location ? `, ${userLead.location}` : ''}`
-    : (userLead?.propertyAddress && userLead.propertyAddress !== 'Subject Property')
-    ? userLead.propertyAddress
-    : regUser.address
-    ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}${regUser.postcode ? ` ${regUser.postcode}` : ''}`
-    : (user?.address && user.address !== 'Subject Property')
-    ? user.address
-    : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
-  const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || 'RICS Level 2 Home Survey';
+  const activeQuoteOrLeadProp =
+    (userQuote?.property && userQuote.property !== 'Subject Property' ? `${userQuote.property}${userQuote.location ? `, ${userQuote.location}` : ''}` : '') ||
+    (userQuote?.propertyAddress && userQuote.propertyAddress !== 'Subject Property' ? userQuote.propertyAddress : '') ||
+    (userLead?.property && userLead.property !== 'Subject Property' ? `${userLead.property}${userLead.location ? `, ${userLead.location}` : ''}` : '') ||
+    (userLead?.propertyAddress && userLead.propertyAddress !== 'Subject Property' ? userLead.propertyAddress : '');
+
+  const isEmma = userEmail === 'customer@demo.com';
+
+  const propertyAddress =
+    activeQuoteOrLeadProp ||
+    (currentJob?.property && currentJob.property !== 'Subject Property' && !currentJob.property.startsWith('Subject Property')
+      ? `${currentJob.property}${currentJob.location ? `, ${currentJob.location}` : ''}`
+      : '') ||
+    (regUser.address
+      ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}${regUser.postcode ? ` ${regUser.postcode}` : ''}`
+      : '') ||
+    (currentUser?.address && currentUser.address !== 'Subject Property'
+      ? currentUser.address
+      : isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'Subject Property');
+
+  const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || userLead?.surveyType || 'RICS Level 2 Home Survey';
   const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
     : 'Pending Scheduling';
-  const jobNo = currentJob?.id || userQuote?.id || userLead?.quoteRef || userLead?.id || 'JOB-2026-PENDING';
+  const jobNo = currentJob?.id || currentJob?.jobNo || userQuote?.id || userLead?.quoteRef || userLead?.id || (isEmma ? 'JOB-2026-080' : 'JOB-2026-PENDING');
 
   const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || leadNet || (surveyType.includes('Level 3') ? 1450 : 550);
   const vatAmount = userQuote?.vatAmount || (leadTotal && leadNet ? Math.round((leadTotal - leadNet) * 100) / 100 : Math.round(baseFee * 0.2));
   const grossTotal = userQuote?.totalAmount || leadTotal || (baseFee + vatAmount);
+
+  const storedTermsSigned =
+    localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true' ||
+    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
+    localStorage.getItem(`propertygroup_terms_signed_client@example.com`) === 'true' ||
+    currentJob?.termsStatus === 'Signed' ||
+    userQuote?.termsStatus === 'Signed' ||
+    userLead?.termsStatus === 'Signed';
+
+  const storedPaymentClaimed =
+    localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true' ||
+    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
+    localStorage.getItem(`propertygroup_payment_claimed_client@example.com`) === 'true' ||
+    currentJob?.paymentStatus === 'Paid' ||
+    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    (userQuote?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    (userLead?.paymentStatus || '').toLowerCase().includes('claimed');
+
+  const isAlreadySigned =
+    storedTermsSigned ||
+    currentAgreement?.status === 'Signed' ||
+    currentAgreement?.signed === true ||
+    currentJob?.termsStatus === 'Signed' ||
+    (currentJob?.timelineStep || 0) >= 4;
+
+  const isPaymentClaimed =
+    storedPaymentClaimed ||
+    currentJob?.paymentStatus === 'Paid' ||
+    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    (currentJob?.timelineStep || 0) >= 5;
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
@@ -223,18 +297,26 @@ export const CustomerTermsPage = () => {
   }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
-  // When already signed, stay on 'payment' so user never gets reset back to sign form on navigation
   const [stage, setStage] = useState(() => {
-    if (isPaymentClaimed) return 'confirmed';
-    if (isAlreadySigned) return 'payment';
+    if (storedPaymentClaimed || isPaymentClaimed) return 'confirmed';
+    if (storedTermsSigned || isAlreadySigned) return 'payment';
     return 'sign';
   });
+
+  useEffect(() => {
+    if (storedPaymentClaimed || isPaymentClaimed) {
+      setStage('confirmed');
+    } else if (storedTermsSigned || isAlreadySigned) {
+      setStage('payment');
+    }
+  }, [storedPaymentClaimed, isPaymentClaimed, storedTermsSigned, isAlreadySigned]);
+
   const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
   // Sign Form State
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signatureType, setSignatureType] = useState('typed'); // 'typed' | 'drawn'
-  const [typedName, setTypedName] = useState(user?.name || currentJob?.customer || '');
+  const [typedName, setTypedName] = useState(currentUser?.name || currentJob?.customer || '');
 
   const [savedSignatureDataUrl, setSavedSignatureDataUrl] = useState(() => {
     try {
@@ -745,9 +827,9 @@ export const CustomerTermsPage = () => {
   };
 
   // ==========================================
-  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED (Shown only if both signed and paid/confirmed)
+  // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
   // ==========================================
-  if (isAlreadySigned && isPaymentClaimed && stage !== 'confirmed' && stage !== 'payment') {
+  if (((isAlreadySigned && isPaymentClaimed) || (currentJob?.timelineStep || 0) >= 5 || stage === 'confirmed') && stage !== 'payment') {
     return (
       <div className="space-y-6 max-w-4xl mx-auto pb-12">
         <PageHeader
@@ -3241,6 +3323,9 @@ export const CustomerTrackSurveyPage = () => {
   }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
+  const { quotes = [] } = useQuotes();
+  const { leads = [] } = useLeads();
+  const { agreements = [] } = useTerms();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -3252,14 +3337,21 @@ export const CustomerTrackSurveyPage = () => {
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
-  const { quotes = [] } = useQuotes();
-  const { leads = [] } = useLeads();
-  const { agreements = [] } = useTerms();
-  const userEmail = (user?.email || '').toLowerCase().trim();
+
+  const sessionUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const currentUser = (user && user.email) ? user : (sessionUser && sessionUser.email ? sessionUser : (user || sessionUser));
+  const rememberedEmail = (localStorage.getItem('property_group_remembered_email') || '').toLowerCase().trim();
+  const userEmail = (currentUser?.email || rememberedEmail || '').toLowerCase().trim();
   const isDemo = userEmail === 'customer@demo.com';
 
   const myCustomerJobs = jobs
-    .filter((j) => isJobForCustomer(j, user))
+    .filter((j) => isJobForCustomer(j, currentUser))
     .filter((j) => {
       const p = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
       const id = String(j.id || '').toUpperCase().trim();
