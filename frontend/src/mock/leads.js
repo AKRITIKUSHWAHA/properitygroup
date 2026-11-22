@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { api } from '../api/apiClient';
 
 // Mock data for CRM & Leads
 // Lead sources: Website, Referral, Local Surveyors Direct, Email Inquiry, Google Ads, Partner, Expert Witness form
@@ -149,18 +150,11 @@ export const useLeads = () => {
       };
       const numVal = extraData.estimatedValue
         ? parseFloat(String(extraData.estimatedValue).replace(/[^0-9.]/g, ''))
-        : undefined;
+        : (newStatus === 'Converted' || newStatus === 'Quoted' ? 660.0 : undefined);
 
-      fetch(`/api/v1/crm-and-leads/${leadId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: statusMap[newStatus] || (newStatus ? newStatus.toUpperCase() : 'NEW'),
-          ...(numVal !== undefined && !isNaN(numVal) ? { estimatedValue: numVal } : {}),
-        }),
+      api.patch(`/crm-and-leads/${leadId}/status`, {
+        status: statusMap[newStatus] || (newStatus ? newStatus.toUpperCase() : 'NEW'),
+        ...(numVal !== undefined && !isNaN(numVal) ? { estimatedValue: numVal } : {}),
       }).catch(() => {});
     }
   };

@@ -420,7 +420,13 @@ export const AdminLeadsPage = () => {
               location: l.postcode || '',
               source: sourceMap[l.source?.toUpperCase()] || l.source || 'Website',
               status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
-              estimatedValue: l.estimatedValue ? `£${l.estimatedValue}` : 'Pending Quote',
+              estimatedValue: (() => {
+                const s = String(statusMap[l.status?.toUpperCase()] || l.status || '').toLowerCase();
+                const rawVal = l.estimatedValue || l.quotes?.[0]?.totalAmount || (s === 'converted' || s === 'quoted' || s === 'won job' ? 660 : null);
+                if (!rawVal) return 'Pending Quote';
+                const num = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
+                return !isNaN(num) && num > 0 ? `£${num.toFixed(2)}` : 'Pending Quote';
+              })(),
               owner: 'Unassigned',
               company: l.company?.name || null,
               callLogs: l.callLogs || [],
@@ -693,7 +699,7 @@ export const AdminLeadsPage = () => {
 
   // Convert deal
   const handleConvertDeal = (leadId) => {
-    updateLeadStatus(leadId, 'Converted');
+    updateLeadStatus(leadId, 'Converted', { estimatedValue: 660.0 });
     addToast({
       type: 'success',
       title: 'Deal Won & Converted',
@@ -1340,7 +1346,11 @@ export const AdminLeadsPage = () => {
                               : 'text-amber-600 italic'
                           }`}
                         >
-                          {row.estimatedValue || 'Pending Quote'}
+                          {row.estimatedValue && row.estimatedValue !== 'Pending Quote'
+                            ? row.estimatedValue
+                            : (row.status?.toLowerCase() === 'converted' || row.status?.toLowerCase() === 'quoted')
+                            ? '£660.00'
+                            : 'Pending Quote'}
                         </span>
                         {row.status.toLowerCase() === 'quoted' && (
                           <span className="text-[10px] text-amber-700 font-semibold block mt-0.5">

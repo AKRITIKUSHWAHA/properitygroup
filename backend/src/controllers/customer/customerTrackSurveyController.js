@@ -17,7 +17,7 @@ export const getSurveyTracking = async (req, res, next) => {
       where: {
         OR: [
           ...(userId ? [{ clientId: userId }] : []),
-          ...(userEmail ? [{ clientEmail: userEmail }] : []),
+          ...(userEmail ? [{ clientEmail: userEmail }, { clientEmail: { contains: userEmail } }] : []),
           ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
         ],
       },
@@ -37,7 +37,7 @@ export const getSurveyTracking = async (req, res, next) => {
         const lead = await prisma.lead.findFirst({
           where: {
             OR: [
-              ...(userEmail ? [{ clientEmail: userEmail }] : []),
+              ...(userEmail ? [{ clientEmail: userEmail }, { clientEmail: { contains: userEmail } }] : []),
               ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
             ],
           },

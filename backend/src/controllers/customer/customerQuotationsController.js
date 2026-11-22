@@ -19,8 +19,8 @@ export const getCustomerQuotations = async (req, res, next) => {
       where: {
         OR: [
           ...(userId ? [{ job: { clientId: userId } }] : []),
-          ...(userEmail ? [{ job: { clientEmail: { equals: userEmail } } }] : []),
-          ...(userEmail ? [{ lead: { clientEmail: { equals: userEmail } } }] : []),
+          ...(userEmail ? [{ job: { clientEmail: userEmail } }, { job: { clientEmail: { contains: userEmail } } }] : []),
+          ...(userEmail ? [{ lead: { clientEmail: userEmail } }, { lead: { clientEmail: { contains: userEmail } } }] : []),
           ...(userEmail ? [{ inclusions: { contains: userEmail } }] : []),
           ...(userName && userName.length > 2 ? [{ inclusions: { contains: userName } }] : []),
         ],
@@ -96,7 +96,10 @@ export const getCustomerQuotations = async (req, res, next) => {
     try {
       if (userEmail || userId || (userName && userName.length > 2)) {
         const leadConditions = [];
-        if (userEmail) leadConditions.push({ clientEmail: { equals: userEmail } });
+        if (userEmail) {
+          leadConditions.push({ clientEmail: userEmail });
+          leadConditions.push({ clientEmail: { contains: userEmail } });
+        }
         if (userName && userName.length > 2) leadConditions.push({ clientName: { contains: userName } });
 
         const leads = await prisma.lead.findMany({

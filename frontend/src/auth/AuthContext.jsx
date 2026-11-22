@@ -151,10 +151,31 @@ export const AuthProvider = ({ children }) => {
         apiErr.status === 404 ||
         apiErr.response?.status === 404
       ) {
-        setIsLoading(false);
-        const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
-        notFoundErr.isNotRegistered = true;
-        throw notFoundErr;
+        if (registeredCust || localKnownPassword) {
+          // Attempt automatic sync registration to backend so credentials persist forever
+          try {
+            const regRes = await authApi.register({
+              name: registeredCust?.name || trimmedEmail.split('@')[0],
+              email: trimmedEmail,
+              password: cleanPassword,
+              role: 'CUSTOMER',
+              phone: registeredCust?.phone || null,
+            });
+            if (regRes?.user) {
+              backendUser = regRes.user;
+              authToken = regRes.token;
+              if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+            }
+          } catch (syncErr) {
+            console.warn('Backend auto-sync registration skipped:', syncErr.message);
+          }
+        }
+        if (!backendUser && !registeredCust && !localKnownPassword) {
+          setIsLoading(false);
+          const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
+          notFoundErr.isNotRegistered = true;
+          throw notFoundErr;
+        }
       }
 
       // If no local password was configured, enforce backend password validation result

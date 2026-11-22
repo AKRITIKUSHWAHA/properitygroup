@@ -34,7 +34,21 @@ export const getCrmAndLeads = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    return ApiResponse.success(res, { leads, total: leads.length });
+    const mappedLeads = leads.map((lead) => {
+      let fee = lead.estimatedValue;
+      if (!fee && lead.quotes?.length > 0 && lead.quotes[0].totalAmount) {
+        fee = lead.quotes[0].totalAmount;
+      }
+      if (!fee && (lead.status === 'QUOTED' || lead.status === 'CONVERTED' || lead.status === 'QUOTE_SENT')) {
+        fee = 660.0;
+      }
+      return {
+        ...lead,
+        estimatedValue: fee ? parseFloat(fee) : null,
+      };
+    });
+
+    return ApiResponse.success(res, { leads: mappedLeads, total: mappedLeads.length });
   } catch (error) {
     next(error);
   }
@@ -120,6 +134,11 @@ export const updateLeadStatus = async (req, res, next) => {
     if (status) updateData.status = status.toUpperCase();
     if (estimatedValue !== undefined && !isNaN(Number(estimatedValue))) {
       updateData.estimatedValue = parseFloat(estimatedValue);
+    } else if (status && (status.toUpperCase() === 'CONVERTED' || status.toUpperCase() === 'QUOTED' || status.toUpperCase() === 'QUOTE_SENT')) {
+      const existingLead = await prisma.lead.findUnique({ where, include: { quotes: true } });
+      if (!existingLead?.estimatedValue) {
+        updateData.estimatedValue = existingLead?.quotes?.[0]?.totalAmount || 660.0;
+      }
     }
 
     const lead = await prisma.lead.update({

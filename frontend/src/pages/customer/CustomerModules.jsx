@@ -1616,7 +1616,9 @@ export const CustomerQuotationsPage = () => {
     const isQuoted =
       (l.status || '').toLowerCase() === 'quoted' ||
       (l.status || '').toLowerCase() === 'quote_sent' ||
-      (l.estimatedValue && !l.estimatedValue.toLowerCase().includes('pending'));
+      (l.status || '').toLowerCase() === 'converted' ||
+      (l.status || '').toLowerCase() === 'won' ||
+      (l.estimatedValue && !String(l.estimatedValue).toLowerCase().includes('pending'));
     return (matchesEmail || matchesName) && isQuoted;
   });
 

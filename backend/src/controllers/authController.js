@@ -19,24 +19,52 @@ export const register = async (req, res, next) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const existingUser = await prisma.user.findUnique({
+    let existingUser = await prisma.user.findUnique({
       where: { email: cleanEmail },
     });
 
-    if (existingUser) {
-      throw ApiError.badRequest('An account with this email already exists. Please sign in with your existing password.');
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    if (existingUser) {
+      // If user already exists in User table, update their password and ensure status ACTIVE
+      existingUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name: name ? name.trim() : existingUser.name,
+          password: hashedPassword,
+          phone: phone ? String(phone).trim() : existingUser.phone,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phone: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
+      const token = jwt.sign(
+        { id: existingUser.id, email: existingUser.email, role: existingUser.role },
+        env.JWT_SECRET,
+        { expiresIn: env.JWT_EXPIRES_IN }
+      );
+
+      touchUserPresence(existingUser.id, existingUser.email);
+      return ApiResponse.success(res, { user: existingUser, token }, 'Registration completed successfully');
+    }
 
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
         email: cleanEmail,
         password: hashedPassword,
-        role: (role || 'CUSTOMER').toUpperCase(),
+        role: 'CUSTOMER',
         phone: phone ? String(phone).trim() : null,
+        status: 'ACTIVE',
       },
       select: {
         id: true,
@@ -58,6 +86,14 @@ export const register = async (req, res, next) => {
           ...(user.phone ? { clientPhone: user.phone } : {}),
         },
       });
+      await prisma.job.updateMany({
+        where: { clientEmail: cleanEmail },
+        data: {
+          clientId: user.id,
+          clientName: user.name,
+          ...(user.phone ? { clientPhone: user.phone } : {}),
+        },
+      });
     } catch {
       // Non-blocking sync
     }
@@ -68,6 +104,7 @@ export const register = async (req, res, next) => {
       { expiresIn: env.JWT_EXPIRES_IN }
     );
 
+    touchUserPresence(user.id, user.email);
     return ApiResponse.created(res, { user, token }, 'Registration successful');
   } catch (error) {
     next(error);
@@ -146,6 +183,39 @@ export const login = async (req, res, next) => {
         });
       } catch {
         user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      }
+    }
+
+    // 4. Auto-provision Customer account if user submitted a Lead inquiry or quotation
+    if (!user && cleanPassword && cleanPassword.length >= 4) {
+      try {
+        const leadMatch = await prisma.lead.findFirst({
+          where: { clientEmail: cleanEmail },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (leadMatch) {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(cleanPassword, salt);
+          user = await prisma.user.create({
+            data: {
+              name: leadMatch.clientName || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              password: hashedPassword,
+              role: 'CUSTOMER',
+              phone: leadMatch.clientPhone || null,
+              status: 'ACTIVE',
+            },
+          });
+          // Also link existing jobs
+          await prisma.job.updateMany({
+            where: { clientEmail: cleanEmail },
+            data: { clientId: user.id },
+          }).catch(() => {});
+        }
+      } catch (autoErr) {
+        console.warn('Customer lead auto-provision warning:', autoErr.message);
+        user = await prisma.user.findUnique({ where: { email: cleanEmail } }).catch(() => null);
       }
     }
 
