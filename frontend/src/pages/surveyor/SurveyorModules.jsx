@@ -1028,9 +1028,27 @@ export const SurveyorUploadReportsPage = () => {
   const [selectedJob, setSelectedJob] = useState(defaultJobId);
 
   const currentJobObj =
+    jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) ||
     myJobs.find((j) => (j.jobNo || j.id) === selectedJob) ||
     myJobs[0] ||
     null;
+
+  const jobRefStr = currentJobObj?.jobNo || currentJobObj?.id || selectedJob;
+  const isDraftingActive =
+    currentJobObj?.status === 'Drafting' ||
+    currentJobObj?.timelineStep === 8 ||
+    localStorage.getItem('propertygroup_drafting') === 'true' ||
+    (jobRefStr && localStorage.getItem(`propertygroup_drafting_${jobRefStr}`) === 'true') ||
+    (currentJobObj?.customerEmail && localStorage.getItem(`propertygroup_drafting_${currentJobObj.customerEmail.toLowerCase().trim()}`) === 'true');
+
+  const isQaReviewSubmitted =
+    currentJobObj?.status === 'QA_Review' ||
+    currentJobObj?.status === 'Preparing report' ||
+    currentJobObj?.status === 'Completed' ||
+    currentJobObj?.timelineStep >= 9 ||
+    localStorage.getItem('propertygroup_qareview') === 'true' ||
+    (jobRefStr && localStorage.getItem(`propertygroup_qareview_${jobRefStr}`) === 'true') ||
+    (currentJobObj?.customerEmail && localStorage.getItem(`propertygroup_qareview_${currentJobObj.customerEmail.toLowerCase().trim()}`) === 'true');
 
   useEffect(() => {
     if (queryJobId) {
@@ -1114,55 +1132,170 @@ export const SurveyorUploadReportsPage = () => {
     }
   };
 
-  const handleStartDrafting = () => {
-    const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
-    const targetEmail = activeJobObj?.customerEmail || regUser?.email || '';
+  const handleStartDrafting = async () => {
+    const activeJobObj = jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) || currentJobObj;
+    const targetEmail = (activeJobObj?.customerEmail || regUser?.email || '').toLowerCase().trim();
+    const customerName = activeJobObj?.customer || regUser?.name || 'Valued Client';
+    const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
+    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
+    const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
+
     localStorage.setItem('propertygroup_drafting', 'true');
-    if (targetEmail) localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    localStorage.setItem(`propertygroup_drafting_${jobRef}`, 'true');
+    if (targetEmail) {
+      localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
+    }
+
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'Drafting',
         timelineStep: 8,
         stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+            text: `Technical survey report drafting commenced by Chartered Surveyor ${currentSurveyor}. Observations and defect ratings compiling (Stage 8/10).`,
+          },
+          ...(activeJobObj?.activityLog || []),
+        ],
       });
-      const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
-      if (activeJobObj) {
-        dispatchPostInspectionUpdate({ ...activeJobObj, customerEmail: targetEmail }).catch(() => {});
-      }
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: activeJobObj?.clientId || activeJobObj?.userId,
+      title: '📝 Survey Report Drafting Started',
+      desc: `Surveyor ${currentSurveyor} is now drafting your official RICS survey report for ${propertyAddr}.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Report Drafting Started — ${jobRef}`,
+      desc: `Surveyor ${currentSurveyor} commenced technical report compilation for ${propertyAddr}.`,
+      type: 'booking',
+      link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
+    }).catch(() => {});
+
+    // 3. Dispatch automated post-inspection/drafting email to customer
+    if (activeJobObj) {
+      dispatchPostInspectionUpdate({
+        ...activeJobObj,
+        surveyor: currentSurveyor,
+        customerEmail: targetEmail,
+        customer: customerName,
+        property: propertyAddr,
+        jobNo: jobRef,
+      }).catch(() => {});
+    }
+
+    // 4. Sync backend stage
+    api.patch(`/survey-jobs/${activeJobObj?.id || selectedJob}/stage`, {
+      newStage: 'PREPARING_REPORT',
+      reason: `Surveyor ${currentSurveyor} started report drafting.`,
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
+
     addToast({
       type: 'success',
       title: 'Report Drafting Commenced',
-      message: `Technical drafting started for ${selectedJob}. Customer Tracker advanced to Stage 8 (80%).`,
+      message: `Technical drafting started for ${jobRef}. Notifications dispatched to Customer and Admin desk.`,
     });
   };
 
-  const handleSubmitAllQA = () => {
-    const activeJobObj = jobs.find((j) => j.id === selectedJob || j.jobNo === selectedJob);
-    const targetEmail = activeJobObj?.customerEmail || regUser?.email || '';
+  const handleSubmitAllQA = async () => {
+    const activeJobObj = jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) || currentJobObj;
+    const targetEmail = (activeJobObj?.customerEmail || regUser?.email || '').toLowerCase().trim();
+    const customerName = activeJobObj?.customer || regUser?.name || 'Valued Client';
+    const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
+    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
+    const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
+
     localStorage.setItem('propertygroup_drafting', 'true');
     localStorage.setItem('propertygroup_qareview', 'true');
+    localStorage.setItem(`propertygroup_drafting_${jobRef}`, 'true');
+    localStorage.setItem(`propertygroup_qareview_${jobRef}`, 'true');
     if (targetEmail) {
       localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
       localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
     }
+
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'QA_Review',
         timelineStep: 9,
         stage: 'PREPARING_REPORT',
         customerEmail: targetEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+            text: `Draft condition report and photo evidence submitted to Quality Assurance (QA) Desk by Chartered Surveyor ${currentSurveyor}. Awaiting Admin sign-off (Stage 9/10).`,
+          },
+          ...(activeJobObj?.activityLog || []),
+        ],
       });
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: activeJobObj?.clientId || activeJobObj?.userId,
+      title: '🛡️ Quality Assurance Review Underway',
+      desc: `Surveyor ${currentSurveyor} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Draft Report Submitted for QA Review — ${jobRef}`,
+      desc: `Surveyor ${currentSurveyor} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
+      type: 'booking',
+      link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
+    }).catch(() => {});
+
+    // 3. Log sent email record for QA Desk review notification
+    try {
+      const emailRecord = {
+        id: `EML-QA-${Date.now()}`,
+        stepIndex: 5,
+        stepName: 'QA Review',
+        stageLabel: 'Stage 9: Quality Assurance Audit',
+        subject: `Draft Report Submitted for QA Audit: ${propertyAddr} (${jobRef})`,
+        to: 'qa-desk@njspropertygroup.com',
+        recipientName: 'RICS Lead Surveyor / QA Desk',
+        date: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
+        status: 'Delivered',
+        preview: `Surveyor ${currentSurveyor} submitted draft condition report and site evidence for QA sign-off.`,
+        jobNo: jobRef,
+      };
+      const existing = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+      localStorage.setItem('property_group_sent_emails_v1', JSON.stringify([emailRecord, ...existing.slice(0, 49)]));
+      window.dispatchEvent(new Event('property_group_sent_emails_updated'));
+    } catch {}
+
+    // 4. Sync backend stage
+    api.patch(`/survey-jobs/${activeJobObj?.id || selectedJob}/stage`, {
+      newStage: 'PREPARING_REPORT',
+      reason: `Surveyor ${currentSurveyor} submitted draft report for QA audit.`,
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
+
     addToast({
       type: 'success',
       title: 'Dispatched for Quality Assurance',
-      message: `All condition rating drafts for ${selectedJob} submitted to Lead Surveyor for review. Progress advanced to Stage 9 (90%).`,
+      message: `All condition rating drafts for ${jobRef} submitted to QA Desk. Notifications dispatched to Customer and Admin desk.`,
     });
   };
 
@@ -1381,24 +1514,53 @@ export const SurveyorUploadReportsPage = () => {
             <h4 className="text-xs font-bold text-[#0B1F4D] uppercase tracking-wider">
               Pending QA Documents ({uploadedFiles.length})
             </h4>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleStartDrafting}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Start Drafting (Stage 8)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSubmitAllQA}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Submit to QA (Stage 9)</span>
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {isQaReviewSubmitted ? (
+                <>
+                  <div className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 flex items-center gap-1.5 border border-slate-200 shadow-2xs">
+                    <Check className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Drafting Concluded ✓</span>
+                  </div>
+                  <div className="px-4 py-2 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Submitted to Admin QA Review ✓</span>
+                  </div>
+                </>
+              ) : isDraftingActive ? (
+                <>
+                  <div className="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1.5 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
+                    <span>Drafting in Progress ✓</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSubmitAllQA}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer ring-2 ring-emerald-500/30"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Submit to QA (Stage 9) &rarr;</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleStartDrafting}
+                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ring-2 ring-blue-500/30"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Start Drafting (Stage 8)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmitAllQA}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-slate-500" />
+                    <span>Submit to QA (Stage 9)</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
