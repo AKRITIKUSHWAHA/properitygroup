@@ -186,35 +186,38 @@ export const login = async (req, res, next) => {
       }
     }
 
-    // 4. Auto-provision Customer account if user submitted a Lead inquiry or quotation
+    // 4. Auto-provision Customer account if user logs in as customer
     if (!user && cleanPassword && cleanPassword.length >= 4) {
       try {
         const leadMatch = await prisma.lead.findFirst({
-          where: { clientEmail: cleanEmail },
+          where: {
+            OR: [
+              { clientEmail: cleanEmail },
+              { clientEmail: { contains: cleanEmail } },
+            ],
+          },
           orderBy: { createdAt: 'desc' },
         });
 
-        if (leadMatch) {
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(cleanPassword, salt);
-          user = await prisma.user.create({
-            data: {
-              name: leadMatch.clientName || cleanEmail.split('@')[0],
-              email: cleanEmail,
-              password: hashedPassword,
-              role: 'CUSTOMER',
-              phone: leadMatch.clientPhone || null,
-              status: 'ACTIVE',
-            },
-          });
-          // Also link existing jobs
-          await prisma.job.updateMany({
-            where: { clientEmail: cleanEmail },
-            data: { clientId: user.id },
-          }).catch(() => {});
-        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(cleanPassword, salt);
+        user = await prisma.user.create({
+          data: {
+            name: leadMatch?.clientName || cleanEmail.split('@')[0],
+            email: cleanEmail,
+            password: hashedPassword,
+            role: 'CUSTOMER',
+            phone: leadMatch?.clientPhone || null,
+            status: 'ACTIVE',
+          },
+        });
+        // Also link existing jobs
+        await prisma.job.updateMany({
+          where: { clientEmail: cleanEmail },
+          data: { clientId: user.id },
+        }).catch(() => {});
       } catch (autoErr) {
-        console.warn('Customer lead auto-provision warning:', autoErr.message);
+        console.warn('Customer auto-provision warning:', autoErr.message);
         user = await prisma.user.findUnique({ where: { email: cleanEmail } }).catch(() => null);
       }
     }

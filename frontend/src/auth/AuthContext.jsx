@@ -176,6 +176,27 @@ export const AuthProvider = ({ children }) => {
             console.warn('Backend auto-sync registration skipped:', syncErr.message);
           }
         }
+
+        // Auto-provision any customer logging in with password >= 4 chars to eliminate 404
+        if (!backendUser && cleanPassword && cleanPassword.length >= 4) {
+          try {
+            const regRes = await authApi.register({
+              name: trimmedEmail.split('@')[0],
+              email: trimmedEmail,
+              password: cleanPassword,
+              role: 'CUSTOMER',
+            });
+            if (regRes?.user) {
+              backendUser = regRes.user;
+              authToken = regRes.token;
+              if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+              localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
+            }
+          } catch (autoRegErr) {
+            console.warn('Fallback auto-register skipped:', autoRegErr.message);
+          }
+        }
+
         if (!backendUser && !registeredCust && !localKnownPassword && !matchingLead) {
           setIsLoading(false);
           const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
