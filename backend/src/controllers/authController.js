@@ -186,74 +186,35 @@ export const login = async (req, res, next) => {
       }
     }
 
-    // 4. Auto-provision Customer account if user logs in as customer
-    if (!user && cleanPassword && cleanPassword.length >= 4) {
-      try {
-        const leadMatch = await prisma.lead.findFirst({
-          where: {
-            OR: [
-              { clientEmail: cleanEmail },
-              { clientEmail: { contains: cleanEmail } },
-            ],
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(cleanPassword, salt);
-        user = await prisma.user.create({
-          data: {
-            name: leadMatch?.clientName || cleanEmail.split('@')[0],
-            email: cleanEmail,
-            password: hashedPassword,
-            role: 'CUSTOMER',
-            phone: leadMatch?.clientPhone || null,
-            status: 'ACTIVE',
-          },
-        });
-        // Also link existing jobs
-        await prisma.job.updateMany({
-          where: { clientEmail: cleanEmail },
-          data: { clientId: user.id },
-        }).catch(() => {});
-      } catch (autoErr) {
-        console.warn('Customer auto-provision warning:', autoErr.message);
-        user = await prisma.user.findUnique({ where: { email: cleanEmail } }).catch(() => null);
-      }
-    }
-
     if (!user) {
       throw ApiError.notFound('No registered account found with this email. Please register your account first.');
     }
 
+    if (user.status === 'INACTIVE' || user.status === 'BLOCKED') {
+      throw ApiError.forbidden('Your account has been deactivated or blocked by management. Please contact support.');
+    }
+
     let isMatch = await bcrypt.compare(cleanPassword, user.password);
 
-    // Seamlessly support standard prefill passwords ('admin123', 'Password123!', 'password123', 'customer123')
+    // Seamlessly support standard prefill demo passwords
     if (!isMatch) {
       if (
         user.role === 'ADMIN' &&
+        (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com') &&
         (cleanPassword === 'admin123' || cleanPassword === 'password123' || cleanPassword === 'Password123!')
       ) {
         isMatch = true;
       } else if (
         user.role === 'SURVEYOR' &&
+        (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail === 'surveyor@demo.com') &&
         (cleanPassword === 'surveyor123' || cleanPassword === 'password123' || cleanPassword === 'Password123!')
       ) {
         isMatch = true;
       } else if (
         user.role === 'CUSTOMER' &&
-        user.email === 'customer@demo.com' &&
+        cleanEmail === 'customer@demo.com' &&
         (cleanPassword === 'customer123' || cleanPassword === 'password123')
       ) {
-        isMatch = true;
-      } else if (user.role === 'CUSTOMER' && cleanPassword && cleanPassword.length >= 4) {
-        // Customer logging in with their password: store hash and ensure status ACTIVE
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(cleanPassword, salt);
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { password: hashedPassword, status: 'ACTIVE' },
-        }).catch(() => {});
         isMatch = true;
       }
     }

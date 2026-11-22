@@ -87,8 +87,22 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(true);
 
     const trimmedEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = typeof password === 'string' ? password.trim() : '';
 
-    // Check if account is in local blocked list
+    // 1. Check if account was deleted
+    try {
+      const deletedKeys = JSON.parse(localStorage.getItem('propertygroup_deleted_user_keys') || '[]');
+      if (deletedKeys.includes(trimmedEmail)) {
+        setIsLoading(false);
+        const err = new Error('No registered account found with this email. Please create an account first.');
+        err.isNotRegistered = true;
+        throw err;
+      }
+    } catch (e) {
+      if (e.isNotRegistered) throw e;
+    }
+
+    // 2. Check if account is in local blocked list
     try {
       const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
       if (blockedList.includes(trimmedEmail)) {
@@ -99,16 +113,16 @@ export const AuthProvider = ({ children }) => {
       if (e.message?.includes('blocked') || e.message?.includes('deactivated')) throw e;
     }
 
-    // Strict local credential check: If password was registered or set by Admin, enforce exact match
-    const localKnownPassword = localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
+    // 3. Strict local credential check: If password was registered, enforce exact match
     let registeredCust = null;
     try {
       const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
       registeredCust = registered[trimmedEmail] || null;
     } catch {}
 
-    const requiredPassword = localKnownPassword || registeredCust?.password;
-    if (requiredPassword && String(password || '').trim() !== String(requiredPassword).trim()) {
+    const localKnownPassword = localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
+    const requiredPassword = registeredCust?.password || localKnownPassword;
+    if (requiredPassword && cleanPassword !== String(requiredPassword).trim()) {
       setIsLoading(false);
       throw new Error('Invalid password. Please enter the password you registered with.');
     }
@@ -117,7 +131,7 @@ export const AuthProvider = ({ children }) => {
     let authToken = null;
 
     try {
-      const res = await authApi.login(trimmedEmail, password, expectedRole);
+      const res = await authApi.login(trimmedEmail, cleanPassword, expectedRole);
       if (res?.token && res?.user) {
         authToken = res.token;
         backendUser = res.user;
@@ -143,118 +157,32 @@ export const AuthProvider = ({ children }) => {
         throw new Error(errMsg || 'Your account is blocked or inactive. Please contact administration.');
       }
 
-      // Guarantee seamless login for test k (astp750@gmail.com) and core platform customers
-      if (!backendUser && (trimmedEmail === 'astp750@gmail.com' || trimmedEmail.includes('astp750'))) {
-        backendUser = {
-          id: 46,
-          name: 'test k',
-          email: 'astp750@gmail.com',
-          role: 'CUSTOMER',
-          phone: '1234567890',
-        };
-        authToken = authToken || ('token_astp750_' + Date.now());
-        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-        localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
-      } else if (!backendUser && trimmedEmail === 'niamhrichmond@gmail.com') {
-        backendUser = {
-          id: 47,
-          name: 'Niamh Richmond',
-          email: 'niamhrichmond@gmail.com',
-          role: 'CUSTOMER',
-          phone: '07882109667',
-        };
-        authToken = authToken || ('token_niamh_' + Date.now());
-        localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-        localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
-      }
-
       // If backend rejected login because not registered (status 404 or message)
       if (
         errMsg.toLowerCase().includes('not found') ||
         errMsg.toLowerCase().includes('no registered account') ||
+        errMsg.toLowerCase().includes('register your account') ||
         errMsg.toLowerCase().includes('create your account') ||
         apiErr.status === 404 ||
         apiErr.response?.status === 404
       ) {
-        const leadsStorage = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-        const matchingLead = Array.isArray(leadsStorage)
-          ? leadsStorage.find((l) => (l.customerEmail || l.clientEmail || '').toLowerCase().trim() === trimmedEmail)
-          : null;
-
-        if (registeredCust || localKnownPassword || matchingLead) {
-          // Attempt automatic sync registration to backend so credentials persist forever
-          try {
-            const regRes = await authApi.register({
-              name: registeredCust?.name || matchingLead?.customerName || matchingLead?.clientName || trimmedEmail.split('@')[0],
-              email: trimmedEmail,
-              password: cleanPassword,
-              role: 'CUSTOMER',
-              phone: registeredCust?.phone || matchingLead?.customerPhone || null,
-            });
-            if (regRes?.user) {
-              backendUser = regRes.user;
-              authToken = regRes.token;
-              if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-              localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
-            }
-          } catch (syncErr) {
-            console.warn('Backend auto-sync registration skipped:', syncErr.message);
-          }
-        }
-
-        // Auto-provision any customer logging in with password >= 4 chars to eliminate 404
-        if (!backendUser && cleanPassword && cleanPassword.length >= 4) {
-          try {
-            const regRes = await authApi.register({
-              name: trimmedEmail.split('@')[0],
-              email: trimmedEmail,
-              password: cleanPassword,
-              role: 'CUSTOMER',
-            });
-            if (regRes?.user) {
-              backendUser = regRes.user;
-              authToken = regRes.token;
-              if (authToken) localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-              localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
-            }
-          } catch (autoRegErr) {
-            console.warn('Fallback auto-register skipped:', autoRegErr.message);
-          }
-        }
-
-        // Guarantee seamless login for test k (astp750@gmail.com)
-        if (!backendUser && (trimmedEmail === 'astp750@gmail.com' || trimmedEmail.includes('astp750'))) {
-          backendUser = {
-            id: 46,
-            name: 'test k',
-            email: 'astp750@gmail.com',
-            role: 'CUSTOMER',
-            phone: '7896541230',
-          };
-          authToken = authToken || ('token_astp750_' + Date.now());
-          localStorage.setItem(AUTH_TOKEN_KEY, authToken);
-          localStorage.setItem(`njs_user_pw_${trimmedEmail}`, cleanPassword);
-        }
-
-        if (!backendUser && !registeredCust && !localKnownPassword && !matchingLead) {
+        if (!registeredCust) {
           setIsLoading(false);
-          const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create your account first.');
+          const notFoundErr = new Error(errMsg || 'No registered account found with this email. Please create an account first.');
           notFoundErr.isNotRegistered = true;
           throw notFoundErr;
         }
       }
 
-      // If no local password was configured, enforce backend password validation result
-      if (!requiredPassword) {
-        if (
-          errMsg.includes('Invalid') ||
-          errMsg.includes('password') ||
-          apiErr.status === 401 ||
-          apiErr.response?.status === 401
-        ) {
-          setIsLoading(false);
-          throw new Error(errMsg || 'Invalid email or password. Please verify your credentials.');
-        }
+      // If invalid password
+      if (
+        errMsg.includes('Invalid') ||
+        errMsg.includes('password') ||
+        apiErr.status === 401 ||
+        apiErr.response?.status === 401
+      ) {
+        setIsLoading(false);
+        throw new Error(errMsg || 'Invalid email or password. Please verify your credentials.');
       }
     }
 
@@ -270,7 +198,7 @@ export const AuthProvider = ({ children }) => {
         role: mappedRole,
         roleLabel: mappedRole === 'super_admin' ? 'Admin' : mappedRole === 'surveyor' ? 'Chartered Surveyor' : 'Property Client',
         company: 'NJS Property Group',
-        phone: backendUser.phone || '+44 20 7946 0912',
+        phone: backendUser.phone || registeredCust?.phone || '',
         avatar: backendUser.avatar || null,
         token: authToken,
       };
@@ -278,7 +206,7 @@ export const AuthProvider = ({ children }) => {
       // Check demo users fallback with strict password verification
       const demoUser = DEMO_USERS[trimmedEmail];
       if (demoUser) {
-        const cleanPw = (password || '').trim();
+        const cleanPw = cleanPassword;
         const validAdmin = (trimmedEmail === 'admin@demo.com' || trimmedEmail === 'njsadmin@gmail.com') && (cleanPw === 'admin123' || cleanPw === 'password123' || cleanPw === 'Password123!');
         const validSurveyor = (trimmedEmail === 'surveyor@demo.com' || trimmedEmail === 'njssurveyor@gmail.com') && (cleanPw === 'surveyor123' || cleanPw === 'password123' || cleanPw === 'Password123!');
         const validCustomer = (trimmedEmail === 'customer@demo.com') && (cleanPw === 'customer123' || cleanPw === 'password123');
@@ -290,26 +218,17 @@ export const AuthProvider = ({ children }) => {
         matchedUser = demoUser;
       }
 
-      // Check registered or Admin-created customers
-      if (!matchedUser) {
-        if (registeredCust) {
-          matchedUser = registeredCust;
-        } else if (localKnownPassword) {
-          matchedUser = {
-            id: `usr_client_${Date.now()}`,
-            email: trimmedEmail,
-            name: trimmedEmail.split('@')[0],
-            role: 'customer',
-            roleLabel: 'Property Client',
-            company: 'Private Client',
-          };
-        }
+      // Check registered customers
+      if (!matchedUser && registeredCust) {
+        matchedUser = registeredCust;
       }
 
       // If user does not exist in backend, demo users, or registered customers, strictly reject!
       if (!matchedUser) {
         setIsLoading(false);
-        throw new Error('No registered account found with this email. Please create an account first.');
+        const notFoundErr = new Error('No registered account found with this email. Please create an account first.');
+        notFoundErr.isNotRegistered = true;
+        throw notFoundErr;
       }
     }
 
