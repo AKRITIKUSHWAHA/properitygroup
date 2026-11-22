@@ -19,8 +19,28 @@ export const getQuotesList = async (req, res, next) => {
     const quotes = await prisma.quote.findMany({
       where,
       include: {
-        job: { select: { id: true, reference: true, propertyAddress: true, clientName: true } },
-        lead: { select: { id: true, reference: true, clientName: true } },
+        job: {
+          select: {
+            id: true,
+            reference: true,
+            propertyAddress: true,
+            clientName: true,
+            clientEmail: true,
+            clientPhone: true,
+            serviceType: true,
+          },
+        },
+        lead: {
+          select: {
+            id: true,
+            reference: true,
+            clientName: true,
+            clientEmail: true,
+            clientPhone: true,
+            propertyAddress: true,
+            serviceType: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -40,7 +60,17 @@ export const getInvoicesList = async (req, res, next) => {
     const invoices = await prisma.invoice.findMany({
       where,
       include: {
-        job: { select: { id: true, reference: true, propertyAddress: true, clientName: true } },
+        job: {
+          select: {
+            id: true,
+            reference: true,
+            propertyAddress: true,
+            clientName: true,
+            clientEmail: true,
+            clientPhone: true,
+            serviceType: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
