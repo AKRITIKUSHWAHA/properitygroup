@@ -341,25 +341,27 @@ export const CustomerDashboardPage = () => {
 
       {/* Multi-Instruction Switcher (Active Request vs History) */}
       {myCustomerJobs.length > 1 && (
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+        <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
               {myCustomerJobs.length}
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Instruction Details ({myCustomerJobs.indexOf(customerJob) + 1} of {myCustomerJobs.length})
               </div>
-              <div className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
-                <span>{customerJob?.surveyType} &bull; {customerJob?.property || customerJob?.location}</span>
-                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase">
+              <div className="text-sm font-bold text-[#0B1F4D] flex flex-wrap items-center gap-2 mt-0.5">
+                <span className="break-words sm:truncate max-w-full sm:max-w-md">
+                  {customerJob?.surveyType} &bull; {customerJob?.property || customerJob?.location}
+                </span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 uppercase shrink-0 whitespace-nowrap">
                   {customerJob?.status || 'Active'}
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="dash-job-select" className="text-xs font-semibold text-slate-600 whitespace-nowrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0 w-full lg:w-auto">
+            <label htmlFor="dash-job-select" className="text-xs font-semibold text-slate-600 shrink-0 whitespace-nowrap">
               Switch Survey:
             </label>
             <select
@@ -369,11 +371,11 @@ export const CustomerDashboardPage = () => {
                 setSelectedJobId(e.target.value);
                 localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
               }}
-              className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="w-full sm:w-80 lg:w-96 max-w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate shadow-2xs"
             >
               {myCustomerJobs.map((j, idx) => (
                 <option key={j.id} value={j.id}>
-                  {idx === 0 ? '★ Active Request: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id}) [{j.status}]
+                  {idx === 0 ? '★ Active: ' : '📋 History: '} {j.surveyType} — {j.property || j.location} ({j.id})
                 </option>
               ))}
             </select>
