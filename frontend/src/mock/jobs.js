@@ -171,13 +171,22 @@ export const useJobs = () => {
     setJobs((prev) => {
       let found = false;
       const next = prev.map((j) => {
+        const cleanId = String(id || '').toUpperCase().trim();
+        const cleanJId = String(j.id || '').toUpperCase().trim();
+        const cleanJobNo = String(j.jobNo || '').toUpperCase().trim();
+        const cleanRef = String(j.reference || '').toUpperCase().trim();
+
+        const normId = cleanId.replace('NJS-', 'JOB-');
+        const normJId = cleanJId.replace('NJS-', 'JOB-');
+        const normJobNo = cleanJobNo.replace('NJS-', 'JOB-');
+        const normRef = cleanRef.replace('NJS-', 'JOB-');
+
         const matches =
-          j.id === id ||
-          String(j.id) === String(id) ||
-          j.jobNo === id ||
-          String(j.jobNo) === String(id) ||
-          (j.reference && String(j.reference) === String(id)) ||
-          (j.dbId && String(j.dbId) === String(id)) ||
+          cleanJId === cleanId ||
+          cleanJobNo === cleanId ||
+          cleanRef === cleanId ||
+          (j.dbId && String(j.dbId) === cleanId) ||
+          (normId && (normJId === normId || normJobNo === normId || normRef === normId)) ||
           (updates.customerEmail && j.customerEmail && j.customerEmail.toLowerCase() === updates.customerEmail.toLowerCase()) ||
           (typeof id === 'string' && id.includes('@') && j.customerEmail && j.customerEmail.toLowerCase() === id.toLowerCase()) ||
           (!id && j.customerEmail);
