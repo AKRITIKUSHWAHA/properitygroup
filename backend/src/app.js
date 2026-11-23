@@ -52,6 +52,8 @@ app.use(
       'x-user-role',
       'x-user-email',
       'x-user-name',
+      'x-client-timezone',
+      'X-Client-Timezone',
       'Accept',
       'Origin',
       'X-Requested-With',
