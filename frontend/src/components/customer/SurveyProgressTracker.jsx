@@ -68,8 +68,15 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   const paymentStatus = (job?.paymentStatus || '').toLowerCase().trim();
   const step = Number(job?.timelineStep) || 0;
 
-  const apiStep = Number(apiTracking?.currentStep) || 0;
-  const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
+  const apiStep = Number(apiTracking?.currentStep || apiTracking?.timelineStep || job?.timelineStep) || 0;
+  const apiStage = String(
+    apiTracking?.currentStage ||
+    apiTracking?.stage ||
+    apiTracking?.job?.stage ||
+    job?.stage ||
+    ''
+  ).toUpperCase().trim();
+  const isApiSigned = Boolean(apiTracking?.signed || apiTracking?.isSigned);
 
   const hasDate = Boolean(job?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(job.date.toLowerCase().trim()));
   const hasSurveyor = Boolean(job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(job.surveyor.toLowerCase().trim()));
@@ -138,6 +145,7 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   if (
     termsStatus === 'signed' ||
     stage === 'SIGNED' || apiStage === 'SIGNED' ||
+    isApiSigned ||
     step === 4 || apiStep === 4
   ) {
     return 4;

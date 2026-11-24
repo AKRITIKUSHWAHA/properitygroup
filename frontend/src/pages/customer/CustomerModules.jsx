@@ -104,6 +104,7 @@ const isJobForCustomer = (job, user) => {
 
 export const CustomerTermsPage = () => {
   const [apiTerm, setApiTerm] = useState(null);
+  const [apiTracking, setApiTracking] = useState(null);
   const [apiAcceptedQuote, setApiAcceptedQuote] = useState(null);
 
   useEffect(() => {
@@ -111,6 +112,15 @@ export const CustomerTermsPage = () => {
       .then((res) => {
         const payload = res?.data?.term || res?.term || (res?.data ? res.data : null);
         if (payload) setApiTerm(payload);
+      })
+      .catch(() => {});
+
+    customerTrackSurveyApi.getTracking()
+      .then((res) => {
+        const payload = res?.data || res;
+        if (payload?.currentStep || payload?.currentStage) {
+          setApiTracking(payload);
+        }
       })
       .catch(() => {});
 
@@ -291,7 +301,11 @@ export const CustomerTermsPage = () => {
 
   // 3.5 Dynamic RICS stage calculation
   const effectiveStage = Math.max(
-    computeRICSStage(currentJob, apiTerm, userEmail),
+    computeRICSStage(currentJob, apiTracking || apiTerm, userEmail),
+    Number(apiTracking?.currentStep) || 0,
+    apiTracking?.currentStage === 'COMPLETE' ? 10 : 0,
+    apiTerm?.job?.stage === 'COMPLETE' ? 10 : 0,
+    apiTerm?.signed ? 4 : 0,
     Number(currentJob?.timelineStep) || 0,
     currentAgreement?.signed ? 4 : 0
   );
@@ -309,16 +323,22 @@ export const CustomerTermsPage = () => {
   // Once an instruction progresses to Stage 4 or beyond, terms are executed and binding under RICS
   const isAlreadySigned = Boolean(
     effectiveStage >= 4 ||
+    apiTerm?.signed ||
+    apiTerm?.job?.stage === 'COMPLETE' ||
+    apiTracking?.currentStage === 'COMPLETE' ||
+    (apiTracking?.currentStep || 0) >= 4 ||
     currentJob?.termsStatus === 'Signed' ||
     currentAgreement?.status === 'Signed' ||
     currentAgreement?.signed === true ||
-    storedTermsSigned ||
-    apiTerm?.signed
+    storedTermsSigned
   );
 
   // Once an instruction progresses to Stage 5 or beyond, payment has cleared and booking is locked
   const isPaymentClaimed = Boolean(
     effectiveStage >= 5 ||
+    apiTracking?.currentStage === 'COMPLETE' ||
+    (apiTracking?.currentStep || 0) >= 5 ||
+    apiTerm?.job?.stage === 'COMPLETE' ||
     currentJob?.paymentStatus === 'Paid' ||
     (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
     storedPaymentClaimed
@@ -938,6 +958,10 @@ export const CustomerTermsPage = () => {
   // ==========================================
   if (
     effectiveStage >= 5 ||
+    isPaymentClaimed ||
+    apiTracking?.currentStage === 'COMPLETE' ||
+    (apiTracking?.currentStep || 0) >= 5 ||
+    apiTerm?.job?.stage === 'COMPLETE' ||
     (isAlreadySigned && isPaymentClaimed) ||
     (currentJob?.timelineStep || 0) >= 5 ||
     (stage === 'confirmed' && stage !== 'payment')
@@ -968,9 +992,9 @@ export const CustomerTermsPage = () => {
             </div>
 
             <div className="text-left sm:text-right text-xs text-white/90 space-y-0.5 font-mono">
-              <div>Ref: <strong>{currentAgreement?.refNo || 'AGR-2026-081'}</strong></div>
-              <div>Audit Code: <strong>{currentAgreement?.auditCode || 'DOC-ESIGN-VERIFIED'}</strong></div>
-              <div>Executed: <strong>{currentAgreement?.signedDate || '26/10/2026, 11:15'}</strong></div>
+              <div>Ref: <strong>{apiTerm?.reference || currentAgreement?.refNo || 'TRM-2026-11'}</strong></div>
+              <div>Audit Code: <strong>{apiTerm?.tamperAuditHash ? apiTerm.tamperAuditHash.slice(0, 18).toUpperCase() : (currentAgreement?.auditCode || 'DOC-ESIGN-VERIFIED')}</strong></div>
+              <div>Executed: <strong>{apiTerm?.signedAt ? new Date(apiTerm.signedAt).toLocaleString('en-GB') : (currentAgreement?.signedDate || '24/11/2026, 10:22')}</strong></div>
             </div>
           </div>
 
@@ -2592,7 +2616,29 @@ export const CustomerQuotationsPage = () => {
 // 4. INVOICES & PAYMENTS PAGE
 // ==========================================
 export const CustomerInvoicesPage = () => {
-  useEffect(() => { customerInvoicesAndPaymentsApi.getInvoices().catch(() => {}); }, []);
+  const [apiInvoices, setApiInvoices] = useState([]);
+  const [apiTracking, setApiTracking] = useState(null);
+
+  useEffect(() => {
+    customerInvoicesAndPaymentsApi.getInvoices()
+      .then((res) => {
+        const invs = res?.data?.invoices || res?.invoices || (Array.isArray(res) ? res : []);
+        if (Array.isArray(invs) && invs.length > 0) {
+          setApiInvoices(invs);
+        }
+      })
+      .catch(() => {});
+
+    customerTrackSurveyApi.getTracking()
+      .then((res) => {
+        const payload = res?.data || res;
+        if (payload?.currentStep || payload?.currentStage) {
+          setApiTracking(payload);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const { user } = useAuth();
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
@@ -2606,58 +2652,102 @@ export const CustomerInvoicesPage = () => {
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
 
-  const invoices = myJobs.map((j) => {
-    const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 770.0);
-    const vat = Math.round(net * 0.2);
-    const total = net + vat;
-    const uEmail = (user?.email || '').toLowerCase().trim();
-    const jRef = (j.id || j.jobNo || j.reference || '').toString().trim();
-    const stageNum = Math.max(Number(j.timelineStep) || 0, computeRICSStage(j, null, uEmail));
+  const invoices = React.useMemo(() => {
+    if (apiInvoices && apiInvoices.length > 0) {
+      return apiInvoices.map((inv) => {
+        const net = Number(inv.subtotal) || 880;
+        const vat = Number(inv.vatAmount) || 176;
+        const total = Number(inv.total) || (net + vat);
+        const isPaid =
+          inv.status === 'PAID' ||
+          inv.status === 'Paid' ||
+          apiTracking?.currentStage === 'COMPLETE' ||
+          (apiTracking?.currentStep || 0) >= 5;
 
-    const isJobDone =
-      stageNum >= 10 ||
-      j.status === 'Completed' ||
-      j.status === 'Delivered' ||
-      (j.timelineStep || 0) >= 10 ||
-      localStorage.getItem('propertygroup_delivered') === 'true' ||
-      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
-      (jRef && localStorage.getItem(`propertygroup_delivered_${jRef}`) === 'true');
+        return {
+          id: inv.id,
+          invNo: inv.invoiceNumber || `INV-2026-${String(inv.id).padStart(3, '0')}`,
+          jobRef: inv.job?.reference || `JOB-2026-${inv.jobId || '7681'}`,
+          property: inv.job?.propertyAddress || 'abc,uk',
+          service: inv.job?.serviceType || 'Homebuyer Survey – Level 2',
+          date: inv.paidAt
+            ? new Date(inv.paidAt).toLocaleDateString('en-GB')
+            : (inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-GB') : '24/11/2026'),
+          netAmount: net,
+          vatAmount: vat,
+          grossTotal: total,
+          net: `£${net.toFixed(2)}`,
+          vat: `£${vat.toFixed(2)}`,
+          total: `£${total.toFixed(2)}`,
+          status: isPaid ? 'Paid' : 'Unpaid',
+          isPaid,
+          isClaimed: false,
+          transferReference: inv.stripePaymentIntentId || inv.bacsReference || 'BACS-REF-CLEARED',
+          method: inv.paymentMethod || 'Direct Bank Transfer (BACS Faster Payments)',
+        };
+      });
+    }
 
-    // In RICS standards, once an instruction is booked, inspected, or delivered (Stage 5+), payment is settled & cleared
-    const isPaid =
-      stageNum >= 5 ||
-      j.paymentStatus === 'Paid' ||
-      isJobDone ||
-      (j.timelineStep || 0) >= 5 ||
-      localStorage.getItem('propertygroup_payment_paid') === 'true' ||
-      (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true') ||
-      (jRef && localStorage.getItem(`propertygroup_payment_paid_${jRef}`) === 'true');
+    return myJobs.map((j) => {
+      const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 880.0);
+      const vat = Math.round(net * 0.2);
+      const total = net + vat;
+      const uEmail = (user?.email || '').toLowerCase().trim();
+      const jRef = (j.id || j.jobNo || j.reference || '').toString().trim();
+      const stageNum = Math.max(
+        Number(j.timelineStep) || 0,
+        Number(apiTracking?.currentStep) || 0,
+        apiTracking?.currentStage === 'COMPLETE' ? 10 : 0,
+        computeRICSStage(j, apiTracking, uEmail)
+      );
 
-    const isClaimed =
-      !isPaid &&
-      (j.paymentStatus === 'Claimed (Verification Pending)' ||
-        j.paymentStatus === 'Claimed' ||
-        (j.paymentStatus && j.paymentStatus.includes('Claimed')));
+      const isJobDone =
+        stageNum >= 10 ||
+        apiTracking?.currentStage === 'COMPLETE' ||
+        (apiTracking?.currentStep || 0) >= 10 ||
+        j.status === 'Completed' ||
+        j.status === 'Delivered' ||
+        localStorage.getItem('propertygroup_delivered') === 'true' ||
+        (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
+        (jRef && localStorage.getItem(`propertygroup_delivered_${jRef}`) === 'true');
 
-    return {
-      invNo: `INV-2026-${String(j.id || j.jobNo || '7681').replace(/[^0-9]/g, '') || '7681'}`,
-      jobRef: j.id || j.jobNo || 'JOB-2026-7681',
-      property: `${j.property || j.propertyAddress || 'Subject Property'}${j.location ? `, ${j.location}` : ''}`,
-      service: j.surveyType || 'Homebuyer Survey – Level 2',
-      date: j.date || '24/11/2026',
-      netAmount: net,
-      vatAmount: vat,
-      grossTotal: total,
-      net: `£${net.toFixed(2)}`,
-      vat: `£${vat.toFixed(2)}`,
-      total: `£${total.toFixed(2)}`,
-      status: isPaid ? 'Paid' : isClaimed ? 'Payment Claimed' : 'Unpaid',
-      isPaid,
-      isClaimed,
-      transferReference: j.transferReference,
-      method: j.paymentMethod || (isPaid ? 'Bank Transfer (BACS Faster Payments)' : 'Bank Transfer (BACS)'),
-    };
-  });
+      // In RICS standards, once an instruction is booked, inspected, or delivered (Stage 5+), payment is settled & cleared
+      const isPaid =
+        stageNum >= 5 ||
+        apiTracking?.currentStage === 'COMPLETE' ||
+        (apiTracking?.currentStep || 0) >= 5 ||
+        j.paymentStatus === 'Paid' ||
+        isJobDone ||
+        localStorage.getItem('propertygroup_payment_paid') === 'true' ||
+        (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true') ||
+        (jRef && localStorage.getItem(`propertygroup_payment_paid_${jRef}`) === 'true');
+
+      const isClaimed =
+        !isPaid &&
+        (j.paymentStatus === 'Claimed (Verification Pending)' ||
+          j.paymentStatus === 'Claimed' ||
+          (j.paymentStatus && j.paymentStatus.includes('Claimed')));
+
+      return {
+        invNo: `INV-2026-${String(j.id || j.jobNo || '7681').replace(/[^0-9]/g, '') || '011'}`,
+        jobRef: j.id || j.jobNo || 'JOB-2026-7681',
+        property: `${j.property || j.propertyAddress || 'abc,uk'}${j.location ? `, ${j.location}` : ''}`,
+        service: j.surveyType || 'Homebuyer Survey – Level 2',
+        date: j.date || '24/11/2026',
+        netAmount: net,
+        vatAmount: vat,
+        grossTotal: total,
+        net: `£${net.toFixed(2)}`,
+        vat: `£${vat.toFixed(2)}`,
+        total: `£${total.toFixed(2)}`,
+        status: isPaid ? 'Paid' : isClaimed ? 'Payment Claimed' : 'Unpaid',
+        isPaid,
+        isClaimed,
+        transferReference: j.transferReference,
+        method: j.paymentMethod || (isPaid ? 'Bank Transfer (BACS Faster Payments)' : 'Bank Transfer (BACS)'),
+      };
+    });
+  }, [apiInvoices, myJobs, apiTracking, user]);
 
   // Calculate Metrics
   const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.grossTotal, 0);

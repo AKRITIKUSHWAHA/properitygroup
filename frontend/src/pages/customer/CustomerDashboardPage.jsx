@@ -185,9 +185,19 @@ export const CustomerDashboardPage = () => {
   }, [userEmail]);
 
   const baseJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || null;
+  const isApiJobDelivered = apiActiveJob?.stage === 'COMPLETE' || (apiTracking?.currentStage || '').toUpperCase() === 'COMPLETE' || (apiTracking?.currentStep || 0) >= 10;
+  const isApiJobQA = apiActiveJob?.stage === 'QA_REVIEW' || (apiTracking?.currentStage || '').toUpperCase() === 'QA_REVIEW' || (apiTracking?.currentStep || 0) === 9;
+  const isApiJobDrafting = apiActiveJob?.stage === 'PREPARING_REPORT' || apiActiveJob?.stage === 'DRAFTING' || (apiTracking?.currentStep || 0) === 8;
+  const isApiJobInspected = apiActiveJob?.stage === 'INSPECTED' || (apiTracking?.currentStep || 0) === 7;
   const isApiJobBooked = apiActiveJob?.stage === 'BOOKED' || (apiTracking?.currentStep || 0) >= 6;
-  const isApiJobPaid = apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
-  const apiStepNumber = Math.max(Number(apiTracking?.currentStep) || 0, Number(apiActiveJob?.timelineStep) || 0, isApiJobBooked ? 6 : 0);
+  const isApiJobPaid = isApiJobDelivered || isApiJobQA || isApiJobDrafting || isApiJobInspected || isApiJobBooked || (apiTracking?.currentStep || 0) >= 5 || apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
+  const apiStepNumber = Math.max(
+    Number(apiTracking?.currentStep) || 0,
+    apiTracking?.currentStage === 'COMPLETE' ? 10 : 0,
+    apiActiveJob?.stage === 'COMPLETE' ? 10 : 0,
+    Number(apiActiveJob?.timelineStep) || 0,
+    isApiJobDelivered ? 10 : (isApiJobQA ? 9 : (isApiJobDrafting ? 8 : (isApiJobInspected ? 7 : (isApiJobBooked ? 6 : (isApiJobPaid ? 5 : 4)))))
+  );
 
   const activeJob = (baseJob || apiActiveJob) ? {
     ...(baseJob || {}),
@@ -207,10 +217,10 @@ export const CustomerDashboardPage = () => {
       ? baseJob.timeSlot
       : (apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD'),
     timelineStep: Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
-    status: isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Action Required')),
-    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobBooked ? 'BOOKED' : 'PAID'),
+    status: isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Action Required')))))),
+    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'PAID')),
     paymentStatus: isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Claimed (Verification Pending)'),
-    termsStatus: (apiActiveJob?.terms?.[0]?.signed || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending',
+    termsStatus: (apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4 || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending',
   } : null;
 
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
