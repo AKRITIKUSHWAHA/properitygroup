@@ -21,7 +21,7 @@ router.patch('/mark-all-read', markAllAsRead);
 // PATCH /api/v1/notifications/:id/read - Toggle single read
 router.patch('/:id/read', markAsRead);
 
-// POST /api/v1/notifications - Admin/Internal can create notifications
-router.post('/', authorizeRoles('ADMIN'), createNotification);
+// POST /api/v1/notifications - Admin, Surveyor, or Customer can trigger role-targeted lifecycle alerts
+router.post('/', authorizeRoles('ADMIN', 'SURVEYOR', 'CUSTOMER'), createNotification);
 
 export default router;
