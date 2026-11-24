@@ -165,8 +165,8 @@ export const CustomerDashboardPage = () => {
             surveyor: dashPayload.activeJob.surveyor?.name || dashPayload.activeJob.surveyor || 'Pending Allocation',
             date: dashPayload.activeJob.inspectionDate ? new Date(dashPayload.activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
             timeSlot: dashPayload.activeJob.inspectionTime || 'Time: TBD',
-            termsStatus: 'Signed',
-            paymentStatus: hasPaid ? 'Paid' : 'Claimed (Verification Pending)',
+            termsStatus: (calculatedStep >= 4 || isBooked || isInspected || isQA || isDelivered) ? 'Signed' : 'Pending',
+            paymentStatus: (hasPaid || calculatedStep >= 5 || isBooked || isInspected || isQA || isDelivered) ? 'Paid' : 'Claimed (Verification Pending)',
           };
 
           if (idx >= 0) {

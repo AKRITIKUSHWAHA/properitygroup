@@ -289,34 +289,40 @@ export const CustomerTermsPage = () => {
   const baseFee = Math.round((grossTotal / 1.2) * 100) / 100;
   const vatAmount = Math.round((grossTotal - baseFee) * 100) / 100;
 
-  // If instruction explicitly has termsStatus === 'Pending' or timelineStep === 1, it has NOT been signed yet
-  const isJobTermsPending = Boolean(currentJob && (currentJob.termsStatus === 'Pending' || currentJob.timelineStep === 1));
-  const isJobPaymentPending = Boolean(currentJob && (currentJob.paymentStatus === 'Pending' || !currentJob.paymentStatus || (currentJob.timelineStep || 0) <= 4));
+  // 3.5 Dynamic RICS stage calculation
+  const effectiveStage = Math.max(
+    computeRICSStage(currentJob, apiTerm, userEmail),
+    Number(currentJob?.timelineStep) || 0,
+    currentAgreement?.signed ? 4 : 0
+  );
 
   const storedTermsSigned =
     localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true';
+    localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
+    (currentJob?.id && localStorage.getItem(`propertygroup_terms_signed_${currentJob.id}`) === 'true');
 
   const storedPaymentClaimed =
     localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true';
+    localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
+    (currentJob?.id && localStorage.getItem(`propertygroup_payment_claimed_${currentJob.id}`) === 'true');
 
-  const isAlreadySigned =
-    !isJobTermsPending && Boolean(
-      currentJob?.termsStatus === 'Signed' ||
-      currentAgreement?.status === 'Signed' ||
-      currentAgreement?.signed === true ||
-      (storedTermsSigned && !currentJob) ||
-      (currentJob?.timelineStep || 0) >= 4
-    );
+  // Once an instruction progresses to Stage 4 or beyond, terms are executed and binding under RICS
+  const isAlreadySigned = Boolean(
+    effectiveStage >= 4 ||
+    currentJob?.termsStatus === 'Signed' ||
+    currentAgreement?.status === 'Signed' ||
+    currentAgreement?.signed === true ||
+    storedTermsSigned ||
+    apiTerm?.signed
+  );
 
-  const isPaymentClaimed =
-    isAlreadySigned && !isJobPaymentPending && Boolean(
-      currentJob?.paymentStatus === 'Paid' ||
-      (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
-      (storedPaymentClaimed && !currentJob) ||
-      (currentJob?.timelineStep || 0) >= 5
-    );
+  // Once an instruction progresses to Stage 5 or beyond, payment has cleared and booking is locked
+  const isPaymentClaimed = Boolean(
+    effectiveStage >= 5 ||
+    currentJob?.paymentStatus === 'Paid' ||
+    (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    storedPaymentClaimed
+  );
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
@@ -341,20 +347,20 @@ export const CustomerTermsPage = () => {
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
   const [stage, setStage] = useState(() => {
-    if (isPaymentClaimed) return 'confirmed';
-    if (isAlreadySigned) return 'payment';
+    if (isPaymentClaimed || effectiveStage >= 5) return 'confirmed';
+    if (isAlreadySigned || effectiveStage >= 4) return 'payment';
     return 'sign';
   });
 
   useEffect(() => {
-    if (isPaymentClaimed) {
+    if (isPaymentClaimed || effectiveStage >= 5) {
       setStage('confirmed');
-    } else if (isAlreadySigned) {
+    } else if (isAlreadySigned || effectiveStage >= 4) {
       setStage('payment');
     } else {
       setStage('sign');
     }
-  }, [isPaymentClaimed, isAlreadySigned]);
+  }, [isPaymentClaimed, isAlreadySigned, effectiveStage]);
 
   const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
@@ -930,7 +936,12 @@ export const CustomerTermsPage = () => {
   // ==========================================
   // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
   // ==========================================
-  if (((isAlreadySigned && isPaymentClaimed) || (currentJob?.timelineStep || 0) >= 5 || stage === 'confirmed') && stage !== 'payment') {
+  if (
+    effectiveStage >= 5 ||
+    (isAlreadySigned && isPaymentClaimed) ||
+    (currentJob?.timelineStep || 0) >= 5 ||
+    (stage === 'confirmed' && stage !== 'payment')
+  ) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto pb-12">
         <PageHeader
@@ -2600,18 +2611,28 @@ export const CustomerInvoicesPage = () => {
     const vat = Math.round(net * 0.2);
     const total = net + vat;
     const uEmail = (user?.email || '').toLowerCase().trim();
+    const jRef = (j.id || j.jobNo || j.reference || '').toString().trim();
+    const stageNum = Math.max(Number(j.timelineStep) || 0, computeRICSStage(j, null, uEmail));
+
     const isJobDone =
+      stageNum >= 10 ||
       j.status === 'Completed' ||
       j.status === 'Delivered' ||
       (j.timelineStep || 0) >= 10 ||
       localStorage.getItem('propertygroup_delivered') === 'true' ||
-      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true');
+      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
+      (jRef && localStorage.getItem(`propertygroup_delivered_${jRef}`) === 'true');
 
+    // In RICS standards, once an instruction is booked, inspected, or delivered (Stage 5+), payment is settled & cleared
     const isPaid =
+      stageNum >= 5 ||
       j.paymentStatus === 'Paid' ||
       isJobDone ||
+      (j.timelineStep || 0) >= 5 ||
       localStorage.getItem('propertygroup_payment_paid') === 'true' ||
-      (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true');
+      (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true') ||
+      (jRef && localStorage.getItem(`propertygroup_payment_paid_${jRef}`) === 'true');
+
     const isClaimed =
       !isPaid &&
       (j.paymentStatus === 'Claimed (Verification Pending)' ||
@@ -2619,11 +2640,11 @@ export const CustomerInvoicesPage = () => {
         (j.paymentStatus && j.paymentStatus.includes('Claimed')));
 
     return {
-      invNo: `INV-2026-${j.id.replace('JOB-2026-', '90')}`,
-      jobRef: j.id,
-      property: `${j.property}, ${j.location || ''}`,
-      service: j.surveyType,
-      date: j.date || '26/10/2026',
+      invNo: `INV-2026-${String(j.id || j.jobNo || '7681').replace(/[^0-9]/g, '') || '7681'}`,
+      jobRef: j.id || j.jobNo || 'JOB-2026-7681',
+      property: `${j.property || j.propertyAddress || 'Subject Property'}${j.location ? `, ${j.location}` : ''}`,
+      service: j.surveyType || 'Homebuyer Survey – Level 2',
+      date: j.date || '24/11/2026',
       netAmount: net,
       vatAmount: vat,
       grossTotal: total,

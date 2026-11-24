@@ -26,13 +26,22 @@ export const getCustomerInvoices = async (req, res, next) => {
             reference: true,
             propertyAddress: true,
             serviceType: true,
+            stage: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return ApiResponse.success(res, { invoices, total: invoices.length });
+    const mappedInvoices = invoices.map((inv) => {
+      const isJobPaid = ['PAID', 'BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(inv.job?.stage);
+      return {
+        ...inv,
+        status: isJobPaid ? 'PAID' : inv.status,
+      };
+    });
+
+    return ApiResponse.success(res, { invoices: mappedInvoices, total: mappedInvoices.length });
   } catch (error) {
     next(error);
   }

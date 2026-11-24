@@ -35,7 +35,16 @@ export const getTermsToSign = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    return ApiResponse.success(res, { term });
+    let resultTerm = term;
+    if (term) {
+      const isJobSigned = ['ACCEPTED', 'BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(term.job?.stage);
+      resultTerm = {
+        ...term,
+        signed: term.signed || isJobSigned,
+      };
+    }
+
+    return ApiResponse.success(res, { term: resultTerm });
   } catch (error) {
     next(error);
   }
