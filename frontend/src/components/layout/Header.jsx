@@ -106,22 +106,11 @@ export function Header() {
             <div className="announcement-strip-inner">
               <div className="announcement-center">
                 <span className="announcement-home-icon" role="img" aria-label="house">🏡</span>
-                <span className="announcement-text hidden md:inline">
+                <span className="announcement-text">
                   Skip the wait – get a quote, book and pay for your survey online
-                </span>
-                <span className="announcement-text inline md:hidden">
-                  Skip the wait – book &amp; pay online
                 </span>
               </div>
               <div className="announcement-right">
-                {siteConfig.features?.showPublicPortalLogin && (
-                  <div className="announcement-auth-group">
-                    <Link to="/login" className="announcement-login-btn" title="Customer Portal Login">
-                      <span>Customer Login</span>
-                      <ChevronRight size={13} aria-hidden="true" />
-                    </Link>
-                  </div>
-                )}
                 <button
                   type="button"
                   className="announcement-dismiss-btn"

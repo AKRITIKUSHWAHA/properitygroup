@@ -9215,28 +9215,28 @@ p.mega-action-sub {
 }
 
 .announcement-strip-inner {
-  position: static !important;
+  position: relative !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: center !important;
   width: 100% !important;
   min-height: 28px !important;
+  padding: 0 1.75rem !important;
   gap: 0.85rem !important;
 }
 
 .announcement-center {
   display: flex !important;
   align-items: center !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   gap: 0.55rem !important;
   color: #F8FAFC !important;
   font-size: 0.82rem !important;
   font-weight: 500 !important;
   letter-spacing: -0.005em !important;
-  text-align: left !important;
-  flex: 1 1 auto !important;
+  text-align: center !important;
+  margin: 0 auto !important;
   min-width: 0 !important;
-  overflow: hidden !important;
 }
 
 .announcement-text {
@@ -9244,6 +9244,7 @@ p.mega-action-sub {
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
   display: inline-block !important;
+  text-align: center !important;
 }
 
 .announcement-home-icon {
@@ -9253,13 +9254,14 @@ p.mega-action-sub {
 }
 
 .announcement-right {
-  position: static !important;
-  transform: none !important;
+  position: absolute !important;
+  right: 0.5rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   display: flex !important;
   align-items: center !important;
   gap: 0.55rem !important;
   flex-shrink: 0 !important;
-  margin-left: auto !important;
 }
 
 .announcement-login-btn {
@@ -9460,24 +9462,26 @@ p.mega-action-sub {
     padding: 0.35rem 0 !important;
   }
   .announcement-strip-inner {
-    position: static !important;
+    position: relative !important;
     display: flex !important;
     flex-direction: row !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     align-items: center !important;
     gap: 0.5rem !important;
     min-height: auto !important;
+    padding: 0 1.5rem !important;
   }
   .announcement-center {
-    justify-content: flex-start !important;
-    text-align: left !important;
-    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 auto !important;
     min-width: 0 !important;
   }
   .announcement-right {
-    position: static !important;
-    transform: none !important;
-    margin-left: auto !important;
+    position: absolute !important;
+    right: 0.5rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     flex-shrink: 0 !important;
     gap: 0.4rem !important;
   }
@@ -10277,23 +10281,32 @@ p.mega-action-sub {
     display: flex !important;
   }
   .announcement-strip-inner {
+    position: relative !important;
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     gap: 0.35rem !important;
-    text-align: left !important;
+    text-align: center !important;
+    padding: 0 1.5rem !important;
   }
   .announcement-center {
-    justify-content: flex-start !important;
-    text-align: left !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 auto !important;
     min-width: 0 !important;
-    flex: 1 !important;
   }
   .announcement-text {
-    max-width: 180px !important;
+    max-width: 260px !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
+    text-align: center !important;
+  }
+  .announcement-right {
+    position: absolute !important;
+    right: 0.35rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
   }
 }

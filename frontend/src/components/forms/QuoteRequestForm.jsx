@@ -362,7 +362,7 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         {/* Assurance Note */}
         <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #E2E8F0', textAlign: 'center' }}>
           <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500, display: 'block', lineHeight: 1.4 }}>
-            Strictly Confidential &bull; Independent RICS Aligned Practice &bull; Zero Contractor Bias
+            Strictly Confidential &bull; Independent RICS Aligned Practice &bull; Objective Professional Advice
           </span>
         </div>
       </div>

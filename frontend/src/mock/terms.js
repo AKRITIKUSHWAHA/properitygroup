@@ -338,8 +338,8 @@ export const TERMS_TEMPLATES = [
     clauses: [
       {
         num: '1',
-        title: 'Zero Contractor Bias & Independent Status',
-        text: 'NJS Property Group operates with absolute independence and does not sell chemical damp proofing injections, tanking slurries, or timber treatments. All diagnostic advice is completely unbiased and focused on addressing root causes.',
+        title: 'Independent Diagnostic Status & Objective Assessment',
+        text: 'NJS Property Group operates with absolute professional independence as specialist building assessors and does not sell chemical damp proofing injections, tanking slurries, or remedial contractor treatments. All diagnostic advice is completely objective, impartial, and focused on addressing root causes.',
       },
       {
         num: '2',

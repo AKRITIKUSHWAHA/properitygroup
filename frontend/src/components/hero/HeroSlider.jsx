@@ -233,7 +233,7 @@ export function HeroSlider({ onQuickQuoteSelect, initialService = 'homebuyer-sur
             </div>
             <div className="hero-trust-pill">
               <Scale size={16} className="text-white flex-shrink-0" aria-hidden="true" />
-              <span>100% Zero Contractor Bias</span>
+              <span>100% Independent Practice</span>
             </div>
             <div className="hero-trust-pill">
               <Clock size={16} className="text-white flex-shrink-0" aria-hidden="true" />

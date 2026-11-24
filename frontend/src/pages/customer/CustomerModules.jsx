@@ -51,7 +51,7 @@ import { useJobs, SURVEYORS } from '../../mock/jobs';
 import { SurveyProgressTracker, computeRICSStage } from '../../components/customer/SurveyProgressTracker';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
-import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
+import { useTerms, TERMS_TEMPLATES, getTemplateForService } from '../../mock/terms';
 import { useQuotes } from '../../mock/quotes';
 import { useLeads } from '../../mock/leads';
 import {
@@ -346,23 +346,7 @@ export const CustomerTermsPage = () => {
 
   // 4. Match service-specific clauses from TERMS_TEMPLATES
   const activeTemplate = React.useMemo(() => {
-    const st = surveyType.toLowerCase();
-    if (st.includes('level 3') || st.includes('building')) {
-      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l3') || TERMS_TEMPLATES[1];
-    }
-    if (st.includes('valuation')) {
-      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-valuation') || TERMS_TEMPLATES[3];
-    }
-    if (st.includes('snagging')) {
-      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-snagging') || TERMS_TEMPLATES[2];
-    }
-    if (st.includes('damp')) {
-      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-damp') || TERMS_TEMPLATES[4];
-    }
-    if (st.includes('expert')) {
-      return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-expert-witness') || TERMS_TEMPLATES[5];
-    }
-    return TERMS_TEMPLATES.find((t) => t.id === 'tmpl-l2') || TERMS_TEMPLATES[0];
+    return getTemplateForService(surveyType);
   }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
