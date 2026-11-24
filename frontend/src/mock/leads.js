@@ -41,6 +41,45 @@ export const INITIAL_LEADS = [];
 const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
 const DELETED_LEADS_KEY = 'propertygroup_deleted_lead_ids';
 
+// Auto-purge any obsolete test / dummy records from browser localStorage
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    const raw = localStorage.getItem(LEADS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const cleaned = parsed.filter((l) => {
+          const name = (l.customerName || l.clientName || '').toLowerCase().trim();
+          const email = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+          const addr = (l.property || l.propertyAddress || '').toLowerCase().trim();
+          const idStr = String(l.id || '').trim();
+          const refStr = String(l.reference || '').trim();
+          return (
+            !name.includes('abc') &&
+            !name.includes('akku') &&
+            !email.includes('abc@') &&
+            !email.includes('akku') &&
+            !addr.includes('www,uk') &&
+            !addr.includes('mp nagar') &&
+            !addr.includes('bhopal') &&
+            !idStr.includes('8518') &&
+            !refStr.includes('8518') &&
+            l.id !== 54 &&
+            l.dbId !== 54 &&
+            l.id !== 7 &&
+            l.id !== 11 &&
+            l.id !== 12 &&
+            l.id !== 13
+          );
+        });
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(cleaned));
+        }
+      }
+    }
+  } catch {}
+}
+
 export const getStoredLeads = () => {
   try {
     if (!localStorage.getItem('njs_fresh_leads_clean_v1')) {
@@ -72,20 +111,26 @@ export const getStoredLeads = () => {
               deletedSet.has(formattedRef) ||
               (email && (deletedSet.has(email) || deletedSet.has(email.toLowerCase())));
 
-            return (
-              !isDeleted &&
-              !name.includes('akku') &&
-              name !== 'aashi saket' &&
-              name !== 'dd' &&
-              name !== 'test k' &&
-              !email.includes('akku') &&
-              !addr.includes('mp nagar') &&
-              !addr.includes('bhopal') &&
-              l.id !== 7 &&
-              l.id !== 11 &&
-              l.id !== 12 &&
-              l.id !== 13
-            );
+            const isTestPhantom =
+              name.includes('abc') ||
+              name.includes('akku') ||
+              email.includes('abc@') ||
+              email.includes('akku') ||
+              addr.includes('www,uk') ||
+              addr.includes('mp nagar') ||
+              addr.includes('bhopal') ||
+              idStr.includes('8518') ||
+              dbIdStr.includes('8518') ||
+              refStr.includes('8518') ||
+              formattedRef.includes('8518') ||
+              l.id === 54 ||
+              l.dbId === 54 ||
+              l.id === 7 ||
+              l.id === 11 ||
+              l.id === 12 ||
+              l.id === 13;
+
+            return !isDeleted && !isTestPhantom;
           })
           .map((l) => {
             const emailStr = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();

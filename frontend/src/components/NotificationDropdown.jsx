@@ -114,6 +114,14 @@ export const NotificationDropdown = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const dropdownRef = useRef(null);
 
+  const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
+  const isCustomer = (user?.role || '').toLowerCase() === 'customer';
+  const isAdmin = (user?.role || '').toLowerCase() === 'super_admin' || (user?.role || '').toLowerCase() === 'admin' || user?.email === 'admin@demo.com';
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const userName = (user?.name || '').toLowerCase().trim();
+  const cleanCurrentUserId = user?.id ? String(user.id).replace(/^usr_/, '').replace(/^srv-/, '') : '';
+  const isDemo = Boolean(userEmail && (userEmail === 'customer@demo.com' || userEmail.includes('demo')));
+
   // Fetch role-based notifications from backend API
   const fetchNotifications = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -219,13 +227,6 @@ export const NotificationDropdown = () => {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
-
-  const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
-  const isCustomer = (user?.role || '').toLowerCase() === 'customer';
-  const isAdmin = (user?.role || '').toLowerCase() === 'super_admin' || (user?.role || '').toLowerCase() === 'admin' || user?.email === 'admin@demo.com';
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const userName = (user?.name || '').toLowerCase().trim();
-  const cleanCurrentUserId = user?.id ? String(user.id).replace(/^usr_/, '').replace(/^srv-/, '') : '';
 
   // Strict Privacy Shield for Surveyors & Customer Notification Isolation
   const visibleNotifications = notifications.filter((item) => {

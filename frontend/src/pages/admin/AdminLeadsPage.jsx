@@ -391,14 +391,26 @@ export const AdminLeadsPage = () => {
             ) {
               return false;
             }
-            const name = (l.clientName || '').toLowerCase().trim();
-            const addr = (l.propertyAddress || '').toLowerCase().trim();
-            return (
-              !name.includes('akku') &&
-              !addr.includes('mp nagar') &&
-              !addr.includes('bhopal') &&
-              l.id !== 7
-            );
+            const name = (l.clientName || l.customerName || '').toLowerCase().trim();
+            const email = (l.clientEmail || l.customerEmail || '').toLowerCase().trim();
+            const addr = (l.propertyAddress || l.property || '').toLowerCase().trim();
+            const isTestPhantom =
+              name.includes('abc') ||
+              name.includes('akku') ||
+              email.includes('abc@') ||
+              email.includes('akku') ||
+              addr.includes('www,uk') ||
+              addr.includes('mp nagar') ||
+              addr.includes('bhopal') ||
+              rawId.includes('8518') ||
+              ref.includes('8518') ||
+              formattedRef.includes('8518') ||
+              l.id === 54 ||
+              l.id === 7 ||
+              l.id === 11 ||
+              l.id === 12 ||
+              l.id === 13;
+            return !isTestPhantom;
           })
           .map((l) => {
             const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
@@ -849,7 +861,9 @@ export const AdminLeadsPage = () => {
             <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#0B1F4D]">
               {leads.length}
             </span>
-            <span className="text-xs font-semibold text-slate-500">Active Leads</span>
+            <span className="text-xs font-semibold text-slate-500">
+              {leads.length === 1 ? 'Active Lead' : 'Active Leads'}
+            </span>
           </div>
           <p className="text-[11px] text-slate-400 font-medium mt-0.5 truncate">
             Local Surveyors Direct, Website, and Direct Enquiries

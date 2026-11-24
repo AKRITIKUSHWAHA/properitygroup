@@ -23,7 +23,10 @@ export class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
-    window.location.reload();
+    this.setState({ hasError: false, error: null });
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   getDashboardLink = () => {
@@ -62,6 +65,7 @@ export class ErrorBoundary extends React.Component {
               </button>
               <a
                 href={dashboardLink}
+                onClick={() => this.setState({ hasError: false, error: null })}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
