@@ -48,7 +48,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useJobs, SURVEYORS } from '../../mock/jobs';
-import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
+import { SurveyProgressTracker, computeRICSStage } from '../../components/customer/SurveyProgressTracker';
 import { downloadTermsPDF, downloadInvoicePDF, downloadReportPDF } from '../../utils/pdfGenerator';
 import { useMessages } from '../../mock/messages';
 import { useTerms, TERMS_TEMPLATES } from '../../mock/terms';
@@ -3555,14 +3555,16 @@ export const CustomerTrackSurveyPage = () => {
     (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : '');
 
   const refNo =
-    myQuote?.id ||
-    myLead?.id ||
-    myJob?.id ||
-    myJob?.jobNo ||
     apiTracking?.jobReference ||
     apiTracking?.reference ||
-    (isEmma ? 'JOB-2026-080' : '');
-  const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
+    myJob?.id ||
+    myJob?.jobNo ||
+    myQuote?.id ||
+    myLead?.id ||
+    (isEmma ? 'JOB-2026-080' : 'JOB-2026-7681');
+  const surveyorName = (myJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(String(myJob.surveyor).toLowerCase().trim()))
+    ? myJob.surveyor
+    : (apiTracking?.surveyor?.name || apiTracking?.surveyor || 'Pending Allocation');
   const surveyType =
     myJob?.surveyType ||
     myQuote?.surveyType ||
@@ -3571,113 +3573,10 @@ export const CustomerTrackSurveyPage = () => {
     apiTracking?.serviceType ||
     'RICS Level 2 Home Survey';
 
-  // Calculate live dynamic step (1 to 10) based on specific selected instruction lifecycle
-  const targetEmail = userEmail || 'client@example.com';
-  const isHistoricalJob = myJob?.id === 'QUO-2026-126' || (!myJob?.isNewInstruction && (myJob?.timelineStep || 0) >= 6);
-  const isUniversalDelivered = localStorage.getItem('propertygroup_delivered') === 'true';
-  const isUniversalQA = localStorage.getItem('propertygroup_qareview') === 'true';
-  const isUniversalDrafting = localStorage.getItem('propertygroup_drafting') === 'true';
-  const isUniversalInspected = localStorage.getItem('propertygroup_inspection_completed') === 'true';
-
-  const isLocalDelivered = isUniversalDelivered || localStorage.getItem(`propertygroup_delivered_${targetEmail}`) === 'true';
-  const isLocalQA = isUniversalQA || localStorage.getItem(`propertygroup_qareview_${targetEmail}`) === 'true';
-  const isLocalDrafting = isUniversalDrafting || localStorage.getItem(`propertygroup_drafting_${targetEmail}`) === 'true';
-  const isLocalInspected = isUniversalInspected || localStorage.getItem(`propertygroup_inspection_completed_${targetEmail}`) === 'true';
-
-  const storedTermsSigned =
-    localStorage.getItem(`propertygroup_terms_signed_${targetEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true';
-  const storedPaymentClaimed =
-    localStorage.getItem(`propertygroup_payment_claimed_${targetEmail}`) === 'true' ||
-    localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true';
-
-  const jStatus = (myJob?.status || '').toLowerCase().trim();
-  const jStage = (myJob?.stage || '').toLowerCase().trim();
-  const timelineStep = Number(myJob?.timelineStep) || (jStatus === 'enquiry' || jStatus === 'new' ? 1 : 0);
-  const hasSurveyor = myJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(myJob.surveyor.toLowerCase().trim());
-  const isBookedOrScheduled = jStatus === 'scheduled' || jStatus === 'booked' || (hasSurveyor && myJob?.paymentStatus === 'Paid') || timelineStep >= 6;
-
-  const apiStep = Number(apiTracking?.currentStep) || 0;
-  const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
-
-  // If instruction explicitly has termsStatus === 'Pending' or timelineStep === 1, it has NOT been signed yet
-  const isJobTermsPending = Boolean(myJob && (myJob.termsStatus === 'Pending' || myJob.timelineStep === 1 || jStatus === 'enquiry'));
-  const isJobPaymentPending = Boolean(myJob && (myJob.paymentStatus === 'Pending' || !myJob.paymentStatus || (myJob.timelineStep || 0) <= 4));
-
-  // Strict check: terms must actually be signed, and payment must actually be claimed/settled
-  const termsSigned = Boolean(
-    !isJobTermsPending && (
-      myJob?.termsStatus === 'Signed' ||
-      (myAgreement && (myAgreement.status === 'Signed' || myAgreement.signed === true || Boolean(myAgreement.signedDate))) ||
-      apiStage === 'SIGNED' ||
-      apiStage === 'PAID' ||
-      (storedTermsSigned && !myJob) ||
-      (timelineStep >= 4)
-    )
-  );
-
-  const paymentSettled = Boolean(
-    termsSigned && !isJobPaymentPending && (
-      myJob?.paymentStatus === 'Paid' ||
-      (myJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
-      apiStage === 'PAID' ||
-      (storedPaymentClaimed && !myJob) ||
-      (timelineStep >= 5)
-    )
-  );
-
-  const isQuotationAccepted = Boolean(
-    myJob?.quoteStatus === 'Accepted' ||
-    myQuote?.status === 'Accepted' ||
-    myQuote?.status === 'ACCEPTED' ||
-    myQuote?.isAccepted ||
-    myLead?.status === 'Converted' ||
-    myLead?.status === 'CONVERTED' ||
-    jStatus === 'accepted' ||
-    jStage === 'accepted' ||
-    timelineStep === 3 ||
-    apiStage === 'ACCEPTED' ||
-    apiStep === 3
-  );
-
-  let currentStep = 1;
-  if (isDemo) {
-    currentStep = 7;
-  } else if (myJob?.status === 'Completed' || timelineStep >= 10 || isLocalDelivered || jStatus === 'completed' || apiStep >= 10 || apiStage === 'COMPLETE' || apiStage === 'COMPLETED') {
-    currentStep = 10;
-  } else if (myJob?.status === 'QA_Review' || timelineStep === 9 || (isHistoricalJob && isLocalQA) || jStatus === 'qa_review' || jStatus === 'qa review' || apiStep === 9 || apiStage === 'QA_REVIEW') {
-    currentStep = 9;
-  } else if (myJob?.status === 'Drafting' || timelineStep === 8 || (isHistoricalJob && isLocalDrafting) || jStatus === 'drafting' || jStatus === 'preparing report' || apiStep === 8 || apiStage === 'PREPARING_REPORT' || apiStage === 'DRAFTING') {
-    currentStep = 8;
-  } else if (myJob?.status === 'Inspected' || timelineStep === 7 || (isHistoricalJob && isLocalInspected) || jStatus === 'inspected' || apiStep === 7 || apiStage === 'INSPECTED') {
-    currentStep = 7;
-  } else if (isBookedOrScheduled || timelineStep === 6 || apiStep === 6 || apiStage === 'BOOKED' || apiStage === 'SCHEDULED') {
-    currentStep = 6;
-  } else if (paymentSettled && termsSigned) {
-    currentStep = 5;
-  } else if (termsSigned) {
-    currentStep = 4;
-  } else if (isQuotationAccepted) {
-    currentStep = 3;
-  } else if (
-    myJob?.status === 'Quoted' ||
-    myQuote?.status === 'Quoted' ||
-    jStatus === 'quoted' ||
-    jStage === 'quote' ||
-    timelineStep === 2 ||
-    myLead?.status === 'Quoted' ||
-    myLead?.status === 'QUOTE_SENT' ||
-    (myLead?.estimatedValue && !String(myLead?.estimatedValue).toLowerCase().includes('pending')) ||
-    apiStage === 'QUOTE' ||
-    apiStage === 'QUOTED' ||
-    apiStep === 2
-  ) {
-    currentStep = 2;
-  } else if (jStatus === 'enquiry' || jStage === 'enquiry' || timelineStep === 1 || apiStep === 1 || apiStage === 'ENQUIRY') {
-    currentStep = 1;
-  } else {
-    currentStep = 1;
-  }
+  // Calculate live dynamic step (1 to 10) using shared single source of truth helper
+  const currentStep = isDemo ? 7 : computeRICSStage(myJob, apiTracking, userEmail);
+  const termsSigned = currentStep >= 4;
+  const paymentSettled = currentStep >= 5;
 
   const milestone = React.useMemo(() => {
     switch (currentStep) {
@@ -3884,7 +3783,8 @@ export const CustomerTrackSurveyPage = () => {
 
       <SurveyProgressTracker
         currentStep={currentStep}
-        job={myJob || {
+        job={{
+          ...(myJob || {}),
           id: refNo,
           jobNo: refNo,
           property: propertyAddress,
@@ -3892,7 +3792,13 @@ export const CustomerTrackSurveyPage = () => {
           surveyType: surveyType || apiTracking?.serviceType || 'RICS Level 2 Home Survey',
           timelineStep: currentStep,
           termsStatus: termsSigned ? 'Signed' : 'Pending',
-          paymentStatus: paymentSettled ? 'Claimed (Verification Pending)' : 'Pending',
+          paymentStatus: paymentSettled ? 'Paid' : 'Claimed (Verification Pending)',
+          date: myJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(myJob.date.toLowerCase().trim())
+            ? myJob.date
+            : (apiTracking?.inspectionDate ? new Date(apiTracking.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD'),
+          timeSlot: myJob?.timeSlot && !['time: tbd', ''].includes(myJob.timeSlot.toLowerCase().trim())
+            ? myJob.timeSlot
+            : (apiTracking?.inspectionTime || 'Time: TBD'),
         }}
       />
 

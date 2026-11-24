@@ -44,6 +44,38 @@ export const getCustomerDashboard = async (req, res, next) => {
     let activeTerm = activeJob?.terms?.[0] || null;
     let activeInvoice = activeJob?.invoices?.[0] || null;
 
+    if (activeJob) {
+      const hasPaid = activeJob.invoices?.some((inv) => inv.status === 'PAID') || activeInvoice?.status === 'PAID';
+      const hasSigned = activeJob.terms?.some((t) => t.signed) || activeTerm?.signed;
+      const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
+      const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
+      const isCompleted = activeJob.stage === 'COMPLETE';
+
+      let calculatedStep = 1;
+      if (isCompleted) calculatedStep = 10;
+      else if (activeJob.stage === 'PREPARING_REPORT') calculatedStep = 8;
+      else if (isInspected) calculatedStep = 7;
+      else if (isBooked) calculatedStep = 6;
+      else if (hasPaid) calculatedStep = 5;
+      else if (hasSigned) calculatedStep = 4;
+      else if (activeJob.stage === 'ACCEPTED' || activeQuote?.status === 'ACCEPTED') calculatedStep = 3;
+      else if (activeJob.stage === 'QUOTE') calculatedStep = 2;
+      else calculatedStep = 1;
+
+      activeJob = {
+        ...activeJob,
+        timelineStep: calculatedStep,
+        currentStep: calculatedStep,
+        status: isCompleted ? 'Completed' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage))),
+        property: activeJob.propertyAddress,
+        date: activeJob.inspectionDate ? new Date(activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
+        timeSlot: activeJob.inspectionTime || 'Time: TBD',
+        surveyor: activeJob.surveyor?.name || 'Pending Allocation',
+        paymentStatus: hasPaid ? 'Paid' : (activeInvoice?.status || 'Pending'),
+        termsStatus: hasSigned ? 'Signed' : 'Pending',
+      };
+    }
+
     // If no activeJob exists in prisma.job, check if there is an active lead in prisma.lead
     if (!activeJob && (userEmail || userName)) {
       try {
@@ -100,6 +132,8 @@ export const getCustomerDashboard = async (req, res, next) => {
       activeSurveyRef: activeJob?.reference || 'No Active Survey',
       serviceType: activeJob?.serviceType || 'Residential Valuation / Home Survey',
       stage: activeJob?.stage || 'NONE',
+      timelineStep: activeJob?.timelineStep || 1,
+      currentStep: activeJob?.currentStep || 1,
       inspectionDate: activeJob?.inspectionDate || null,
       inspectionTime: activeJob?.inspectionTime || null,
       termsStatus: activeTerm ? (activeTerm.signed ? 'Signed' : 'Pending Signature') : (activeJob?.termsStatus || 'Not Issued'),

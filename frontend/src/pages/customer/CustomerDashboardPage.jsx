@@ -28,8 +28,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useJobs } from '../../mock/jobs';
-import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
-import { customerDashboardApi } from '../../api/customerApi';
+import { SurveyProgressTracker, computeRICSStage } from '../../components/customer/SurveyProgressTracker';
+import { customerDashboardApi, customerTrackSurveyApi } from '../../api/customerApi';
 import { publicApi } from '../../api/publicApi';
 import { useEffect } from 'react';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
@@ -98,32 +98,111 @@ export const CustomerDashboardPage = () => {
   });
 
   const [apiActiveJob, setApiActiveJob] = useState(null);
+  const [apiTracking, setApiTracking] = useState(null);
 
-  const activeJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || apiActiveJob || null;
+  // Sync Customer Dashboard & Tracking from live backend API
+  useEffect(() => {
+    Promise.all([
+      customerDashboardApi.getDashboard().catch(() => null),
+      customerTrackSurveyApi.getTracking().catch(() => null),
+    ]).then(([dashRes, trackRes]) => {
+      const dashPayload = dashRes?.activeJob ? dashRes : (dashRes?.data || dashRes);
+      const trackPayload = trackRes?.currentStage || trackRes?.currentStep ? trackRes : (trackRes?.data || trackRes);
+
+      if (trackPayload) {
+        setApiTracking(trackPayload);
+      }
+
+      if (dashPayload?.activeJob) {
+        setApiActiveJob(dashPayload.activeJob);
+        // Synchronize with local storage jobs list so all tabs/pages stay in sync
+        try {
+          const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+          const jobRef = dashPayload.activeJob.reference || dashPayload.activeJob.id;
+          const idx = storedJobs.findIndex(
+            (j) => j.id === jobRef || (userEmail && (j.customerEmail || '').toLowerCase() === userEmail)
+          );
+          const isBooked = dashPayload.activeJob.stage === 'BOOKED' || (trackPayload?.currentStep || 0) >= 6;
+          const hasPaid = dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID';
+          const calculatedStep = Math.max(
+            Number(trackPayload?.currentStep) || 0,
+            Number(dashPayload.activeJob.timelineStep) || 0,
+            isBooked ? 6 : (hasPaid ? 5 : 4)
+          );
+
+          const syncedData = {
+            id: jobRef,
+            jobNo: jobRef,
+            property: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
+            propertyAddress: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
+            surveyType: dashPayload.activeJob.serviceType,
+            status: isBooked ? 'Booked' : (hasPaid ? 'Paid' : 'Action Required'),
+            stage: dashPayload.activeJob.stage || (isBooked ? 'BOOKED' : 'PAID'),
+            timelineStep: calculatedStep,
+            surveyor: dashPayload.activeJob.surveyor?.name || dashPayload.activeJob.surveyor || 'Pending Allocation',
+            date: dashPayload.activeJob.inspectionDate ? new Date(dashPayload.activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
+            timeSlot: dashPayload.activeJob.inspectionTime || 'Time: TBD',
+            termsStatus: 'Signed',
+            paymentStatus: hasPaid ? 'Paid' : 'Claimed (Verification Pending)',
+          };
+
+          if (idx >= 0) {
+            storedJobs[idx] = { ...storedJobs[idx], ...syncedData };
+          } else {
+            storedJobs.unshift(syncedData);
+          }
+          localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
+          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          if (updateJob && idx >= 0) {
+            updateJob(storedJobs[idx].id, syncedData);
+          }
+        } catch {}
+      }
+    });
+  }, [userEmail]);
+
+  const baseJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || null;
+  const isApiJobBooked = apiActiveJob?.stage === 'BOOKED' || (apiTracking?.currentStep || 0) >= 6;
+  const isApiJobPaid = apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
+  const apiStepNumber = Math.max(Number(apiTracking?.currentStep) || 0, Number(apiActiveJob?.timelineStep) || 0, isApiJobBooked ? 6 : 0);
+
+  const activeJob = (baseJob || apiActiveJob) ? {
+    ...(baseJob || {}),
+    ...(apiActiveJob || {}),
+    id: baseJob?.id || apiActiveJob?.reference || apiActiveJob?.id,
+    jobNo: baseJob?.jobNo || apiActiveJob?.reference || apiActiveJob?.id,
+    property: baseJob?.property || apiActiveJob?.propertyAddress || apiActiveJob?.property || 'Subject Property',
+    propertyAddress: baseJob?.propertyAddress || apiActiveJob?.propertyAddress || baseJob?.property || 'Subject Property',
+    surveyType: baseJob?.surveyType || apiActiveJob?.serviceType || 'RICS Level 2 Home Survey',
+    surveyor: (baseJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(baseJob.surveyor.toLowerCase().trim()))
+      ? baseJob.surveyor
+      : (apiActiveJob?.surveyor?.name || apiActiveJob?.surveyor || 'Pending Allocation'),
+    date: (baseJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(baseJob.date.toLowerCase().trim()))
+      ? baseJob.date
+      : (apiActiveJob?.inspectionDate ? new Date(apiActiveJob.inspectionDate).toLocaleDateString('en-GB') : (baseJob?.date || 'Date: TBD')),
+    timeSlot: baseJob?.timeSlot && !['time: tbd', ''].includes(baseJob.timeSlot.toLowerCase().trim())
+      ? baseJob.timeSlot
+      : (apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD'),
+    timelineStep: Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
+    status: isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Action Required')),
+    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobBooked ? 'BOOKED' : 'PAID'),
+    paymentStatus: isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Claimed (Verification Pending)'),
+    termsStatus: (apiActiveJob?.terms?.[0]?.signed || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending',
+  } : null;
+
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
   const customerJob = activeJob;
 
   const isDeliveredActive = isJobDelivered(customerJob, userEmail);
+  const currentStageStep = isDeliveredActive ? 10 : computeRICSStage(customerJob, apiTracking, userEmail);
   const resolvedCustomerJob = customerJob
     ? {
         ...customerJob,
         status: isDeliveredActive ? 'Completed' : customerJob.status,
-        timelineStep: isDeliveredActive ? 10 : customerJob.timelineStep,
+        timelineStep: currentStageStep,
         paymentStatus: isDeliveredActive ? 'Paid' : customerJob.paymentStatus,
       }
     : null;
-
-  // Sync Customer Dashboard from backend API
-  useEffect(() => {
-    customerDashboardApi.getDashboard()
-      .then((res) => {
-        const payload = res?.activeJob ? res : (res?.data || res);
-        if (payload?.activeJob) {
-          setApiActiveJob(payload.activeJob);
-        }
-      })
-      .catch(() => {});
-  }, []);
   const customerEmails = customerJob?.emails || [];
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState(null);
 
@@ -544,52 +623,24 @@ export const CustomerDashboardPage = () => {
           </div>
         </div>
       ) : (
-        <SurveyProgressTracker
-          currentStep={(() => {
-            if (isDeliveredActive) return 10;
-            const status = (customerJob?.status || '').toLowerCase().trim();
-            const stage = (customerJob?.stage || '').toLowerCase().trim();
-            const termsStatus = (customerJob?.termsStatus || '').toLowerCase().trim();
-            const paymentStatus = (customerJob?.paymentStatus || '').toLowerCase().trim();
-            const step = Number(customerJob?.timelineStep) || 0;
-            const hasDate = customerJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(customerJob.date.toLowerCase().trim());
-
-            // 10-Stage RICS Lifecycle in Descending Order (Highest Milestones Preempt Lower Ones)
-            // Stage 10: Report Delivered
-            if (status === 'completed' || status === 'delivered' || step >= 10 || localStorage.getItem('propertygroup_delivered') === 'true' || localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true') return 10;
-
-            // Stage 9: Quality Check / QA Review
-            if (status === 'qa_review' || status === 'qa review' || step === 9 || localStorage.getItem('propertygroup_qareview') === 'true' || localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true') return 9;
-
-            // Stage 8: Report Preparation / Drafting
-            if (status === 'drafting' || status === 'preparing report' || step === 8 || localStorage.getItem('propertygroup_drafting') === 'true' || localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true') return 8;
-
-            // Stage 7: Inspection Completed
-            if (status === 'inspected' || step === 7 || localStorage.getItem('propertygroup_inspection_completed') === 'true' || localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true') return 7;
-
-            // Stage 6: Appointment Booked
-            if (status === 'booked' || status === 'scheduled' || step === 6 || (hasDate && (paymentStatus === 'paid' || paymentStatus.includes('claimed') || termsStatus === 'signed'))) return 6;
-
-            // Stage 5: Payment Confirmed / Verification Pending
-            if (paymentStatus === 'paid' || paymentStatus.includes('claimed') || step === 5) return 5;
-
-            // Stage 4: Terms Signed
-            if (termsStatus === 'signed' || step === 4) return 4;
-
-            // Stage 3: Quote Accepted
-            if (status === 'accepted' || customerJob?.quoteStatus === 'Accepted' || stage === 'accepted' || step === 3) return 3;
-
-            // Stage 2: Quote Issued
-            if (status === 'quoted' || stage === 'quote' || step === 2) return 2;
-
-            // Stage 1: Enquiry Received
-            if (status === 'enquiry' || stage === 'enquiry' || step === 1) return 1;
-
-            if (step > 0) return Math.min(10, Math.max(1, step));
-            return 1;
-          })()}
-          job={resolvedCustomerJob}
-        />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              RICS Inspection Progression
+            </span>
+            <button
+              onClick={() => navigate('/customer/track-my-survey')}
+              className="text-xs font-bold text-[#2563EB] hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>View Full Tracker &amp; Diary</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <SurveyProgressTracker
+            currentStep={computeRICSStage(resolvedCustomerJob, apiTracking, userEmail)}
+            job={resolvedCustomerJob}
+          />
+        </div>
       )}
 
       {/* 2.6 SURVEY COMPLETED & REPORT DELIVERED CELEBRATION BANNER */}

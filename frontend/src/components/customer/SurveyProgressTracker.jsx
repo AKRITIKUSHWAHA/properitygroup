@@ -29,6 +29,132 @@ import {
  * 10. Report Delivered
  */
 
+/**
+ * Shared single source of truth for RICS 10-Stage calculation across all pages
+ */
+export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
+  const isDeliveredLocal =
+    localStorage.getItem('propertygroup_delivered') === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true');
+  const isQALocal =
+    localStorage.getItem('propertygroup_qareview') === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true');
+  const isDraftingLocal =
+    localStorage.getItem('propertygroup_drafting') === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true');
+  const isInspectedLocal =
+    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
+    (userEmail && localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true');
+
+  const status = (job?.status || '').toLowerCase().trim();
+  const stage = (job?.stage || '').toUpperCase().trim();
+  const termsStatus = (job?.termsStatus || '').toLowerCase().trim();
+  const paymentStatus = (job?.paymentStatus || '').toLowerCase().trim();
+  const step = Number(job?.timelineStep) || 0;
+
+  const apiStep = Number(apiTracking?.currentStep) || 0;
+  const apiStage = String(apiTracking?.currentStage || '').toUpperCase().trim();
+
+  const hasDate = Boolean(job?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(job.date.toLowerCase().trim()));
+  const hasSurveyor = Boolean(job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(job.surveyor.toLowerCase().trim()));
+
+  // 10. Completed / Delivered
+  if (
+    status === 'completed' || status === 'delivered' ||
+    stage === 'COMPLETE' || stage === 'COMPLETED' ||
+    apiStage === 'COMPLETE' || apiStage === 'COMPLETED' ||
+    step >= 10 || apiStep >= 10 || isDeliveredLocal
+  ) {
+    return 10;
+  }
+
+  // 9. QA Review
+  if (
+    status === 'qa_review' || status === 'qa review' ||
+    stage === 'QA_REVIEW' || apiStage === 'QA_REVIEW' ||
+    step === 9 || apiStep === 9 || isQALocal
+  ) {
+    return 9;
+  }
+
+  // 8. Drafting / Preparing Report
+  if (
+    status === 'drafting' || status === 'preparing report' ||
+    stage === 'PREPARING_REPORT' || stage === 'DRAFTING' ||
+    apiStage === 'PREPARING_REPORT' || apiStage === 'DRAFTING' ||
+    step === 8 || apiStep === 8 || isDraftingLocal
+  ) {
+    return 8;
+  }
+
+  // 7. Inspection Completed
+  if (
+    status === 'inspected' ||
+    stage === 'INSPECTED' || apiStage === 'INSPECTED' ||
+    step === 7 || apiStep === 7 || isInspectedLocal
+  ) {
+    return 7;
+  }
+
+  // 6. Appointment Booked
+  if (
+    status === 'booked' || status === 'scheduled' ||
+    stage === 'BOOKED' || stage === 'SCHEDULED' ||
+    apiStage === 'BOOKED' || apiStage === 'SCHEDULED' ||
+    step === 6 || apiStep === 6 ||
+    (hasDate && (paymentStatus === 'paid' || paymentStatus.includes('claimed') || termsStatus === 'signed')) ||
+    (hasSurveyor && (paymentStatus === 'paid' || paymentStatus.includes('claimed')))
+  ) {
+    return 6;
+  }
+
+  // 5. Payment Confirmed / Verification Pending
+  if (
+    paymentStatus === 'paid' || paymentStatus.includes('claimed') ||
+    stage === 'PAID' || apiStage === 'PAID' ||
+    step === 5 || apiStep === 5
+  ) {
+    return 5;
+  }
+
+  // 4. Terms Signed
+  if (
+    termsStatus === 'signed' ||
+    stage === 'SIGNED' || apiStage === 'SIGNED' ||
+    step === 4 || apiStep === 4
+  ) {
+    return 4;
+  }
+
+  // 3. Quote Accepted
+  if (
+    status === 'accepted' || job?.quoteStatus === 'Accepted' ||
+    stage === 'ACCEPTED' || apiStage === 'ACCEPTED' ||
+    step === 3 || apiStep === 3
+  ) {
+    return 3;
+  }
+
+  // 2. Quote Issued
+  if (
+    status === 'quoted' ||
+    stage === 'QUOTE' || stage === 'QUOTED' ||
+    apiStage === 'QUOTE' || apiStage === 'QUOTED' ||
+    step === 2 || apiStep === 2
+  ) {
+    return 2;
+  }
+
+  // 1. Enquiry
+  if (step === 1 || apiStep === 1 || status === 'enquiry' || stage === 'ENQUIRY' || apiStage === 'ENQUIRY') {
+    return 1;
+  }
+
+  if (step > 0) return Math.min(10, Math.max(1, step));
+  if (apiStep > 0) return Math.min(10, Math.max(1, apiStep));
+  return 1;
+};
+
 export const getSurveyStages = (job) => {
   const property = job?.property || 'the property';
   const surveyor = (job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(String(job.surveyor).toLowerCase().trim()))
@@ -362,6 +488,14 @@ export const SurveyProgressTracker = ({ currentStep = 7, job = null }) => {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
             >
               View Receipt <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          )}
+          {activeStageObj.step === 6 && (
+            <a
+              href="/customer/appointment-details"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0B1F4D] text-white text-xs font-semibold rounded-lg hover:bg-[#15337A] transition-colors"
+            >
+              Appointment Details <ArrowRight className="w-3.5 h-3.5" />
             </a>
           )}
           {activeStageObj.step >= 9 && (
