@@ -401,6 +401,26 @@ export const AuthProvider = ({ children }) => {
       // ignore
     }
 
+    // Clean out any stale progress keys for brand new user session
+    try {
+      [
+        'propertygroup_delivered',
+        'propertygroup_qareview',
+        'propertygroup_drafting',
+        'propertygroup_inspection_completed',
+        'propertygroup_quote_accepted',
+        'propertygroup_payment_paid',
+        `propertygroup_delivered_${trimmedEmail}`,
+        `propertygroup_qareview_${trimmedEmail}`,
+        `propertygroup_drafting_${trimmedEmail}`,
+        `propertygroup_inspection_completed_${trimmedEmail}`,
+        `propertygroup_quote_accepted_${trimmedEmail}`,
+        `propertygroup_active_job_${trimmedEmail}`,
+        `propertygroup_terms_signed_${trimmedEmail}`,
+        `propertygroup_payment_claimed_${trimmedEmail}`,
+      ].forEach((k) => localStorage.removeItem(k));
+    } catch {}
+
     if (autoLogin) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
       setUser(newCustomer);
@@ -437,6 +457,16 @@ export const AuthProvider = ({ children }) => {
     }
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    try {
+      [
+        'propertygroup_delivered',
+        'propertygroup_qareview',
+        'propertygroup_drafting',
+        'propertygroup_inspection_completed',
+        'propertygroup_quote_accepted',
+        'propertygroup_payment_paid',
+      ].forEach((k) => localStorage.removeItem(k));
+    } catch {}
     setUser(null);
     addToast({
       type: 'info',

@@ -44,6 +44,11 @@ const isJobForCustomer = (job, user) => {
   const jDemo = (job.customerDemoEmail || '').toLowerCase().trim();
   const jName = (job.customer || job.customerName || job.client || '').toLowerCase().trim();
 
+  // If email matches, that is definitive
+  if (uEmail && jEmail && uEmail === jEmail) return true;
+  if (uEmail && jAlt && uEmail === jAlt) return true;
+  if (uEmail && jDemo && uEmail === jDemo) return true;
+
   if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
     return jEmail === 'customer@demo.com' || jName.includes('emma');
   }
@@ -52,12 +57,13 @@ const isJobForCustomer = (job, user) => {
     return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
   }
 
-  return (
-    (jEmail && (jEmail === uEmail || jEmail.includes(uEmail) || uEmail.includes(jEmail))) ||
-    (jAlt && (jAlt === uEmail || jAlt.includes(uEmail))) ||
-    (jDemo && (jDemo === uEmail || jDemo.includes(uEmail))) ||
-    (jName && uName && (jName === uName || jName.includes(uName) || uName.includes(jName)))
-  );
+  // Name match ONLY if exact full match and not generic word
+  const genericNames = ['customer', 'client', 'user', 'test', 'admin', 'surveyor', 'njs'];
+  if (uName && jName && uName === jName && !genericNames.includes(uName)) {
+    return true;
+  }
+
+  return false;
 };
 
 // Dynamic completed & delivered checker across customer lifecycle
@@ -70,7 +76,6 @@ const isJobDelivered = (j, uEmail) => {
   const email = (j.customerEmail || uEmail || '').toLowerCase().trim();
 
   const isDeliveredFlag =
-    localStorage.getItem('propertygroup_delivered') === 'true' ||
     (email && localStorage.getItem(`propertygroup_delivered_${email}`) === 'true') ||
     (jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
     (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true');

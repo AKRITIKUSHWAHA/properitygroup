@@ -86,6 +86,11 @@ const isJobForCustomer = (job, user) => {
   const jDemo = (job.customerDemoEmail || '').toLowerCase().trim();
   const jName = (job.customer || job.customerName || job.client || '').toLowerCase().trim();
 
+  // If email matches, that is definitive
+  if (uEmail && jEmail && uEmail === jEmail) return true;
+  if (uEmail && jAlt && uEmail === jAlt) return true;
+  if (uEmail && jDemo && uEmail === jDemo) return true;
+
   if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
     return jEmail === 'customer@demo.com' || jName.includes('emma');
   }
@@ -94,12 +99,13 @@ const isJobForCustomer = (job, user) => {
     return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
   }
 
-  return (
-    (jEmail && (jEmail === uEmail || jEmail.includes(uEmail) || uEmail.includes(jEmail))) ||
-    (jAlt && (jAlt === uEmail || jAlt.includes(uEmail))) ||
-    (jDemo && (jDemo === uEmail || jDemo.includes(uEmail))) ||
-    (jName && uName && (jName === uName || jName.includes(uName) || uName.includes(jName)))
-  );
+  // Name match ONLY if exact full match and not generic word
+  const genericNames = ['customer', 'client', 'user', 'test', 'admin', 'surveyor', 'njs'];
+  if (uName && jName && uName === jName && !genericNames.includes(uName)) {
+    return true;
+  }
+
+  return false;
 };
 
 export const CustomerTermsPage = () => {
@@ -205,8 +211,7 @@ export const CustomerTermsPage = () => {
       return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
     });
   const currentJob =
-    (activeJobId && allJobs.find((j) => j.id === activeJobId || j.jobNo === activeJobId)) ||
-    myJobs.find((j) => activeJobId && (j.id === activeJobId || j.jobNo === activeJobId)) ||
+    (activeJobId && myJobs.find((j) => j.id === activeJobId || j.jobNo === activeJobId)) ||
     myJobs[0] ||
     null;
 
@@ -267,7 +272,7 @@ export const CustomerTermsPage = () => {
       : '') ||
     (currentUser?.address && currentUser.address !== 'Subject Property'
       ? currentUser.address
-      : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : 'abc,uk, London, UK'));
+      : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : ''));
 
   const surveyType =
     location.state?.surveyType ||
@@ -290,12 +295,12 @@ export const CustomerTermsPage = () => {
     userQuote?.id ||
     userLead?.quoteRef ||
     userLead?.id ||
-    (isEmma ? 'JOB-2026-080' : 'QTE-2026-102');
+    (isEmma ? 'JOB-2026-080' : (currentJob?.id || ''));
 
   const rawStateGross = location.state?.grossTotal ? parseFloat(String(location.state.grossTotal).replace(/[^0-9.]/g, '')) : null;
   const rawApiGross = apiAcceptedQuote?.totalAmount ? Number(apiAcceptedQuote.totalAmount) : null;
   const rawJobGross = currentJob?.quote?.total || (currentJob?.quote?.baseFee ? currentJob.quote.baseFee * 1.2 : null);
-  const grossTotal = rawStateGross || rawApiGross || userQuote?.totalAmount || leadTotal || rawJobGross || 1056.0;
+  const grossTotal = rawStateGross || rawApiGross || userQuote?.totalAmount || leadTotal || rawJobGross || (currentJob?.totalAmount ? Number(currentJob.totalAmount) : 0);
   const baseFee = Math.round((grossTotal / 1.2) * 100) / 100;
   const vatAmount = Math.round((grossTotal - baseFee) * 100) / 100;
 
@@ -897,12 +902,11 @@ export const CustomerTermsPage = () => {
       return (userEmail && (aEmail === userEmail || aEmail.includes(userEmail) || userEmail.includes(aEmail))) ||
              (userName && (aName === userName || aName.includes(userName)));
     }) ||
-    (currentJob && (currentJob.quoteStatus === 'Accepted' || currentJob.status === 'Accepted' || currentJob.stage === 'accepted' || currentJob.termsStatus === 'Signed' || (currentJob.timelineStep && currentJob.timelineStep >= 2))) ||
+    (currentJob && (currentJob.quoteStatus === 'Accepted' || currentJob.status === 'Accepted' || currentJob.stage === 'accepted' || currentJob.termsStatus === 'Signed' || (currentJob.timelineStep && currentJob.timelineStep >= 3))) ||
     (userQuote && (userQuote.status === 'Accepted' || userQuote.status === 'ACCEPTED' || userQuote.isAccepted || userQuote.termsStatus === 'Signed')) ||
-    (userLead && (userLead.status === 'Converted' || userLead.quoteAccepted || userLead.status === 'QUOTE_SENT')) ||
-    (localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true') ||
-    (localStorage.getItem('propertygroup_quote_accepted') === 'true') ||
-    true
+    (userLead && (userLead.status === 'Converted' || userLead.quoteAccepted)) ||
+    (userEmail && localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true') ||
+    (userStorageKey && localStorage.getItem(`propertygroup_quote_accepted_${userStorageKey}`) === 'true')
   );
 
   if (!isAcceptedQuote) {
@@ -2651,8 +2655,8 @@ export const CustomerInvoicesPage = () => {
         return {
           id: inv.id,
           invNo: inv.invoiceNumber || `INV-2026-${String(inv.id).padStart(3, '0')}`,
-          jobRef: inv.job?.reference || `JOB-2026-${inv.jobId || '7681'}`,
-          property: inv.job?.propertyAddress || 'abc,uk',
+          jobRef: inv.job?.reference || (inv.jobId ? `JOB-2026-${inv.jobId}` : `INV-${inv.id}`),
+          property: inv.job?.propertyAddress || user?.address || 'Subject Property',
           service: inv.job?.serviceType || 'Homebuyer Survey – Level 2',
           date: inv.paidAt
             ? new Date(inv.paidAt).toLocaleDateString('en-GB')
@@ -2691,7 +2695,6 @@ export const CustomerInvoicesPage = () => {
         (apiTracking?.currentStep || 0) >= 10 ||
         j.status === 'Completed' ||
         j.status === 'Delivered' ||
-        localStorage.getItem('propertygroup_delivered') === 'true' ||
         (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
         (jRef && localStorage.getItem(`propertygroup_delivered_${jRef}`) === 'true');
 
@@ -2702,7 +2705,6 @@ export const CustomerInvoicesPage = () => {
         (apiTracking?.currentStep || 0) >= 5 ||
         j.paymentStatus === 'Paid' ||
         isJobDone ||
-        localStorage.getItem('propertygroup_payment_paid') === 'true' ||
         (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true') ||
         (jRef && localStorage.getItem(`propertygroup_payment_paid_${jRef}`) === 'true');
 
@@ -2713,9 +2715,9 @@ export const CustomerInvoicesPage = () => {
           (j.paymentStatus && j.paymentStatus.includes('Claimed')));
 
       return {
-        invNo: `INV-2026-${String(j.id || j.jobNo || '7681').replace(/[^0-9]/g, '') || '011'}`,
-        jobRef: j.id || j.jobNo || 'JOB-2026-7681',
-        property: `${j.property || j.propertyAddress || 'abc,uk'}${j.location ? `, ${j.location}` : ''}`,
+        invNo: `INV-2026-${String(j.id || j.jobNo || idx + 1).replace(/[^0-9]/g, '') || '001'}`,
+        jobRef: j.id || j.jobNo || `JOB-${idx + 1}`,
+        property: `${j.property || j.propertyAddress || 'Subject Property'}${j.location ? `, ${j.location}` : ''}`,
         service: j.surveyType || 'Homebuyer Survey – Level 2',
         date: j.date || '24/11/2026',
         netAmount: net,
@@ -2880,6 +2882,21 @@ export const CustomerInvoicesPage = () => {
       </div>
 
       {/* Invoices List */}
+      {invoices.length === 0 ? (
+        <div className="bg-white p-8 sm:p-12 rounded-3xl border border-slate-200/90 shadow-xs text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#0B1F4D] flex items-center justify-center mx-auto shadow-2xs">
+            <Receipt className="w-8 h-8 text-[#2563EB]" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="text-base sm:text-lg font-bold text-[#0B1F4D]">
+              No Invoices Issued Yet
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Your official HMRC-compliant VAT receipts and invoices will be issued and archived here once your survey quotation fee is accepted.
+            </p>
+          </div>
+        </div>
+      ) : (
       <div className="space-y-4">
         {invoices.map((inv) => {
           const isPaid = inv.status === 'Paid';
@@ -3006,13 +3023,8 @@ export const CustomerInvoicesPage = () => {
             </div>
           );
         })}
-
-        {invoices.length === 0 && (
-          <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center text-slate-400">
-            No invoices generated yet.
-          </div>
-        )}
       </div>
+      )}
 
       {/* MODAL 1: SETTLE PAYMENT MODAL */}
       {settlingInvoice && (
@@ -3656,7 +3668,7 @@ export const CustomerTrackSurveyPage = () => {
     myJob?.jobNo ||
     myQuote?.id ||
     myLead?.id ||
-    (isEmma ? 'JOB-2026-080' : 'JOB-2026-7681');
+    (isEmma ? 'JOB-2026-080' : (myJob ? `JOB-${myJob.id}` : ''));
   const surveyorName = (myJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(String(myJob.surveyor).toLowerCase().trim()))
     ? myJob.surveyor
     : (apiTracking?.surveyor?.name || apiTracking?.surveyor || 'Pending Allocation');
@@ -3766,8 +3778,7 @@ export const CustomerTrackSurveyPage = () => {
     (myCustomerJobs && myCustomerJobs.length > 0) ||
     myLead ||
     myQuote ||
-    apiTracking ||
-    (propertyAddress && propertyAddress !== 'Subject Property' && propertyAddress.trim().length > 0)
+    (apiTracking && (apiTracking.jobReference || apiTracking.reference || apiTracking.currentStage || apiTracking.currentStep))
   );
 
   return (

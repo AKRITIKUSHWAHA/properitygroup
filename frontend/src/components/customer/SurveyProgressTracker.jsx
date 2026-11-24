@@ -38,29 +38,25 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   const digitsRef = jobRef.replace(/[^0-9]/g, '');
 
   const isDeliveredLocal =
-    localStorage.getItem('propertygroup_delivered') === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true') ||
+    Boolean((userEmail && localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true') ||
     (jobRef && localStorage.getItem(`propertygroup_delivered_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true');
+    (cleanRef && localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true'));
 
   const isQALocal =
-    localStorage.getItem('propertygroup_qareview') === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true') ||
+    Boolean((userEmail && localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true') ||
     (jobRef && localStorage.getItem(`propertygroup_qareview_${jobRef}`) === 'true') ||
     (cleanRef && localStorage.getItem(`propertygroup_qareview_${cleanRef}`) === 'true') ||
-    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true');
+    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true'));
 
   const isDraftingLocal =
-    localStorage.getItem('propertygroup_drafting') === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true') ||
+    Boolean((userEmail && localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true') ||
     (jobRef && localStorage.getItem(`propertygroup_drafting_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true');
+    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true'));
 
   const isInspectedLocal =
-    localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-    (userEmail && localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true') ||
+    Boolean((userEmail && localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true') ||
     (jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true');
+    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true'));
 
   const status = (job?.status || '').toLowerCase().trim();
   const stage = (job?.stage || '').toUpperCase().trim();
