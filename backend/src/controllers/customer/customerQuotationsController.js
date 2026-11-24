@@ -65,9 +65,12 @@ export const getCustomerQuotations = async (req, res, next) => {
         inclusionsObj.clientEmail ||
         userEmail;
 
-      const baseFee = Number(q.baseFee || 550.0);
-      const vatAmount = Number(q.vatAmount || 110.0);
-      const totalAmount = Number(q.totalAmount || (baseFee + vatAmount));
+      const rawBase = q.baseFee ? Number(q.baseFee) : null;
+      const rawTotal = q.totalAmount ? Number(q.totalAmount) : null;
+      const hasFee = (rawBase !== null && rawBase > 0) || (rawTotal !== null && rawTotal > 0);
+      const baseFee = hasFee ? (rawBase || Math.round((rawTotal / 1.2) * 100) / 100) : null;
+      const vatAmount = hasFee ? (q.vatAmount ? Number(q.vatAmount) : Math.round(((rawTotal || (baseFee * 1.2)) - baseFee) * 100) / 100) : null;
+      const totalAmount = hasFee ? (rawTotal || Math.round((baseFee + vatAmount) * 100) / 100) : null;
 
       return {
         id: q.reference || `QUO-2026-${q.id}`,
@@ -78,16 +81,17 @@ export const getCustomerQuotations = async (req, res, next) => {
         surveyType,
         client,
         clientEmail,
+        hasFee,
         baseFee,
         vatAmount,
         totalAmount,
-        net: `£${baseFee.toFixed(2)}`,
-        vat: `£${vatAmount.toFixed(2)}`,
-        total: `£${totalAmount.toFixed(2)}`,
-        status: q.status === 'ACCEPTED' ? 'Quotation Accepted' : 'Open Proposal',
+        net: hasFee ? `£${baseFee.toFixed(2)}` : 'Pending Estimation',
+        vat: hasFee ? `£${vatAmount.toFixed(2)}` : '—',
+        total: hasFee ? `£${totalAmount.toFixed(2)}` : 'Pending Quotation',
+        status: q.status === 'ACCEPTED' ? 'Quotation Accepted' : hasFee ? 'Open Proposal' : 'Under Review by NJS Practice',
         isAccepted: q.status === 'ACCEPTED',
         date: q.createdAt ? new Date(q.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
-        validUntil: q.validUntil ? `Valid until ${new Date(q.validUntil).toLocaleDateString('en-GB')}` : '14 Days Remaining',
+        validUntil: q.validUntil ? `Valid until ${new Date(q.validUntil).toLocaleDateString('en-GB')}` : hasFee ? '14 Days Remaining' : 'Pending Fee Review',
         rawQuote: q,
       };
     });
@@ -131,34 +135,36 @@ export const getCustomerQuotations = async (req, res, next) => {
             (lead.estimatedValue && Number(lead.estimatedValue) > 0);
 
           if (isQuoted) {
-            const rawVal = lead.estimatedValue ? Number(lead.estimatedValue) : 660.0;
-            const total = rawVal > 50 ? rawVal : 660.0;
-            const baseFee = Math.round((total / 1.2) * 100) / 100;
-            const vatAmount = Math.round((total - baseFee) * 100) / 100;
-            const isAccepted = lead.status === 'CONVERTED';
+          const rawVal = lead.estimatedValue ? Number(lead.estimatedValue) : null;
+          const hasFee = rawVal !== null && rawVal > 0;
+          const total = hasFee ? rawVal : null;
+          const baseFee = hasFee ? Math.round((total / 1.2) * 100) / 100 : null;
+          const vatAmount = hasFee ? Math.round((total - baseFee) * 100) / 100 : null;
+          const isAccepted = lead.status === 'CONVERTED';
 
-            mappedQuotes.push({
-              id: lead.reference || `QUO-2026-${lead.id}`,
-              numericId: lead.id,
-              leadId: lead.id,
-              reference: lead.reference,
-              jobId: lead.reference,
-              property: lead.propertyAddress || 'Subject Property',
-              surveyType: lead.serviceType || 'Homebuyer Survey – Level 2',
-              client: lead.clientName || userName || 'Valued Client',
-              clientEmail: lead.clientEmail || userEmail,
-              baseFee,
-              vatAmount,
-              totalAmount: total,
-              net: `£${baseFee.toFixed(2)}`,
-              vat: `£${vatAmount.toFixed(2)}`,
-              total: `£${total.toFixed(2)}`,
-              status: isAccepted ? 'Quotation Accepted' : 'Open Proposal',
-              isAccepted,
-              date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
-              validUntil: '14 Days Remaining',
-              rawLead: lead,
-            });
+          mappedQuotes.push({
+            id: lead.reference || `QUO-2026-${lead.id}`,
+            numericId: lead.id,
+            leadId: lead.id,
+            reference: lead.reference,
+            jobId: lead.reference,
+            property: lead.propertyAddress || 'Subject Property',
+            surveyType: lead.serviceType || 'Homebuyer Survey – Level 2',
+            client: lead.clientName || userName || 'Valued Client',
+            clientEmail: lead.clientEmail || userEmail,
+            hasFee,
+            baseFee,
+            vatAmount,
+            totalAmount: total,
+            net: hasFee ? `£${baseFee.toFixed(2)}` : 'Pending Estimation',
+            vat: hasFee ? `£${vatAmount.toFixed(2)}` : '—',
+            total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
+            status: isAccepted ? 'Quotation Accepted' : hasFee ? 'Open Proposal' : 'Under Review by NJS Practice',
+            isAccepted,
+            date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+            validUntil: hasFee ? '14 Days Remaining' : 'Pending Fee Review',
+            rawLead: lead,
+          });
           }
         }
       }

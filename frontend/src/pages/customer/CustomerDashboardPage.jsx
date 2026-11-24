@@ -30,6 +30,7 @@ import { Modal } from '../../components/common/Modal';
 import { useJobs } from '../../mock/jobs';
 import { SurveyProgressTracker } from '../../components/customer/SurveyProgressTracker';
 import { customerDashboardApi } from '../../api/customerApi';
+import { publicApi } from '../../api/publicApi';
 import { useEffect } from 'react';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 
@@ -136,7 +137,7 @@ export const CustomerDashboardPage = () => {
     preferredDate: '',
   });
 
-  const handleBookSubmit = (e) => {
+  const handleBookSubmit = async (e) => {
     e.preventDefault();
     setIsBookModalOpen(false);
 
@@ -161,15 +162,12 @@ export const CustomerDashboardPage = () => {
       surveyor: 'Pending Allocation',
       createdAt: new Date().toLocaleDateString('en-GB'),
       isNewInstruction: true,
-      quote: {
-        baseFee: bookForm.surveyType.includes('Level 3') ? 1150 : 650,
-        total: bookForm.surveyType.includes('Level 3') ? 1380 : 780,
-      },
+      quote: null, // Turn off automated fee! Fee will be estimated and provided by NJS Practice
       activityLog: [
         {
           id: Date.now(),
           time: `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`,
-          text: `Survey instruction enquiry submitted by ${user?.name || 'Client'} for ${bookForm.property}.`,
+          text: `Survey instruction enquiry submitted by ${user?.name || 'Client'} for ${bookForm.property}. Quote pending estimation.`,
         },
       ],
     };
@@ -183,6 +181,21 @@ export const CustomerDashboardPage = () => {
       localStorage.setItem('propertygroup_jobs', JSON.stringify([newJob, ...storedJobs]));
       localStorage.setItem(`propertygroup_active_job_${userEmail}`, newJobId);
       window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    } catch {}
+
+    // Pull enquiry through to Admin CRM & trigger email notifications (Bug 4)
+    try {
+      await publicApi.submitQuoteEnquiry({
+        customerName: user?.name || 'Client',
+        customerEmail: userEmail || user?.email || 'customer@demo.com',
+        customerPhone: user?.phone || '',
+        propertyAddress: bookForm.property,
+        propertyPostcode: bookForm.location,
+        serviceName: bookForm.surveyType,
+        serviceId: bookForm.surveyType,
+        enquiryCategory: 'SURVEY_QUOTE',
+        sourcePage: '/customer/dashboard',
+      }).catch(() => {});
     } catch {}
 
     setSelectedJobId(newJobId);

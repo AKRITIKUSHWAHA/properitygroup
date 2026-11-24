@@ -1782,9 +1782,11 @@ export const CustomerQuotationsPage = () => {
       return p && p !== 'subject property' && !p.startsWith('subject property') && id !== 'QUO-PENDING' && jobNo !== 'QUO-PENDING';
     });
   const jobQuotes = myJobs.map((j) => {
-    const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 650.0);
-    const vat = net * 0.2;
-    const total = net + vat;
+    const rawNet = j.quote?.baseFee;
+    const hasFee = typeof rawNet === 'number' && rawNet > 0;
+    const net = hasFee ? rawNet : null;
+    const vat = hasFee ? net * 0.2 : null;
+    const total = hasFee ? net + vat : null;
     const isAccepted =
       j.quoteStatus === 'Accepted' ||
       j.status === 'Accepted' ||
@@ -1797,14 +1799,21 @@ export const CustomerQuotationsPage = () => {
       jobId: j.id,
       property: `${j.property}, ${j.location}`,
       surveyType: j.surveyType,
-      net: `£${net.toFixed(2)}`,
-      vat: `£${vat.toFixed(2)}`,
-      total: `£${total.toFixed(2)}`,
-      date: j.date || '28/10/2026',
-      status: j.termsStatus === 'Signed' ? 'Terms Signed & Active' : isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+      hasFee,
+      net: hasFee ? `£${net.toFixed(2)}` : 'Pending Estimation',
+      vat: hasFee ? `£${vat.toFixed(2)}` : '—',
+      total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
+      date: j.date || new Date().toLocaleDateString('en-GB'),
+      status: j.termsStatus === 'Signed'
+        ? 'Terms Signed & Active'
+        : isAccepted
+        ? 'Quotation Accepted'
+        : hasFee
+        ? 'Open Proposal'
+        : 'Under Review by NJS Practice',
       isAccepted,
       termsStatus: j.termsStatus,
-      validUntil: j.termsStatus === 'Signed' ? 'Confirmed' : '14 Days Remaining',
+      validUntil: j.termsStatus === 'Signed' ? 'Confirmed' : hasFee ? '14 Days Remaining' : 'Pending Fee Review',
       rawJob: j,
     };
   });
@@ -1822,9 +1831,11 @@ export const CustomerQuotationsPage = () => {
   const standAloneQuotes = userStoredQuotes
     .filter((q) => !jobQuotes.some((jq) => jq.id === q.id || jq.jobId?.includes(q.id.replace('QUO-', ''))))
     .map((q) => {
-      const net = q.baseFee || q.amountExVat || 550.0;
-      const vat = q.vatAmount || net * 0.2;
-      const total = q.totalAmount || (net + vat);
+      const rawNet = q.baseFee || q.amountExVat;
+      const hasFee = typeof rawNet === 'number' && rawNet > 0;
+      const net = hasFee ? rawNet : null;
+      const vat = hasFee ? (q.vatAmount || net * 0.2) : null;
+      const total = hasFee ? (q.totalAmount || (net + vat)) : null;
       const isAccepted =
         q.status === 'Accepted' ||
         q.status === 'ACCEPTED' ||
@@ -1836,14 +1847,21 @@ export const CustomerQuotationsPage = () => {
         jobId: q.id,
         property: `${q.property || ''}${q.location ? `, ${q.location}` : ''}`,
         surveyType: q.surveyType || 'RICS Level 2 Home Survey',
-        net: `£${net.toFixed(2)}`,
-        vat: `£${vat.toFixed(2)}`,
-        total: `£${total.toFixed(2)}`,
+        hasFee,
+        net: hasFee ? `£${net.toFixed(2)}` : 'Pending Estimation',
+        vat: hasFee ? `£${vat.toFixed(2)}` : '—',
+        total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
         date: q.date || new Date().toLocaleDateString('en-GB'),
-        status: q.termsStatus === 'Signed' ? 'Terms Signed & Active' : isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+        status: q.termsStatus === 'Signed'
+          ? 'Terms Signed & Active'
+          : isAccepted
+          ? 'Quotation Accepted'
+          : hasFee
+          ? 'Open Proposal'
+          : 'Under Review by NJS Practice',
         isAccepted,
         termsStatus: q.termsStatus || 'Pending',
-        validUntil: q.dueDate ? `Valid until ${q.dueDate}` : '14 Days Remaining',
+        validUntil: q.dueDate ? `Valid until ${q.dueDate}` : hasFee ? '14 Days Remaining' : 'Pending Fee Review',
         rawQuote: q,
       };
     });
@@ -1898,9 +1916,11 @@ export const CustomerQuotationsPage = () => {
       }
     } catch {}
 
-    const fee = q.baseFee || inclusions.baseFee || (q.totalAmount ? q.totalAmount / 1.2 : 770.0);
-    const vat = q.vatAmount || inclusions.vatAmount || fee * 0.2;
-    const total = q.totalAmount || inclusions.totalAmount || (fee + vat);
+    const rawFee = q.baseFee || inclusions.baseFee || (q.totalAmount ? q.totalAmount / 1.2 : null);
+    const hasFee = typeof rawFee === 'number' && rawFee > 0;
+    const fee = hasFee ? rawFee : null;
+    const vat = hasFee ? (q.vatAmount || inclusions.vatAmount || fee * 0.2) : null;
+    const total = hasFee ? (q.totalAmount || inclusions.totalAmount || (fee + vat)) : null;
     const isAccepted = Boolean(q.isAccepted || q.status === 'ACCEPTED' || q.status === 'Accepted');
 
     return {
@@ -1920,14 +1940,15 @@ export const CustomerQuotationsPage = () => {
         inclusions.surveyType ||
         inclusions.serviceName ||
         'RICS Level 2 Home Survey',
-      net: `£${fee.toFixed(2)}`,
-      vat: `£${vat.toFixed(2)}`,
-      total: `£${total.toFixed(2)}`,
+      hasFee,
+      net: hasFee ? `£${fee.toFixed(2)}` : 'Pending Estimation',
+      vat: hasFee ? `£${vat.toFixed(2)}` : '—',
+      total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
       date: q.date || (q.createdAt ? new Date(q.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')),
-      status: isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+      status: isAccepted ? 'Quotation Accepted' : hasFee ? 'Open Proposal' : 'Under Review by NJS Practice',
       isAccepted,
       termsStatus: isAccepted ? 'Terms Pending' : 'Pending',
-      validUntil: q.validUntil || '14 Days Remaining',
+      validUntil: q.validUntil || (hasFee ? '14 Days Remaining' : 'Pending Fee Review'),
       rawQuote: q,
     };
   });
@@ -2092,7 +2113,9 @@ export const CustomerQuotationsPage = () => {
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : isAccepted
                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
-                          : 'bg-blue-50 text-[#0B1F4D] border border-blue-200'
+                          : q.hasFee
+                          ? 'bg-blue-50 text-[#0B1F4D] border border-blue-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
                       }`}
                     >
                       {isSigned ? (
@@ -2105,10 +2128,15 @@ export const CustomerQuotationsPage = () => {
                           <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
                           <span>Quotation Accepted</span>
                         </>
-                      ) : (
+                      ) : q.hasFee ? (
                         <>
                           <Clock className="w-3 h-3 text-[#2563EB]" />
                           <span>Ready to Accept</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3 h-3 text-amber-600" />
+                          <span>Under Review by NJS Practice</span>
                         </>
                       )}
                     </span>
@@ -2124,9 +2152,19 @@ export const CustomerQuotationsPage = () => {
 
                 <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
                   <div className="text-left md:text-right">
-                    <div className="text-xs text-slate-400 font-mono">Net: {q.net} + 20% VAT</div>
-                    <div className="text-xl font-black text-[#0B1F4D] font-mono">{q.total}</div>
-                    <span className="text-[11px] text-emerald-600 font-bold block">Fixed Fee Guaranteed</span>
+                    {q.hasFee ? (
+                      <>
+                        <div className="text-xs text-slate-400 font-mono">Net: {q.net} + 20% VAT</div>
+                        <div className="text-xl font-black text-[#0B1F4D] font-mono">{q.total}</div>
+                        <span className="text-[11px] text-emerald-600 font-bold block">Fixed Fee Guaranteed</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-xs text-slate-400 font-mono">Fee: Pending Estimation</div>
+                        <div className="text-base font-bold text-slate-700">Under NJS Review</div>
+                        <span className="text-[11px] text-slate-500 font-medium block">Custom quote being prepared</span>
+                      </>
+                    )}
                   </div>
 
                   {isSigned ? (
@@ -2159,6 +2197,16 @@ export const CustomerQuotationsPage = () => {
                       >
                         <CalendarCheck className="w-3.5 h-3.5 text-[#2563EB]" />
                         <span>2. Choose Date</span>
+                      </button>
+                    </div>
+                  ) : !q.hasFee ? (
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      <button
+                        disabled
+                        className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs border border-slate-200 flex items-center justify-center gap-2 cursor-not-allowed"
+                      >
+                        <Clock className="w-4 h-4 text-slate-400" />
+                        <span>Awaiting NJS Fee Proposal</span>
                       </button>
                     </div>
                   ) : (
