@@ -220,10 +220,11 @@ export const CustomerDashboardPage = () => {
     });
   };
 
-  const completedReports = myCustomerJobs.filter((j) => isJobDelivered(j, userEmail));
-  const confirmedBookings = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6));
-  const activeBookings = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && j.status !== 'Cancelled');
-  const pendingQuotes = myCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2));
+  const allCustomerJobs = myCustomerJobs.length > 0 ? myCustomerJobs : (customerJob ? [customerJob] : []);
+  const completedReports = allCustomerJobs.filter((j) => isJobDelivered(j, userEmail));
+  const confirmedBookings = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6));
+  const activeBookings = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && j.status !== 'Cancelled');
+  const pendingQuotes = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2));
 
   // Dynamic isolated stat cards
   const statCards = [
@@ -232,7 +233,7 @@ export const CustomerDashboardPage = () => {
       title: 'Active Bookings',
       value: `${confirmedBookings.length} Active`,
       subtext: confirmedBookings.length > 0
-        ? `${confirmedBookings[0].property} (${confirmedBookings[0].surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})`
+        ? `${confirmedBookings[0].property || confirmedBookings[0].propertyAddress || 'Your Property'} (${confirmedBookings[0].surveyType?.includes('Level 3') ? 'Level 3' : 'Level 2'})`
         : isDeliveredActive
         ? 'All instructions completed'
         : customerJob ? 'Survey slot pending quote & terms' : 'No active bookings',
@@ -247,12 +248,18 @@ export const CustomerDashboardPage = () => {
         ? `${pendingQuotes.length} ${pendingQuotes.some(q => q.status === 'Enquiry' || q.timelineStep === 1) ? 'In Review' : 'New'}`
         : isDeliveredActive
         ? '0 Active'
-        : customerJob ? '1 Confirmed' : '0 Quotes',
+        : customerJob
+        ? (customerJob.status === 'Enquiry' || (customerJob.timelineStep || 0) <= 2 ? '1 In Review' : '1 Confirmed')
+        : '0 Quotes',
       subtext: pendingQuotes.length > 0
         ? 'Review & accept proposal'
         : isDeliveredActive
         ? 'All proposals concluded'
-        : customerJob ? `${customerJob.property} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Fixed Fee Estimating'})` : 'No open quotes',
+        : customerJob
+        ? (customerJob.status === 'Enquiry' || (customerJob.timelineStep || 0) <= 2
+            ? 'Awaiting NJS fee proposal'
+            : `${customerJob.property || customerJob.propertyAddress || 'Your Property'} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Proposal Confirmed'})`)
+        : 'No open quotes',
       icon: Receipt,
       color: 'bg-indigo-50 text-indigo-600',
       path: '/customer/quotations',
