@@ -284,7 +284,8 @@ export const CustomerTermsPage = () => {
 
   const rawStateGross = location.state?.grossTotal ? parseFloat(String(location.state.grossTotal).replace(/[^0-9.]/g, '')) : null;
   const rawApiGross = apiAcceptedQuote?.totalAmount ? Number(apiAcceptedQuote.totalAmount) : null;
-  const grossTotal = rawStateGross || rawApiGross || userQuote?.totalAmount || leadTotal || (baseFee + vatAmount) || 1056.0;
+  const rawJobGross = currentJob?.quote?.total || (currentJob?.quote?.baseFee ? currentJob.quote.baseFee * 1.2 : null);
+  const grossTotal = rawStateGross || rawApiGross || userQuote?.totalAmount || leadTotal || rawJobGross || 1056.0;
   const baseFee = Math.round((grossTotal / 1.2) * 100) / 100;
   const vatAmount = Math.round((grossTotal - baseFee) * 100) / 100;
 
