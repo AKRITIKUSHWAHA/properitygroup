@@ -31,6 +31,7 @@ import { useJobs } from '../../mock/jobs';
 import { SurveyProgressTracker, computeRICSStage } from '../../components/customer/SurveyProgressTracker';
 import { customerDashboardApi, customerTrackSurveyApi } from '../../api/customerApi';
 import { publicApi } from '../../api/publicApi';
+import { emitNotification } from '../../utils/notificationService';
 import { useEffect } from 'react';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 
@@ -346,7 +347,53 @@ export const CustomerDashboardPage = () => {
       window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     } catch {}
 
-    // Pull enquiry through to Admin CRM & trigger email notifications (Bug 4)
+    // Pull enquiry directly into Admin CRM leads & un-blacklist user
+    try {
+      const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const newLeadEntry = {
+        id: newJobId,
+        reference: newJobId,
+        customerName: user?.name || 'Private Client',
+        clientName: user?.name || 'Private Client',
+        customer: user?.name || 'Private Client',
+        customerEmail: userEmail || user?.email || '',
+        clientEmail: userEmail || user?.email || '',
+        customerPhone: user?.phone || '',
+        property: bookForm.property,
+        location: bookForm.location,
+        postcode: bookForm.location,
+        enquiry: bookForm.surveyType,
+        surveyType: bookForm.surveyType,
+        serviceType: bookForm.surveyType,
+        propertyType: 'Residential',
+        status: 'New',
+        stage: 'NEW',
+        source: 'Customer Portal',
+        estimatedValue: null, // Point 3: Turned off auto-fee!
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter((l) => l.id !== newJobId)]));
+      try {
+        const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+        const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== userEmail);
+        localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
+      } catch {}
+      window.dispatchEvent(new Event('propertygroup_leads_updated'));
+      window.dispatchEvent(new Event('propertygroup_users_updated'));
+    } catch {}
+
+    // In-App Instant Notification to Admin
+    try {
+      emitNotification({
+        role: 'ADMIN',
+        title: `New Survey Quote Request - ${user?.name || 'Customer'}`,
+        desc: `${user?.name || 'Customer'} requested a quote for ${bookForm.property} (${bookForm.surveyType}). Awaiting fee estimation.`,
+        type: 'CRM_LEAD',
+        link: '/admin/crm-leads',
+      });
+    } catch {}
+
+    // Pull enquiry through to Backend DB & trigger email notifications to Admin (Bug 4)
     try {
       await publicApi.submitQuoteEnquiry({
         customerName: user?.name || 'Client',

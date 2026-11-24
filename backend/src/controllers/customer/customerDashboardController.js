@@ -100,14 +100,13 @@ export const getCustomerDashboard = async (req, res, next) => {
         });
 
         if (lead) {
+          const totalVal = lead.estimatedValue && Number(lead.estimatedValue) > 0 ? Number(lead.estimatedValue) : null;
           const isQuoted =
-            lead.status === 'QUOTE_SENT' ||
+            (lead.status === 'QUOTE_SENT' ||
             lead.status === 'QUOTED' ||
-            lead.status === 'CONVERTED' ||
-            Boolean(lead.estimatedValue);
+            lead.status === 'CONVERTED') && Boolean(totalVal);
 
-          const totalVal = lead.estimatedValue ? Number(lead.estimatedValue) : 660.0;
-          const feeStr = `£${totalVal.toFixed(2)}`;
+          const feeStr = totalVal ? `£${totalVal.toFixed(2)}` : 'Pending Quotation';
 
           activeJob = {
             id: lead.reference || `JOB-${lead.id}`,

@@ -281,9 +281,9 @@ export const acceptCustomerQuotation = async (req, res, next) => {
     const propertyAddress = quote?.job?.propertyAddress || quote?.lead?.propertyAddress || lead?.propertyAddress || 'Subject Property';
     const postcode = quote?.job?.postcode || quote?.lead?.postcode || lead?.postcode || 'GU12AA';
     const serviceType = quote?.job?.serviceType || quote?.lead?.serviceType || lead?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
-    const totalFee = Number(quote?.totalAmount || lead?.estimatedValue || 660.0);
-    const baseFee = Number(quote?.baseFee || Math.round((totalFee / 1.2) * 100) / 100);
-    const vatFee = Number(quote?.vatAmount || Math.round((totalFee - baseFee) * 100) / 100);
+    const totalFee = Number(quote?.totalAmount || lead?.estimatedValue || 0);
+    const baseFee = totalFee > 0 ? Number(quote?.baseFee || Math.round((totalFee / 1.2) * 100) / 100) : 0;
+    const vatFee = totalFee > 0 ? Number(quote?.vatAmount || Math.round((totalFee - baseFee) * 100) / 100) : 0;
 
     if (!jobId) {
       try {
@@ -371,7 +371,7 @@ export const acceptCustomerQuotation = async (req, res, next) => {
 
     // Dispatch Quotation Acceptance Email to Customer & CC Admin
     const quoteRef = quote?.reference || (String(id).startsWith('QUO') ? String(id) : `QUO-${id}`);
-    const totalAmount = totalFee ? totalFee.toString() : '660.00';
+    const totalAmount = totalFee > 0 ? totalFee.toString() : 'Pending Estimation';
 
     if (recipientEmail && recipientEmail.includes('@')) {
       sendQuoteAcceptedEmail({

@@ -151,8 +151,8 @@ export const getNotifications = async (req, res, next) => {
           ...(isAdmin ? [{ role: 'ADMIN' }, { role: null, userId: null }, { role: 'SURVEYOR' }] : []),
           // Surveyor receives role-specific surveyor notifications
           ...(isSurveyor ? [{ role: 'SURVEYOR' }] : []),
-          // Customers receive notifications addressed to them or customer role
-          ...(isCustomer ? [{ role: 'CUSTOMER', userId: null }] : []),
+          // Customers receive ONLY notifications explicitly addressed to their specific userId! Never global or unassigned broadcasts.
+          ...(isCustomer ? [] : []),
         ],
         // Strict Account Registration Boundary: Never deliver notifications created before this user registered!
         ...(userCreatedAt && isCustomer ? { createdAt: { gte: userCreatedAt } } : {}),

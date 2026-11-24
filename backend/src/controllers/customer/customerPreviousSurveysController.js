@@ -7,12 +7,20 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
  */
 export const getPreviousSurveys = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const userEmail = req.user.email;
+    const userId = req.user?.id ? Number(req.user.id) : null;
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
+
+    if (!userId && !userEmail) {
+      return ApiResponse.success(res, { previousSurveys: [], total: 0 });
+    }
+
+    const orClauses = [];
+    if (userId) orClauses.push({ clientId: userId });
+    if (userEmail) orClauses.push({ clientEmail: userEmail });
 
     const previousSurveys = await prisma.job.findMany({
       where: {
-        OR: [{ clientId: userId }, { clientEmail: userEmail }],
+        OR: orClauses,
         stage: 'COMPLETE',
       },
       select: {

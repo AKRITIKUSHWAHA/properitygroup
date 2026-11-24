@@ -130,6 +130,16 @@ export const NotificationDropdown = () => {
         localNotifs.forEach((ln) => {
           const key = `${ln.title}_${ln.desc}`;
           if (!seenIds.has(String(ln.id)) && !seenKeys.has(key)) {
+            // For customers, only merge local notifications addressed specifically to them
+            if (isCustomer) {
+              const lnEmail = (ln.recipientEmail || ln.clientEmail || ln.customerEmail || '').toLowerCase().trim();
+              const lnUserId = ln.userId ? String(ln.userId).replace(/^usr_/, '').replace(/^srv-/, '') : '';
+              const matchesEmail = Boolean(lnEmail && userEmail && (lnEmail === userEmail || userEmail.includes(lnEmail) || lnEmail.includes(userEmail)));
+              const matchesUserId = Boolean(lnUserId && cleanCurrentUserId && lnUserId === cleanCurrentUserId);
+              if (!matchesEmail && !matchesUserId && !isDemo) {
+                return;
+              }
+            }
             notifs.push(ln);
           }
         });
@@ -272,11 +282,18 @@ export const NotificationDropdown = () => {
       }
 
       // 3. If notification is tied to another user id, filter it out (handling usr_ prefix cleanly)
-      if (item.userId && cleanCurrentUserId) {
-        const cleanItemUserId = String(item.userId).replace(/^usr_/, '').replace(/^srv-/, '');
-        if (cleanItemUserId && cleanItemUserId !== cleanCurrentUserId && !targetEmail) {
+      const cleanItemUserId = item.userId ? String(item.userId).replace(/^usr_/, '').replace(/^srv-/, '') : '';
+      if (cleanItemUserId && cleanCurrentUserId) {
+        if (cleanItemUserId !== cleanCurrentUserId && !targetEmail) {
           return false;
         }
+      }
+
+      // 3b. Customer Privacy Boundary: Customer MUST be the specific recipient (by email or userId). Never broadcast unassigned alerts.
+      const matchesEmail = Boolean(targetEmail && userEmail && (targetEmail === userEmail || userEmail.includes(targetEmail) || targetEmail.includes(userEmail)));
+      const matchesUserId = Boolean(cleanItemUserId && cleanCurrentUserId && cleanItemUserId === cleanCurrentUserId);
+      if (!matchesEmail && !matchesUserId && !isDemo) {
+        return false;
       }
 
       // 4. Strict Registration Timeline Isolation: Never show notifications created prior to account registration!

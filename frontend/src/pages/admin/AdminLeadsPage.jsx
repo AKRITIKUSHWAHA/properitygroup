@@ -422,7 +422,7 @@ export const AdminLeadsPage = () => {
               status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
               estimatedValue: (() => {
                 const s = String(statusMap[l.status?.toUpperCase()] || l.status || '').toLowerCase();
-                const rawVal = l.estimatedValue || l.quotes?.[0]?.totalAmount || (s === 'converted' || s === 'quoted' || s === 'won job' ? 660 : null);
+                const rawVal = l.estimatedValue || l.quotes?.[0]?.totalAmount || null;
                 if (!rawVal) return 'Pending Quote';
                 const num = parseFloat(String(rawVal).replace(/[^0-9.]/g, ''));
                 return !isNaN(num) && num > 0 ? `£${num.toFixed(2)}` : 'Pending Quote';
@@ -699,7 +699,7 @@ export const AdminLeadsPage = () => {
 
   // Convert deal
   const handleConvertDeal = (leadId) => {
-    updateLeadStatus(leadId, 'Converted', { estimatedValue: 660.0 });
+    updateLeadStatus(leadId, 'Converted');
     addToast({
       type: 'success',
       title: 'Deal Won & Converted',
@@ -1346,7 +1346,7 @@ export const AdminLeadsPage = () => {
                           const hasValidValue = row.estimatedValue && row.estimatedValue !== 'Pending Quote';
                           const displayFee = hasValidValue
                             ? row.estimatedValue
-                            : (isConverted || isQuoted ? '£660.00' : 'Pending Quote');
+                            : 'Pending Quote';
                           const isPending = displayFee === 'Pending Quote';
 
                           return (

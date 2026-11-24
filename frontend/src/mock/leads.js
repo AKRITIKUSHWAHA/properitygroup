@@ -165,7 +165,7 @@ export const useLeads = () => {
       };
       const numVal = extraData.estimatedValue
         ? parseFloat(String(extraData.estimatedValue).replace(/[^0-9.]/g, ''))
-        : (newStatus === 'Converted' || newStatus === 'Quoted' ? 660.0 : undefined);
+        : undefined;
 
       api.patch(`/crm-and-leads/${leadId}/status`, {
         status: statusMap[newStatus] || (newStatus ? newStatus.toUpperCase() : 'NEW'),

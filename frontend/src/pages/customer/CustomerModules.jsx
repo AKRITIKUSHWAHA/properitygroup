@@ -71,6 +71,7 @@ import {
 } from '../../api/customerApi';
 import { siteConfig } from '../../config/siteConfig';
 import { dispatchQuoteAcceptance } from '../../services/autoQuoteService';
+import { emitNotification } from '../../utils/notificationService';
 
 // ==========================================
 // 1. TERMS TO SIGN (Document + Typed/Drawn Signature + Payment Screen UI)
@@ -1999,6 +2000,8 @@ export const CustomerQuotationsPage = () => {
       (l.status || '').toLowerCase() === 'quote_sent' ||
       (l.status || '').toLowerCase() === 'converted' ||
       (l.status || '').toLowerCase() === 'won' ||
+      (l.status || '').toLowerCase() === 'new' ||
+      (l.status || '').toLowerCase() === 'enquiry' ||
       (l.estimatedValue && !String(l.estimatedValue).toLowerCase().includes('pending'));
     return (matchesEmail || matchesName) && isQuoted;
   });
@@ -2006,10 +2009,13 @@ export const CustomerQuotationsPage = () => {
   const leadQuotes = quotedLeads
     .filter((l) => !standAloneQuotes.some((sq) => sq.jobId === l.id || sq.id === l.quoteRef) && !jobQuotes.some((jq) => jq.jobId === l.id))
     .map((l) => {
-      const rawVal = l.estimatedValue ? parseFloat(l.estimatedValue.replace(/[^0-9.]/g, '')) : 660.0;
-      const total = rawVal > 50 ? rawVal : 660.0;
-      const net = Math.round((total / 1.2) * 100) / 100;
-      const vat = Math.round((total - net) * 100) / 100;
+      const rawVal = l.estimatedValue && !isNaN(parseFloat(String(l.estimatedValue).replace(/[^0-9.]/g, '')))
+        ? parseFloat(String(l.estimatedValue).replace(/[^0-9.]/g, ''))
+        : null;
+      const hasFee = typeof rawVal === 'number' && rawVal > 0;
+      const total = hasFee ? rawVal : null;
+      const net = hasFee ? Math.round((total / 1.2) * 100) / 100 : null;
+      const vat = hasFee ? Math.round((total - net) * 100) / 100 : null;
       const isAccepted = l.quoteAccepted || l.status === 'Converted';
 
       return {
@@ -2017,14 +2023,15 @@ export const CustomerQuotationsPage = () => {
         jobId: l.id,
         property: `${l.property || ''}${l.location ? `, ${l.location}` : ''}`,
         surveyType: l.enquiry || 'RICS Level 2 Home Survey (Homebuyer)',
-        net: `£${net.toFixed(2)}`,
-        vat: `£${vat.toFixed(2)}`,
-        total: `£${total.toFixed(2)}`,
+        hasFee,
+        net: hasFee ? `£${net.toFixed(2)}` : 'Pending Estimation',
+        vat: hasFee ? `£${vat.toFixed(2)}` : '—',
+        total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
         date: l.created || new Date().toLocaleDateString('en-GB'),
-        status: isAccepted ? 'Quotation Accepted' : 'Open Proposal',
+        status: isAccepted ? 'Quotation Accepted' : hasFee ? 'Open Proposal' : 'Under Review by NJS Practice',
         isAccepted,
         termsStatus: 'Pending',
-        validUntil: '14 Days Remaining',
+        validUntil: hasFee ? '14 Days Remaining' : 'Pending Fee Review',
         rawLead: l,
       };
     });
@@ -2153,7 +2160,7 @@ export const CustomerQuotationsPage = () => {
     setAcceptingQuoteId(targetQuote.id);
 
     try {
-      const rawTotal = parseFloat(String(targetQuote.total).replace(/[^0-9.]/g, '')) || 660.0;
+      const rawTotal = parseFloat(String(targetQuote.total).replace(/[^0-9.]/g, '')) || 0;
       const payload = {
         id: targetQuote.id,
         refNo: targetQuote.id,
@@ -5277,6 +5284,21 @@ export const CustomerPreviousSurveysPage = () => {
     });
   };
 
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const userCleanId = user?.id ? String(user.id).replace(/^usr_/, '') : '';
+
+  const customerSurveys = surveys.filter((s) => {
+    const sEmail = (s.clientEmail || s.customerEmail || '').toLowerCase().trim();
+    const sClientId = s.clientId ? String(s.clientId).replace(/^usr_/, '') : '';
+    if (sEmail && userEmail && (sEmail === userEmail || userEmail.includes(sEmail) || sEmail.includes(userEmail))) {
+      return true;
+    }
+    if (sClientId && userCleanId && sClientId === userCleanId) {
+      return true;
+    }
+    return false;
+  });
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
@@ -5286,8 +5308,8 @@ export const CustomerPreviousSurveysPage = () => {
       />
 
       <div className="space-y-4">
-        {surveys.length > 0 ? (
-          surveys.map((s) => (
+        {customerSurveys.length > 0 ? (
+          customerSurveys.map((s) => (
             <div
               key={s.id}
               className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5"
@@ -5480,8 +5502,18 @@ export const CustomerDetailsPage = () => {
 const INITIAL_SUPPORT_TICKETS = [];
 
 export const CustomerSupportPage = () => {
+  const { user } = useAuth();
   const { addToast } = useToast();
-  const [tickets, setTickets] = useState(INITIAL_SUPPORT_TICKETS);
+  const userEmail = (user?.email || '').toLowerCase().trim();
+
+  const [tickets, setTickets] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`propertygroup_support_tickets_${userEmail}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_SUPPORT_TICKETS;
+  });
+
   const [subject, setSubject] = useState('Query regarding property inspection');
   const [category, setCategory] = useState('Inspection Logistics');
   const [priority, setPriority] = useState('Normal');
@@ -5493,14 +5525,24 @@ export const CustomerSupportPage = () => {
       .getTickets()
       .then((res) => {
         const ticketsList = res?.tickets || res?.data?.tickets || (Array.isArray(res) ? res : []);
-        if (Array.isArray(ticketsList) && ticketsList.length > 0) {
-          setTickets(ticketsList);
+        if (Array.isArray(ticketsList)) {
+          const userFiltered = ticketsList.filter((t) => {
+            const tEmail = (t.clientEmail || t.customerEmail || t.user?.email || '').toLowerCase().trim();
+            const tUserId = t.userId ? String(t.userId).replace(/^usr_/, '') : '';
+            const uId = user?.id ? String(user.id).replace(/^usr_/, '') : '';
+            if (tEmail && userEmail) return tEmail === userEmail || userEmail.includes(tEmail) || tEmail.includes(userEmail);
+            if (tUserId && uId) return tUserId === uId;
+            return false;
+          });
+          if (userFiltered.length > 0) {
+            setTickets(userFiltered);
+          }
         }
       })
       .catch(() => {
         // Fallback to local state
       });
-  }, []);
+  }, [userEmail, user?.id]);
 
   const handleSendTicket = async (e) => {
     e.preventDefault();
@@ -5517,6 +5559,8 @@ export const CustomerSupportPage = () => {
       createdAt: 'Just now',
       message: ticketMessage.trim(),
       lastReply: 'Awaiting review by operations desk.',
+      customerEmail: userEmail,
+      clientName: user?.name || 'Customer',
     };
 
     try {
@@ -5530,7 +5574,24 @@ export const CustomerSupportPage = () => {
       // Local fallback
     }
 
-    setTickets((prev) => [newTicket, ...prev]);
+    setTickets((prev) => {
+      const updated = [newTicket, ...prev];
+      try {
+        localStorage.setItem(`propertygroup_support_tickets_${userEmail}`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    try {
+      emitNotification({
+        role: 'ADMIN',
+        title: `Support Ticket: #${newTicket.ticketNo}`,
+        desc: `New ${priority} priority ticket from ${user?.name || 'Customer'} (${userEmail}): "${subject}"`,
+        type: 'support',
+        link: '/admin/support',
+      });
+    } catch {}
+
     setIsSubmitting(false);
     setTicketMessage('');
     addToast({
