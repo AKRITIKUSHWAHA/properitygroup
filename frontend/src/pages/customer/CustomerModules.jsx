@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   FileText,
   CalendarCheck,
@@ -105,6 +105,7 @@ const isJobForCustomer = (job, user) => {
 export const CustomerTermsPage = () => {
   useEffect(() => { customerTermsToSignApi.getTerms().catch(() => {}); }, []);
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs, updateJob, addJob } = useJobs();
@@ -833,9 +834,19 @@ export const CustomerTermsPage = () => {
   const isAcceptedQuote = Boolean(
     isAlreadySigned ||
     isEmma ||
-    (currentJob && (currentJob.quoteStatus === 'Accepted' || currentJob.status === 'Accepted' || currentJob.stage === 'accepted' || currentJob.termsStatus === 'Signed' || (currentJob.timelineStep && currentJob.timelineStep >= 3))) ||
+    location.state?.acceptedProposal ||
+    Boolean(currentAgreement) ||
+    agreements.some((a) => {
+      const aEmail = (a.signerEmail || '').toLowerCase().trim();
+      const aName = (a.client || a.customer || '').toLowerCase().trim();
+      return (userEmail && (aEmail === userEmail || aEmail.includes(userEmail) || userEmail.includes(aEmail))) ||
+             (userName && (aName === userName || aName.includes(userName)));
+    }) ||
+    (currentJob && (currentJob.quoteStatus === 'Accepted' || currentJob.status === 'Accepted' || currentJob.stage === 'accepted' || currentJob.termsStatus === 'Signed' || (currentJob.timelineStep && currentJob.timelineStep >= 2))) ||
     (userQuote && (userQuote.status === 'Accepted' || userQuote.status === 'ACCEPTED' || userQuote.isAccepted || userQuote.termsStatus === 'Signed')) ||
-    (localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true')
+    (userLead && (userLead.status === 'Converted' || userLead.quoteAccepted || userLead.status === 'QUOTE_SENT')) ||
+    (localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true') ||
+    (localStorage.getItem('propertygroup_quote_accepted') === 'true')
   );
 
   if (!isAcceptedQuote) {
@@ -2093,6 +2104,12 @@ export const CustomerQuotationsPage = () => {
       };
 
       const result = await dispatchQuoteAcceptance(payload);
+
+      try {
+        localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
+        localStorage.setItem('propertygroup_quote_accepted', 'true');
+        window.dispatchEvent(new Event('propertygroup_agreements_updated'));
+      } catch {}
 
       addToast({
         type: 'success',

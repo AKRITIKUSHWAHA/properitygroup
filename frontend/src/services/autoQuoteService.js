@@ -341,6 +341,8 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
 
   // 3. Update Quotes Storage: mark as Accepted
   try {
+    localStorage.setItem(`propertygroup_quote_accepted_${clientEmail}`, 'true');
+    localStorage.setItem('propertygroup_quote_accepted', 'true');
     const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
     const updatedQuotes = storedQuotes.map((q) => {
       const match =
