@@ -4,6 +4,7 @@ import {
   getSurveyJobsMetrics,
   getSurveyJobById,
   createSurveyJob,
+  deleteSurveyJob,
   updateJobStage,
   assignSurveyor,
   rescheduleSurveyJob,
@@ -21,6 +22,7 @@ router.get('/', getSurveyJobs);
 router.get('/metrics', getSurveyJobsMetrics);
 router.get('/:id', getSurveyJobById);
 router.post('/', authorizeRoles('ADMIN', 'CUSTOMER'), createSurveyJob);
+router.delete('/:id', authorizeRoles('ADMIN'), deleteSurveyJob);
 router.patch('/:id/stage', updateJobStage);
 router.patch('/:id/assign-surveyor', authorizeRoles('ADMIN'), assignSurveyor);
 router.patch('/:id/reschedule', rescheduleSurveyJob);

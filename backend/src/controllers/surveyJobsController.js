@@ -578,3 +578,35 @@ export const rescheduleSurveyJob = async (req, res, next) => {
   }
 };
 
+export const deleteSurveyJob = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const numId = parseInt(id, 10);
+    const where = !isNaN(numId) && String(numId) === String(id)
+      ? { OR: [{ id: numId }, { reference: String(id) }] }
+      : { reference: String(id) };
+
+    const targetJob = await prisma.job.findFirst({ where });
+    if (!targetJob) {
+      return ApiResponse.success(res, null, 'Job deleted successfully');
+    }
+
+    const jId = targetJob.id;
+    await prisma.supportTicket.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.customerReview.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.message.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.quote.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.term.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.invoice.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.callLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.complaintLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
+    await prisma.auditLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
+
+    await prisma.job.delete({ where: { id: jId } });
+
+    return ApiResponse.success(res, null, 'Job deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -81,9 +81,7 @@ const isJobDelivered = (j, uEmail) => {
     stg === 'complete' ||
     stg === 'completed' ||
     (j.timelineStep || 0) >= 10 ||
-    isDeliveredFlag ||
-    (jId.includes('7062') && isDeliveredFlag) ||
-    (jNo.includes('7062') && isDeliveredFlag)
+    isDeliveredFlag
   );
 };
 

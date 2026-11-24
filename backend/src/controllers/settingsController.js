@@ -59,3 +59,48 @@ export const updateSettings = async (req, res, next) => {
   }
 };
 
+export const purgeTestData = async (req, res, next) => {
+  try {
+    const preservedEmails = ['njsadmin@gmail.com', 'njssurveyor@gmail.com'];
+
+    // Cascade clean all test transactions & activity
+    await prisma.notification.deleteMany({});
+    await prisma.customerReview.deleteMany({});
+    await prisma.supportTicket.deleteMany({});
+    await prisma.callLog.deleteMany({});
+    await prisma.complaintLog.deleteMany({});
+    await prisma.quote.deleteMany({});
+    await prisma.term.deleteMany({});
+    await prisma.invoice.deleteMany({});
+    await prisma.message.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+    await prisma.job.deleteMany({});
+    await prisma.lead.deleteMany({});
+
+    // Delete all customer users except primary admin and primary surveyor
+    const deletedUsers = await prisma.user.deleteMany({
+      where: {
+        email: { notIn: preservedEmails },
+      },
+    });
+
+    // Reset surveyor profile active workload to 0
+    await prisma.surveyorProfile.updateMany({
+      data: { activeLoad: 0 },
+    });
+
+    return ApiResponse.success(
+      res,
+      {
+        deletedUsersCount: deletedUsers.count,
+        remainingLeads: 0,
+        remainingJobs: 0,
+        preservedUsers: preservedEmails,
+      },
+      'Database cleaned successfully: exactly 0 leads, 0 jobs, 1 admin and 1 surveyor preserved'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+

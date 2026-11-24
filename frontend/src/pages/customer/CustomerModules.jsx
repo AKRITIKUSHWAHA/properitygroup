@@ -2512,9 +2512,7 @@ export const CustomerInvoicesPage = () => {
       j.status === 'Delivered' ||
       (j.timelineStep || 0) >= 10 ||
       localStorage.getItem('propertygroup_delivered') === 'true' ||
-      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
-      (j.id && String(j.id).includes('7062')) ||
-      (j.jobNo && String(j.jobNo).includes('7062'));
+      (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true');
 
     const isPaid =
       j.paymentStatus === 'Paid' ||
@@ -3668,6 +3666,15 @@ export const CustomerTrackSurveyPage = () => {
     }
   }, [currentStep, propertyAddress, surveyorName]);
 
+  const hasAnyInstruction = Boolean(
+    myJob ||
+    (myCustomerJobs && myCustomerJobs.length > 0) ||
+    myLead ||
+    myQuote ||
+    apiTracking ||
+    (propertyAddress && propertyAddress !== 'Subject Property' && propertyAddress.trim().length > 0)
+  );
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
@@ -3676,6 +3683,26 @@ export const CustomerTrackSurveyPage = () => {
         breadcrumb={['Customer Portal', 'Track My Survey']}
       />
 
+      {!hasAnyInstruction ? (
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-12 text-center space-y-4 max-w-2xl mx-auto">
+          <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0B1F4D] flex items-center justify-center mx-auto border border-blue-200">
+            <Compass className="w-8 h-8 text-[#2563EB]" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-lg font-black text-[#0B1F4D]">No Active Survey to Track</h4>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              You currently do not have an active survey instruction in progress. Once you request a quotation or submit an enquiry, you can track its full 10-stage RICS lifecycle here.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/customer/book-survey')}
+            className="px-5 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+          >
+            Book a Survey / Request Quote
+          </button>
+        </div>
+      ) : (
+        <>
       {/* Instruction Switcher if Customer has multiple instructions (Active vs History) */}
       {myCustomerJobs.length > 1 && (
         <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -3886,6 +3913,8 @@ export const CustomerTrackSurveyPage = () => {
             ))}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
@@ -4894,7 +4923,7 @@ export const CustomerReviewPage = () => {
   const { addToast } = useToast();
 
   const myJobs = jobs.filter((j) => isJobForCustomer(j, user));
-  const completedJob = myJobs.find((j) => j.status === 'Completed' || j.timelineStep >= 10) || myJobs[0] || null;
+  const completedJob = myJobs.find((j) => j.status === 'Completed' || j.timelineStep >= 10) || null;
 
   const [rating, setRating] = useState(completedJob?.reviewRating || 5);
   const [reviewText, setReviewText] = useState(completedJob?.reviewFeedback || '');
@@ -4950,7 +4979,17 @@ export const CustomerReviewPage = () => {
         breadcrumb={['Customer Portal', 'Leave a Review']}
       />
 
-      {isSubmitted && !isEditing ? (
+      {!completedJob ? (
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-12 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-200 text-[#0B1F4D] flex items-center justify-center mx-auto">
+            <Star className="w-7 h-7 text-[#2563EB]" />
+          </div>
+          <h3 className="text-lg font-black text-[#0B1F4D]">No Completed Surveys to Review Yet</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+            Once your RICS property survey has been conducted and your final inspection report delivered, you will be invited to leave your verified feedback here.
+          </p>
+        </div>
+      ) : isSubmitted && !isEditing ? (
         <div className="bg-white rounded-3xl border border-emerald-200/90 shadow-sm p-6 sm:p-8 space-y-6 text-center">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#00B67A] flex items-center justify-center mx-auto">
             <CheckCircle2 className="w-8 h-8 text-[#00B67A]" />
@@ -4966,7 +5005,7 @@ export const CustomerReviewPage = () => {
               Thank You for Reviewing NJS Property Group!
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              Your feedback for <strong>{completedJob?.property || '14 Mayfair Gate'}</strong> has been registered and helps us uphold RICS excellence.
+              Your feedback for <strong>{completedJob?.property || 'your property'}</strong> has been registered and helps us uphold RICS excellence.
             </p>
           </div>
 
@@ -5023,7 +5062,7 @@ export const CustomerReviewPage = () => {
               How was your experience with Surveyor {completedJob?.surveyor || 'Assigned Surveyor'}?
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              Your review regarding the {completedJob?.surveyType || 'RICS Level 2 Survey'} at {completedJob?.property || '14 Mayfair Gate'} helps us maintain our high RICS quality standards.
+              Your review regarding the {completedJob?.surveyType || 'RICS Level 2 Survey'} at {completedJob?.property || 'your property'} helps us maintain our high RICS quality standards.
             </p>
           </div>
 
@@ -5471,7 +5510,7 @@ export const CustomerSupportPage = () => {
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Query regarding 14 Mayfair Gate inspection timing"
+                  placeholder="e.g. Query regarding inspection timing or access"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#0B1F4D]"
                   required
                 />
