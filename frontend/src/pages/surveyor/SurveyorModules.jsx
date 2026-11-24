@@ -117,6 +117,7 @@ export const SurveyorCalendarPage = () => {
     emitNotification({
       role: 'CUSTOMER',
       userId: apt?.clientId || apt?.userId,
+      recipientEmail: targetEmail,
       title: '🔍 Site Inspection Completed',
       desc: `Surveyor ${currentSurveyor} completed the physical site inspection for ${propertyAddr}. Your technical survey report is now being drafted.`,
       type: 'booking',
@@ -130,6 +131,16 @@ export const SurveyorCalendarPage = () => {
       desc: `Surveyor ${currentSurveyor} completed on-site inspection for ${propertyAddr}. Job moved to drafting & QA stage.`,
       type: 'booking',
       link: `/admin/jobs/${apt?.id || aptId}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Site Inspection Concluded — ${jobRef}`,
+      desc: `Inspection completed for ${propertyAddr}. Job moved to report drafting.`,
+      type: 'booking',
+      link: '/surveyor/my-calendar',
     }).catch(() => {});
 
     // 3. Dispatch Automated Customer Email
@@ -1098,10 +1109,62 @@ export const SurveyorSiteVisitsPage = () => {
   const handleArrival = () => {
     if (!primaryJob) return;
     setHasArrived(true);
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+    const timestampStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+    if (primaryJob?.id && updateJob) {
+      updateJob(primaryJob.id, {
+        status: 'In_Progress',
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${timestampStr}`,
+            text: `Surveyor ${surveyorName} logged GPS arrival on-site at ${propertyAddr}. Inspection underway.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
+      });
+    }
+
+    // 1. Customer Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetEmail,
+      title: '📍 Surveyor Arrived On-Site',
+      desc: `Surveyor ${surveyorName} has arrived at ${propertyAddr} and commenced physical survey inspection.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Admin Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Surveyor Checked In On-Site — ${jobRef}`,
+      desc: `Surveyor ${surveyorName} logged GPS arrival at ${propertyAddr}. Inspection in progress.`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Surveyor Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Arrival Logged — ${jobRef}`,
+      desc: `On-site arrival logged at ${propertyAddr}. Inspection protocol active.`,
+      type: 'booking',
+      link: '/surveyor/site-visits',
+    }).catch(() => {});
+
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
+
     addToast({
       type: 'success',
       title: 'GPS Site Check-in Logged',
-      message: `Arrival recorded at ${primaryJob.property}. On-site inspection timer active.`,
+      message: `Arrival recorded at ${primaryJob.property}. On-site inspection timer active. Notifications dispatched.`,
     });
   };
 
@@ -1139,6 +1202,7 @@ export const SurveyorSiteVisitsPage = () => {
     emitNotification({
       role: 'CUSTOMER',
       userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetEmail,
       title: '🔍 Site Inspection Completed',
       desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
       type: 'booking',
@@ -1152,6 +1216,16 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Surveyor ${surveyorName} finished on-site inspection for ${propertyAddr}. Stage moved to Drafting & QA Review.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Site Inspection Concluded — ${jobRef}`,
+      desc: `Inspection completed for ${propertyAddr}. Ready for report compilation.`,
+      type: 'booking',
+      link: '/surveyor/field-dashboard',
     }).catch(() => {});
 
     // 3. Dispatch Automated Customer Email
@@ -1444,6 +1518,7 @@ export const SurveyorUploadReportsPage = () => {
     emitNotification({
       role: 'CUSTOMER',
       userId: activeJobObj?.clientId || activeJobObj?.userId,
+      recipientEmail: targetEmail,
       title: '📝 Survey Report Drafting Started',
       desc: `Surveyor ${currentSurveyor} is now drafting your official RICS survey report for ${propertyAddr}.`,
       type: 'booking',
@@ -1457,6 +1532,16 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} commenced technical report compilation for ${propertyAddr}.`,
       type: 'booking',
       link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Drafting Started — ${jobRef}`,
+      desc: `Drafting in progress for ${propertyAddr}. Stage 8/10.`,
+      type: 'booking',
+      link: '/surveyor/upload-reports',
     }).catch(() => {});
 
     // 3. Dispatch automated post-inspection/drafting email to customer
@@ -1531,6 +1616,7 @@ export const SurveyorUploadReportsPage = () => {
     emitNotification({
       role: 'CUSTOMER',
       userId: activeJobObj?.clientId || activeJobObj?.userId,
+      recipientEmail: targetEmail,
       title: '🛡️ Quality Assurance Review Underway',
       desc: `Surveyor ${currentSurveyor} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
       type: 'booking',
@@ -1544,6 +1630,16 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
       type: 'booking',
       link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Draft Submitted to QA Desk — ${jobRef}`,
+      desc: `Draft report for ${propertyAddr} submitted to Central Admin QA Review Desk.`,
+      type: 'booking',
+      link: '/surveyor/upload-reports',
     }).catch(() => {});
 
     // 3. Log sent email record for QA Desk review notification

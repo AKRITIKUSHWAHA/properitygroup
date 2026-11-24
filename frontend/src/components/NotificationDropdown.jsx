@@ -118,9 +118,26 @@ export const NotificationDropdown = () => {
   const fetchNotifications = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const res = await apiRequest('/notifications');
+      const res = await apiRequest('/notifications').catch(() => null);
       let notifs = res?.notifications || res?.data?.notifications || (Array.isArray(res) ? res : []);
       
+      // Merge with locally stored action notifications so immediate actions are always available
+      try {
+        const localNotifs = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
+        const seenIds = new Set(notifs.map((n) => String(n.id)));
+        const seenKeys = new Set(notifs.map((n) => `${n.title}_${n.desc}`));
+
+        localNotifs.forEach((ln) => {
+          const key = `${ln.title}_${ln.desc}`;
+          if (!seenIds.has(String(ln.id)) && !seenKeys.has(key)) {
+            notifs.push(ln);
+          }
+        });
+      } catch {}
+
+      // Sort newest first
+      notifs.sort((a, b) => new Date(b.createdAt || b.time || 0) - new Date(a.createdAt || a.time || 0));
+
       // Merge with locally stored read flags
       try {
         const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
@@ -195,12 +212,17 @@ export const NotificationDropdown = () => {
 
   const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
   const isCustomer = (user?.role || '').toLowerCase() === 'customer';
+  const isAdmin = (user?.role || '').toLowerCase() === 'super_admin' || (user?.role || '').toLowerCase() === 'admin' || user?.email === 'admin@demo.com';
   const userEmail = (user?.email || '').toLowerCase().trim();
   const userName = (user?.name || '').toLowerCase().trim();
+  const cleanCurrentUserId = user?.id ? String(user.id).replace(/^usr_/, '').replace(/^srv-/, '') : '';
 
   // Strict Privacy Shield for Surveyors & Customer Notification Isolation
   const visibleNotifications = notifications.filter((item) => {
+    const itemRole = (item.role || '').toUpperCase();
+
     if (isSurveyor) {
+      if (itemRole === 'CUSTOMER') return false;
       if (item.type === 'payment') return false;
       if (item.amount) return false;
       const title = (item.title || '').toLowerCase();
@@ -226,6 +248,8 @@ export const NotificationDropdown = () => {
     }
 
     if (isCustomer) {
+      if (itemRole === 'SURVEYOR' || itemRole === 'ADMIN') return false;
+
       const title = (item.title || '').toLowerCase();
       const desc = (item.desc || '').toLowerCase();
 
@@ -247,9 +271,12 @@ export const NotificationDropdown = () => {
         return false;
       }
 
-      // 3. If notification is tied to another user id, filter it out
-      if (item.userId && user?.id && String(item.userId) !== String(user.id)) {
-        return false;
+      // 3. If notification is tied to another user id, filter it out (handling usr_ prefix cleanly)
+      if (item.userId && cleanCurrentUserId) {
+        const cleanItemUserId = String(item.userId).replace(/^usr_/, '').replace(/^srv-/, '');
+        if (cleanItemUserId && cleanItemUserId !== cleanCurrentUserId && !targetEmail) {
+          return false;
+        }
       }
 
       // 4. Strict Registration Timeline Isolation: Never show notifications created prior to account registration!
@@ -291,6 +318,7 @@ export const NotificationDropdown = () => {
       return true;
     }
 
+    // Default for Admin / Super Admin: show all operational & central alerts
     return true;
   });
 

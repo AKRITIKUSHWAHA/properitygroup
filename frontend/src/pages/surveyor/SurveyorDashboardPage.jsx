@@ -178,10 +178,62 @@ export const SurveyorDashboardPage = () => {
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     setJobStage('arrived');
     setArrivalTimestamp(`Today at ${timeStr}`);
+
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+
+    // 1. Dispatch Customer In-App Notification (Customer knows surveyor has arrived on-site)
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetCustomerEmail,
+      title: '📍 Surveyor Arrived On-Site',
+      desc: `Chartered Surveyor ${surveyorName} has arrived at ${propertyAddr} and commenced physical site inspection.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification (Operations knows surveyor is on-site)
+    emitNotification({
+      role: 'ADMIN',
+      title: `Surveyor Checked In On-Site — ${jobRef}`,
+      desc: `${surveyorName} checked in on-site at ${propertyAddr} at ${timeStr}. Physical inspection underway.`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification (Surveyor confirmation)
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Arrival Logged — ${jobRef}`,
+      desc: `You checked in at ${propertyAddr} at ${timeStr}. On-site inspection timer active.`,
+      type: 'booking',
+      link: '/surveyor/field-dashboard',
+    }).catch(() => {});
+
+    // Update job activity log
+    if (primaryJob.id) {
+      updateJob(primaryJob.id, {
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${timeStr}`,
+            text: `GPS site arrival confirmed by Surveyor ${surveyorName} at ${timeStr}. On-site physical survey commenced.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
+      });
+    }
+
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    window.dispatchEvent(new Event('storage'));
+
     addToast({
       type: 'success',
       title: 'GPS Site Arrival Recorded',
-      message: `Checked in at ${primaryJob.property} at ${timeStr}. On-site inspection clock activated.`,
+      message: `Checked in at ${primaryJob.property} at ${timeStr}. Customer & Admin notifications dispatched.`,
     });
   };
 
@@ -222,6 +274,7 @@ export const SurveyorDashboardPage = () => {
     emitNotification({
       role: 'CUSTOMER',
       userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetCustomerEmail,
       title: '🔍 Site Inspection Completed',
       desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
       type: 'booking',
@@ -237,7 +290,17 @@ export const SurveyorDashboardPage = () => {
       link: `/admin/jobs/${primaryJob?.id}`,
     }).catch(() => {});
 
-    // 3. Dispatch Automated Customer Email
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Site Inspection Concluded — ${jobRef}`,
+      desc: `Physical inspection concluded for ${propertyAddr}. 48h report drafting SLA activated.`,
+      type: 'booking',
+      link: '/surveyor/field-dashboard',
+    }).catch(() => {});
+
+    // 4. Dispatch Automated Customer Email
     dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
@@ -246,7 +309,7 @@ export const SurveyorDashboardPage = () => {
     addToast({
       type: 'success',
       title: 'Inspection Completed',
-      message: `On-site survey marked complete at ${timeStr}. Notifications and emails dispatched to customer and admin.`,
+      message: `On-site survey marked complete at ${timeStr}. Notifications and emails dispatched across roles.`,
     });
   };
 
@@ -254,12 +317,17 @@ export const SurveyorDashboardPage = () => {
     e.preventDefault();
     if (!defectNote.trim() || !primaryJob) return;
 
+    const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+
     const newPhoto = {
       id: Date.now(),
       room: selectedRoom,
       note: defectNote,
       url: null,
-      time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      time: timeStr,
     };
 
     const updated = [newPhoto, ...capturedPhotos];
@@ -278,21 +346,65 @@ export const SurveyorDashboardPage = () => {
         status: 'Drafting',
         timelineStep: 8,
         customerEmail: targetCustomerEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${timeStr}`,
+            text: `Defect observation & photographic evidence logged under ${selectedRoom} by Surveyor ${surveyorName}.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
       });
       dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetCustomerEmail,
+      title: '📸 Inspection Findings & Evidence Logged',
+      desc: `Surveyor ${surveyorName} logged defect observations & site evidence for ${propertyAddr} (${selectedRoom}).`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Site Defect Evidence Added — ${jobRef}`,
+      desc: `Surveyor ${surveyorName} uploaded observations for ${propertyAddr} (${selectedRoom}).`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Evidence Saved — ${jobRef}`,
+      desc: `Site photo & observation recorded under ${selectedRoom}.`,
+      type: 'booking',
+      link: '/surveyor/field-dashboard',
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',
       title: 'Site Evidence Saved',
-      message: `Photo and observation logged under ${selectedRoom}.`,
+      message: `Observation logged under ${selectedRoom}. Customer & Admin notifications dispatched.`,
     });
   };
 
   const handleSubmitQA = () => {
     if (!primaryJob) return;
+    const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
+    const propertyAddr = primaryJob?.property || 'Subject Property';
+
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
 
@@ -303,15 +415,54 @@ export const SurveyorDashboardPage = () => {
         status: 'QA_Review',
         timelineStep: 9,
         customerEmail: targetCustomerEmail,
+        activityLog: [
+          {
+            id: Date.now(),
+            time: `${new Date().toLocaleDateString('en-GB')}, ${timeStr}`,
+            text: `Draft ${primaryJob.surveyType} report and defect ratings submitted for Quality Assurance (QA) review by Surveyor ${surveyorName}.`,
+          },
+          ...(primaryJob?.activityLog || []),
+        ],
       });
     }
+
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: primaryJob?.clientId || primaryJob?.userId,
+      recipientEmail: targetCustomerEmail,
+      title: '🛡️ Quality Assurance Review Underway',
+      desc: `Surveyor ${surveyorName} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
+      type: 'booking',
+      link: '/customer/track-my-survey',
+    }).catch(() => {});
+
+    // 2. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Draft Report Submitted for QA Review — ${jobRef}`,
+      desc: `Surveyor ${surveyorName} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
+      type: 'booking',
+      link: `/admin/jobs/${primaryJob?.id}`,
+    }).catch(() => {});
+
+    // 3. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: user?.id || user?.surveyorId,
+      title: `Draft Submitted to QA Desk — ${jobRef}`,
+      desc: `Draft report for ${propertyAddr} dispatched to Central Admin QA Review Desk.`,
+      type: 'booking',
+      link: '/surveyor/field-dashboard',
+    }).catch(() => {});
+
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
 
     addToast({
       type: 'success',
       title: 'Report Submitted for QA Review',
-      message: `Draft ${primaryJob.surveyType} report and site evidence for ${primaryJob.id} dispatched to Admin Quality Review Desk.`,
+      message: `Draft ${primaryJob.surveyType} report for ${jobRef} dispatched to Admin Quality Review Desk. Notifications sent across portals.`,
     });
   };
 

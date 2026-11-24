@@ -8,6 +8,8 @@ import { apiRequest } from '../api/apiClient';
 export async function emitNotification({
   role,
   userId,
+  recipientEmail,
+  customerEmail,
   title,
   desc,
   type = 'booking',
@@ -16,6 +18,8 @@ export async function emitNotification({
 }) {
   const timestamp = new Date();
   const timeStr = `${timestamp.toLocaleDateString('en-GB')}, ${timestamp.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+  const targetEmail = recipientEmail || customerEmail || (typeof userId === 'string' && userId.includes('@') ? userId : undefined);
+
   const notifObj = {
     id: `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     title,
@@ -26,8 +30,9 @@ export async function emitNotification({
     time: timeStr,
     createdAt: timestamp.toISOString(),
     read: false,
-    role,
-    userId,
+    role: role ? String(role).toUpperCase() : undefined,
+    userId: userId ? String(userId) : undefined,
+    recipientEmail: targetEmail,
   };
 
   // 1. Dispatch custom event for immediate reactive update in NotificationDropdown
@@ -35,15 +40,23 @@ export async function emitNotification({
     window.dispatchEvent(
       new CustomEvent('njs_new_action_notification', { detail: notifObj })
     );
+
+    // 2. Persist to localStorage queue so notifications are preserved across reloads and offline
+    try {
+      const existing = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
+      const updated = [notifObj, ...existing.filter((n) => n.id !== notifObj.id)].slice(0, 50);
+      localStorage.setItem('propertygroup_local_notifications', JSON.stringify(updated));
+    } catch {}
   }
 
-  // 2. Persist to backend API so it stays across refreshes and devices
+  // 3. Persist to backend API so it stays across refreshes and devices
   try {
     await apiRequest('/notifications', {
       method: 'POST',
       body: {
         role: role ? String(role).toUpperCase() : undefined,
-        userId,
+        userId: userId ? String(userId).replace(/^usr_/, '').replace(/^srv-/, '') : undefined,
+        recipientEmail: targetEmail,
         title,
         desc,
         type,

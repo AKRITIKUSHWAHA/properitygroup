@@ -147,8 +147,12 @@ export const getNotifications = async (req, res, next) => {
       where: {
         OR: [
           { userId: { in: userIds } },
-          // Only Admin and Surveyor receive generic role-based broadcast notifications; Customers should NEVER receive unassigned/global notifications
-          ...(isCustomer ? [] : [{ role: user.role, userId: null }]),
+          // Admin receives admin broadcast & unassigned operational alerts
+          ...(isAdmin ? [{ role: 'ADMIN' }, { role: null, userId: null }, { role: 'SURVEYOR' }] : []),
+          // Surveyor receives role-specific surveyor notifications
+          ...(isSurveyor ? [{ role: 'SURVEYOR' }] : []),
+          // Customers receive notifications addressed to them or customer role
+          ...(isCustomer ? [{ role: 'CUSTOMER', userId: null }] : []),
         ],
         // Strict Account Registration Boundary: Never deliver notifications created before this user registered!
         ...(userCreatedAt && isCustomer ? { createdAt: { gte: userCreatedAt } } : {}),
@@ -881,20 +885,44 @@ export const markAllAsRead = async (req, res, next) => {
  */
 export const createNotification = async (req, res, next) => {
   try {
-    const { userId, role, title, desc, type = 'booking', amount, link } = req.body;
+    const { userId, userEmail, recipientEmail, customerEmail, role, title, desc, type = 'booking', amount, link } = req.body;
 
     if (!title || !desc) {
       throw ApiError.badRequest('Title and description are required');
     }
 
+    let parsedUserId = null;
+    if (userId) {
+      const cleanNum = String(userId).replace(/^usr_/, '').replace(/^srv-/, '').replace(/[^0-9]/g, '');
+      if (cleanNum) {
+        parsedUserId = parseInt(cleanNum, 10);
+      }
+    }
+
+    const targetEmail = recipientEmail || userEmail || customerEmail || (typeof userId === 'string' && userId.includes('@') ? userId : null);
+    if (!parsedUserId && targetEmail) {
+      try {
+        const foundUser = await prisma.user.findFirst({
+          where: { email: targetEmail.toLowerCase().trim() },
+        });
+        if (foundUser) {
+          parsedUserId = foundUser.id;
+        }
+      } catch {}
+    }
+
+    const validRole = role && ['ADMIN', 'SURVEYOR', 'CUSTOMER'].includes(String(role).toUpperCase())
+      ? String(role).toUpperCase()
+      : null;
+
     const notification = await prisma.notification.create({
       data: {
-        userId: userId ? parseInt(userId, 10) : null,
-        role: role ? String(role).toUpperCase() : null,
+        userId: parsedUserId,
+        role: validRole,
         title,
         desc,
         type,
-        amount,
+        amount: amount ? String(amount) : null,
         link,
       },
     });
