@@ -144,12 +144,28 @@ export const getStoredJobs = () => {
           }
           return updatedJob;
         });
+
+        // Deduplicate jobs by unique ID / JobNo
+        const seenIds = new Set();
+        const deduplicated = [];
+        for (const j of sanitized) {
+          const key = String(j.id || j.jobNo || j.reference || '').toUpperCase().trim();
+          if (key) {
+            if (seenIds.has(key)) {
+              needsResave = true;
+              continue;
+            }
+            seenIds.add(key);
+          }
+          deduplicated.push(j);
+        }
+
         if (needsResave) {
           try {
-            localStorage.setItem('propertygroup_jobs', JSON.stringify(sanitized));
+            localStorage.setItem('propertygroup_jobs', JSON.stringify(deduplicated));
           } catch {}
         }
-        return sanitized.filter((j) => {
+        return deduplicated.filter((j) => {
           const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
           const name = (j.customer || j.clientName || j.name || '').toLowerCase().trim();
           const addr = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
@@ -346,7 +362,14 @@ export const useJobs = () => {
   }, [setJobs]);
 
   const addJob = useCallback((newJob) => {
-    setJobs((prev) => [newJob, ...prev]);
+    setJobs((prev) => {
+      const cleanNewId = String(newJob.id || newJob.jobNo || newJob.reference || '').toUpperCase().trim();
+      const filtered = prev.filter((j) => {
+        const cleanJId = String(j.id || j.jobNo || j.reference || '').toUpperCase().trim();
+        return cleanJId !== cleanNewId;
+      });
+      return [newJob, ...filtered];
+    });
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
       fetch('/api/v1/survey-jobs', {

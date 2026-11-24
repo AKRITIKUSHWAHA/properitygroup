@@ -92,35 +92,46 @@ export const BookingCalendar = () => {
   // Derived tasks from real platform survey jobs
   const derivedJobTasks = useMemo(() => {
     const tasks = [];
+    const seenTaskKeys = new Set();
+
     (jobs || []).forEach((j) => {
       if (!j) return;
+      const jobKey = String(j.id || j.jobNo || j.reference || '').toUpperCase().trim();
       const formattedDate = normalizeToUKDate(j.date || j.inspectionDate);
 
       if (formattedDate) {
-        tasks.push({
-          id: `ins-${j.id || j.jobNo}`,
-          date: formattedDate,
-          time: j.timeSlot || j.inspectionTime || '10:00 AM - 01:00 PM',
-          title: `Inspection: ${j.property || j.propertyAddress || 'Subject Property'} (${j.id || j.jobNo})`,
-          subtitle: `Client: ${j.customer || j.clientName || 'Client'} • Surveyor: ${j.surveyor || 'Assigned'}`,
-          type: 'inspection',
-          color: 'bg-[#2563EB] text-white',
-          surveyorId: j.surveyorId,
-          job: j,
-        });
-
-        if (['drafting', 'qa_review', 'qa review', 'completed', 'delivered'].includes((j.status || '').toLowerCase()) || (j.timelineStep || 0) >= 8) {
+        const insKey = `ins-${jobKey || j.id || j.jobNo}_${formattedDate}`;
+        if (!seenTaskKeys.has(insKey)) {
+          seenTaskKeys.add(insKey);
           tasks.push({
-            id: `rep-${j.id || j.jobNo}`,
+            id: `ins-${j.id || j.jobNo}`,
             date: formattedDate,
-            time: '05:00 PM - 07:00 PM',
-            title: `Report Milestone: ${j.property || j.propertyAddress || 'Property'}`,
-            subtitle: `RICS Compliance • Status: ${j.status || 'Active'}`,
-            type: 'report',
-            color: 'bg-[#6D28D9] text-white',
+            time: j.timeSlot || j.inspectionTime || '10:00 AM - 01:00 PM',
+            title: `Inspection: ${j.property || j.propertyAddress || 'Subject Property'} (${j.id || j.jobNo})`,
+            subtitle: `Client: ${j.customer || j.clientName || 'Client'} • Surveyor: ${j.surveyor || 'Assigned'}`,
+            type: 'inspection',
+            color: 'bg-[#2563EB] text-white',
             surveyorId: j.surveyorId,
             job: j,
           });
+        }
+
+        if (['drafting', 'qa_review', 'qa review', 'completed', 'delivered'].includes((j.status || '').toLowerCase()) || (j.timelineStep || 0) >= 8) {
+          const repKey = `rep-${jobKey || j.id || j.jobNo}_${formattedDate}`;
+          if (!seenTaskKeys.has(repKey)) {
+            seenTaskKeys.add(repKey);
+            tasks.push({
+              id: `rep-${j.id || j.jobNo}`,
+              date: formattedDate,
+              time: '05:00 PM - 07:00 PM',
+              title: `Report Milestone: ${j.property || j.propertyAddress || 'Property'}`,
+              subtitle: `RICS Compliance • Status: ${j.status || 'Active'}`,
+              type: 'report',
+              color: 'bg-[#6D28D9] text-white',
+              surveyorId: j.surveyorId,
+              job: j,
+            });
+          }
         }
       }
     });
@@ -136,7 +147,16 @@ export const BookingCalendar = () => {
   });
 
   const allTasks = useMemo(() => {
-    return [...derivedJobTasks, ...customTasks];
+    const list = [];
+    const seen = new Set();
+    [...derivedJobTasks, ...customTasks].forEach((t) => {
+      if (!t) return;
+      const key = `${t.id || ''}_${t.date || ''}_${t.title || ''}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      list.push(t);
+    });
+    return list;
   }, [derivedJobTasks, customTasks]);
 
   // Surveyor Checkbox Filters
@@ -174,15 +194,28 @@ export const BookingCalendar = () => {
 
   // Filter jobs by selected surveyors
   const visibleJobs = useMemo(() => {
-    return jobs.filter((j) => {
-      if (!j) return false;
-      if (!j.surveyorId) return true;
+    const seen = new Set();
+    const list = [];
+    (jobs || []).forEach((j) => {
+      if (!j) return;
+      const key = String(j.id || j.jobNo || j.reference || '').toUpperCase().trim();
+      if (key && seen.has(key)) return;
+      if (key) seen.add(key);
+
+      if (!j.surveyorId) {
+        list.push(j);
+        return;
+      }
       const cleanJSurveyorId = String(j.surveyorId).replace(/^srv-/, '');
-      return selectedSurveyorIds.some((id) => {
+      const isSelected = selectedSurveyorIds.some((id) => {
         const cleanId = String(id).replace(/^srv-/, '');
         return cleanId === cleanJSurveyorId || id === j.surveyorId;
       });
+      if (isSelected) {
+        list.push(j);
+      }
     });
+    return list;
   }, [jobs, selectedSurveyorIds]);
 
   // Handle new booking submission
