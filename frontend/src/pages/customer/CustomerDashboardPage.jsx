@@ -260,20 +260,77 @@ export const CustomerDashboardPage = () => {
     {
       id: 'payment',
       title: 'Payment Status',
-      value: isDeliveredActive || customerJob?.paymentStatus === 'Paid' ? '£0.00' : customerJob ? `£${((customerJob.quote?.baseFee || 650) * 1.2).toFixed(2)}` : '£0.00',
-      subtext: isDeliveredActive || customerJob?.paymentStatus === 'Paid'
-        ? 'All fees settled'
-        : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
-        ? 'Payment Claimed — Awaiting NJS Admin Verification'
-        : customerJob
-        ? 'Bank transfer pending settlement'
-        : 'No balance due',
+      value: (() => {
+        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return '£0.00';
+        if (!customerJob) return '£0.00';
+        const isQuoteAccepted =
+          customerJob.quoteStatus === 'Accepted' ||
+          customerJob.status === 'Accepted' ||
+          customerJob.termsStatus === 'Signed' ||
+          (customerJob.timelineStep || 0) >= 3;
+        const rawFee =
+          customerJob.quote?.total ||
+          (customerJob.quote?.baseFee ? customerJob.quote.baseFee * 1.2 : null) ||
+          customerJob.totalAmount;
+        if (isQuoteAccepted && rawFee) {
+          return `£${Number(rawFee).toFixed(2)}`;
+        }
+        if (
+          customerJob.paymentStatus === 'Claimed (Verification Pending)' ||
+          customerJob.paymentStatus === 'Claimed' ||
+          customerJob.paymentStatus?.includes('Claimed')
+        ) {
+          return rawFee ? `£${Number(rawFee).toFixed(2)}` : 'Claimed';
+        }
+        return 'Pending Quote';
+      })(),
+      subtext: (() => {
+        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return 'All fees settled';
+        if (!customerJob) return 'No balance due';
+        if (
+          customerJob.paymentStatus === 'Claimed (Verification Pending)' ||
+          customerJob.paymentStatus === 'Claimed' ||
+          customerJob.paymentStatus?.includes('Claimed')
+        ) {
+          return 'Payment Claimed — Awaiting NJS Admin Verification';
+        }
+        const isQuoteAccepted =
+          customerJob.quoteStatus === 'Accepted' ||
+          customerJob.status === 'Accepted' ||
+          customerJob.termsStatus === 'Signed' ||
+          (customerJob.timelineStep || 0) >= 3;
+        const rawFee =
+          customerJob.quote?.total ||
+          (customerJob.quote?.baseFee ? customerJob.quote.baseFee * 1.2 : null) ||
+          customerJob.totalAmount;
+        if (isQuoteAccepted && rawFee) {
+          return 'Bank transfer pending settlement';
+        }
+        return 'Awaiting NJS fee proposal';
+      })(),
       icon: Building2,
-      color: isDeliveredActive || customerJob?.paymentStatus === 'Paid'
-        ? 'bg-emerald-50 text-emerald-600'
-        : (customerJob?.paymentStatus === 'Claimed (Verification Pending)' || customerJob?.paymentStatus === 'Claimed' || customerJob?.paymentStatus?.includes('Claimed'))
-        ? 'bg-amber-50 text-amber-700'
-        : 'bg-slate-50 text-slate-700',
+      color: (() => {
+        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return 'bg-emerald-50 text-emerald-600';
+        if (
+          customerJob?.paymentStatus === 'Claimed (Verification Pending)' ||
+          customerJob?.paymentStatus === 'Claimed' ||
+          customerJob?.paymentStatus?.includes('Claimed')
+        ) {
+          return 'bg-amber-50 text-amber-700';
+        }
+        const isQuoteAccepted =
+          customerJob?.quoteStatus === 'Accepted' ||
+          customerJob?.status === 'Accepted' ||
+          customerJob?.termsStatus === 'Signed' ||
+          (customerJob?.timelineStep || 0) >= 3;
+        if (
+          isQuoteAccepted &&
+          (customerJob?.quote?.total || customerJob?.quote?.baseFee || customerJob?.totalAmount)
+        ) {
+          return 'bg-blue-50 text-blue-700';
+        }
+        return 'bg-slate-50 text-slate-700';
+      })(),
       path: '/customer/invoices-and-payments',
     },
     {
