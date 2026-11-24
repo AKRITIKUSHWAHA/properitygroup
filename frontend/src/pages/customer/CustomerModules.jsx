@@ -3288,35 +3288,7 @@ export const CustomerReportsPage = () => {
         </Modal>
       )}
 
-        {/* Specimen / Sample Reports */}
-        <div className="mt-8 pt-6 border-t border-slate-200">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-            Reference RICS Sample Reports
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <button
-              onClick={() => handleDownloadSample(2)}
-              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between text-left cursor-pointer transition-all"
-            >
-              <div>
-                <div className="font-bold text-slate-800">Sample Level 2 Home Survey</div>
-                <div className="text-slate-400 text-[11px]">Specimen PDF with condition ratings</div>
-              </div>
-              <Download className="w-4 h-4 text-slate-600" />
-            </button>
-
-            <button
-              onClick={() => handleDownloadSample(3)}
-              className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between text-left cursor-pointer transition-all"
-            >
-              <div>
-                <div className="font-bold text-slate-800">Sample Level 3 Building Survey</div>
-                <div className="text-slate-400 text-[11px]">Full structural defect analysis template</div>
-              </div>
-              <Download className="w-4 h-4 text-slate-600" />
-            </button>
-          </div>
-        </div>
+        {/* Specimen / Sample Reports section suspended per client requirement until official company samples are provided */}
       </div>
     </div>
   );

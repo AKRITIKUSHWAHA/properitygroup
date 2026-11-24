@@ -194,31 +194,103 @@ export const NotificationDropdown = () => {
   }, []);
 
   const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
+  const isCustomer = (user?.role || '').toLowerCase() === 'customer';
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const userName = (user?.name || '').toLowerCase().trim();
 
-  // Strict Privacy Shield: Hide payments, receipts, invoices, and terms signatures from surveyors
+  // Strict Privacy Shield for Surveyors & Customer Notification Isolation
   const visibleNotifications = notifications.filter((item) => {
-    if (!isSurveyor) return true;
-    if (item.type === 'payment') return false;
-    if (item.amount) return false;
-    const title = (item.title || '').toLowerCase();
-    const desc = (item.desc || '').toLowerCase();
-    if (
-      title.includes('payment') ||
-      desc.includes('payment') ||
-      title.includes('invoice') ||
-      desc.includes('invoice') ||
-      title.includes('paid') ||
-      title.includes('£') ||
-      desc.includes('£')
-    ) {
-      return false;
+    if (isSurveyor) {
+      if (item.type === 'payment') return false;
+      if (item.amount) return false;
+      const title = (item.title || '').toLowerCase();
+      const desc = (item.desc || '').toLowerCase();
+      if (
+        title.includes('payment') ||
+        desc.includes('payment') ||
+        title.includes('invoice') ||
+        desc.includes('invoice') ||
+        title.includes('paid') ||
+        title.includes('£') ||
+        desc.includes('£')
+      ) {
+        return false;
+      }
+      if (
+        (title.includes('terms') || title.includes('contract')) &&
+        (title.includes('signed') || desc.includes('signed'))
+      ) {
+        return false;
+      }
+      return true;
     }
-    if (
-      (title.includes('terms') || title.includes('contract')) &&
-      (title.includes('signed') || desc.includes('signed'))
-    ) {
-      return false;
+
+    if (isCustomer) {
+      const title = (item.title || '').toLowerCase();
+      const desc = (item.desc || '').toLowerCase();
+
+      // 1. Never show generic seed/demo notifications from templates or other clients
+      if (
+        desc.includes('kq-9042') ||
+        desc.includes('inv-2026-891') ||
+        desc.includes('18 highfield ave') ||
+        desc.includes('emma watson') ||
+        title.includes('emma watson') ||
+        desc.includes('claire bennet')
+      ) {
+        return false;
+      }
+
+      // 2. If notification specifies recipient or client email, only show if it matches current customer
+      const targetEmail = (item.recipientEmail || item.clientEmail || item.customerEmail || '').toLowerCase().trim();
+      if (targetEmail && userEmail && targetEmail !== userEmail) {
+        return false;
+      }
+
+      // 3. If notification is tied to another user id, filter it out
+      if (item.userId && user?.id && String(item.userId) !== String(user.id)) {
+        return false;
+      }
+
+      // 4. Strict Registration Timeline Isolation: Never show notifications created prior to account registration!
+      if (user?.createdAt || user?.dateJoined) {
+        let registrationTimestamp = null;
+        if (user.createdAt) {
+          const d = new Date(user.createdAt);
+          if (!isNaN(d.getTime())) registrationTimestamp = d.getTime();
+        } else if (user.dateJoined) {
+          const parts = String(user.dateJoined).split('/');
+          if (parts.length === 3) {
+            const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T00:00:00Z`);
+            if (!isNaN(d.getTime())) registrationTimestamp = d.getTime();
+          }
+        }
+
+        if (registrationTimestamp) {
+          let itemTimestamp = null;
+          if (item.createdAt) {
+            const id = new Date(item.createdAt);
+            if (!isNaN(id.getTime())) itemTimestamp = id.getTime();
+          } else if (item.time) {
+            const parts = String(item.time).split(',');
+            if (parts.length >= 1) {
+              const dateParts = parts[0].trim().split('/');
+              if (dateParts.length === 3) {
+                const id = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T00:00:00Z`);
+                if (!isNaN(id.getTime())) itemTimestamp = id.getTime();
+              }
+            }
+          }
+
+          if (itemTimestamp && itemTimestamp < registrationTimestamp - 60000) {
+            return false;
+          }
+        }
+      }
+
+      return true;
     }
+
     return true;
   });
 

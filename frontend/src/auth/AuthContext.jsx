@@ -201,6 +201,7 @@ export const AuthProvider = ({ children }) => {
         phone: backendUser.phone || registeredCust?.phone || '',
         avatar: backendUser.avatar || null,
         token: authToken,
+        createdAt: backendUser.createdAt,
       };
     } else {
       // Check demo users fallback with strict password verification

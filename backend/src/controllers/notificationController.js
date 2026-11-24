@@ -95,43 +95,8 @@ async function seedDefaultNotificationsForRole(user) {
       },
     ];
   } else {
-    // CUSTOMER
-    defaults = [
-      {
-        userId: user.id,
-        role: 'CUSTOMER',
-        title: 'Formal Survey Quotation Ready',
-        desc: 'Your tailored fixed-fee RICS quotation #KQ-9042 is available to review and accept online.',
-        type: 'booking',
-        amount: '£650.00',
-        read: false,
-      },
-      {
-        userId: user.id,
-        role: 'CUSTOMER',
-        title: 'Chartered Surveyor Allocated',
-        desc: 'An accredited RICS Chartered Surveyor has been assigned as your lead independent surveyor.',
-        type: 'terms',
-        read: false,
-      },
-      {
-        userId: user.id,
-        role: 'CUSTOMER',
-        title: 'Payment Receipt & VAT Invoice',
-        desc: 'Advance payment confirmed. HMRC-compliant VAT invoice #INV-2026-891 is ready in your portal.',
-        type: 'payment',
-        amount: '£650.00',
-        read: true,
-      },
-      {
-        userId: user.id,
-        role: 'CUSTOMER',
-        title: 'Terms of Engagement Signed',
-        desc: 'Electronic contract confirmed and countersigned. Your property inspection is secured.',
-        type: 'report',
-        read: true,
-      },
-    ];
+    // CUSTOMER - Do not seed artificial dummy notifications for real or new customer accounts
+    defaults = [];
   }
 
   for (const item of defaults) {
@@ -172,20 +137,25 @@ export const getNotifications = async (req, res, next) => {
       } catch {}
     }
 
+    const isSurveyor = (user.role || '').toLowerCase() === 'surveyor';
+    const isAdmin = (user.role || '').toUpperCase() === 'ADMIN' || (user.role || '').toUpperCase() === 'SUPER_ADMIN';
+    const isCustomer = !isAdmin && !isSurveyor;
+
+    const userCreatedAt = user.createdAt ? new Date(user.createdAt) : null;
+
     const notifications = await prisma.notification.findMany({
       where: {
         OR: [
           { userId: { in: userIds } },
-          { role: user.role, userId: null },
+          // Only Admin and Surveyor receive generic role-based broadcast notifications; Customers should NEVER receive unassigned/global notifications
+          ...(isCustomer ? [] : [{ role: user.role, userId: null }]),
         ],
+        // Strict Account Registration Boundary: Never deliver notifications created before this user registered!
+        ...(userCreatedAt && isCustomer ? { createdAt: { gte: userCreatedAt } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: 40,
     });
-
-    const isSurveyor = (user.role || '').toLowerCase() === 'surveyor';
-    const isAdmin = (user.role || '').toUpperCase() === 'ADMIN' || (user.role || '').toUpperCase() === 'SUPER_ADMIN';
-    const isCustomer = !isAdmin && !isSurveyor;
 
     const clientTz = (() => {
       const h = req.headers['x-client-timezone'];
@@ -249,7 +219,10 @@ export const getNotifications = async (req, res, next) => {
         }
       } else if (isCustomer && userEmail) {
         const clientLeads = await prisma.lead.findMany({
-          where: { clientEmail: { equals: userEmail, mode: 'insensitive' } },
+          where: {
+            clientEmail: { equals: userEmail, mode: 'insensitive' },
+            ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
+          },
           orderBy: { createdAt: 'desc' },
           take: 10,
         });
@@ -315,6 +288,7 @@ export const getNotifications = async (req, res, next) => {
               { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
               { lead: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
             ],
+            ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
           include: { job: true, lead: true },
           orderBy: { updatedAt: 'desc' },
@@ -397,6 +371,7 @@ export const getNotifications = async (req, res, next) => {
               { clientEmail: { equals: userEmail, mode: 'insensitive' } },
               { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
             ],
+            ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
           include: { job: true },
           orderBy: { updatedAt: 'desc' },
@@ -466,6 +441,7 @@ export const getNotifications = async (req, res, next) => {
               { clientEmail: { equals: userEmail, mode: 'insensitive' } },
               { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
             ],
+            ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
           include: { job: true },
           orderBy: { updatedAt: 'desc' },
@@ -629,6 +605,7 @@ export const getNotifications = async (req, res, next) => {
               { clientId: user.id },
               { clientEmail: { equals: userEmail, mode: 'insensitive' } },
             ],
+            ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
           include: { surveyor: true },
           orderBy: { updatedAt: 'desc' },
