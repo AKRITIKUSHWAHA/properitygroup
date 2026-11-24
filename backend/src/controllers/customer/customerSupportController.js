@@ -1,6 +1,7 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import { sendSupportTicketNotificationEmail } from '../../services/emailService.js';
 
 /**
  * Customer Menu 12: Support (/customer/support)
@@ -48,6 +49,37 @@ export const createSupportTicket = async (req, res, next) => {
         status: 'OPEN',
       },
     });
+
+    // 1. In-App Notification dispatched to Admin
+    try {
+      const clientName = req.user?.name || 'Customer';
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `Support Ticket: #${ticketNo}`,
+          desc: `New ${priority} priority ticket from ${clientName} (${req.user?.email || 'N/A'}): "${subject}".`,
+          type: 'support',
+          link: '/admin/support',
+        },
+      });
+    } catch (notifErr) {
+      console.warn('Admin ticket in-app notification note:', notifErr?.message || notifErr);
+    }
+
+    // 2. Email alert dispatched to business inbox (info@njspropertygroup.com)
+    try {
+      await sendSupportTicketNotificationEmail({
+        ticketNo,
+        customerName: req.user?.name || 'Client',
+        customerEmail: req.user?.email || 'Not specified',
+        subject,
+        category,
+        priority,
+        message: message.trim(),
+      });
+    } catch (emailErr) {
+      console.warn('Admin ticket email notification note:', emailErr?.message || emailErr);
+    }
 
     return ApiResponse.created(
       res,

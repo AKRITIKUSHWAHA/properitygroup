@@ -83,9 +83,7 @@ export const getStoredLeads = () => {
           })
           .map((l) => {
             const emailStr = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
-            const fallbackName = emailStr.includes('astp750')
-              ? 'test k'
-              : emailStr.includes('niamh')
+            const fallbackName = emailStr.includes('niamh')
               ? 'Niamh Richmond'
               : 'Private Client';
             const resolvedName = l.customerName || l.clientName || l.customer || fallbackName;

@@ -89,10 +89,54 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const { isMenuPermitted } = useRolePermissions();
 
+  const [quoteAcceptedTick, setQuoteAcceptedTick] = useState(0);
+  useEffect(() => {
+    const handleQuoteStatusChange = () => setQuoteAcceptedTick((t) => t + 1);
+    window.addEventListener('propertygroup_jobs_updated', handleQuoteStatusChange);
+    window.addEventListener('propertygroup_quote_accepted', handleQuoteStatusChange);
+    window.addEventListener('storage', handleQuoteStatusChange);
+    return () => {
+      window.removeEventListener('propertygroup_jobs_updated', handleQuoteStatusChange);
+      window.removeEventListener('propertygroup_quote_accepted', handleQuoteStatusChange);
+      window.removeEventListener('storage', handleQuoteStatusChange);
+    };
+  }, []);
+
   const activeRole = getActiveRole();
   const roleConfig = ROLE_NAVIGATION[activeRole] || ROLE_NAVIGATION.super_admin;
   const allMenuItems = roleConfig.items || [];
-  const menuItems = allMenuItems.filter((item) => isMenuPermitted(activeRole, item.id));
+  const menuItems = allMenuItems.filter((item) => {
+    if (!isMenuPermitted(activeRole, item.id)) return false;
+
+    // Client Bug 5: The signed terms should only appear as an option for the client once they accept the survey fee. They should not be visible otherwise.
+    if (activeRole === 'customer' && item.id === 'terms-to-sign') {
+      const uEmail = (user?.email || '').toLowerCase().trim();
+      if (!uEmail) return false;
+      const isAcceptedFlag = localStorage.getItem(`propertygroup_quote_accepted_${uEmail}`) === 'true';
+      if (isAcceptedFlag) return true;
+      try {
+        const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+        const hasAcceptedJob = storedJobs.some((j) => {
+          const jEmail = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+          if (jEmail !== uEmail) return false;
+          return j.quoteStatus === 'Accepted' || j.status === 'Accepted' || j.stage === 'accepted' || j.termsStatus === 'Signed' || (j.timelineStep && j.timelineStep >= 3);
+        });
+        if (hasAcceptedJob) return true;
+      } catch {}
+      try {
+        const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+        const hasAcceptedQuote = storedQuotes.some((q) => {
+          const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+          if (qEmail !== uEmail) return false;
+          return q.status === 'Accepted' || q.status === 'ACCEPTED' || q.isAccepted === true || q.termsStatus === 'Signed';
+        });
+        if (hasAcceptedQuote) return true;
+      } catch {}
+      return false;
+    }
+
+    return true;
+  });
 
   // Live Unread Messages counter for the sidebar navigation badge
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);

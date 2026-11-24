@@ -1090,3 +1090,64 @@ export const sendAdminReplyToClientNotificationEmail = async ({
   console.log(`[RESEND SIMULATION] Admin reply notification dispatched to ${to}`);
   return { success: true, provider: 'simulated_fallback' };
 };
+
+/**
+ * Dispatches an immediate alert to info@njspropertygroup.com when a customer submits a support ticket
+ */
+export const sendSupportTicketNotificationEmail = async ({
+  ticketNo,
+  customerName,
+  customerEmail,
+  subject,
+  category,
+  priority,
+  message,
+}) => {
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const BUSINESS_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+  const emailSubject = `[Support Ticket #${ticketNo}] [${priority.toUpperCase()}] ${subject} — ${customerName || customerEmail}`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — NEW SUPPORT TICKET', `Ticket #${ticketNo} • Priority: ${priority}`)}
+      <div style="padding: 26px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <p style="margin-top: 0;">A client has submitted a support ticket through the customer portal:</p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr><td style="padding: 6px 0; color: #64748b; width: 35%;">Ticket No:</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">#${ticketNo}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Client Name:</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${escapeHtml(customerName || 'Valued Client')}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Client Email:</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${escapeHtml(customerEmail || 'Not specified')}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Category:</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${escapeHtml(category || 'General')}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Priority:</td><td style="padding: 6px 0; font-weight: 700; color: ${priority === 'High' ? '#dc2626' : '#0f172a'};">${escapeHtml(priority || 'Normal')}</td></tr>
+            <tr><td style="padding: 6px 0; color: #64748b;">Subject:</td><td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${escapeHtml(subject)}</td></tr>
+          </table>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px; margin: 16px 0;">
+          <strong style="display: block; font-size: 12px; color: #92400e; margin-bottom: 4px;">Ticket Message:</strong>
+          <p style="margin: 0; font-size: 13px; color: #451a03; white-space: pre-wrap;">${escapeHtml(message || '')}</p>
+        </div>
+        <p style="font-size: 12px; color: #64748b; margin: 18px 0 0 0;">Reply directly to this email to respond to <strong>${escapeHtml(customerName || 'the client')}</strong> (${escapeHtml(customerEmail)}).</p>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  if (resend) {
+    try {
+      const response = await resend.emails.send({
+        from: SENDER_EMAIL,
+        to: [BUSINESS_INBOX],
+        replyTo: customerEmail || undefined,
+        subject: emailSubject,
+        html,
+      });
+      return { wasSent: true, messageId: response?.data?.id || response?.id };
+    } catch (err) {
+      console.warn('Support ticket notification email note:', err?.message || err);
+    }
+  }
+
+  console.log(`[RESEND SIMULATION] Support ticket alert #${ticketNo} logged for ${BUSINESS_INBOX}`);
+  return { wasSent: true, simulation: true };
+};

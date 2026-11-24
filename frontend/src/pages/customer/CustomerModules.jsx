@@ -221,7 +221,6 @@ export const CustomerTermsPage = () => {
     (userLead?.propertyAddress && userLead.propertyAddress !== 'Subject Property' ? userLead.propertyAddress : '');
 
   const isEmma = userEmail === 'customer@demo.com';
-  const isTestK = userEmail.includes('astp750') || userName.includes('test k');
 
   const propertyAddress =
     activeQuoteOrLeadProp ||
@@ -233,16 +232,16 @@ export const CustomerTermsPage = () => {
       : '') ||
     (currentUser?.address && currentUser.address !== 'Subject Property'
       ? currentUser.address
-      : isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : (isTestK ? 'abc,road,UK' : '14 High Street, Guildford GU1 3AA'));
+      : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : ''));
 
   const surveyType = currentJob?.surveyType || userQuote?.surveyType || userLead?.enquiry || userLead?.surveyType || 'RICS Level 2 Home Survey';
   const surveyorName = (currentJob?.surveyor && currentJob?.surveyor !== 'Pending Allocation') ? currentJob.surveyor : 'Assigned Chartered Surveyor';
   const appointmentSlot = currentJob?.date
     ? `${currentJob.date}, ${currentJob.timeSlot || '10:00 - 13:00'}`
     : 'Pending Scheduling';
-  const jobNo = currentJob?.id || currentJob?.jobNo || userQuote?.id || userLead?.quoteRef || userLead?.id || (isEmma ? 'JOB-2026-080' : (isTestK ? 'JOB-2026-5929' : 'JOB-2026-101'));
+  const jobNo = currentJob?.id || currentJob?.jobNo || userQuote?.id || userLead?.quoteRef || userLead?.id || (isEmma ? 'JOB-2026-080' : '');
 
-  const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || leadNet || (surveyType.includes('Level 3') ? 1450 : 550);
+  const baseFee = currentJob?.quote?.baseFee || userQuote?.baseFee || leadNet || (isEmma ? 650 : 0);
   const vatAmount = userQuote?.vatAmount || (leadTotal && leadNet ? Math.round((leadTotal - leadNet) * 100) / 100 : Math.round(baseFee * 0.2));
   const grossTotal = userQuote?.totalAmount || leadTotal || (baseFee + vatAmount);
 
@@ -827,6 +826,49 @@ export const CustomerTermsPage = () => {
       message: 'Generating your executed Terms of Engagement with audit seal.',
     });
   };
+
+  // ==========================================
+  // CLIENT BUG 5 GUARD: TERMS ONLY VISIBLE ONCE QUOTATION FEE IS ACCEPTED
+  // ==========================================
+  const isAcceptedQuote = Boolean(
+    isAlreadySigned ||
+    isEmma ||
+    (currentJob && (currentJob.quoteStatus === 'Accepted' || currentJob.status === 'Accepted' || currentJob.stage === 'accepted' || currentJob.termsStatus === 'Signed' || (currentJob.timelineStep && currentJob.timelineStep >= 3))) ||
+    (userQuote && (userQuote.status === 'Accepted' || userQuote.status === 'ACCEPTED' || userQuote.isAccepted || userQuote.termsStatus === 'Signed')) ||
+    (localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true')
+  );
+
+  if (!isAcceptedQuote) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
+        <PageHeader
+          title="Terms of Engagement & Digital Signature"
+          subtitle="RICS compliant statutory terms and letter of instruction."
+          breadcrumb={['Customer Portal', 'Terms to Sign']}
+        />
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-8 sm:p-12 text-center shadow-xs space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-slate-900">Quotation Fee Acceptance Required</h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Your RICS Terms of Engagement will appear here for digital signature once you have reviewed and accepted the quotation fee proposal.
+            </p>
+          </div>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate('/customer/quotations')}
+              className="px-6 py-2.5 rounded-xl bg-[#0B1F4D] hover:bg-[#162E6E] text-white text-xs font-bold transition-all shadow-md cursor-pointer inline-flex items-center gap-2"
+            >
+              <span>Review Quotation Proposal</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ==========================================
   // CASE A: AGREEMENT ALREADY SIGNED & EXECUTED
@@ -3111,22 +3153,6 @@ export const CustomerReportsPage = () => {
     ...apiFormattedReports.filter((ar) => !localReports.some((lr) => lr.jobRef === ar.jobRef || lr.id === ar.id)),
   ];
 
-  const uEmail = (user?.email || '').toLowerCase().trim();
-  const isDeliveredLocal = localStorage.getItem('propertygroup_delivered') === 'true' || localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true';
-
-  if (reports.length === 0 && isDeliveredLocal) {
-    reports.push({
-      id: 'RPT-2026-9604',
-      jobRef: 'JOB-2026-9604',
-      title: 'RICS_Homebuyer_Survey_Level_2_abc_road_UK.pdf',
-      property: 'abc , road,UK, GU12AA',
-      date: new Date().toLocaleDateString('en-GB'),
-      size: '14.2 MB',
-      surveyor: 'NJS Lead Chartered Surveyor',
-      conditionRating: 'Condition 1 & 2 (Official RICS Traffic-Light Audit)',
-    });
-  }
-
   const handleDownloadReport = (r) => {
     downloadReportPDF({
       jobNo: r.id,
@@ -3428,7 +3454,6 @@ export const CustomerTrackSurveyPage = () => {
 
   const trackProperty = apiTracking?.propertyAddress || apiTracking?.property;
   const isEmma = userEmail === 'customer@demo.com';
-  const isTestK = userEmail.includes('astp750') || (currentUser?.name || '').toLowerCase().includes('test');
 
   const propertyAddress =
     activeQuoteOrLeadProp ||
@@ -3436,7 +3461,7 @@ export const CustomerTrackSurveyPage = () => {
     trackProperty ||
     (regUser.address ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}` : '') ||
     (user?.address && user.address !== 'Subject Property' ? user.address : '') ||
-    (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : (isTestK ? 'abc,road,UK' : '14 High Street, Guildford GU1 3AA'));
+    (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : '');
 
   const refNo =
     myQuote?.id ||
@@ -3445,7 +3470,7 @@ export const CustomerTrackSurveyPage = () => {
     myJob?.jobNo ||
     apiTracking?.jobReference ||
     apiTracking?.reference ||
-    (isEmma ? 'JOB-2026-080' : (isTestK ? 'JOB-2026-5929' : 'JOB-2026-101'));
+    (isEmma ? 'JOB-2026-080' : '');
   const surveyorName = myJob?.surveyor || (apiTracking?.surveyor?.name) || 'Pending Allocation';
   const surveyType =
     myJob?.surveyType ||
@@ -5062,34 +5087,37 @@ export const CustomerReviewPage = () => {
 // 11. PREVIOUS SURVEYS PAGE (Archived History)
 // ==========================================
 export const CustomerPreviousSurveysPage = () => {
-  useEffect(() => { customerPreviousSurveysApi.getPreviousSurveys().catch(() => {}); }, []);
+  const { user } = useAuth();
   const { addToast } = useToast();
+  const [surveys, setSurveys] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const pastSurveys = [
-    {
-      id: 'JOB-2025-042',
-      property: '22 Richmond Green, Richmond TW9 1LX',
-      type: 'RICS Level 2 Home Survey',
-      date: '14/09/2025',
-      surveyor: 'Claire Bennet AssocRICS',
-      fee: '£650.00',
-      status: 'Completed & Archived',
-    },
-  ];
+  useEffect(() => {
+    customerPreviousSurveysApi
+      .getPreviousSurveys()
+      .then((res) => {
+        const list = res?.previousSurveys || res?.data?.previousSurveys || [];
+        setSurveys(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        setSurveys([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleDownloadOldReport = (s) => {
     downloadReportPDF({
-      jobNo: s.id,
-      clientName: 'Emma Watson',
-      property: s.property,
-      surveyType: s.type,
-      surveyorName: s.surveyor,
-      inspectionDate: s.date,
+      jobNo: s.reference || s.id,
+      clientName: user?.name || 'Client',
+      property: s.propertyAddress || s.property,
+      surveyType: s.serviceType || s.type,
+      surveyorName: s.surveyor?.name || s.surveyor || 'Chartered Surveyor',
+      inspectionDate: s.inspectionDate ? new Date(s.inspectionDate).toLocaleDateString('en-GB') : s.date,
     });
     addToast({
       type: 'success',
       title: 'Historical Report Downloaded',
-      message: `Downloaded archived survey for ${s.property}`,
+      message: `Downloaded archived survey for ${s.propertyAddress || s.property}`,
     });
   };
 
@@ -5102,30 +5130,42 @@ export const CustomerPreviousSurveysPage = () => {
       />
 
       <div className="space-y-4">
-        {pastSurveys.map((s) => (
-          <div
-            key={s.id}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5"
-          >
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {s.status}
-              </span>
-              <h4 className="text-sm font-bold text-slate-900 mt-1">{s.property}</h4>
-              <p className="text-xs text-slate-500">
-                {s.type} • Surveyor: {s.surveyor} • Completed {s.date}
-              </p>
-            </div>
-
-            <button
-              onClick={() => handleDownloadOldReport(s)}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-[#0B1F4D] text-slate-800 hover:text-white text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+        {surveys.length > 0 ? (
+          surveys.map((s) => (
+            <div
+              key={s.id}
+              className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5"
             >
-              <Download className="w-4 h-4" />
-              <span>Download Archive PDF</span>
-            </button>
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  Completed &amp; Archived
+                </span>
+                <h4 className="text-sm font-bold text-slate-900 mt-1">{s.propertyAddress || s.property}</h4>
+                <p className="text-xs text-slate-500">
+                  {s.serviceType || s.type} • Surveyor: {s.surveyor?.name || s.surveyor || 'Chartered Surveyor'} • Completed {s.inspectionDate ? new Date(s.inspectionDate).toLocaleDateString('en-GB') : s.date}
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleDownloadOldReport(s)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-[#0B1F4D] text-slate-800 hover:text-white text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download Archive PDF</span>
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="bg-white p-12 rounded-3xl border border-slate-200/90 text-center space-y-3 shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+              <History className="w-6 h-6" />
+            </div>
+            <h4 className="text-base font-bold text-slate-800">No Previous Surveys Found</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Completed and archived property survey reports associated with your client account will appear here.
+            </p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -5281,28 +5321,7 @@ export const CustomerDetailsPage = () => {
 // ==========================================
 // 13. SUPPORT PAGE
 // ==========================================
-const INITIAL_SUPPORT_TICKETS = [
-  {
-    id: 1,
-    ticketNo: 'TKT-2026-104',
-    subject: 'Request update on 14 Mayfair Gate Level 3 report delivery ETA',
-    category: 'Report Delivery',
-    priority: 'Normal',
-    status: 'IN PROGRESS',
-    createdAt: '03 Nov 2026, 11:20',
-    lastReply: 'Chartered Surveyor confirmed on-site inspection concluded. Final technical review underway.',
-  },
-  {
-    id: 2,
-    ticketNo: 'TKT-2026-089',
-    subject: 'Access confirmation with vendor estate agent (Hamptons Mayfair)',
-    category: 'Access Logistics',
-    priority: 'Normal',
-    status: 'RESOLVED',
-    createdAt: '28 Oct 2026, 14:15',
-    lastReply: 'Confirmed by vendor agent. Key collection booked for 10:00 AM on inspection date.',
-  },
-];
+const INITIAL_SUPPORT_TICKETS = [];
 
 export const CustomerSupportPage = () => {
   const { addToast } = useToast();
@@ -5494,44 +5513,54 @@ export const CustomerSupportPage = () => {
             </h4>
 
             <div className="space-y-3">
-              {tickets.map((t) => (
-                <div
-                  key={t.id || t.ticketNo}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 hover:border-slate-200 transition-colors"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-[#0B1F4D]">{t.ticketNo}</span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
-                        {t.category}
-                      </span>
+              {tickets.length > 0 ? (
+                tickets.map((t) => (
+                  <div
+                    key={t.id || t.ticketNo}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 hover:border-slate-200 transition-colors"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-xs text-[#0B1F4D]">{t.ticketNo}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
+                          {t.category}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            t.status === 'RESOLVED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : t.status === 'IN PROGRESS'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {t.status}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{t.createdAt}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          t.status === 'RESOLVED'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : t.status === 'IN PROGRESS'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {t.status}
-                      </span>
-                      <span className="text-[10px] text-slate-400">{t.createdAt}</span>
-                    </div>
+
+                    <p className="font-semibold text-xs text-slate-800">{t.subject}</p>
+
+                    {t.lastReply && (
+                      <div className="mt-1 p-2.5 rounded-xl bg-white border border-slate-200/60 text-[11px] text-slate-600">
+                        <span className="font-bold text-[#0B1F4D] block mb-0.5">Latest Update from Practice Desk:</span>
+                        {t.lastReply}
+                      </div>
+                    )}
                   </div>
-
-                  <p className="font-semibold text-xs text-slate-800">{t.subject}</p>
-
-                  {t.lastReply && (
-                    <div className="mt-1 p-2.5 rounded-xl bg-white border border-slate-200/60 text-[11px] text-slate-600">
-                      <span className="font-bold text-[#0B1F4D] block mb-0.5">Latest Update from Practice Desk:</span>
-                      {t.lastReply}
-                    </div>
-                  )}
+                ))
+              ) : (
+                <div className="p-8 rounded-2xl bg-slate-50 border border-slate-100 text-center space-y-2">
+                  <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
+                  <h5 className="text-xs font-bold text-slate-700">No Support Tickets Raised Yet</h5>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    Any inquiry or support ticket you submit to our London operations desk will appear here with live status updates.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

@@ -37,7 +37,6 @@ export const resolveQuoteClientName = (rawName, email) => {
   const cleanEmail = (email || '').toLowerCase().trim();
   if (!cleanEmail || cleanEmail === 'customer@demo.com') return 'Emma Watson';
   if (cleanEmail === 'customer2@demo.com') return 'David Harrison';
-  if (cleanEmail.includes('astp750')) return 'test k';
   if (cleanEmail.includes('niamh')) return 'Niamh Richmond';
   if (cleanEmail.includes('jaide')) return 'Jaide Cullen';
 
@@ -79,7 +78,6 @@ export const resolveQuoteClientPhone = (rawPhone, email) => {
 
   const cleanEmail = (email || '').toLowerCase().trim();
   if (cleanEmail === 'customer@demo.com') return '+44 7700 900147';
-  if (cleanEmail.includes('astp750')) return '1234567890';
   if (cleanEmail.includes('jaide')) return '07864058635';
   if (cleanEmail.includes('niamh')) return '07882109667';
 
@@ -97,9 +95,8 @@ export const resolveQuotePropertyAddress = (rawAddress, email) => {
 
   const cleanEmail = (email || '').toLowerCase().trim();
   if (cleanEmail === 'customer@demo.com') return '14 Mayfair Gate, Mayfair, London W1K 2PB';
-  if (cleanEmail.includes('astp750')) return 'abc,road,UK';
 
-  return address || '14 Mayfair Gate, Mayfair, London W1K 2PB';
+  return address || 'Subject Property';
 };
 
 // 3-Dot Clean Action Dropdown Menu for each Quotation using React Portal (guarantees zero z-index/clipping issues)

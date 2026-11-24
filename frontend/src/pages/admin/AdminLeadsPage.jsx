@@ -412,7 +412,7 @@ export const AdminLeadsPage = () => {
                 year: 'numeric',
               }),
               date: l.createdAt,
-              customerName: l.clientName || l.customerName || l.customer || (l.clientEmail?.includes('astp750') ? 'test k' : 'Private Client'),
+              customerName: l.clientName || l.customerName || l.customer || 'Private Client',
               customerEmail: l.clientEmail || l.customerEmail || '',
               customerPhone: l.clientPhone || l.customerPhone || '—',
               enquiry: l.serviceType || l.surveyType || l.enquiry || 'Homebuyer Survey — Level 2',
@@ -1263,7 +1263,7 @@ export const AdminLeadsPage = () => {
                       {/* 2. Customer Name (Clean, No Phone Icon) */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="font-bold text-[#0B1F4D] text-xs block">
-                          {row.customerName || row.clientName || row.customer || (row.customerEmail?.includes('astp750') ? 'test k' : 'Private Client')}
+                          {row.customerName || row.clientName || row.customer || 'Private Client'}
                         </span>
                       </td>
 
@@ -1623,7 +1623,7 @@ export const AdminLeadsPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
                   Client Contact
                 </span>
-                <div className="text-sm font-bold text-slate-900">{viewingLead.customerName || viewingLead.clientName || viewingLead.customer || (viewingLead.customerEmail?.includes('astp750') ? 'test k' : 'Private Client')}</div>
+                <div className="text-sm font-bold text-slate-900">{viewingLead.customerName || viewingLead.clientName || viewingLead.customer || 'Private Client'}</div>
                 <div className="text-xs text-slate-600 flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
                   {viewingLead.customerEmail}
