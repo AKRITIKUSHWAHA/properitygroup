@@ -121,7 +121,7 @@ const PortalRedirect = () => {
 function AppRoutes() {
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v2';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v6';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',
@@ -136,11 +136,30 @@ function AppRoutes() {
         'propertygroup_delivered',
         'njs_fresh_agreements_v3',
         'njs_clean_terms_v4',
+        'propertygroup_deleted_user_keys',
+        'propertygroup_deleted_lead_ids',
+        'property_group_client_profiles_v1',
+        'propertygroup_support_tickets',
       ].forEach((key) => {
         try {
           localStorage.removeItem(key);
         } catch {}
       });
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (
+            k &&
+            (k.includes('astp750') ||
+              k.includes('7062') ||
+              k.includes('registered_customers') ||
+              k.includes('crm_leads') ||
+              k.includes('Ashilata'))
+          ) {
+            localStorage.removeItem(k);
+          }
+        }
+      } catch {}
       try {
         localStorage.setItem(WIPE_KEY, 'true');
       } catch {}

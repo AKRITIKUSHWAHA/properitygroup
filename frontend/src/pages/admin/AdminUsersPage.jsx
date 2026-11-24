@@ -110,6 +110,7 @@ export const AdminUsersPage = () => {
             email === 'surveyor@demo.com' ||
             email === 'customer@demo.com' ||
             email === 'customer2@demo.com' ||
+            email.includes('astp750') ||
             email.includes('alexander.sterling') ||
             u.name === 'Alexander Sterling'
           ) {
@@ -157,82 +158,6 @@ export const AdminUsersPage = () => {
             clientJobsCount: u._count?.clientJobs || 0,
           };
         });
-
-      // Integrate customer leads from Railway CRM & Leads and local leads into Users & Roles
-      const leadsList = [...(Array.isArray(apiLeads) ? apiLeads : [])];
-      try {
-        const localLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-        if (Array.isArray(localLeads)) {
-          localLeads.forEach((ll) => {
-            const llEmail = (ll.clientEmail || ll.customerEmail || '').toLowerCase().trim();
-            if (llEmail && !leadsList.some((al) => (al.clientEmail || al.customerEmail || '').toLowerCase().trim() === llEmail)) {
-              leadsList.push(ll);
-            }
-          });
-        }
-      } catch {}
-
-      leadsList.forEach((lead) => {
-        const lEmail = (lead.clientEmail || lead.customerEmail || '').toLowerCase().trim();
-        const lId = String(lead.id || '').toLowerCase().trim();
-        const lRef = String(lead.reference || '').toLowerCase().trim();
-        const lName = lead.clientName || lead.customerName || lead.customer || 'Private Client';
-        const lPhone = lead.clientPhone || lead.customerPhone || '—';
-        if (
-          lEmail &&
-          !deletedSet.has(lEmail) &&
-          !deletedSet.has(lId) &&
-          !deletedSet.has(lRef) &&
-          !mapped.some((u) => u.email?.toLowerCase().trim() === lEmail)
-        ) {
-          mapped.push({
-            id: `USR-C-${lead.id || mapped.length + 1}`,
-            dbId: lead.id,
-            name: lName,
-            email: lEmail,
-            role: 'customer',
-            roleLabel: 'Customer',
-            org: 'Private Client',
-            status: 'Active',
-            phone: lPhone,
-            createdAt: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '21 Nov 2026',
-            lastLogin: 'Active Today',
-            clientJobsCount: 1,
-            assignedJobsCount: 0,
-          });
-        }
-      });
-
-      // Also include any registered customers from local storage so Admin can see and manage them immediately
-      try {
-        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        Object.values(registered).forEach((regCust) => {
-          const regEmail = (regCust.email || '').toLowerCase().trim();
-          const regStoredOrg = localStorage.getItem(`njs_user_org_${regEmail}`);
-          const regOrg = regCust.company || regStoredOrg || 'Private Client';
-          if (
-            regEmail &&
-            !deletedSet.has(regEmail) &&
-            !mapped.some((u) => u.email?.toLowerCase().trim() === regEmail)
-          ) {
-            mapped.push({
-              id: `USR-C-${mapped.length + 1}`,
-              dbId: null,
-              name: regCust.name || 'Registered Customer',
-              email: regEmail,
-              role: 'customer',
-              roleLabel: 'Customer',
-              org: regOrg,
-              status: 'Active',
-              phone: regCust.phone || '—',
-              createdAt: regCust.dateJoined || '—',
-              lastLogin: '—',
-              clientJobsCount: 0,
-              assignedJobsCount: 0,
-            });
-          }
-        });
-      } catch {}
 
       // Always guarantee default active database users are present
       DEFAULT_PLATFORM_USERS.forEach((defUser) => {
