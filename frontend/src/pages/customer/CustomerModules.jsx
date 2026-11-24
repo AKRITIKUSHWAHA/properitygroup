@@ -3848,6 +3848,10 @@ export const CustomerTrackSurveyPage = () => {
               className="w-full sm:w-80 lg:w-96 max-w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate shadow-2xs"
             >
               {myCustomerJobs.map((j, idx) => {
+                const isLocalDelivered =
+                  (j?.id && typeof window !== 'undefined' && localStorage.getItem(`propertygroup_report_delivered_${j.id}`) === 'true') ||
+                  (j?.jobNo && typeof window !== 'undefined' && localStorage.getItem(`propertygroup_report_delivered_${j.jobNo}`) === 'true') ||
+                  (typeof window !== 'undefined' && localStorage.getItem('propertygroup_report_delivered') === 'true');
                 const isDone = j.status === 'Completed' || (j.timelineStep || 0) >= 10 || isLocalDelivered;
                 return (
                   <option key={j.id} value={j.id}>
