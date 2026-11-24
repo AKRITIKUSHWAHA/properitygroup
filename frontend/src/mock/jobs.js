@@ -76,7 +76,28 @@ export const getStoredJobs = () => {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.filter((j) => {
+        let needsResave = false;
+        const sanitized = parsed.map((j) => {
+          const isEnquiry = j.status === 'Enquiry' || j.stage === 'enquiry' || j.stage === 'ENQUIRY' || j.isNewInstruction || !j.quote;
+          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 2 || j.termsStatus === 'Signed')) {
+            needsResave = true;
+            return {
+              ...j,
+              paymentStatus: 'Pending',
+              termsStatus: 'Pending',
+              timelineStep: 1,
+              stage: 'enquiry',
+              status: 'Enquiry',
+            };
+          }
+          return j;
+        });
+        if (needsResave) {
+          try {
+            localStorage.setItem('propertygroup_jobs', JSON.stringify(sanitized));
+          } catch {}
+        }
+        return sanitized.filter((j) => {
           const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
           const name = (j.customer || j.clientName || j.name || '').toLowerCase().trim();
           const addr = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();

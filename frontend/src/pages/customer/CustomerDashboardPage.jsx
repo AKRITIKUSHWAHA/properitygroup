@@ -105,6 +105,36 @@ export const CustomerDashboardPage = () => {
   const [apiActiveJob, setApiActiveJob] = useState(null);
   const [apiTracking, setApiTracking] = useState(null);
 
+  // Auto-correct any corrupted enquiry records in localStorage where paymentStatus was erroneously set to Claimed or step jumped
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('propertygroup_jobs');
+      if (raw) {
+        const stored = JSON.parse(raw);
+        let changed = false;
+        const cleaned = stored.map((j) => {
+          const isEnquiry = j.status === 'Enquiry' || j.stage === 'enquiry' || j.stage === 'ENQUIRY' || j.isNewInstruction || !j.quote;
+          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 2 || j.termsStatus === 'Signed')) {
+            changed = true;
+            return {
+              ...j,
+              paymentStatus: 'Pending',
+              termsStatus: 'Pending',
+              timelineStep: 1,
+              stage: 'enquiry',
+              status: 'Enquiry',
+            };
+          }
+          return j;
+        });
+        if (changed) {
+          localStorage.setItem('propertygroup_jobs', JSON.stringify(cleaned));
+          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+        }
+      }
+    } catch {}
+  }, []);
+
   // Sync Customer Dashboard & Tracking from live backend API
   useEffect(() => {
     Promise.all([
@@ -137,11 +167,16 @@ export const CustomerDashboardPage = () => {
           const isDrafting = dashPayload.activeJob.status === 'Drafting' || (trackPayload?.currentStep || 0) === 8;
           const isInspected = dashPayload.activeJob.stage === 'INSPECTED' || (trackPayload?.currentStep || 0) >= 7;
           const isBooked = dashPayload.activeJob.stage === 'BOOKED' || (trackPayload?.currentStep || 0) >= 6;
-          const hasPaid = dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID';
+          const hasPaid = dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID' || dashPayload.activeJob.paymentStatus === 'Paid';
+          const isPaymentClaimed = (dashPayload.activeJob.paymentStatus || '').toLowerCase().includes('claimed');
+          const isTermsSigned = (dashPayload.activeJob.termsStatus || '').toLowerCase() === 'signed' || dashPayload.activeJob.terms?.some((t) => t.signed);
+          const isAccepted = dashPayload.activeJob.stage === 'ACCEPTED' || dashPayload.activeJob.status === 'Accepted' || (dashPayload.activeJob.quoteStatus || '').toLowerCase() === 'accepted';
+          const isQuoted = dashPayload.activeJob.stage === 'QUOTE' || dashPayload.activeJob.stage === 'QUOTED' || dashPayload.activeJob.status === 'Quoted';
+
           const calculatedStep = Math.max(
             Number(trackPayload?.currentStep) || 0,
             Number(dashPayload.activeJob.timelineStep) || 0,
-            isDelivered ? 10 : (isQA ? 9 : (isDrafting ? 8 : (isInspected ? 7 : (isBooked ? 6 : (hasPaid ? 5 : 4)))))
+            isDelivered ? 10 : (isQA ? 9 : (isDrafting ? 8 : (isInspected ? 7 : (isBooked ? 6 : (hasPaid ? 5 : (isPaymentClaimed ? 5 : (isTermsSigned ? 4 : (isAccepted ? 3 : (isQuoted ? 2 : 1)))))))))
           );
 
           const syncedStatus = isDelivered
@@ -156,7 +191,15 @@ export const CustomerDashboardPage = () => {
             ? 'Booked'
             : hasPaid
             ? 'Paid'
-            : 'Action Required';
+            : isPaymentClaimed
+            ? 'Payment Claimed'
+            : isTermsSigned
+            ? 'Terms Signed'
+            : isAccepted
+            ? 'Accepted'
+            : isQuoted
+            ? 'Quoted'
+            : 'Enquiry';
 
           const syncedData = {
             id: jobRef,
@@ -165,13 +208,13 @@ export const CustomerDashboardPage = () => {
             propertyAddress: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
             surveyType: dashPayload.activeJob.serviceType,
             status: syncedStatus,
-            stage: dashPayload.activeJob.stage || (isQA ? 'QA_REVIEW' : (isBooked ? 'BOOKED' : 'PAID')),
+            stage: dashPayload.activeJob.stage || (isDelivered ? 'COMPLETE' : (isQA ? 'QA_REVIEW' : (isBooked ? 'BOOKED' : (hasPaid ? 'PAID' : (isTermsSigned ? 'SIGNED' : (isAccepted ? 'ACCEPTED' : (isQuoted ? 'QUOTE' : 'ENQUIRY'))))))),
             timelineStep: calculatedStep,
             surveyor: dashPayload.activeJob.surveyor?.name || dashPayload.activeJob.surveyor || 'Pending Allocation',
             date: dashPayload.activeJob.inspectionDate ? new Date(dashPayload.activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
             timeSlot: dashPayload.activeJob.inspectionTime || 'Time: TBD',
-            termsStatus: (calculatedStep >= 4 || isBooked || isInspected || isQA || isDelivered) ? 'Signed' : 'Pending',
-            paymentStatus: (hasPaid || calculatedStep >= 5 || isBooked || isInspected || isQA || isDelivered) ? 'Paid' : 'Claimed (Verification Pending)',
+            termsStatus: (isTermsSigned || calculatedStep >= 4 || isBooked || isInspected || isQA || isDelivered) ? 'Signed' : 'Pending',
+            paymentStatus: (hasPaid || calculatedStep > 5 || isBooked || isInspected || isQA || isDelivered) ? 'Paid' : (isPaymentClaimed ? 'Claimed (Verification Pending)' : 'Pending'),
           };
 
           if (idx >= 0) {
@@ -195,13 +238,18 @@ export const CustomerDashboardPage = () => {
   const isApiJobDrafting = apiActiveJob?.stage === 'PREPARING_REPORT' || apiActiveJob?.stage === 'DRAFTING' || (apiTracking?.currentStep || 0) === 8;
   const isApiJobInspected = apiActiveJob?.stage === 'INSPECTED' || (apiTracking?.currentStep || 0) === 7;
   const isApiJobBooked = apiActiveJob?.stage === 'BOOKED' || (apiTracking?.currentStep || 0) >= 6;
-  const isApiJobPaid = isApiJobDelivered || isApiJobQA || isApiJobDrafting || isApiJobInspected || isApiJobBooked || (apiTracking?.currentStep || 0) >= 5 || apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
+  const isApiJobPaid = apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
+  const isApiJobClaimed = (apiActiveJob?.paymentStatus || '').toLowerCase().includes('claimed');
+  const isApiJobSigned = (apiActiveJob?.termsStatus || '').toLowerCase() === 'signed' || apiActiveJob?.terms?.some((t) => t.signed);
+  const isApiJobAccepted = apiActiveJob?.stage === 'ACCEPTED' || apiActiveJob?.status === 'Accepted';
+  const isApiJobQuoted = apiActiveJob?.stage === 'QUOTE' || apiActiveJob?.stage === 'QUOTED' || apiActiveJob?.status === 'Quoted';
+
   const apiStepNumber = Math.max(
     Number(apiTracking?.currentStep) || 0,
     apiTracking?.currentStage === 'COMPLETE' ? 10 : 0,
     apiActiveJob?.stage === 'COMPLETE' ? 10 : 0,
     Number(apiActiveJob?.timelineStep) || 0,
-    isApiJobDelivered ? 10 : (isApiJobQA ? 9 : (isApiJobDrafting ? 8 : (isApiJobInspected ? 7 : (isApiJobBooked ? 6 : (isApiJobPaid ? 5 : 4)))))
+    isApiJobDelivered ? 10 : (isApiJobQA ? 9 : (isApiJobDrafting ? 8 : (isApiJobInspected ? 7 : (isApiJobBooked ? 6 : (isApiJobPaid ? 5 : (isApiJobClaimed ? 5 : (isApiJobSigned ? 4 : (isApiJobAccepted ? 3 : (isApiJobQuoted ? 2 : 1)))))))))
   );
 
   const activeJob = (baseJob || apiActiveJob) ? {
@@ -222,9 +270,9 @@ export const CustomerDashboardPage = () => {
       ? baseJob.timeSlot
       : (apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD'),
     timelineStep: Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
-    status: isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Action Required')))))),
-    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'PAID')),
-    paymentStatus: isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Claimed (Verification Pending)'),
+    status: isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry')))))),
+    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY')),
+    paymentStatus: isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending'),
     termsStatus: (apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4 || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending',
   } : null;
 

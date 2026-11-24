@@ -3906,7 +3906,7 @@ export const CustomerTrackSurveyPage = () => {
           surveyType: surveyType || apiTracking?.serviceType || 'RICS Level 2 Home Survey',
           timelineStep: currentStep,
           termsStatus: termsSigned ? 'Signed' : 'Pending',
-          paymentStatus: paymentSettled ? 'Paid' : 'Claimed (Verification Pending)',
+          paymentStatus: paymentSettled ? 'Paid' : (myJob?.paymentStatus || 'Pending'),
           date: myJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(myJob.date.toLowerCase().trim())
             ? myJob.date
             : (apiTracking?.inspectionDate ? new Date(apiTracking.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD'),
