@@ -190,7 +190,7 @@ export const Table = ({
           {/* DESKTOP VIEW (md+): Responsive Sticky Header Table */}
           {/* ========================================================= */}
           <div className="hidden md:block overflow-x-auto min-w-full">
-            <table className="w-full table-fixed text-left text-xs sm:text-sm text-slate-600">
+            <table className="w-full min-w-[780px] table-fixed text-left text-xs sm:text-sm text-slate-600">
               <thead className="bg-slate-100/90 sticky top-0 z-10 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider select-none backdrop-blur-xs">
                 <tr>
                   {columns.map((col, idx) => {

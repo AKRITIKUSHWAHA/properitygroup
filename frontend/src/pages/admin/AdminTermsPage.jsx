@@ -671,11 +671,14 @@ export const AdminTermsPage = () => {
       key: 'serviceKey',
       header: 'Service Template',
       sortable: true,
-      className: 'w-[18%] min-w-[110px]',
+      className: 'w-[19%] min-w-[130px]',
       render: (val, row) => (
-        <div className="min-w-0">
-          <span className="font-bold text-slate-800 text-xs block truncate">{val}</span>
-          <span className="inline-block text-[10px] font-mono text-[#2563EB] bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded font-semibold mt-0.5 truncate">
+        <div className="min-w-0 max-w-full">
+          <span className="font-bold text-slate-800 text-xs block truncate" title={val}>{val}</span>
+          <span
+            className="block max-w-full text-[10px] font-mono text-[#2563EB] bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded font-semibold mt-0.5 truncate"
+            title={row.versionYear}
+          >
             {row.versionYear}
           </span>
         </div>
@@ -685,27 +688,27 @@ export const AdminTermsPage = () => {
       key: 'status',
       header: 'Status',
       sortable: true,
-      className: 'w-[11%] min-w-[75px]',
+      className: 'w-[12%] min-w-[85px]',
       render: (val) => {
         if (val === 'Signed') {
           return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
               Signed
             </span>
           );
         }
         if (val === 'Sent') {
           return (
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-              <Send className="w-3 h-3 text-[#2563EB]" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 whitespace-nowrap">
+              <Send className="w-3 h-3 text-[#2563EB] shrink-0" />
               Sent
             </span>
           );
         }
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-            <Clock className="w-3 h-3 text-amber-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+            <Clock className="w-3 h-3 text-amber-600 shrink-0" />
             Pending
           </span>
         );
@@ -713,8 +716,10 @@ export const AdminTermsPage = () => {
     },
     {
       key: 'actions',
-      header: 'Actions', sortable: false, headerClassName: 'text-right w-[8%] min-w-[44px]',
-      className: 'text-right w-[5%] min-w-[44px] pr-3 sm:pr-4',
+      header: 'Actions',
+      sortable: false,
+      headerClassName: 'text-right w-[8%] min-w-[50px]',
+      className: 'text-right w-[7%] min-w-[50px] pr-3 sm:pr-4',
       render: (_, row) => (
         <AgreementRowActions
           agreement={row}
