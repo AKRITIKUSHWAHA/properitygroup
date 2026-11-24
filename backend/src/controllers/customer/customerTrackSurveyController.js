@@ -92,7 +92,16 @@ export const getSurveyTracking = async (req, res, next) => {
     const hasSigned = job.terms.some((t) => t.signed);
     const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(job.stage);
     const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(job.stage);
-    const isCompleted = job.stage === 'COMPLETE';
+    const isCompleted = job.stage === 'COMPLETE' || Boolean(job.qaApprovedAt);
+
+    const hasDraftSubmitted =
+      Boolean(job.reportPdfUrl) ||
+      Boolean(job.reportGeneratedAt) ||
+      job.status === 'QA_Review' ||
+      job.auditTimeline?.some((a) => a.action?.includes('QA') || a.details?.toLowerCase().includes('qa') || a.details?.toLowerCase().includes('draft report'));
+
+    // In RICS lifecycle, once on-site inspection is completed and draft is submitted to QA desk, it is Stage 9
+    const isQA = (job.stage === 'PREPARING_REPORT' && hasDraftSubmitted) || job.stage === 'PREPARING_REPORT';
 
     const steps = [
       { step: 1, label: 'Quote Proposal Requested', status: 'completed', time: job.createdAt },
@@ -103,15 +112,14 @@ export const getSurveyTracking = async (req, res, next) => {
       { step: 6, label: 'Estate Agent Key Collection', status: isBooked ? 'completed' : 'pending' },
       { step: 7, label: 'On-Site Inspection Carried Out', status: isInspected ? 'completed' : 'pending' },
       { step: 8, label: 'Draft Report Compilation', status: isInspected ? 'completed' : 'pending' },
-      { step: 9, label: 'Admin QA & Peer Audit Review', status: isCompleted ? 'completed' : 'pending' },
+      { step: 9, label: 'Admin QA & Peer Audit Review', status: isCompleted ? 'completed' : (isQA ? 'in_progress' : 'pending') },
       { step: 10, label: 'Official RICS Report Released', status: isCompleted ? 'completed' : 'pending' },
     ];
 
-    const completedCount = steps.filter((s) => s.status === 'completed').length;
-
     let calculatedStep = 1;
     if (isCompleted) calculatedStep = 10;
-    else if (job.stage === 'PREPARING_REPORT') calculatedStep = 8;
+    else if (isQA) calculatedStep = 9;
+    else if (job.stage === 'DRAFTING' || job.status === 'Drafting') calculatedStep = 8;
     else if (isInspected) calculatedStep = 7;
     else if (isBooked) calculatedStep = 6;
     else if (hasPaid) calculatedStep = 5;
@@ -120,16 +128,19 @@ export const getSurveyTracking = async (req, res, next) => {
     else if (job.stage === 'QUOTE') calculatedStep = 2;
     else calculatedStep = 1;
 
+    const completedCount = steps.filter((s) => s.status === 'completed').length;
+    const effectiveProgress = isCompleted ? 100 : (calculatedStep * 10);
+
     return ApiResponse.success(res, {
       jobReference: job.reference,
       reference: job.reference,
       property: job.propertyAddress,
       propertyAddress: job.propertyAddress,
       serviceType: job.serviceType,
-      currentStage: job.stage,
+      currentStage: isCompleted ? 'COMPLETE' : (isQA ? 'QA_REVIEW' : job.stage),
       currentStep: calculatedStep,
-      progressPercentage: `${completedCount * 10}%`,
-      progressScore: `${completedCount}/10 Steps Completed`,
+      progressPercentage: `${effectiveProgress}%`,
+      progressScore: `${calculatedStep}/10 Steps Completed`,
       steps,
     });
   } catch (error) {

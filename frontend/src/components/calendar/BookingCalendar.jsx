@@ -69,10 +69,90 @@ export const BookingCalendar = () => {
   const [viewMode, setViewMode] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'day' : 'month'
   );
-  const [selectedDayDate, setSelectedDayDate] = useState('28/10/2026');
-  const [selectedMonthDate, setSelectedMonthDate] = useState('28/10/2026');
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = Week 44 (26 Oct - 01 Nov 2026)
-  const [monthOffset, setMonthOffset] = useState(0); // 0 = Oct 2026
+
+  const today = useMemo(() => new Date(), []);
+  const todayFormatted = useMemo(() => {
+    const d = String(today.getDate()).padStart(2, '0');
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const y = today.getFullYear();
+    return `${d}/${m}/${y}`;
+  }, [today]);
+
+  const [selectedDayDate, setSelectedDayDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  });
+  const [selectedMonthDate, setSelectedMonthDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  });
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  // Derived tasks from real platform survey jobs
+  const derivedJobTasks = useMemo(() => {
+    const tasks = [];
+    (jobs || []).forEach((j) => {
+      if (!j) return;
+      let formattedDate = '';
+      if (j.date && j.date.includes('/')) {
+        formattedDate = j.date.split(',')[0].trim();
+      } else if (j.date && j.date.includes('-')) {
+        try {
+          const parts = j.date.split('T')[0].split('-');
+          if (parts.length === 3) {
+            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+        } catch {}
+      } else if (j.inspectionDate) {
+        try {
+          const parts = j.inspectionDate.split('T')[0].split('-');
+          if (parts.length === 3) {
+            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+          }
+        } catch {}
+      }
+
+      if (formattedDate) {
+        tasks.push({
+          id: `ins-${j.id || j.jobNo}`,
+          date: formattedDate,
+          time: j.timeSlot || j.inspectionTime || '10:00 AM - 01:00 PM',
+          title: `Inspection: ${j.property || j.propertyAddress || 'Subject Property'} (${j.id || j.jobNo})`,
+          subtitle: `Client: ${j.customer || j.clientName || 'Client'} • Surveyor: ${j.surveyor || 'Assigned'}`,
+          type: 'inspection',
+          color: 'bg-[#2563EB] text-white',
+          job: j,
+        });
+
+        if (['drafting', 'qa_review', 'qa review', 'completed', 'delivered'].includes((j.status || '').toLowerCase()) || (j.timelineStep || 0) >= 8) {
+          tasks.push({
+            id: `rep-${j.id || j.jobNo}`,
+            date: formattedDate,
+            time: '05:00 PM - 07:00 PM',
+            title: `Report Milestone: ${j.property || j.propertyAddress || 'Property'}`,
+            subtitle: `RICS Compliance • Status: ${j.status || 'Active'}`,
+            type: 'report',
+            color: 'bg-[#6D28D9] text-white',
+            job: j,
+          });
+        }
+      }
+    });
+    return tasks;
+  }, [jobs]);
+
+  const [customTasks, setCustomTasks] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('propertygroup_calendar_custom_tasks') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const allTasks = useMemo(() => {
+    return [...derivedJobTasks, ...customTasks];
+  }, [derivedJobTasks, customTasks]);
 
   // Surveyor Checkbox Filters
   const [selectedSurveyorIds, setSelectedSurveyorIds] = useState([]);
@@ -91,55 +171,6 @@ export const BookingCalendar = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('09:00 AM - 11:00 AM');
   const [newTaskType, setNewTaskType] = useState('inspection');
-
-  // Custom Tasks State matching Video 1
-  const [calendarTasks, setCalendarTasks] = useState([
-    {
-      id: 'tsk-1',
-      date: '28/10/2026',
-      time: '09:00 AM - 11:00 AM',
-      title: 'Inspection date set for 1820942',
-      subtitle: 'Mr Dimitrios Koutoukidis • 36 College Glen, Maidenhead',
-      type: 'inspection',
-      color: 'bg-[#2563EB] text-white',
-    },
-    {
-      id: 'tsk-2',
-      date: '28/10/2026',
-      time: '06:00 PM - 08:00 PM',
-      title: 'Report date set for 1814424',
-      subtitle: 'Rory Maclean • 90 Lime Grove, London HA4 8RW',
-      type: 'report',
-      color: 'bg-[#6D28D9] text-white',
-    },
-    {
-      id: 'tsk-3',
-      date: '28/10/2026',
-      time: '06:00 PM - 07:30 PM',
-      title: 'Report date set for 1815456',
-      subtitle: 'Mr Imran Mahmood • 21 Gladesmere, London',
-      type: 'report',
-      color: 'bg-[#6D28D9] text-white',
-    },
-    {
-      id: 'tsk-4',
-      date: '29/10/2026',
-      time: '10:00 AM - 12:30 PM',
-      title: 'Inspection date set for 1821004',
-      subtitle: 'Giulia Gasparet • 18 Tubbenden Lane, Orpington',
-      type: 'inspection',
-      color: 'bg-[#2563EB] text-white',
-    },
-    {
-      id: 'tsk-5',
-      date: '30/10/2026',
-      time: '09:30 AM - 11:30 AM',
-      title: 'Inspection date set for 1821088',
-      subtitle: 'Abhijeet Dandade • 79 Chiltern Road, Dunstable',
-      type: 'inspection',
-      color: 'bg-[#2563EB] text-white',
-    },
-  ]);
 
   // Toggle surveyor checkbox
   const handleToggleSurveyor = (id) => {
@@ -214,22 +245,35 @@ export const BookingCalendar = () => {
     });
   };
 
-  // Dynamic Week Days computation based on weekOffset
+  // Display month computed from today + monthOffset
+  const displayMonthDate = useMemo(() => {
+    return new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  }, [today, monthOffset]);
+
+  const monthLabel = useMemo(() => {
+    return displayMonthDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }, [displayMonthDate]);
+
+  // Dynamic Week Days computation based on weekOffset from current week
   const currentWeekDays = useMemo(() => {
-    const baseDate = new Date(2026, 9, 26 + weekOffset * 7); // Month index 9 is October
+    const current = new Date(today);
+    const day = current.getDay();
+    const diffToMonday = current.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(current.setDate(diffToMonday + weekOffset * 7));
+
     const days = [];
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     for (let i = 0; i < 7; i++) {
-      const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + i);
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
       const dayNum = String(d.getDate()).padStart(2, '0');
       const monthNum = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
       const dateStr = `${dayNum}/${monthNum}/${year}`;
       const shortDate = `${d.getDate()} ${monthNames[d.getMonth()]}`;
-      const isToday = dateStr === '28/10/2026';
+      const isToday = dateStr === todayFormatted;
 
       days.push({
         name: isToday ? `${dayNames[i]} (Today)` : dayNames[i],
@@ -239,21 +283,39 @@ export const BookingCalendar = () => {
       });
     }
     return days;
-  }, [weekOffset]);
+  }, [today, weekOffset, todayFormatted]);
 
-  // Dynamic Month Days simulation (31 days)
+  // Dynamic Month Days matching real calendar layout
   const currentMonthDays = useMemo(() => {
-    const isNov = monthOffset === 1;
-    const isSep = monthOffset === -1;
-    const totalDays = isNov || isSep ? 30 : 31;
-    const monthNum = isNov ? '11' : isSep ? '09' : '10';
+    const year = displayMonthDate.getFullYear();
+    const month = displayMonthDate.getMonth();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
+    const monthNum = String(month + 1).padStart(2, '0');
 
-    return Array.from({ length: totalDays }, (_, i) => {
+    const blanks = Array.from({ length: firstDayIndex }, (_, i) => ({
+      isBlank: true,
+      key: `blank-${i}`,
+      dayNum: null,
+      dateStr: '',
+      isToday: false,
+    }));
+
+    const days = Array.from({ length: totalDays }, (_, i) => {
       const dayNum = i + 1;
-      const dateStr = `${String(dayNum).padStart(2, '0')}/${monthNum}/2026`;
-      return { dayNum, dateStr };
+      const dateStr = `${String(dayNum).padStart(2, '0')}/${monthNum}/${year}`;
+      const isToday = dateStr === todayFormatted;
+      return {
+        isBlank: false,
+        key: `day-${dayNum}`,
+        dayNum,
+        dateStr,
+        isToday,
+      };
     });
-  }, [monthOffset]);
+
+    return [...blanks, ...days];
+  }, [displayMonthDate, todayFormatted]);
 
   // Date controls handlers
   const handlePrevRange = () => {
@@ -283,8 +345,8 @@ export const BookingCalendar = () => {
   const handleResetToday = () => {
     setWeekOffset(0);
     setMonthOffset(0);
-    setSelectedDayDate('28/10/2026');
-    setSelectedMonthDate('28/10/2026');
+    setSelectedDayDate(todayFormatted);
+    setSelectedMonthDate(todayFormatted);
   };
 
   // Add task handler
@@ -302,7 +364,13 @@ export const BookingCalendar = () => {
       color: newTaskType === 'inspection' ? 'bg-[#2563EB] text-white' : 'bg-[#6D28D9] text-white',
     };
 
-    setCalendarTasks((prev) => [newTask, ...prev]);
+    setCustomTasks((prev) => {
+      const updated = [newTask, ...prev];
+      try {
+        localStorage.setItem('propertygroup_calendar_custom_tasks', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
     setNewTaskTitle('');
     setIsNewTaskModalOpen(false);
     addToast({
@@ -313,7 +381,7 @@ export const BookingCalendar = () => {
   };
 
   // Active tasks for selected month day
-  const activeDayTasks = calendarTasks.filter((t) => t.date === selectedMonthDate);
+  const activeDayTasks = allTasks.filter((t) => t.date === selectedMonthDate);
 
   // Selected Day Name e.g. "Wednesday"
   const getDayName = (dateStr) => {
@@ -356,12 +424,12 @@ export const BookingCalendar = () => {
             </button>
             <span className="px-3.5 py-1.5 text-xs font-bold text-slate-800 font-mono select-none">
               {viewMode === 'day'
-                ? selectedDayDate === '28/10/2026'
-                  ? 'Wednesday, 28 October 2026 (Today)'
-                  : selectedDayDate
+                ? selectedDayDate === todayFormatted
+                  ? `${getDayName(selectedDayDate)}, ${selectedDayDate} (Today)`
+                  : `${getDayName(selectedDayDate)}, ${selectedDayDate}`
                 : viewMode === 'week'
-                ? `Week 44 (26 Oct – 01 Nov 2026)`
-                : `October 2026 (SurveyBooker)`}
+                ? `${currentWeekDays[0]?.shortDate || ''} – ${currentWeekDays[6]?.shortDate || ''} ${currentWeekDays[6]?.date ? currentWeekDays[6].date.split('/')[2] : ''}`
+                : monthLabel}
             </span>
             <button
               onClick={handleNextRange}
@@ -376,7 +444,7 @@ export const BookingCalendar = () => {
             onClick={handleResetToday}
             className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
           >
-            Today (28 Oct)
+            Today ({today.getDate()} {today.toLocaleDateString('en-GB', { month: 'short' })})
           </button>
         </div>
 
@@ -570,7 +638,7 @@ export const BookingCalendar = () => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
                   <h4 className="text-base font-extrabold text-[#0B1F4D] tracking-tight">
-                    October 2026 &bull; Inspection &amp; Task Calendar
+                    {monthLabel} &bull; Inspection &amp; Task Calendar
                   </h4>
                   <p className="text-xs text-slate-400">
                     Colored dots indicate inspection bookings and report due milestones.
@@ -595,28 +663,37 @@ export const BookingCalendar = () => {
                 ))}
               </div>
 
-              {/* 31 Month Days Grid */}
+              {/* Month Days Grid */}
               <div className="grid grid-cols-7 gap-1.5">
                 {currentMonthDays.map((m) => {
-                  const dayTasks = calendarTasks.filter((t) => t.date === m.dateStr);
+                  if (m.isBlank) {
+                    return (
+                      <div
+                        key={m.key}
+                        className="min-h-[56px] p-1.5 rounded-xl border border-transparent bg-slate-50/20"
+                      />
+                    );
+                  }
+
+                  const dayTasks = allTasks.filter((t) => t.date === m.dateStr);
                   const isSelected = selectedMonthDate === m.dateStr;
-                  const isToday = m.dateStr === '28/10/2026';
+                  const isToday = m.isToday;
 
                   return (
                     <div
-                      key={m.dayNum}
+                      key={m.key}
                       onClick={() => setSelectedMonthDate(m.dateStr)}
                       className={`min-h-[56px] p-1.5 rounded-xl border flex flex-col items-center justify-between transition-all cursor-pointer ${
                         isSelected
                           ? 'border-[#0B1F4D] bg-[#0B1F4D] text-white shadow-xs font-bold'
                           : isToday
-                          ? 'border-[#0284C7] bg-sky-50 text-[#0284C7] font-black'
+                          ? 'border-[#0284C7] bg-sky-50 text-[#0284C7] font-black ring-2 ring-[#0284C7]/20'
                           : 'border-slate-100 hover:bg-slate-50 hover:border-slate-300 text-slate-700'
                       }`}
                     >
                       <span className="text-xs">{m.dayNum}</span>
 
-                      {/* Colored Dots Indicator Strip (From Video 1) */}
+                      {/* Colored Dots Indicator Strip */}
                       <div className="flex items-center gap-1 mt-1">
                         {dayTasks.some((t) => t.type === 'inspection') && (
                           <span
@@ -638,7 +715,7 @@ export const BookingCalendar = () => {
                 })}
               </div>
 
-              {/* DAILY TO-DO LIST (Matching SurveyBooker Video 1) */}
+              {/* DAILY TO-DO LIST (Real System Inspections + Tasks) */}
               <div className="pt-5 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-3.5">
                   <div>
@@ -666,13 +743,21 @@ export const BookingCalendar = () => {
                   {activeDayTasks.map((task) => (
                     <div
                       key={task.id}
-                      className={`p-3.5 rounded-2xl shadow-xs transition-all ${task.color}`}
+                      onClick={() => task.job && setSelectedEvent(task.job)}
+                      className={`p-3.5 rounded-2xl shadow-xs transition-all ${task.color} ${task.job ? 'cursor-pointer hover:opacity-95' : ''}`}
                     >
                       <div className="flex items-center justify-between text-xs font-mono font-bold opacity-90 mb-1">
                         <span>{task.time}</span>
-                        <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-black/20">
-                          {task.type}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {task.job && (
+                            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono">
+                              View Booking &rarr;
+                            </span>
+                          )}
+                          <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-black/20">
+                            {task.type}
+                          </span>
+                        </div>
                       </div>
                       <div className="font-extrabold text-sm tracking-tight">{task.title}</div>
                       {task.subtitle && (

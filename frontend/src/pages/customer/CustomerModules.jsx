@@ -3628,23 +3628,31 @@ export const CustomerTrackSurveyPage = () => {
         };
       case 7:
         return {
-          cStage: 'Stage 7: On-Site Inspection Completed',
-          cDesc: `${surveyorName} concluded inspection at ${propertyAddress}. Key access concluded and site secured.`,
-          aStage: 'Stage 8: Report Drafting & Analysis (Current)',
-          aDesc: 'Surveyor compiling defect findings, condition ratings 1 to 3, and rebuild costs.',
-          uStage: 'Stage 9: Quality Assurance & Lead Sign-off',
-          uDesc: 'Senior RICS Lead Surveyor audit prior to client release.',
+          cStage: 'Stage 6: Inspection Date Booked',
+          cDesc: `Survey inspection locked for ${propertyAddress} with ${surveyorName}. Access arranged with agent.`,
+          aStage: 'Stage 7: On-Site Physical Inspection (Current)',
+          aDesc: `${surveyorName} on-site at ${propertyAddress} conducting structural evaluation and photographic defect log.`,
+          uStage: 'Stage 8: Report Drafting & Condition Ratings',
+          uDesc: 'Surveyor compiling condition ratings and rebuild calculations.',
         };
       case 8:
         return {
-          cStage: 'Stage 8: Report Drafting Concluded',
-          cDesc: 'Full inspection findings and repair recommendations compiled.',
-          aStage: 'Stage 9: Quality Assurance & Lead Sign-off (Current)',
-          aDesc: 'Lead Surveyor auditing defect ratings against RICS Home Survey Standard.',
-          uStage: 'Stage 10: Official Report Delivery',
-          uDesc: 'Final certified PDF publication to My Reports.',
+          cStage: 'Stage 7: On-Site Inspection Completed',
+          cDesc: `${surveyorName} concluded inspection at ${propertyAddress}. Key access concluded and site secured.`,
+          aStage: 'Stage 8: Report Drafting & Analysis (Current)',
+          aDesc: 'Surveyor compiling defect findings, condition ratings 1 to 3, and rebuild cost calculations.',
+          uStage: 'Stage 9: Quality Assurance & Lead Sign-off',
+          uDesc: 'Draft report submission to Senior RICS Lead Surveyor for audit review.',
         };
       case 9:
+        return {
+          cStage: 'Stage 8: Report Drafting Concluded',
+          cDesc: `Surveyor ${surveyorName} concluded report compilation and uploaded photographic evidence to QA Desk.`,
+          aStage: 'Stage 9: Quality Assurance & Lead Sign-off (Current)',
+          aDesc: 'Senior RICS Lead Surveyor auditing defect ratings and compliance against RICS Home Survey Standard.',
+          uStage: 'Stage 10: Official Report Delivery',
+          uDesc: 'Final certified PDF publication to My Reports upon Admin QA sign-off.',
+        };
       case 10:
       default:
         return {

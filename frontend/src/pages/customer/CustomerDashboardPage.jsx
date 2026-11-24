@@ -122,13 +122,36 @@ export const CustomerDashboardPage = () => {
           const idx = storedJobs.findIndex(
             (j) => j.id === jobRef || (userEmail && (j.customerEmail || '').toLowerCase() === userEmail)
           );
+          const isDelivered = dashPayload.activeJob.stage === 'COMPLETE' || (trackPayload?.currentStep || 0) >= 10;
+          const isQA =
+            dashPayload.activeJob.status === 'QA_Review' ||
+            dashPayload.activeJob.stage === 'QA_REVIEW' ||
+            (trackPayload?.currentStage || '').toUpperCase() === 'QA_REVIEW' ||
+            (trackPayload?.currentStep || 0) >= 9 ||
+            (dashPayload.activeJob.timelineStep || 0) >= 9;
+          const isDrafting = dashPayload.activeJob.status === 'Drafting' || (trackPayload?.currentStep || 0) === 8;
+          const isInspected = dashPayload.activeJob.stage === 'INSPECTED' || (trackPayload?.currentStep || 0) >= 7;
           const isBooked = dashPayload.activeJob.stage === 'BOOKED' || (trackPayload?.currentStep || 0) >= 6;
           const hasPaid = dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID';
           const calculatedStep = Math.max(
             Number(trackPayload?.currentStep) || 0,
             Number(dashPayload.activeJob.timelineStep) || 0,
-            isBooked ? 6 : (hasPaid ? 5 : 4)
+            isDelivered ? 10 : (isQA ? 9 : (isDrafting ? 8 : (isInspected ? 7 : (isBooked ? 6 : (hasPaid ? 5 : 4)))))
           );
+
+          const syncedStatus = isDelivered
+            ? 'Completed'
+            : isQA
+            ? 'QA_Review'
+            : isDrafting
+            ? 'Drafting'
+            : isInspected
+            ? 'Inspected'
+            : isBooked
+            ? 'Booked'
+            : hasPaid
+            ? 'Paid'
+            : 'Action Required';
 
           const syncedData = {
             id: jobRef,
@@ -136,8 +159,8 @@ export const CustomerDashboardPage = () => {
             property: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
             propertyAddress: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
             surveyType: dashPayload.activeJob.serviceType,
-            status: isBooked ? 'Booked' : (hasPaid ? 'Paid' : 'Action Required'),
-            stage: dashPayload.activeJob.stage || (isBooked ? 'BOOKED' : 'PAID'),
+            status: syncedStatus,
+            stage: dashPayload.activeJob.stage || (isQA ? 'QA_REVIEW' : (isBooked ? 'BOOKED' : 'PAID')),
             timelineStep: calculatedStep,
             surveyor: dashPayload.activeJob.surveyor?.name || dashPayload.activeJob.surveyor || 'Pending Allocation',
             date: dashPayload.activeJob.inspectionDate ? new Date(dashPayload.activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',

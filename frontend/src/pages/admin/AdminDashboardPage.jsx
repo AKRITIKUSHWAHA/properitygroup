@@ -41,6 +41,9 @@ const mapBackendJobToFrontend = (bj) => {
   if (stage === 'COMPLETE') {
     mappedStatus = 'Completed';
     timelineStep = 10;
+  } else if (stage === 'QA_REVIEW' || (stage === 'PREPARING_REPORT' && (bj.status === 'QA_Review' || bj.timelineStep === 9))) {
+    mappedStatus = 'QA Review';
+    timelineStep = 9;
   } else if (stage === 'PREPARING_REPORT' || stage === 'IN_PROGRESS') {
     mappedStatus = 'In Progress';
     timelineStep = 8;

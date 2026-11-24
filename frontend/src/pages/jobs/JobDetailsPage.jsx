@@ -98,6 +98,9 @@ export const JobDetailsPage = () => {
           if (stageUpper === 'COMPLETE' || stageUpper === 'COMPLETED') {
             timelineStep = 10;
             statusStr = 'Completed';
+          } else if (stageUpper === 'QA_REVIEW' || (stageUpper === 'PREPARING_REPORT' && (bj.status === 'QA_Review' || bj.reportPdfUrl || bj.timelineStep === 9))) {
+            timelineStep = 9;
+            statusStr = 'QA Review';
           } else if (stageUpper === 'PREPARING_REPORT' || stageUpper === 'DRAFTING') {
             timelineStep = 8;
             statusStr = 'Preparing report';

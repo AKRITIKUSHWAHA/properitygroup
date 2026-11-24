@@ -53,6 +53,8 @@ const mapBackendJobToFrontend = (bj) => {
   const stage = (bj.stage || '').toUpperCase();
   if (stage === 'COMPLETE') {
     mappedStatus = 'Completed';
+  } else if (stage === 'QA_REVIEW' || (stage === 'PREPARING_REPORT' && (bj.status === 'QA_Review' || bj.timelineStep === 9))) {
+    mappedStatus = 'QA Review';
   } else if (stage === 'PREPARING_REPORT' || stage === 'IN_PROGRESS') {
     mappedStatus = 'In Progress';
   } else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') {

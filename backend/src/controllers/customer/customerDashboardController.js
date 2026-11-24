@@ -49,11 +49,17 @@ export const getCustomerDashboard = async (req, res, next) => {
       const hasSigned = activeJob.terms?.some((t) => t.signed) || activeTerm?.signed;
       const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
       const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
-      const isCompleted = activeJob.stage === 'COMPLETE';
+      const isCompleted = activeJob.stage === 'COMPLETE' || Boolean(activeJob.qaApprovedAt);
+      const isQA =
+        activeJob.stage === 'PREPARING_REPORT' ||
+        activeJob.status === 'QA_Review' ||
+        Boolean(activeJob.reportPdfUrl) ||
+        Boolean(activeJob.reportGeneratedAt);
 
       let calculatedStep = 1;
       if (isCompleted) calculatedStep = 10;
-      else if (activeJob.stage === 'PREPARING_REPORT') calculatedStep = 8;
+      else if (isQA) calculatedStep = 9;
+      else if (activeJob.stage === 'DRAFTING' || activeJob.status === 'Drafting') calculatedStep = 8;
       else if (isInspected) calculatedStep = 7;
       else if (isBooked) calculatedStep = 6;
       else if (hasPaid) calculatedStep = 5;
@@ -66,7 +72,8 @@ export const getCustomerDashboard = async (req, res, next) => {
         ...activeJob,
         timelineStep: calculatedStep,
         currentStep: calculatedStep,
-        status: isCompleted ? 'Completed' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage))),
+        status: isCompleted ? 'Completed' : (isQA ? 'QA_Review' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage)))),
+        stage: isCompleted ? 'COMPLETE' : (isQA ? 'QA_REVIEW' : activeJob.stage),
         property: activeJob.propertyAddress,
         date: activeJob.inspectionDate ? new Date(activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
         timeSlot: activeJob.inspectionTime || 'Time: TBD',
