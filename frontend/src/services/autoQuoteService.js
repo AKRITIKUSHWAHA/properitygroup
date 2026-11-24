@@ -6,7 +6,8 @@
 import { renderEmailTemplate, DEFAULT_EMAIL_AUTOMATIONS } from '../mock/emailAutomations';
 import { getStoredQuotes, saveStoredQuotes } from '../mock/quotes';
 import { getStoredLeads, saveStoredLeads } from '../mock/leads';
-import { getApiBaseUrl } from '../api/apiClient';
+import { normalizeToUKDate } from '../mock/jobs';
+import { getApiBaseUrl, api } from '../api/apiClient';
 
 const STANDARD_SURVEY_BASE_FEES = {
   'RICS Level 2 Home Survey (Homebuyer)': 550,
@@ -1066,4 +1067,190 @@ Phone: 0333 305 2777 • Email: info@njspropertygroup.com`;
     resolvedSubject,
     emailLogRecord,
   };
+};
+
+/**
+ * Dispatch Automated Booking Confirmation Email (Trigger / Step 4 - Inspection Booked)
+ * Sends official booking confirmation with appointment date, arrival time, assigned surveyor,
+ * and property key access details to client and surveyor rota inbox, updating email logs.
+ */
+export const dispatchBookingConfirmationEmail = async (jobOrBooking, customOverrides = {}) => {
+  if (!jobOrBooking) return { success: false, reason: 'Missing booking data' };
+
+  const now = new Date();
+  const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+  const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
+  const clientEmail = (
+    jobOrBooking.customerEmail ||
+    jobOrBooking.clientEmail ||
+    'customer@demo.com'
+  ).toLowerCase().trim();
+  const clientName =
+    jobOrBooking.customer ||
+    jobOrBooking.customerName ||
+    jobOrBooking.client ||
+    'Valued Client';
+  const propertyAddress =
+    jobOrBooking.property ||
+    jobOrBooking.propertyAddress ||
+    jobOrBooking.location ||
+    'Subject Property, London';
+  const surveyorName =
+    jobOrBooking.surveyor ||
+    jobOrBooking.surveyorName ||
+    'test surveyor';
+  const inspectionDate =
+    normalizeToUKDate(jobOrBooking.date || jobOrBooking.inspectionDate) ||
+    formattedDate;
+  const timeSlot =
+    jobOrBooking.timeSlot ||
+    jobOrBooking.inspectionTime ||
+    '10:00 - 13:00 (Mid-Morning)';
+  const surveyType =
+    jobOrBooking.surveyType ||
+    jobOrBooking.serviceType ||
+    'RICS Level 2 Home Survey';
+  const jobNo = jobOrBooking.jobNo || jobOrBooking.id || 'JOB-2026-080';
+
+  // 1. Fetch active email automations (step-4: Booked)
+  let automations = DEFAULT_EMAIL_AUTOMATIONS;
+  try {
+    const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+    if (rawAutomations) {
+      automations = JSON.parse(rawAutomations);
+    }
+  } catch (e) {
+    console.warn('Error reading automations storage', e);
+  }
+
+  const bookingAutomation =
+    automations.find((a) => a.id === 'step-4' || a.stepIndex === 3) ||
+    DEFAULT_EMAIL_AUTOMATIONS.find((a) => a.id === 'step-4');
+
+  const templateData = {
+    customer: clientName,
+    customer_name: clientName,
+    customerName: clientName,
+    clientName: clientName,
+    property: propertyAddress,
+    property_address: propertyAddress,
+    propertyAddress: propertyAddress,
+    inspection_date: inspectionDate,
+    inspectionDate: inspectionDate,
+    date: inspectionDate,
+    time_slot: timeSlot,
+    timeSlot: timeSlot,
+    surveyor: surveyorName,
+    surveyor_name: surveyorName,
+    surveyorName: surveyorName,
+    surveyType: surveyType,
+    jobNo: jobNo,
+    job_no: jobNo,
+    reference: jobNo,
+    actionLink: `${window.location.origin}/customer/appointment-details`,
+    action_link: `${window.location.origin}/customer/appointment-details`,
+    portalLink: `${window.location.origin}/customer/my-dashboard`,
+    companyName: 'NJS Property Group',
+    companyPhone: '0333 305 2777',
+    companyEmail: 'info@njspropertygroup.com',
+  };
+
+  const defaultSubject = `Site Inspection Confirmed: {{inspection_date}} with {{surveyor_name}}`;
+  const resolvedSubject = renderEmailTemplate(
+    bookingAutomation?.subject || defaultSubject,
+    templateData
+  );
+
+  const defaultBody = `Dear {{customer_name}},
+
+Your property inspection appointment has been locked in the calendar with chartered surveyor {{surveyor_name}}.
+
+Appointment Details:
+• Property: {{property_address}}
+• Confirmed Date: {{inspection_date}}
+• Surveyor Arrival Window: {{time_slot}}
+• Assigned Surveyor: {{surveyor_name}} (RICS Chartered)
+• Key Access: Coordinated with local estate agent
+
+Your surveyor will carry verified RICS photo identification. If there are specific property defects or questions you would like investigated, you can add notes directly to your portal:
+{{action_link}}
+
+Warm regards,
+Head of Residential Surveying | NJS Property Group`;
+
+  const resolvedBody = renderEmailTemplate(
+    bookingAutomation?.templateBody || defaultBody,
+    templateData
+  );
+
+  // 2. Append Sent Email Log for Customer
+  const emailLogRecord = {
+    id: `EML-BOOK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    stepIndex: 3,
+    stepName: 'Booked',
+    stageLabel: 'Stage 6: Inspection Booked',
+    subject: resolvedSubject,
+    to: clientEmail,
+    recipientName: clientName,
+    date: formattedTime,
+    status: 'Delivered',
+    body: resolvedBody,
+    preview: `Site inspection confirmed for ${propertyAddress} on ${inspectionDate} (${timeSlot}) with ${surveyorName}.`,
+    jobNo: jobNo,
+  };
+
+  // Also create Surveyor Allocation Email notification log
+  const surveyorEmail = (
+    jobOrBooking.surveyorEmail ||
+    'surveyor@njspropertygroup.com'
+  ).toLowerCase().trim();
+  const surveyorEmailLog = {
+    id: `EML-SRV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    stepIndex: 3,
+    stepName: 'Surveyor Allocated',
+    stageLabel: 'Stage 6: Surveyor Allocation Notice',
+    subject: `[INSPECTION ALLOCATED] ${jobNo}: ${propertyAddress} (${inspectionDate})`,
+    to: surveyorEmail,
+    recipientName: surveyorName,
+    date: formattedTime,
+    status: 'Delivered',
+    body: `Hello ${surveyorName},\n\nYou have been allocated an on-site physical inspection:\n• Property: ${propertyAddress}\n• Date: ${inspectionDate}\n• Time Slot: ${timeSlot}\n• Client: ${clientName} (${jobOrBooking.customerPhone || 'Contact details in portal'})\n• Job Ref: ${jobNo}\n\nPlease check your diary in the Surveyor Field Portal.`,
+    preview: `Surveyor rota notice: ${jobNo} allocated on ${inspectionDate} (${timeSlot}).`,
+    jobNo: jobNo,
+  };
+
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+    localStorage.setItem(
+      'property_group_sent_emails_v1',
+      JSON.stringify([emailLogRecord, surveyorEmailLog, ...existingLogs.slice(0, 48)])
+    );
+    window.dispatchEvent(new Event('property_group_sent_emails_updated'));
+  } catch (err) {
+    console.warn('Error saving sent email log', err);
+  }
+
+  // 3. Persist flags in localStorage
+  try {
+    localStorage.setItem('propertygroup_booking_confirmed', 'true');
+    if (clientEmail) {
+      localStorage.setItem(`propertygroup_booking_confirmed_${clientEmail}`, 'true');
+    }
+  } catch {}
+
+  // 4. Also call backend API to assign surveyor / send backend email if backend job id is known
+  try {
+    const backendId = jobOrBooking.backendId || (jobOrBooking.id && !String(jobOrBooking.id).startsWith('JOB-') ? jobOrBooking.id : null);
+    if (backendId) {
+      api.patch(`/survey-jobs/${backendId}/assign-surveyor`, {
+        surveyorId: parseInt(String(jobOrBooking.surveyorId).replace(/^srv-/, '') || '1', 10),
+        inspectionDate: jobOrBooking.date || jobOrBooking.inspectionDate,
+        inspectionTime: timeSlot,
+        keyCollectionDetails: jobOrBooking.propertyDetails?.accessDetails || 'Keys with estate agent',
+      }).catch(() => {});
+    }
+  } catch {}
+
+  return { success: true, emailLogRecord, surveyorEmailLog };
 };

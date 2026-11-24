@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
@@ -13,6 +13,7 @@ import {
   Key,
   Phone,
   ShieldCheck,
+  ChevronLeft,
   ChevronRight,
   Filter,
   Check,
@@ -32,8 +33,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
-import { useJobs } from '../../mock/jobs';
-import { useEffect } from 'react';
+import { useJobs, isJobForSurveyor, normalizeToUKDate } from '../../mock/jobs';
 import { api } from '../../api/apiClient';
 import {
   surveyorCalendarApi,
@@ -65,13 +65,8 @@ export const SurveyorCalendarPage = () => {
     surveyorCalendarApi.getCalendar().catch(() => {});
   }, []);
 
-  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
-  const surveyorName = user?.name;
-
-  const myJobs = jobs.filter((j) =>
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName)
-  );
+  const isAdminView = user?.role === 'super_admin' || user?.role === 'admin' || user?.email === 'admin@demo.com';
+  const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   const isAptInspected = (apt) => {
     const jobRef = apt?.jobNo || apt?.id;
@@ -163,36 +158,98 @@ export const SurveyorCalendarPage = () => {
     });
   };
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const formatDay = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 
-  const appointments = myJobs
-    .filter((j) => j.status !== 'Completed')
-    .map((j) => ({
-      id: j.id,
-      jobNo: j.jobNo || j.id,
-      time: j.timeSlot || '10:00 - 13:00',
-      property: j.property,
-      location: j.location,
-      type: j.surveyType,
-      access: j.accessNotes || j.propertyDetails?.accessDetails || 'Customer direct instruction via portal',
-      status: j.status,
-      countdown: j.countdown || '48h SLA Target',
-    }));
+  const getTodayFormatted = () => {
+    const t = new Date();
+    return `${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}/${t.getFullYear()}`;
+  };
 
-  const dynamicDays = [-1, 0, 1, 2, 3].map((offset) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + offset);
-    const isToday = offset === 0;
-    return {
-      label: isToday ? `Today (${formatDay(d)})` : formatDay(d),
-      isToday,
-      appointments: isToday ? appointments.length : 0,
-    };
-  });
+  const appointments = useMemo(() => {
+    return myJobs
+      .filter((j) => j && j.status !== 'Completed')
+      .map((j) => {
+        const d = normalizeToUKDate(j.date || j.inspectionDate);
+        return {
+          id: j.id,
+          jobNo: j.jobNo || j.id,
+          date: d,
+          time: j.timeSlot || j.inspectionTime || '10:00 - 13:00',
+          property: j.property || j.propertyAddress || 'Subject Property',
+          location: j.location || j.postcode || 'London',
+          customer: j.customer || j.clientName || 'Valued Client',
+          customerPhone: j.customerPhone || j.clientPhone || '',
+          customerEmail: j.customerEmail || j.clientEmail || '',
+          type: j.surveyType || 'RICS Level 2 Home Survey',
+          access: j.accessNotes || j.propertyDetails?.accessDetails || 'Customer direct instruction via portal',
+          status: j.status || 'Scheduled',
+          countdown: j.countdown || '48h SLA Target',
+          surveyor: j.surveyor || user?.name || 'test surveyor',
+        };
+      });
+  }, [myJobs, user]);
 
-  const [selectedDay, setSelectedDay] = useState(dynamicDays[1].label);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [selectedDateFormatted, setSelectedDateFormatted] = useState(getTodayFormatted);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+  // Compute 7 days of the currently viewed week
+  const dynamicDays = useMemo(() => {
+    const base = new Date();
+    const currentDay = base.getDay(); // 0 is Sunday, 1 is Monday
+    const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+    const monday = new Date(base);
+    monday.setDate(base.getDate() + diffToMonday + weekOffset * 7);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      const isToday = d.toDateString() === base.toDateString();
+      const count = appointments.filter((apt) => apt.date === formatted).length;
+      days.push({
+        label: isToday ? `Today (${formatDay(d)})` : formatDay(d),
+        dateFormatted: formatted,
+        dateObj: d,
+        isToday,
+        appointments: count,
+      });
+    }
+    return days;
+  }, [weekOffset, appointments]);
+
+  // Appointments on the actively selected day tab
+  const dayAppointments = useMemo(() => {
+    return appointments.filter((apt) => apt.date === selectedDateFormatted);
+  }, [appointments, selectedDateFormatted]);
+
+  const selectedDayObj = dynamicDays.find((d) => d.dateFormatted === selectedDateFormatted);
+  const selectedDayLabel = selectedDayObj ? selectedDayObj.label : selectedDateFormatted;
+
+  const handleJumpToAppointmentDate = (aptDate) => {
+    if (!aptDate) return;
+    const parts = aptDate.split('/');
+    if (parts.length === 3) {
+      const aptYear = parseInt(parts[2], 10);
+      const aptMonth = parseInt(parts[1], 10) - 1;
+      const aptDay = parseInt(parts[0], 10);
+      const aptD = new Date(aptYear, aptMonth, aptDay);
+      const now = new Date();
+      // calculate week diff
+      const currentDay = now.getDay();
+      const diffToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+      const thisMonday = new Date(now);
+      thisMonday.setDate(now.getDate() + diffToMonday);
+      thisMonday.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.floor((aptD - thisMonday) / (24 * 60 * 60 * 1000));
+      const targetWeekOffset = Math.floor(diffDays / 7);
+      setWeekOffset(targetWeekOffset);
+      setSelectedDateFormatted(aptDate);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -204,6 +261,21 @@ export const SurveyorCalendarPage = () => {
         actionIcon={UploadCloud}
         onAction={() => navigate('/surveyor/upload-reports')}
       />
+
+      {/* Admin Central Operations Notice if viewed by Admin */}
+      {isAdminView && (
+        <div className="bg-amber-50/90 border border-amber-300 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-amber-700 shrink-0" />
+            <span className="font-semibold">
+              <strong>Central Operations Admin View:</strong> Showing all platform surveyor allocations, field appointments, and RICS diaries.
+            </span>
+          </div>
+          <span className="px-2 py-0.5 bg-amber-200/80 text-amber-900 rounded-lg text-[11px] font-bold shrink-0">
+            {appointments.length} Total Platform Inspections
+          </span>
+        </div>
+      )}
 
       {/* Surveyor Privacy Lockdown Banner */}
       <div className="bg-blue-50/80 border border-blue-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -237,22 +309,77 @@ export const SurveyorCalendarPage = () => {
         </div>
       </div>
 
-      {/* Week Day Pills with Real Computed Dates */}
+      {/* Week Navigation Header Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setWeekOffset((prev) => prev - 1)}
+            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+            title="Previous Week"
+          >
+            <ChevronLeft className="w-4 h-4 text-slate-600" />
+            <span>Prev Week</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setWeekOffset(0);
+              setSelectedDateFormatted(getTodayFormatted());
+            }}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+              weekOffset === 0
+                ? 'bg-[#0B1F4D] text-white border-[#0B1F4D]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Current Week
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setWeekOffset((prev) => prev + 1)}
+            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+            title="Next Week"
+          >
+            <span>Next Week</span>
+            <ChevronRight className="w-4 h-4 text-slate-600" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-semibold text-slate-500">
+            Selected: <strong className="text-[#0B1F4D]">{selectedDateFormatted}</strong>
+          </span>
+          {appointments.length > 0 && (
+            <span className="text-xs font-mono font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl">
+              {appointments.length} Total Allocated
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Week Day Pills with Real Computed Dates & Dynamic Counts */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {dynamicDays.map((d) => (
           <button
-            key={d.label}
-            onClick={() => setSelectedDay(d.label)}
+            key={d.dateFormatted}
+            onClick={() => setSelectedDateFormatted(d.dateFormatted)}
             className={`px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all shrink-0 cursor-pointer ${
-              selectedDay === d.label
+              selectedDateFormatted === d.dateFormatted
                 ? 'bg-[#0B1F4D] text-white border-[#0B1F4D] shadow-sm'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
             <span>{d.label}</span>
             <span
-              className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] ${
-                selectedDay === d.label ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              className={`ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                selectedDateFormatted === d.dateFormatted
+                  ? 'bg-white/20 text-white'
+                  : d.appointments > 0
+                  ? 'bg-blue-100 text-blue-800 font-bold'
+                  : 'bg-slate-100 text-slate-500'
               }`}
             >
               {d.appointments}
@@ -266,17 +393,17 @@ export const SurveyorCalendarPage = () => {
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-sm font-bold text-[#0B1F4D]">
-              Inspection Diary for {selectedDay}
+              Inspection Diary for {selectedDayLabel} ({selectedDateFormatted})
             </h3>
             <p className="text-xs text-slate-500">Daylight hours allocated for on-site physical inspection.</p>
           </div>
           <span className="text-xs font-mono font-bold text-[#2563EB] bg-blue-50 px-2.5 py-1 rounded-xl">
-            {appointments.length} Appointments Allocated
+            {dayAppointments.length} Appointment{dayAppointments.length !== 1 ? 's' : ''} on this date
           </span>
         </div>
 
         <div className="space-y-4">
-          {appointments.map((apt) => (
+          {dayAppointments.map((apt) => (
             <div
               key={apt.id}
               className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all space-y-3"
@@ -299,6 +426,18 @@ export const SurveyorCalendarPage = () => {
                     {apt.type}
                   </span>
                 </div>
+              </div>
+
+              {/* Client & Logistics Details */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                <span>Client: <strong className="text-slate-900">{apt.customer}</strong></span>
+                {apt.customerPhone && (
+                  <span className="flex items-center gap-1 text-slate-600">
+                    <Phone className="w-3 h-3 text-[#2563EB]" />
+                    <a href={`tel:${apt.customerPhone}`} className="hover:underline">{apt.customerPhone}</a>
+                  </span>
+                )}
+                <span>Surveyor: <strong className="text-[#0B1F4D]">{apt.surveyor}</strong></span>
               </div>
 
               {/* Key Access & Protocol Box (Primary focus for surveyor) */}
@@ -404,12 +543,174 @@ export const SurveyorCalendarPage = () => {
             </div>
           ))}
 
-          {appointments.length === 0 && (
-            <div className="py-8 text-center text-xs text-slate-400">
-              No appointments scheduled for this date.
+          {dayAppointments.length === 0 && (
+            <div className="py-8 text-center text-xs text-slate-500 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-6 space-y-2">
+              <CalendarIcon className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="font-semibold text-slate-700">No appointments scheduled for {selectedDateFormatted}.</p>
+              <p className="text-slate-400">Review your full allocated field rota in the Upcoming Inspections list below.</p>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Section: All Scheduled & Upcoming Field Inspections (Full Rota) */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="text-sm font-bold text-[#0B1F4D]">
+              All Scheduled &amp; Upcoming Field Inspections
+            </h3>
+            <p className="text-xs text-slate-500">
+              Complete on-site schedule and key logistics across all dates.
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-[#0B1F4D] bg-slate-100 px-3 py-1 rounded-xl">
+            {appointments.length} Inspection{appointments.length !== 1 ? 's' : ''} in Rota
+          </span>
+        </div>
+
+        {appointments.length > 0 ? (
+          <div className="space-y-4">
+            {appointments.map((apt) => (
+              <div
+                key={`all-${apt.id}`}
+                className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-[#2563EB] transition-all space-y-3"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-xs font-black text-white bg-[#0B1F4D] px-2.5 py-1 rounded-xl shadow-2xs">
+                      📅 {apt.date || 'Scheduled'}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-blue-900 bg-blue-100 px-2.5 py-1 rounded-xl">
+                      ⏰ {apt.time}
+                    </span>
+                    <h4 className="font-bold text-slate-900 text-sm ml-1">
+                      {apt.property}, {apt.location}
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 font-mono">
+                      {apt.countdown}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#2563EB] border border-blue-200">
+                      {apt.type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Client & Logistics Details */}
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                  <span>Client: <strong className="text-slate-900">{apt.customer}</strong></span>
+                  {apt.customerPhone && (
+                    <span className="flex items-center gap-1 text-slate-600">
+                      <Phone className="w-3 h-3 text-[#2563EB]" />
+                      <a href={`tel:${apt.customerPhone}`} className="hover:underline">{apt.customerPhone}</a>
+                    </span>
+                  )}
+                  <span>Surveyor: <strong className="text-[#0B1F4D]">{apt.surveyor}</strong></span>
+                </div>
+
+                {/* Key Access & Protocol Box */}
+                <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl flex items-start gap-3 text-xs">
+                  <Key className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
+                      Key Access &amp; Property Entry Protocol
+                    </span>
+                    <p className="font-semibold text-slate-800 leading-relaxed">
+                      {apt.access}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="text-slate-400 font-mono text-[11px]">
+                    Ref: {apt.jobNo}
+                  </span>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToAppointmentDate(apt.date)}
+                      className="px-3 py-1.5 bg-white border border-blue-200 text-[#2563EB] hover:bg-blue-50 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <CalendarIcon className="w-3.5 h-3.5 text-[#2563EB]" />
+                      <span>Show in Diary Tab</span>
+                    </button>
+
+                    <a
+                      href={generateGoogleCalendarUrl(apt)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Add to Google Calendar"
+                    >
+                      <CalendarIcon className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Google Cal</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const content = generateJobIcsContent(apt);
+                        downloadIcsFile(`RICS-${apt.jobNo || apt.id}.ics`, content);
+                        addToast({
+                          type: 'success',
+                          title: 'Calendar Event Downloaded',
+                          message: `Inspection for ${apt.property} downloaded. Tap to open in Apple Calendar or Outlook.`,
+                        });
+                      }}
+                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200/80 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Download .ICS file"
+                    >
+                      <Download className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Apple / .ICS</span>
+                    </button>
+
+                    {isAptInspected(apt) ? (
+                      <div className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Inspection Concluded ✓</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleCompleteAppointment(apt.id || apt.jobNo)}
+                        className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white transition-all cursor-pointer shadow-xs"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Mark Inspection Complete</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/surveyor/my-jobs?viewJob=${apt.jobNo || apt.id}`)}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-[#0B1F4D] rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#2563EB]" />
+                      <span>View Job</span>
+                    </button>
+
+                    <button
+                      onClick={() => navigate(`/surveyor/upload-reports?jobId=${apt.jobNo}`)}
+                      className="px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs bg-[#0B1F4D] hover:bg-[#162E6E] text-white"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Upload Report PDF &rarr;</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-8 text-center text-xs text-slate-400 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-6">
+            No inspection appointments currently allocated.
+          </div>
+        )}
       </div>
 
       {/* Mobile Calendar Synchronization Modal */}
@@ -441,13 +742,7 @@ export const SurveyorJobsPage = () => {
   const [filter, setFilter] = useState('active'); // 'active' | 'completed'
 
   // Isolate strictly by surveyor
-  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
-  const surveyorName = user?.name;
-
-  const myJobs = jobs.filter((j) =>
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName)
-  );
+  const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   // Auto-open modal if viewJob query param provided
   useEffect(() => {
@@ -777,16 +1072,7 @@ export const SurveyorSiteVisitsPage = () => {
     surveyorSiteVisitsApi.getVisits().catch(() => {});
   }, []);
 
-  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
-  const surveyorName = user?.name;
-  const surveyorDbId = user?.id;
-
-  const myJobs = jobs.filter((j) =>
-    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName) ||
-    (user?.email && j.surveyorEmail === user.email)
-  );
+  const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   const activeJobs = myJobs.filter((j) => j.status !== 'Completed');
   const primaryJob = activeJobs[0] || myJobs[0] || null;
@@ -1008,16 +1294,7 @@ export const SurveyorUploadReportsPage = () => {
     surveyorUploadReportsApi.getPendingReports().catch(() => {});
   }, []);
 
-  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
-  const surveyorName = user?.name;
-  const surveyorDbId = user?.id;
-
-  const myJobs = jobs.filter((j) =>
-    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName) ||
-    (user?.email && j.surveyorEmail === user.email)
-  );
+  const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   const defaultJobId = queryJobId
     ? (myJobs.find((j) => j.jobNo === queryJobId || j.id === queryJobId)?.jobNo ||

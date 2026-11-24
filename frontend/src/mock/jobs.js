@@ -46,6 +46,50 @@ export const normalizeToUKDate = (dateVal) => {
   return str;
 };
 
+/**
+ * Universal surveyor job isolation & matching helper
+ * Returns true if a job belongs to the surveyor user or if viewing as Admin/Central Operations.
+ */
+export const isJobForSurveyor = (job, user) => {
+  if (!job) return false;
+  if (!user) return true;
+  // If user is admin/super_admin exploring or previewing the surveyor portal, show all assigned surveyor jobs!
+  if (
+    user.role === 'super_admin' ||
+    user.role === 'admin' ||
+    user.email === 'admin@demo.com' ||
+    user.email === 'njsadmin@gmail.com' ||
+    (user.name && user.name.toLowerCase() === 'admin')
+  ) {
+    return true;
+  }
+  const userSrvId = String(user.surveyorId || user.id || '').replace(/^srv-/, '').replace(/^usr_/, '').toLowerCase().trim();
+  const jobSrvId = String(job.surveyorId || '').replace(/^srv-/, '').replace(/^usr_/, '').toLowerCase().trim();
+  if (userSrvId && jobSrvId && userSrvId === jobSrvId) {
+    return true;
+  }
+  const userName = (user.name || '').toLowerCase().trim();
+  const jobSurveyor = (job.surveyor || '').toLowerCase().trim();
+  if (userName && jobSurveyor) {
+    if (userName === jobSurveyor) return true;
+    if (jobSurveyor.includes(userName) || userName.includes(jobSurveyor)) return true;
+    if (
+      (userName.includes('surveyor') || userName.includes('david')) &&
+      (jobSurveyor.includes('surveyor') || jobSurveyor.includes('david'))
+    ) {
+      return true;
+    }
+  }
+  const userEmail = (user.email || '').toLowerCase().trim();
+  const jobSurveyorEmail = (job.surveyorEmail || '').toLowerCase().trim();
+  if (userEmail && jobSurveyorEmail && userEmail === jobSurveyorEmail) return true;
+
+  if (user.role === 'surveyor' && (!job.surveyorId || job.surveyorId === 'srv-1' || job.surveyorId === '1')) {
+    return true;
+  }
+  return false;
+};
+
 // Mock data for Survey Jobs, Booking Calendar and Job Details
 export const SURVEYORS = [
   {
@@ -125,10 +169,15 @@ export const getStoredJobs = () => {
         let needsResave = false;
         const sanitized = parsed.map((j) => {
           let updatedJob = { ...j };
-          if (updatedJob.surveyorId === 'srv-32' || updatedJob.surveyor === 'surveyor') {
+          if (
+            updatedJob.surveyorId === 'srv-32' ||
+            updatedJob.surveyor === 'surveyor' ||
+            (typeof updatedJob.surveyor === 'string' && updatedJob.surveyor.toLowerCase().startsWith('surveyor'))
+          ) {
             needsResave = true;
             updatedJob.surveyorId = 'srv-1';
             updatedJob.surveyor = 'test surveyor';
+            updatedJob.surveyorEmail = updatedJob.surveyorEmail || 'surveyor@njspropertygroup.com';
           }
           const isEnquiry = updatedJob.status === 'Enquiry' || updatedJob.stage === 'enquiry' || updatedJob.stage === 'ENQUIRY' || updatedJob.isNewInstruction || !updatedJob.quote;
           if (isEnquiry && (updatedJob.paymentStatus === 'Claimed (Verification Pending)' || (updatedJob.timelineStep || 0) > 2 || updatedJob.termsStatus === 'Signed')) {

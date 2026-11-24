@@ -28,7 +28,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
-import { useJobs } from '../../mock/jobs';
+import { useJobs, isJobForSurveyor } from '../../mock/jobs';
 import { surveyorDashboardApi, surveyorJobsApi } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
 import { emitNotification } from '../../utils/notificationService';
@@ -101,15 +101,7 @@ export const SurveyorDashboardPage = () => {
   }, [user]);
 
   // 2. Filter mock jobs strictly matching this surveyor
-  const mockAssignedJobs = jobs.filter((j) => {
-    if (!j) return false;
-    const cleanJSrvId = String(j.surveyorId || '').replace(/^srv-/, '');
-    const cleanUserSrvId = String(surveyorDbId || surveyorId || '').replace(/^srv-/, '');
-    const matchesId = cleanUserSrvId && cleanJSrvId === cleanUserSrvId;
-    const matchesName = surveyorName && j.surveyor && j.surveyor.toLowerCase().trim() === surveyorName.toLowerCase().trim();
-    const matchesEmail = user?.email && j.surveyorEmail && j.surveyorEmail.toLowerCase().trim() === user.email.toLowerCase().trim();
-    return matchesId || matchesName || matchesEmail;
-  });
+  const mockAssignedJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   const combinedJobs = liveJobs.length > 0
     ? liveJobs

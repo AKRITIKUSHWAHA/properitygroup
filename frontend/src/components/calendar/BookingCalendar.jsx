@@ -25,6 +25,8 @@ import { NewBookingModal } from './NewBookingModal';
 import { RescheduleModal } from '../crm/RescheduleModal';
 import { Modal } from '../common/Modal';
 import { useToast } from '../ToastContext';
+import { emitNotification } from '../../utils/notificationService';
+import { dispatchBookingConfirmationEmail } from '../../services/autoQuoteService';
 
 export const BookingCalendar = () => {
   const { addToast } = useToast();
@@ -220,20 +222,40 @@ export const BookingCalendar = () => {
 
   // Handle new booking submission
   const handleAddBooking = (newJob) => {
-    addJob(newJob);
+    // Normalize surveyor and email
+    const srvMatch = surveyorList.find(
+      (s) =>
+        s.id === newJob.surveyorId ||
+        s.name?.toLowerCase() === (newJob.surveyor || '').toLowerCase() ||
+        String(s.dbId) === String(newJob.surveyorId).replace(/^srv-/, '')
+    );
+    const assignedSurveyorName = srvMatch?.name || newJob.surveyor || 'test surveyor';
+    const assignedSurveyorEmail = srvMatch?.email || newJob.surveyorEmail || 'surveyor@njspropertygroup.com';
+    const assignedSurveyorId = srvMatch?.id || newJob.surveyorId || 'srv-1';
+
+    const completeJob = {
+      ...newJob,
+      surveyor: assignedSurveyorName,
+      surveyorEmail: assignedSurveyorEmail,
+      surveyorId: assignedSurveyorId,
+    };
+
+    addJob(completeJob);
 
     // Ensure the assigned surveyor is checked/visible so the slot immediately renders
-    if (newJob.surveyorId) {
+    if (completeJob.surveyorId) {
       setSelectedSurveyorIds((prev) => {
         const hasIt = prev.some(
-          (id) => String(id).replace(/^srv-/, '') === String(newJob.surveyorId).replace(/^srv-/, '') || id === newJob.surveyorId
+          (id) =>
+            String(id).replace(/^srv-/, '') === String(completeJob.surveyorId).replace(/^srv-/, '') ||
+            id === completeJob.surveyorId
         );
-        return hasIt ? prev : [...prev, newJob.surveyorId];
+        return hasIt ? prev : [...prev, completeJob.surveyorId];
       });
     }
 
     // Automatically navigate calendar to the booked date so the user sees it immediately
-    const bookedDate = normalizeToUKDate(newJob.date || newJob.inspectionDate);
+    const bookedDate = normalizeToUKDate(completeJob.date || completeJob.inspectionDate);
     if (bookedDate) {
       setSelectedMonthDate(bookedDate);
       setSelectedDayDate(bookedDate);
@@ -248,12 +270,44 @@ export const BookingCalendar = () => {
       }
     }
 
+    // 1. Dispatch Customer In-App Notification
+    emitNotification({
+      role: 'CUSTOMER',
+      userId: completeJob.customerEmail || completeJob.clientEmail,
+      title: '📅 Property Inspection Confirmed',
+      desc: `Your property inspection for ${completeJob.property} is confirmed for ${completeJob.date} (${completeJob.timeSlot}) with surveyor ${completeJob.surveyor}.`,
+      type: 'booking',
+      link: '/customer/appointment-details',
+    }).catch(() => {});
+
+    // 2. Dispatch Surveyor In-App Notification
+    emitNotification({
+      role: 'SURVEYOR',
+      userId: completeJob.surveyorId,
+      title: '📋 New Physical Inspection Allocated',
+      desc: `You have been allocated a physical on-site inspection for ${completeJob.property} on ${completeJob.date} (${completeJob.timeSlot}). Customer: ${completeJob.customer}.`,
+      type: 'booking',
+      link: '/surveyor/my-calendar',
+    }).catch(() => {});
+
+    // 3. Dispatch Admin In-App Notification
+    emitNotification({
+      role: 'ADMIN',
+      title: `Inspection Scheduled — ${completeJob.jobNo || completeJob.id}`,
+      desc: `Inspection appointment scheduled for ${completeJob.customer} (${completeJob.property}) on ${completeJob.date} (${completeJob.timeSlot}) with ${completeJob.surveyor}.`,
+      type: 'booking',
+      link: '/admin/calendar',
+    }).catch(() => {});
+
+    // 4. Dispatch Email Confirmation to Registered Customer & Surveyor Rota
+    dispatchBookingConfirmationEmail(completeJob).catch((e) => console.warn('Booking email dispatch notice:', e));
+
     addToast({
-      type: newJob.canBook ? 'success' : 'info',
-      title: 'Booking Created',
-      message: newJob.canBook
-        ? `Inspection confirmed for ${newJob.customer} with ${newJob.surveyor} on ${newJob.date}.`
-        : `Booking slot held for ${newJob.customer} on ${newJob.date}. Waiting for terms and payment clearance.`,
+      type: completeJob.canBook ? 'success' : 'info',
+      title: completeJob.canBook ? 'Inspection Booked & Notifications Dispatched' : 'Booking Created (Slot Reserved)',
+      message: completeJob.canBook
+        ? `Inspection confirmed for ${completeJob.customer} on ${completeJob.date}. Confirmation email & portal notifications sent.`
+        : `Booking slot held for ${completeJob.customer} on ${completeJob.date}. Waiting for terms and payment clearance.`,
     });
   };
 
