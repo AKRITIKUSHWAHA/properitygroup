@@ -227,6 +227,7 @@ export const updateLeadStatus = async (req, res, next) => {
             link: '/admin/finance/quotations',
           },
         }).catch(() => {});
+        }
       } catch (qErr) {
         console.warn('[updateLeadStatus] quote sync warning:', qErr.message);
       }

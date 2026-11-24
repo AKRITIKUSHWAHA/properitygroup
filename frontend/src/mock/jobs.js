@@ -230,6 +230,9 @@ export const getStoredJobs = () => {
             !email.includes('kensingtonestates') &&
             !email.includes('akku') &&
             !name.includes('akku') &&
+            name !== 'aashi saket' &&
+            name !== 'dd' &&
+            name !== 'test k' &&
             !addr.includes('mp nagar') &&
             !addr.includes('bhopal') &&
             !addr.includes('plot no 45') &&
@@ -238,10 +241,16 @@ export const getStoredJobs = () => {
             idStr !== 'QUO-PENDING' &&
             jobNoStr !== 'QUO-PENDING' &&
             idStr !== '7' &&
+            idStr !== '11' &&
+            idStr !== '12' &&
+            idStr !== '13' &&
             idStr !== 'JOB-2026-101' &&
             jobNoStr !== 'JOB-2026-101' &&
             idStr !== 'JOB-2026-702' &&
-            jobNoStr !== 'JOB-2026-702'
+            jobNoStr !== 'JOB-2026-702' &&
+            jobNoStr !== 'JOB-2026-7289' &&
+            jobNoStr !== 'JOB-2026-6173' &&
+            jobNoStr !== 'JOB-2026-7681'
           );
         });
       }

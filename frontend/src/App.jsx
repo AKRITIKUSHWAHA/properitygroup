@@ -121,7 +121,7 @@ const PortalRedirect = () => {
 function AppRoutes() {
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v6';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v12_real_db';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',
@@ -140,6 +140,7 @@ function AppRoutes() {
         'propertygroup_deleted_lead_ids',
         'property_group_client_profiles_v1',
         'propertygroup_support_tickets',
+        'propertygroup_local_notifications',
       ].forEach((key) => {
         try {
           localStorage.removeItem(key);
@@ -154,7 +155,12 @@ function AppRoutes() {
               k.includes('7062') ||
               k.includes('registered_customers') ||
               k.includes('crm_leads') ||
-              k.includes('Ashilata'))
+              k.includes('Ashilata') ||
+              k.includes('7289') ||
+              k.includes('6173') ||
+              k.includes('7681') ||
+              k.includes('Aashi') ||
+              k.includes('dd@gmail'))
           ) {
             localStorage.removeItem(k);
           }
@@ -162,6 +168,10 @@ function AppRoutes() {
       } catch {}
       try {
         localStorage.setItem(WIPE_KEY, 'true');
+        window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+        window.dispatchEvent(new Event('propertygroup_leads_updated'));
+        window.dispatchEvent(new Event('propertygroup_users_updated'));
+        window.dispatchEvent(new Event('propertygroup_agreements_updated'));
       } catch {}
     }
   }, []);

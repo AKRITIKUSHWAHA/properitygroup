@@ -75,10 +75,16 @@ export const getStoredLeads = () => {
             return (
               !isDeleted &&
               !name.includes('akku') &&
+              name !== 'aashi saket' &&
+              name !== 'dd' &&
+              name !== 'test k' &&
               !email.includes('akku') &&
               !addr.includes('mp nagar') &&
               !addr.includes('bhopal') &&
-              l.id !== 7
+              l.id !== 7 &&
+              l.id !== 11 &&
+              l.id !== 12 &&
+              l.id !== 13
             );
           })
           .map((l) => {

@@ -142,36 +142,43 @@ export const AdminDashboardPage = () => {
       if (jobsRes.status === 'fulfilled') {
         const apiJobs = jobsRes.value?.data?.data?.jobs || jobsRes.value?.jobs || [];
         if (Array.isArray(apiJobs)) {
-          const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
-            const email = (bj.customerEmail || '').toLowerCase().trim();
-            const name = (bj.customer || '').toLowerCase().trim();
-            const prop = (bj.property || '').toLowerCase().trim();
-            const id = String(bj.id || '').trim();
-            const jobNo = String(bj.jobNo || '').trim().toUpperCase();
-            return (
-              email !== 'customer@demo.com' &&
-              email !== 'customer2@demo.com' &&
-              !email.includes('akku') &&
-              !name.includes('akku') &&
-              !prop.includes('mp nagar') &&
-              !prop.includes('bhopal') &&
-              !prop.includes('plot no 45') &&
-              id !== '7' &&
-              id !== 'JOB-2026-101' &&
-              jobNo !== 'JOB-2026-101'
-            );
-          });
-          // Deduplicate multiple entries for identical client instruction
-          const seen = new Set();
-          const deduplicated = [];
-          for (const item of mapped) {
-            const key = `${(item.customerEmail || '').toLowerCase()}_${(item.property || '').toLowerCase().replace(/\s+/g, '')}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              deduplicated.push(item);
+          if (apiJobs.length === 0) {
+            setJobs([]);
+          } else {
+            const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
+              const email = (bj.customerEmail || '').toLowerCase().trim();
+              const name = (bj.customer || '').toLowerCase().trim();
+              const prop = (bj.property || '').toLowerCase().trim();
+              const id = String(bj.id || '').trim();
+              const jobNo = String(bj.jobNo || '').trim().toUpperCase();
+              return (
+                email !== 'customer@demo.com' &&
+                email !== 'customer2@demo.com' &&
+                !email.includes('akku') &&
+                !name.includes('akku') &&
+                !prop.includes('mp nagar') &&
+                !prop.includes('bhopal') &&
+                !prop.includes('plot no 45') &&
+                id !== '7' &&
+                id !== '11' &&
+                id !== '12' &&
+                id !== '13' &&
+                id !== 'JOB-2026-101' &&
+                jobNo !== 'JOB-2026-101'
+              );
+            });
+            // Deduplicate multiple entries for identical client instruction
+            const seen = new Set();
+            const deduplicated = [];
+            for (const item of mapped) {
+              const key = `${(item.customerEmail || '').toLowerCase()}_${(item.property || '').toLowerCase().replace(/\s+/g, '')}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                deduplicated.push(item);
+              }
             }
+            setJobs(deduplicated);
           }
-          setJobs(deduplicated);
         }
       }
 
@@ -179,32 +186,36 @@ export const AdminDashboardPage = () => {
       if (leadsRes.status === 'fulfilled') {
         const rawLeads = leadsRes.value?.leads || leadsRes.value?.data?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
         if (Array.isArray(rawLeads)) {
-          const cleanLeads = rawLeads.filter((l) => {
-            const name = (l.clientName || '').toLowerCase().trim();
-            const email = (l.clientEmail || '').toLowerCase().trim();
-            const addr = (l.propertyAddress || '').toLowerCase().trim();
-            return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7;
-          });
-          const statusMap = {
-            NEW: 'New',
-            CONTACTED: 'Contacted',
-            QUALIFIED: 'Qualified',
-            QUOTE_SENT: 'Quoted',
-            CONVERTED: 'Converted',
-            LOST: 'Lost',
-          };
-          const mappedLeads = cleanLeads.map((l) => ({
-            id: l.reference || `NJS-2026-${l.id}`,
-            customerName: l.clientName || 'Private Client',
-            customerEmail: l.clientEmail || '',
-            customerPhone: l.clientPhone || '',
-            enquiry: l.serviceType || 'RICS Level 2 Home Survey',
-            property: l.propertyAddress || 'London Property',
-            location: l.postcode || '',
-            status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
-            source: l.source || 'Website',
-          }));
-          setLeads(mappedLeads);
+          if (rawLeads.length === 0) {
+            setLeads([]);
+          } else {
+            const cleanLeads = rawLeads.filter((l) => {
+              const name = (l.clientName || '').toLowerCase().trim();
+              const email = (l.clientEmail || '').toLowerCase().trim();
+              const addr = (l.propertyAddress || '').toLowerCase().trim();
+              return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7 && l.id !== 11 && l.id !== 12 && l.id !== 13;
+            });
+            const statusMap = {
+              NEW: 'New',
+              CONTACTED: 'Contacted',
+              QUALIFIED: 'Qualified',
+              QUOTE_SENT: 'Quoted',
+              CONVERTED: 'Converted',
+              LOST: 'Lost',
+            };
+            const mappedLeads = cleanLeads.map((l) => ({
+              id: l.reference || `NJS-2026-${l.id}`,
+              customerName: l.clientName || 'Private Client',
+              customerEmail: l.clientEmail || '',
+              customerPhone: l.clientPhone || '',
+              enquiry: l.serviceType || 'RICS Level 2 Home Survey',
+              property: l.propertyAddress || 'London Property',
+              location: l.postcode || '',
+              status: statusMap[l.status?.toUpperCase()] || l.status || 'New',
+              source: l.source || 'Website',
+            }));
+            setLeads(mappedLeads);
+          }
         }
       }
 
