@@ -1,17 +1,63 @@
 import { useState, useEffect, useCallback } from 'react';
 
+// UK standard date normalizer (DD/MM/YYYY)
+export const normalizeToUKDate = (dateVal) => {
+  if (!dateVal) return '';
+  const str = String(dateVal).split('T')[0].split(',')[0].trim();
+  if (!str) return '';
+
+  if (str.includes('/')) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+      return `${d}/${m}/${y}`;
+    }
+  }
+
+  if (str.includes('-')) {
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        const y = parts[0];
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${d}/${m}/${y}`;
+      } else {
+        const d = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        const y = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+        return `${d}/${m}/${y}`;
+      }
+    }
+  }
+
+  try {
+    const dt = new Date(str);
+    if (!isNaN(dt.getTime())) {
+      const d = String(dt.getDate()).padStart(2, '0');
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const y = dt.getFullYear();
+      return `${d}/${m}/${y}`;
+    }
+  } catch {}
+
+  return str;
+};
+
 // Mock data for Survey Jobs, Booking Calendar and Job Details
 export const SURVEYORS = [
   {
-    id: 'srv-32',
-    dbId: 32,
-    name: 'surveyor',
-    email: 'njssurveyor@gmail.com',
+    id: 'srv-1',
+    dbId: 1,
+    name: 'test surveyor',
+    email: 'surveyor@njspropertygroup.com',
     credentials: 'RICS Chartered Surveyor (MRICS)',
     color: '#2563EB', // Blue
     bgLight: 'bg-blue-50 border-blue-200 text-blue-900',
     avatar: null,
-    postcodes: 'W, SW, WC',
+    postcodes: 'SW, W, KT, GU',
   },
 ];
 
@@ -78,11 +124,17 @@ export const getStoredJobs = () => {
       if (Array.isArray(parsed)) {
         let needsResave = false;
         const sanitized = parsed.map((j) => {
-          const isEnquiry = j.status === 'Enquiry' || j.stage === 'enquiry' || j.stage === 'ENQUIRY' || j.isNewInstruction || !j.quote;
-          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 2 || j.termsStatus === 'Signed')) {
+          let updatedJob = { ...j };
+          if (updatedJob.surveyorId === 'srv-32' || updatedJob.surveyor === 'surveyor') {
+            needsResave = true;
+            updatedJob.surveyorId = 'srv-1';
+            updatedJob.surveyor = 'test surveyor';
+          }
+          const isEnquiry = updatedJob.status === 'Enquiry' || updatedJob.stage === 'enquiry' || updatedJob.stage === 'ENQUIRY' || updatedJob.isNewInstruction || !updatedJob.quote;
+          if (isEnquiry && (updatedJob.paymentStatus === 'Claimed (Verification Pending)' || (updatedJob.timelineStep || 0) > 2 || updatedJob.termsStatus === 'Signed')) {
             needsResave = true;
             return {
-              ...j,
+              ...updatedJob,
               paymentStatus: 'Pending',
               termsStatus: 'Pending',
               timelineStep: 1,
@@ -90,7 +142,7 @@ export const getStoredJobs = () => {
               status: 'Enquiry',
             };
           }
-          return j;
+          return updatedJob;
         });
         if (needsResave) {
           try {
@@ -122,7 +174,9 @@ export const getStoredJobs = () => {
             jobNoStr !== 'QUO-PENDING' &&
             idStr !== '7' &&
             idStr !== 'JOB-2026-101' &&
-            jobNoStr !== 'JOB-2026-101'
+            jobNoStr !== 'JOB-2026-101' &&
+            idStr !== 'JOB-2026-702' &&
+            jobNoStr !== 'JOB-2026-702'
           );
         });
       }

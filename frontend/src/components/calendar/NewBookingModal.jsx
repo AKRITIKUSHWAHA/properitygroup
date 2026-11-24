@@ -16,11 +16,11 @@ import {
   Search,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
-import { SURVEYORS, useJobs } from '../../mock/jobs';
+import { SURVEYORS, useJobs, normalizeToUKDate } from '../../mock/jobs';
 import { useLeads } from '../../mock/leads';
 import { adminSurveyorsApi, adminCrmAndLeadsApi } from '../../api/adminApi';
 
-export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
+export const NewBookingModal = ({ isOpen, onClose, onSubmit, surveyors = [], initialDate = '' }) => {
   const { jobs } = useJobs();
   const { leads: localLeads } = useLeads();
   const [activeSurveyors, setActiveSurveyors] = useState([]);
@@ -33,6 +33,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   // Load live surveyors from backend API
   useEffect(() => {
     if (!isOpen) return;
+    if (surveyors && surveyors.length > 0) return;
     if (activeSurveyors.length > 0) return;
     adminSurveyorsApi
       .getSurveyors()
@@ -47,7 +48,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
         }
       })
       .catch(() => {});
-  }, [isOpen]);
+  }, [isOpen, surveyors]);
 
   // Load CRM leads from backend API
   useEffect(() => {
@@ -120,17 +121,26 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   }, [backendLeads, localLeads, jobs]);
 
   const surveyorList = useMemo(() => {
+    if (Array.isArray(surveyors) && surveyors.length > 0) {
+      return surveyors;
+    }
     if (activeSurveyors.length > 0) {
-      return activeSurveyors.map((s) => ({
+      return activeSurveyors.map((s, idx) => ({
         id: `srv-${s.id}`,
         dbId: s.id,
         name: s.name,
         credentials: s.surveyorProfile?.accreditation || 'MRICS Chartered Surveyor',
         postcodes: s.surveyorProfile?.postcodesCovered || 'All London Zones',
+        color: ['#2563EB', '#7C3AED', '#059669', '#D97706', '#E11D48'][idx % 5],
       }));
     }
     return SURVEYORS;
-  }, [activeSurveyors]);
+  }, [surveyors, activeSurveyors]);
+
+  const todayUK = useMemo(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  }, []);
 
   const [formData, setFormData] = useState({
     customer: '',
@@ -139,8 +149,8 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     property: '',
     location: '',
     surveyType: 'RICS Level 2 Home Survey',
-    surveyorId: 'srv-32',
-    date: '28/10/2026',
+    surveyorId: '',
+    date: initialDate || todayUK,
     timeSlot: '10:00 - 13:00',
     accessType: 'Keys with Selling Agent',
     keyRef: 'Foxtons Mayfair Ref #FX-402',
@@ -151,10 +161,20 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
   });
 
   useEffect(() => {
-    if (surveyorList.length > 0 && (!formData.surveyorId || !surveyorList.some((s) => s.id === formData.surveyorId))) {
-      setFormData((prev) => ({ ...prev, surveyorId: surveyorList[0].id }));
+    if (isOpen) {
+      setFormData((prev) => {
+        const targetSurveyorId =
+          (surveyorList.length > 0 && (!prev.surveyorId || !surveyorList.some((s) => s.id === prev.surveyorId)))
+            ? surveyorList[0].id
+            : (prev.surveyorId || surveyorList[0]?.id || 'srv-1');
+        return {
+          ...prev,
+          date: initialDate || prev.date || todayUK,
+          surveyorId: targetSurveyorId,
+        };
+      });
     }
-  }, [surveyorList]);
+  }, [isOpen, initialDate, surveyorList, todayUK]);
 
   // Click outside to close customer autocomplete dropdown
   useEffect(() => {
@@ -180,13 +200,19 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
 
   // Conflict / Double-Booking Check
   const selectedSurveyor = surveyorList.find((s) => s.id === formData.surveyorId) || surveyorList[0];
-  const conflictJob = jobs.find(
-    (j) =>
-      j.surveyorId === formData.surveyorId &&
-      j.date === formData.date &&
-      j.status !== 'Cancelled' &&
-      (j.timeSlot === formData.timeSlot || j.timeSlot?.split(' - ')[0] === formData.timeSlot?.split(' - ')[0])
-  );
+  const normFormDate = normalizeToUKDate(formData.date);
+  const conflictJob = jobs.find((j) => {
+    if (!j || j.status === 'Cancelled') return false;
+    const sameSurveyor =
+      String(j.surveyorId).replace(/^srv-/, '') === String(formData.surveyorId).replace(/^srv-/, '') ||
+      (j.surveyor && selectedSurveyor?.name && j.surveyor.toLowerCase() === selectedSurveyor.name.toLowerCase());
+    const jobDate = normalizeToUKDate(j.date || j.inspectionDate);
+    const sameDate = jobDate && normFormDate && jobDate === normFormDate;
+    const sameTime =
+      j.timeSlot === formData.timeSlot ||
+      (j.timeSlot && formData.timeSlot && j.timeSlot.split(' - ')[0].trim() === formData.timeSlot.split(' - ')[0].trim());
+    return sameSurveyor && sameDate && sameTime;
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -250,6 +276,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
     }
 
     const canBook = formData.termsSigned && formData.paymentReceived;
+    const cleanDate = normalizeToUKDate(formData.date) || formData.date;
 
     const newJob = {
       id: `JOB-2026-${Math.floor(100 + Math.random() * 899)}`,
@@ -260,10 +287,12 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit }) => {
       surveyType: formData.surveyType,
       property: formData.property.trim(),
       location: formData.location.trim(),
-      surveyor: selectedSurveyor.name,
-      surveyorId: selectedSurveyor.id,
-      date: formData.date,
+      surveyor: selectedSurveyor ? selectedSurveyor.name : (surveyorList[0]?.name || 'test surveyor'),
+      surveyorId: selectedSurveyor ? selectedSurveyor.id : (surveyorList[0]?.id || 'srv-1'),
+      date: cleanDate,
+      inspectionDate: cleanDate,
       timeSlot: formData.timeSlot,
+      inspectionTime: formData.timeSlot,
       status: canBook ? 'Scheduled' : 'On Hold',
       progress: canBook ? 30 : 15,
       termsStatus: formData.termsSigned ? 'Signed' : 'Pending',

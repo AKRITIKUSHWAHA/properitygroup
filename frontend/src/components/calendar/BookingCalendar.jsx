@@ -19,7 +19,7 @@ import {
   Check,
   Sparkles
 } from 'lucide-react';
-import { SURVEYORS, useJobs } from '../../mock/jobs';
+import { SURVEYORS, useJobs, normalizeToUKDate } from '../../mock/jobs';
 import { adminSurveyorsApi } from '../../api/adminApi';
 import { NewBookingModal } from './NewBookingModal';
 import { RescheduleModal } from '../crm/RescheduleModal';
@@ -94,24 +94,7 @@ export const BookingCalendar = () => {
     const tasks = [];
     (jobs || []).forEach((j) => {
       if (!j) return;
-      let formattedDate = '';
-      if (j.date && j.date.includes('/')) {
-        formattedDate = j.date.split(',')[0].trim();
-      } else if (j.date && j.date.includes('-')) {
-        try {
-          const parts = j.date.split('T')[0].split('-');
-          if (parts.length === 3) {
-            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-          }
-        } catch {}
-      } else if (j.inspectionDate) {
-        try {
-          const parts = j.inspectionDate.split('T')[0].split('-');
-          if (parts.length === 3) {
-            formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-          }
-        } catch {}
-      }
+      const formattedDate = normalizeToUKDate(j.date || j.inspectionDate);
 
       if (formattedDate) {
         tasks.push({
@@ -122,6 +105,7 @@ export const BookingCalendar = () => {
           subtitle: `Client: ${j.customer || j.clientName || 'Client'} • Surveyor: ${j.surveyor || 'Assigned'}`,
           type: 'inspection',
           color: 'bg-[#2563EB] text-white',
+          surveyorId: j.surveyorId,
           job: j,
         });
 
@@ -134,6 +118,7 @@ export const BookingCalendar = () => {
             subtitle: `RICS Compliance • Status: ${j.status || 'Active'}`,
             type: 'report',
             color: 'bg-[#6D28D9] text-white',
+            surveyorId: j.surveyorId,
             job: j,
           });
         }
@@ -189,18 +174,53 @@ export const BookingCalendar = () => {
 
   // Filter jobs by selected surveyors
   const visibleJobs = useMemo(() => {
-    return jobs.filter((j) => selectedSurveyorIds.includes(j.surveyorId));
+    return jobs.filter((j) => {
+      if (!j) return false;
+      if (!j.surveyorId) return true;
+      const cleanJSurveyorId = String(j.surveyorId).replace(/^srv-/, '');
+      return selectedSurveyorIds.some((id) => {
+        const cleanId = String(id).replace(/^srv-/, '');
+        return cleanId === cleanJSurveyorId || id === j.surveyorId;
+      });
+    });
   }, [jobs, selectedSurveyorIds]);
 
   // Handle new booking submission
   const handleAddBooking = (newJob) => {
     addJob(newJob);
+
+    // Ensure the assigned surveyor is checked/visible so the slot immediately renders
+    if (newJob.surveyorId) {
+      setSelectedSurveyorIds((prev) => {
+        const hasIt = prev.some(
+          (id) => String(id).replace(/^srv-/, '') === String(newJob.surveyorId).replace(/^srv-/, '') || id === newJob.surveyorId
+        );
+        return hasIt ? prev : [...prev, newJob.surveyorId];
+      });
+    }
+
+    // Automatically navigate calendar to the booked date so the user sees it immediately
+    const bookedDate = normalizeToUKDate(newJob.date || newJob.inspectionDate);
+    if (bookedDate) {
+      setSelectedMonthDate(bookedDate);
+      setSelectedDayDate(bookedDate);
+
+      // If booked date is in a different month, adjust monthOffset
+      const parts = bookedDate.split('/');
+      if (parts.length === 3) {
+        const bookedYear = parseInt(parts[2], 10);
+        const bookedMonth = parseInt(parts[1], 10) - 1; // 0-indexed
+        const diffMonths = (bookedYear - today.getFullYear()) * 12 + (bookedMonth - today.getMonth());
+        setMonthOffset(diffMonths);
+      }
+    }
+
     addToast({
       type: newJob.canBook ? 'success' : 'info',
       title: 'Booking Created',
       message: newJob.canBook
-        ? `Inspection confirmed for ${newJob.customer} with ${newJob.surveyor}.`
-        : `Booking slot held for ${newJob.customer}. Waiting for terms and payment clearance.`,
+        ? `Inspection confirmed for ${newJob.customer} with ${newJob.surveyor} on ${newJob.date}.`
+        : `Booking slot held for ${newJob.customer} on ${newJob.date}. Waiting for terms and payment clearance.`,
     });
   };
 
@@ -514,7 +534,7 @@ export const BookingCalendar = () => {
           {viewMode === 'week' && (
             <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
               {currentWeekDays.map((day) => {
-                const dayJobs = visibleJobs.filter((j) => j.date === day.date);
+                const dayJobs = visibleJobs.filter((j) => normalizeToUKDate(j.date || j.inspectionDate) === day.date);
 
                 return (
                   <div
@@ -539,7 +559,7 @@ export const BookingCalendar = () => {
 
                     <div className="mt-2.5 space-y-2.5 flex-1 overflow-y-auto">
                       {dayJobs.map((job) => {
-                        const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId);
+                        const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId || String(s.id).replace(/^srv-/, '') === String(job.surveyorId).replace(/^srv-/, ''));
                         const isWaiting = !job.canBook || job.termsStatus !== 'Signed' || job.paymentStatus !== 'Paid';
 
                         return (
@@ -589,16 +609,16 @@ export const BookingCalendar = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-[#2563EB] bg-blue-50 px-3 py-1 rounded-xl">
-                    {visibleJobs.filter((j) => j.date === selectedDayDate).length} Inspections
+                    {visibleJobs.filter((j) => normalizeToUKDate(j.date || j.inspectionDate) === selectedDayDate).length} Inspections
                   </span>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {visibleJobs
-                  .filter((j) => j.date === selectedDayDate)
+                  .filter((j) => normalizeToUKDate(j.date || j.inspectionDate) === selectedDayDate)
                   .map((job) => {
-                    const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId);
+                    const surveyorObj = surveyorList.find((s) => s.id === job.surveyorId || String(s.id).replace(/^srv-/, '') === String(job.surveyorId).replace(/^srv-/, ''));
                     return (
                       <div
                         key={job.id}
@@ -627,6 +647,19 @@ export const BookingCalendar = () => {
                       </div>
                     );
                   })}
+
+                {visibleJobs.filter((j) => normalizeToUKDate(j.date || j.inspectionDate) === selectedDayDate).length === 0 && (
+                  <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-slate-100">
+                    <p className="text-xs font-medium">No inspections scheduled for {selectedDayDate}.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewModalOpen(true)}
+                      className="mt-2 text-xs font-bold text-[#0284C7] hover:underline cursor-pointer"
+                    >
+                      + Book Inspection Slot
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -790,6 +823,8 @@ export const BookingCalendar = () => {
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onSubmit={handleAddBooking}
+        surveyors={surveyorList}
+        initialDate={selectedMonthDate || todayFormatted}
       />
 
       {/* New Task Modal */}
@@ -986,6 +1021,7 @@ export const BookingCalendar = () => {
           isOpen={isRescheduleModalOpen}
           onClose={() => setIsRescheduleModalOpen(false)}
           job={selectedEvent}
+          activeSurveyors={surveyorList}
           onRescheduled={(updated) => {
             setJobs((prev) =>
               prev.map((j) => {
