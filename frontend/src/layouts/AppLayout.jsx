@@ -21,41 +21,43 @@ export const AppLayout = () => {
     location.pathname.startsWith('/customer/messages');
 
   return (
-    <div
-      className={
-        isMessagesPage
-          ? 'h-screen max-h-screen overflow-hidden bg-[#D5DAE2] flex flex-col antialiased'
-          : 'min-h-screen bg-[#D5DAE2] flex flex-col antialiased'
-      }
-    >
-      {/* Sidebar: Mobile off-canvas drawer / Tablet icon rail (64px) / Desktop 240px */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* Main Content Area */}
+    <ErrorBoundary locationKey={location.pathname}>
       <div
-        className={`flex-1 flex flex-col md:pl-16 xl:pl-[260px] min-w-0 transition-all duration-300 ${
-          isMessagesPage ? 'h-full max-h-screen overflow-hidden' : ''
-        }`}
+        className={
+          isMessagesPage
+            ? 'h-screen max-h-screen overflow-hidden bg-[#D5DAE2] flex flex-col antialiased'
+            : 'min-h-screen bg-[#D5DAE2] flex flex-col antialiased'
+        }
       >
-        {/* Sticky Top Bar */}
-        <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+        {/* Sidebar: Mobile off-canvas drawer / Tablet icon rail (64px) / Desktop 240px */}
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        {/* Dynamic Page Content */}
-        <main
-          className={
-            isMessagesPage
-              ? 'flex-1 min-h-0 p-2 sm:p-3 lg:p-3.5 max-w-7xl w-full mx-auto flex flex-col overflow-hidden'
-              : 'flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8'
-          }
+        {/* Main Content Area */}
+        <div
+          className={`flex-1 flex flex-col md:pl-16 xl:pl-[260px] min-w-0 transition-all duration-300 ${
+            isMessagesPage ? 'h-full max-h-screen overflow-hidden' : ''
+          }`}
         >
-          <ErrorBoundary key={location.pathname} locationKey={location.pathname}>
-            <Outlet />
-          </ErrorBoundary>
-        </main>
-      </div>
+          {/* Sticky Top Bar */}
+          <TopBar onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
 
-      {/* Mobile Bottom Tab Bar (visible below md) */}
-      {!isMessagesPage && <BottomTabBar onOpenMore={() => setSidebarOpen(true)} />}
-    </div>
+          {/* Dynamic Page Content */}
+          <main
+            className={
+              isMessagesPage
+                ? 'flex-1 min-h-0 p-2 sm:p-3 lg:p-3.5 max-w-7xl w-full mx-auto flex flex-col overflow-hidden'
+                : 'flex-1 p-3.5 sm:p-5 lg:p-6 xl:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-8'
+            }
+          >
+            <ErrorBoundary key={location.pathname} locationKey={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
+          </main>
+        </div>
+
+        {/* Mobile Bottom Tab Bar (visible below md) */}
+        {!isMessagesPage && <BottomTabBar onOpenMore={() => setSidebarOpen(true)} />}
+      </div>
+    </ErrorBoundary>
   );
 };

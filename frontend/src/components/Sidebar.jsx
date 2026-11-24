@@ -91,7 +91,11 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const [quoteAcceptedTick, setQuoteAcceptedTick] = useState(0);
   useEffect(() => {
-    const handleQuoteStatusChange = () => setQuoteAcceptedTick((t) => t + 1);
+    const handleQuoteStatusChange = () => {
+      setTimeout(() => {
+        setQuoteAcceptedTick((t) => t + 1);
+      }, 0);
+    };
     window.addEventListener('propertygroup_jobs_updated', handleQuoteStatusChange);
     window.addEventListener('propertygroup_quote_accepted', handleQuoteStatusChange);
     window.addEventListener('storage', handleQuoteStatusChange);

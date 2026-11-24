@@ -33,51 +33,42 @@ import {
  * Shared single source of truth for RICS 10-Stage calculation across all pages
  */
 export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
+  if (!job) return 1;
+
   const jobRef = (job?.jobNo || job?.id || job?.reference || '').toString().trim();
   const cleanRef = jobRef.replace(/[^a-zA-Z0-9_-]/g, '');
   const digitsRef = jobRef.replace(/[^0-9]/g, '');
 
-  const isDeliveredLocal =
-    Boolean((userEmail && localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true') ||
-    (jobRef && localStorage.getItem(`propertygroup_delivered_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true'));
-
-  const isQALocal =
-    Boolean((userEmail && localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true') ||
-    (jobRef && localStorage.getItem(`propertygroup_qareview_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_qareview_${cleanRef}`) === 'true') ||
-    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true'));
-
-  const isDraftingLocal =
-    Boolean((userEmail && localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true') ||
-    (jobRef && localStorage.getItem(`propertygroup_drafting_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true'));
-
-  const isInspectedLocal =
-    Boolean((userEmail && localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true') ||
-    (jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true'));
-
-  const status = (job?.status || '').toLowerCase().trim();
-  const stage = (job?.stage || '').toUpperCase().trim();
-  const termsStatus = (job?.termsStatus || '').toLowerCase().trim();
-  const paymentStatus = (job?.paymentStatus || '').toLowerCase().trim();
+  const status = String(job?.status || '').toLowerCase().trim();
+  const stage = String(job?.stage || '').toUpperCase().trim();
+  const termsStatus = String(job?.termsStatus || '').toLowerCase().trim();
+  const paymentStatus = String(job?.paymentStatus || '').toLowerCase().trim();
   const step = Number(job?.timelineStep) || 0;
 
-  const apiStep = Number(apiTracking?.currentStep || apiTracking?.timelineStep || job?.timelineStep) || 0;
+  const apiStep = Number(apiTracking?.currentStep || apiTracking?.timelineStep || 0);
   const apiStage = String(
     apiTracking?.currentStage ||
     apiTracking?.stage ||
     apiTracking?.job?.stage ||
-    job?.stage ||
     ''
   ).toUpperCase().trim();
-  const isApiSigned = Boolean(apiTracking?.signed || apiTracking?.isSigned);
 
-  const hasDate = Boolean(job?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(job.date.toLowerCase().trim()));
-  const hasSurveyor = Boolean(job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(job.surveyor.toLowerCase().trim()));
+  // STRICT RULE 1: Fresh Enquiry / New Instruction ALWAYS starts at Step 1!
+  if (
+    status === 'enquiry' ||
+    stage === 'ENQUIRY' ||
+    status === 'new' ||
+    stage === 'NEW' ||
+    job?.isNewInstruction ||
+    (!job?.quote && termsStatus !== 'signed' && paymentStatus !== 'paid' && status !== 'accepted' && stage !== 'ACCEPTED')
+  ) {
+    return 1;
+  }
 
   // 10. Completed / Delivered
+  const isDeliveredLocal =
+    Boolean((jobRef && localStorage.getItem(`propertygroup_delivered_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true'));
   if (
     status === 'completed' || status === 'delivered' ||
     stage === 'COMPLETE' || stage === 'COMPLETED' ||
@@ -88,16 +79,22 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   }
 
   // 9. QA Review
+  const isQALocal =
+    Boolean((jobRef && localStorage.getItem(`propertygroup_qareview_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_qareview_${cleanRef}`) === 'true') ||
+    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true'));
   if (
     status === 'qa_review' || status === 'qa review' ||
     stage === 'QA_REVIEW' || apiStage === 'QA_REVIEW' ||
-    step === 9 || apiStep === 9 || isQALocal ||
-    ((stage === 'PREPARING_REPORT' || apiStage === 'PREPARING_REPORT') && (isQALocal || status === 'qa_review' || step >= 9 || apiStep >= 9))
+    step === 9 || apiStep === 9 || isQALocal
   ) {
     return 9;
   }
 
   // 8. Drafting / Preparing Report
+  const isDraftingLocal =
+    Boolean((jobRef && localStorage.getItem(`propertygroup_drafting_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true'));
   if (
     status === 'drafting' || status === 'preparing report' ||
     stage === 'PREPARING_REPORT' || stage === 'DRAFTING' ||
@@ -108,6 +105,9 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   }
 
   // 7. Inspection Completed
+  const isInspectedLocal =
+    Boolean((jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true'));
   if (
     status === 'inspected' ||
     stage === 'INSPECTED' || apiStage === 'INSPECTED' ||
@@ -121,14 +121,12 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
     status === 'booked' || status === 'scheduled' ||
     stage === 'BOOKED' || stage === 'SCHEDULED' ||
     apiStage === 'BOOKED' || apiStage === 'SCHEDULED' ||
-    step === 6 || apiStep === 6 ||
-    (hasDate && (paymentStatus === 'paid' || paymentStatus.includes('claimed') || termsStatus === 'signed')) ||
-    (hasSurveyor && (paymentStatus === 'paid' || paymentStatus.includes('claimed')))
+    step === 6 || apiStep === 6
   ) {
     return 6;
   }
 
-  // 5. Payment Confirmed / Verification Pending
+  // 5. Payment Confirmed
   if (
     paymentStatus === 'paid' || paymentStatus.includes('claimed') ||
     stage === 'PAID' || apiStage === 'PAID' ||
@@ -141,7 +139,6 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   if (
     termsStatus === 'signed' ||
     stage === 'SIGNED' || apiStage === 'SIGNED' ||
-    isApiSigned ||
     step === 4 || apiStep === 4
   ) {
     return 4;
@@ -166,20 +163,15 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
     return 2;
   }
 
-  // 1. Enquiry
-  if (step === 1 || apiStep === 1 || status === 'enquiry' || stage === 'ENQUIRY' || apiStage === 'ENQUIRY') {
-    return 1;
-  }
-
-  if (step > 0) return Math.min(10, Math.max(1, step));
-  if (apiStep > 0) return Math.min(10, Math.max(1, apiStep));
+  // Default fallback: 1 (Enquiry)
   return 1;
 };
 
 export const getSurveyStages = (job) => {
   const property = job?.property || 'the property';
-  const surveyor = (job?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(String(job.surveyor).toLowerCase().trim()))
-    ? job.surveyor
+  const surveyorVal = typeof job?.surveyor === 'object' ? (job?.surveyor?.name || '') : String(job?.surveyor || '');
+  const surveyor = (surveyorVal && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(surveyorVal.toLowerCase().trim()))
+    ? surveyorVal
     : 'Assigned Chartered Surveyor';
   const fee = job?.quote?.baseFee ? `£${job.quote.baseFee.toFixed(2)} (+VAT)` : 'agreed fee';
 

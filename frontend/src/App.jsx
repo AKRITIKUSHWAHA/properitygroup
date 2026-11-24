@@ -121,7 +121,7 @@ const PortalRedirect = () => {
 function AppRoutes() {
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v12_real_db';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v14_step1_isolated';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',
@@ -134,6 +134,10 @@ function AppRoutes() {
         'propertygroup_drafting',
         'propertygroup_qareview',
         'propertygroup_delivered',
+        'propertygroup_payment_paid',
+        'propertygroup_payment_claimed',
+        'propertygroup_terms_signed',
+        'propertygroup_quote_accepted',
         'njs_fresh_agreements_v3',
         'njs_clean_terms_v4',
         'propertygroup_deleted_user_keys',
@@ -151,7 +155,14 @@ function AppRoutes() {
           const k = localStorage.key(i);
           if (
             k &&
-            (k.includes('astp750') ||
+            (k.includes('payment_claimed') ||
+              k.includes('terms_signed') ||
+              k.includes('quote_accepted') ||
+              k.includes('delivered_') ||
+              k.includes('inspection_completed_') ||
+              k.includes('drafting_') ||
+              k.includes('qareview_') ||
+              k.includes('astp750') ||
               k.includes('7062') ||
               k.includes('registered_customers') ||
               k.includes('crm_leads') ||
@@ -159,7 +170,6 @@ function AppRoutes() {
               k.includes('7289') ||
               k.includes('6173') ||
               k.includes('7681') ||
-              k.includes('Aashi') ||
               k.includes('dd@gmail'))
           ) {
             localStorage.removeItem(k);
@@ -168,10 +178,12 @@ function AppRoutes() {
       } catch {}
       try {
         localStorage.setItem(WIPE_KEY, 'true');
-        window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-        window.dispatchEvent(new Event('propertygroup_leads_updated'));
-        window.dispatchEvent(new Event('propertygroup_users_updated'));
-        window.dispatchEvent(new Event('propertygroup_agreements_updated'));
+        setTimeout(() => {
+          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          window.dispatchEvent(new Event('propertygroup_leads_updated'));
+          window.dispatchEvent(new Event('propertygroup_users_updated'));
+          window.dispatchEvent(new Event('propertygroup_agreements_updated'));
+        }, 0);
       } catch {}
     }
   }, []);

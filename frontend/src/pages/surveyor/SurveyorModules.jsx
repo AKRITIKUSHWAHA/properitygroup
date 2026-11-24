@@ -759,8 +759,8 @@ export const SurveyorJobsPage = () => {
   useEffect(() => {
     if (viewJobId) {
       const found =
-        myJobs.find((j) => (j.jobNo || j.id || '').toLowerCase() === viewJobId.toLowerCase()) ||
-        jobs.find((j) => (j.jobNo || j.id || '').toLowerCase() === viewJobId.toLowerCase());
+        myJobs.find((j) => String(j.jobNo || j.id || '').toLowerCase() === String(viewJobId).toLowerCase()) ||
+        jobs.find((j) => String(j.jobNo || j.id || '').toLowerCase() === String(viewJobId).toLowerCase());
       if (found) {
         setViewingJob(found);
       }
@@ -1074,6 +1074,7 @@ export const SurveyorJobsPage = () => {
 // 3. SURVEYOR SITE VISITS PAGE (Checklist & Access)
 // ==========================================
 export const SurveyorSiteVisitsPage = () => {
+  const navigate = useNavigate();
   const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs, updateJob } = useJobs();

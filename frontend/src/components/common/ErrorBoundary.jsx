@@ -30,6 +30,7 @@ export class ErrorBoundary extends React.Component {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
       if (path.startsWith('/surveyor')) return '/surveyor/my-calendar';
+      if (path.startsWith('/customer')) return '/customer/my-dashboard';
       if (path.startsWith('/admin') || path.startsWith('/staff')) return '/admin/dashboard';
     }
     return '/';

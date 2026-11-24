@@ -77,9 +77,8 @@ const isJobDelivered = (j, uEmail) => {
   const email = (j.customerEmail || uEmail || '').toLowerCase().trim();
 
   const isDeliveredFlag =
-    (email && localStorage.getItem(`propertygroup_delivered_${email}`) === 'true') ||
-    (jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
-    (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true');
+    Boolean((jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
+    (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true'));
 
   return (
     s === 'completed' ||
@@ -115,12 +114,13 @@ export const CustomerDashboardPage = () => {
         let changed = false;
         const cleaned = stored.map((j) => {
           const isEnquiry = j.status === 'Enquiry' || j.stage === 'enquiry' || j.stage === 'ENQUIRY' || j.isNewInstruction || !j.quote;
-          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 2 || j.termsStatus === 'Signed')) {
+          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 1 || j.termsStatus === 'Signed' || j.status === 'Accepted' || j.stage === 'accepted')) {
             changed = true;
             return {
               ...j,
               paymentStatus: 'Pending',
               termsStatus: 'Pending',
+              quoteStatus: 'Pending',
               timelineStep: 1,
               stage: 'enquiry',
               status: 'Enquiry',
@@ -130,7 +130,9 @@ export const CustomerDashboardPage = () => {
         });
         if (changed) {
           localStorage.setItem('propertygroup_jobs', JSON.stringify(cleaned));
-          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          setTimeout(() => {
+            window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          }, 0);
         }
       }
     } catch {}
@@ -224,7 +226,9 @@ export const CustomerDashboardPage = () => {
             storedJobs.unshift(syncedData);
           }
           localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
-          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          setTimeout(() => {
+            window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          }, 0);
           if (updateJob && idx >= 0) {
             updateJob(storedJobs[idx].id, syncedData);
           }
@@ -261,20 +265,42 @@ export const CustomerDashboardPage = () => {
     property: baseJob?.property || apiActiveJob?.propertyAddress || apiActiveJob?.property || 'Subject Property',
     propertyAddress: baseJob?.propertyAddress || apiActiveJob?.propertyAddress || baseJob?.property || 'Subject Property',
     surveyType: baseJob?.surveyType || apiActiveJob?.serviceType || 'RICS Level 2 Home Survey',
-    surveyor: (baseJob?.surveyor && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(baseJob.surveyor.toLowerCase().trim()))
-      ? baseJob.surveyor
-      : (apiActiveJob?.surveyor?.name || apiActiveJob?.surveyor || 'Pending Allocation'),
-    date: (baseJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(baseJob.date.toLowerCase().trim()))
-      ? baseJob.date
-      : (apiActiveJob?.inspectionDate ? new Date(apiActiveJob.inspectionDate).toLocaleDateString('en-GB') : (baseJob?.date || 'Date: TBD')),
-    timeSlot: baseJob?.timeSlot && !['time: tbd', ''].includes(baseJob.timeSlot.toLowerCase().trim())
-      ? baseJob.timeSlot
-      : (apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD'),
-    timelineStep: Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
-    status: isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry')))))),
-    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY')),
-    paymentStatus: isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending'),
-    termsStatus: (apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4 || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending',
+    surveyor: (() => {
+      const sVal = typeof baseJob?.surveyor === 'object' ? (baseJob?.surveyor?.name || '') : String(baseJob?.surveyor || '');
+      if (sVal && !['pending allocation', 'unassigned', 'tbd', 'none', ''].includes(sVal.toLowerCase().trim())) {
+        return sVal;
+      }
+      return apiActiveJob?.surveyor?.name || (typeof apiActiveJob?.surveyor === 'string' ? apiActiveJob.surveyor : 'Pending Allocation');
+    })(),
+    date: (() => {
+      const dVal = String(baseJob?.date || '').toLowerCase().trim();
+      if (dVal && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(dVal)) {
+        return baseJob.date;
+      }
+      return apiActiveJob?.inspectionDate ? new Date(apiActiveJob.inspectionDate).toLocaleDateString('en-GB') : (baseJob?.date || 'Date: TBD');
+    })(),
+    timeSlot: (() => {
+      const tVal = String(baseJob?.timeSlot || '').toLowerCase().trim();
+      if (tVal && !['time: tbd', ''].includes(tVal)) {
+        return baseJob.timeSlot;
+      }
+      return apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD';
+    })(),
+    timelineStep: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
+      ? 1
+      : Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
+    status: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
+      ? 'Enquiry'
+      : (isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry'))))))),
+    stage: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
+      ? 'ENQUIRY'
+      : (apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY'))),
+    paymentStatus: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
+      ? 'Pending'
+      : (isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending')),
+    termsStatus: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
+      ? 'Pending'
+      : ((apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4 || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending'),
   } : null;
 
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
@@ -899,7 +925,7 @@ export const CustomerDashboardPage = () => {
       )}
 
       {/* Stage 4 Prompt Banner: Terms Signed & Advance Bank Transfer Pending */}
-      {!isDeliveredActive && customerJob?.termsStatus === 'Signed' && customerJob?.paymentStatus !== 'Paid' && !customerJob?.paymentStatus?.toLowerCase().includes('claimed') && (
+      {!isDeliveredActive && customerJob?.termsStatus === 'Signed' && customerJob?.paymentStatus !== 'Paid' && !String(customerJob?.paymentStatus || '').toLowerCase().includes('claimed') && (
         <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50/90 via-blue-50/50 to-slate-50 border border-indigo-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="p-2.5 rounded-2xl bg-indigo-600 text-white shrink-0 shadow-2xs">

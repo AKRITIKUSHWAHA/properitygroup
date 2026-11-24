@@ -370,11 +370,10 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
   // 4. Update Jobs Storage: mark stage as Accepted / quoteStatus: Accepted
   try {
     const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    const targetId = String(quoteOrJob.id || quoteOrJob.jobNo || quoteOrJob.refNo || '').toUpperCase().trim();
     const updatedJobs = storedJobs.map((j) => {
-      const match =
-        j.id === quoteOrJob.id ||
-        j.jobNo === quoteOrJob.id ||
-        (j.customerEmail && j.customerEmail.toLowerCase().trim() === clientEmail);
+      const jId = String(j.id || j.jobNo || '').toUpperCase().trim();
+      const match = targetId && jId && (jId === targetId || jId.replace('JOB-', '') === targetId.replace('JOB-', '').replace('QUO-', ''));
       if (match) {
         return {
           ...j,
@@ -388,7 +387,9 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
       return j;
     });
     localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
-    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    setTimeout(() => {
+      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    }, 0);
   } catch (err) {
     console.warn('Error updating jobs storage on acceptance', err);
   }

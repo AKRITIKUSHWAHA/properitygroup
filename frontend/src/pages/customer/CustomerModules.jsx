@@ -3918,12 +3918,20 @@ export const CustomerTrackSurveyPage = () => {
           timelineStep: currentStep,
           termsStatus: termsSigned ? 'Signed' : 'Pending',
           paymentStatus: paymentSettled ? 'Paid' : (myJob?.paymentStatus || 'Pending'),
-          date: myJob?.date && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(myJob.date.toLowerCase().trim())
-            ? myJob.date
-            : (apiTracking?.inspectionDate ? new Date(apiTracking.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD'),
-          timeSlot: myJob?.timeSlot && !['time: tbd', ''].includes(myJob.timeSlot.toLowerCase().trim())
-            ? myJob.timeSlot
-            : (apiTracking?.inspectionTime || 'Time: TBD'),
+          date: (() => {
+            const dStr = String(myJob?.date || '').toLowerCase().trim();
+            if (dStr && !['date: tbd', 'pending scheduling', 'tbd', ''].includes(dStr)) {
+              return myJob.date;
+            }
+            return apiTracking?.inspectionDate ? new Date(apiTracking.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD';
+          })(),
+          timeSlot: (() => {
+            const tStr = String(myJob?.timeSlot || '').toLowerCase().trim();
+            if (tStr && !['time: tbd', ''].includes(tStr)) {
+              return myJob.timeSlot;
+            }
+            return apiTracking?.inspectionTime || 'Time: TBD';
+          })(),
         }}
       />
 

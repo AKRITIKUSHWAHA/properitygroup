@@ -37,7 +37,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
     notes: '',
   });
 
-  const [autoDispatchQuote, setAutoDispatchQuote] = useState(true);
+  const [autoDispatchQuote, setAutoDispatchQuote] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -81,7 +81,11 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
       property: formData.property.trim(),
       location: formData.location.trim(),
       source: formData.source,
-      status: autoDispatchQuote ? 'Quoted' : formData.status,
+      status: autoDispatchQuote ? 'Quoted' : 'New',
+      stage: autoDispatchQuote ? 'QUOTED' : 'NEW',
+      timelineStep: autoDispatchQuote ? 2 : 1,
+      termsStatus: 'Pending',
+      paymentStatus: 'Pending',
       created: formattedDate,
       owner: formData.owner,
       estimatedValue: formattedValue,

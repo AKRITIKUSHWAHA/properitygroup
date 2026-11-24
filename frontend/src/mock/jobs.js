@@ -180,16 +180,26 @@ export const getStoredJobs = () => {
             updatedJob.surveyorEmail = updatedJob.surveyorEmail || 'surveyor@njspropertygroup.com';
           }
           const isEnquiry = updatedJob.status === 'Enquiry' || updatedJob.stage === 'enquiry' || updatedJob.stage === 'ENQUIRY' || updatedJob.isNewInstruction || !updatedJob.quote;
-          if (isEnquiry && (updatedJob.paymentStatus === 'Claimed (Verification Pending)' || (updatedJob.timelineStep || 0) > 2 || updatedJob.termsStatus === 'Signed')) {
-            needsResave = true;
-            return {
-              ...updatedJob,
-              paymentStatus: 'Pending',
-              termsStatus: 'Pending',
-              timelineStep: 1,
-              stage: 'enquiry',
-              status: 'Enquiry',
-            };
+          if (isEnquiry) {
+            if (
+              updatedJob.timelineStep !== 1 ||
+              updatedJob.status !== 'Enquiry' ||
+              updatedJob.stage !== 'enquiry' ||
+              updatedJob.termsStatus !== 'Pending' ||
+              updatedJob.paymentStatus !== 'Pending' ||
+              updatedJob.quoteStatus === 'Accepted'
+            ) {
+              needsResave = true;
+              return {
+                ...updatedJob,
+                paymentStatus: 'Pending',
+                termsStatus: 'Pending',
+                quoteStatus: 'Pending',
+                timelineStep: 1,
+                stage: 'enquiry',
+                status: 'Enquiry',
+              };
+            }
           }
           return updatedJob;
         });
@@ -230,9 +240,6 @@ export const getStoredJobs = () => {
             !email.includes('kensingtonestates') &&
             !email.includes('akku') &&
             !name.includes('akku') &&
-            name !== 'aashi saket' &&
-            name !== 'dd' &&
-            name !== 'test k' &&
             !addr.includes('mp nagar') &&
             !addr.includes('bhopal') &&
             !addr.includes('plot no 45') &&
@@ -268,7 +275,9 @@ export const saveStoredJobs = (jobs) => {
       return;
     }
     localStorage.setItem('propertygroup_jobs', serialized);
-    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    setTimeout(() => {
+      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+    }, 0);
   } catch (e) {
     console.error(e);
   }
@@ -292,7 +301,15 @@ export const useJobs = () => {
   const setJobs = useCallback((updater) => {
     setJobsState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      saveStoredJobs(next);
+      try {
+        const serialized = JSON.stringify(next);
+        if (localStorage.getItem('propertygroup_jobs') !== serialized) {
+          localStorage.setItem('propertygroup_jobs', serialized);
+          setTimeout(() => {
+            window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+          }, 0);
+        }
+      } catch {}
       return next;
     });
   }, []);
