@@ -101,16 +101,20 @@ export const SurveyorDashboardPage = () => {
   }, [user]);
 
   // 2. Filter mock jobs strictly matching this surveyor
-  const mockAssignedJobs = jobs.filter((j) =>
-    (surveyorDbId && (j.surveyorId === surveyorDbId || j.surveyorId === `srv-${surveyorDbId}`)) ||
-    (surveyorId && j.surveyorId === surveyorId) ||
-    (surveyorName && j.surveyor === surveyorName) ||
-    (user?.email && j.surveyorEmail === user.email)
-  );
+  const mockAssignedJobs = jobs.filter((j) => {
+    if (!j) return false;
+    const cleanJSrvId = String(j.surveyorId || '').replace(/^srv-/, '');
+    const cleanUserSrvId = String(surveyorDbId || surveyorId || '').replace(/^srv-/, '');
+    const matchesId = cleanUserSrvId && cleanJSrvId === cleanUserSrvId;
+    const matchesName = surveyorName && j.surveyor && j.surveyor.toLowerCase().trim() === surveyorName.toLowerCase().trim();
+    const matchesEmail = user?.email && j.surveyorEmail && j.surveyorEmail.toLowerCase().trim() === user.email.toLowerCase().trim();
+    return matchesId || matchesName || matchesEmail;
+  });
 
   const combinedJobs = liveJobs.length > 0
     ? liveJobs
     : mockAssignedJobs;
+  const myJobs = combinedJobs;
 
   const activeJobs = combinedJobs.filter((j) => j.status !== 'Completed');
   const primaryJob = activeJobs[0] || combinedJobs[0] || null;
@@ -162,6 +166,16 @@ export const SurveyorDashboardPage = () => {
       return [];
     }
   });
+
+  useEffect(() => {
+    if (!primaryJob?.id) return;
+    try {
+      const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
+      if (saved) {
+        setCapturedPhotos(JSON.parse(saved));
+      }
+    } catch {}
+  }, [primaryJob?.id]);
 
   // QA Submission State
   const [isQASubmitted, setIsQASubmitted] = useState(isJobQASubmitted);

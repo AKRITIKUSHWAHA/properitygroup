@@ -89,8 +89,8 @@ export const SurveyorCalendarPage = () => {
 
   const handleCompleteAppointment = async (aptId) => {
     const apt = myJobs.find((j) => j.id === aptId || j.jobNo === aptId);
-    const targetEmail = (apt?.customerEmail || regUser?.email || '').toLowerCase().trim();
-    const customerName = apt?.customer || regUser?.name || 'Valued Client';
+    const targetEmail = (apt?.customerEmail || '').toLowerCase().trim();
+    const customerName = apt?.customer || 'Valued Client';
     const propertyAddr = apt?.property || 'Subject Property, UK';
     const currentSurveyor = user?.name || apt?.surveyor || 'test surveyor';
     const jobRef = apt?.jobNo || apt?.id || aptId;
@@ -1134,8 +1134,8 @@ export const SurveyorUploadReportsPage = () => {
 
   const handleStartDrafting = async () => {
     const activeJobObj = jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) || currentJobObj;
-    const targetEmail = (activeJobObj?.customerEmail || regUser?.email || '').toLowerCase().trim();
-    const customerName = activeJobObj?.customer || regUser?.name || 'Valued Client';
+    const targetEmail = (activeJobObj?.customerEmail || '').toLowerCase().trim();
+    const customerName = activeJobObj?.customer || 'Valued Client';
     const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
     const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
     const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
@@ -1212,9 +1212,9 @@ export const SurveyorUploadReportsPage = () => {
 
   const handleSubmitAllQA = async () => {
     const activeJobObj = jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) || currentJobObj;
-    const rawEmail = activeJobObj?.customerEmail || activeJobObj?.clientEmail || activeJobObj?.email || activeJobObj?.client?.email || regUser?.email || '';
+    const rawEmail = activeJobObj?.customerEmail || activeJobObj?.clientEmail || activeJobObj?.email || activeJobObj?.client?.email || '';
     const targetEmail = (rawEmail || (activeJobObj?.customer === 'test k' || activeJobObj?.client === 'test k' ? 'aashisaket7@gmail.com' : '')).toLowerCase().trim();
-    const customerName = activeJobObj?.customer || activeJobObj?.client || regUser?.name || 'Valued Client';
+    const customerName = activeJobObj?.customer || activeJobObj?.client || 'Valued Client';
     const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
     const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
     const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
