@@ -127,7 +127,13 @@ export const NotificationDropdown = () => {
     if (!silent) setIsLoading(true);
     try {
       const res = await apiRequest('/notifications').catch(() => null);
-      let notifs = res?.notifications || res?.data?.notifications || (Array.isArray(res) ? res : []);
+      const rawNotifs = res?.notifications || res?.data?.notifications || (Array.isArray(res) ? res : []);
+      let notifs = (Array.isArray(rawNotifs) ? rawNotifs : []).map((n) => ({
+        ...n,
+        fromApi: true,
+        userId: n.userId || (isCustomer && cleanCurrentUserId ? cleanCurrentUserId : undefined),
+        recipientEmail: n.recipientEmail || (isCustomer && userEmail ? userEmail : undefined),
+      }));
       
       // Merge with locally stored action notifications so immediate actions are always available
       try {
@@ -171,7 +177,7 @@ export const NotificationDropdown = () => {
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [user?.role]);
+  }, [user?.role, user?.id, userEmail, cleanCurrentUserId, isCustomer, isDemo]);
 
   // Fetch notifications on mount & periodically when document is visible
   useEffect(() => {
@@ -290,10 +296,10 @@ export const NotificationDropdown = () => {
         }
       }
 
-      // 3b. Customer Privacy Boundary: Customer MUST be the specific recipient (by email or userId). Never broadcast unassigned alerts.
+      // 3b. Customer Privacy Boundary: API items are already backend-scoped; local items require explicit recipient match.
       const matchesEmail = Boolean(targetEmail && userEmail && (targetEmail === userEmail || userEmail.includes(targetEmail) || targetEmail.includes(userEmail)));
       const matchesUserId = Boolean(cleanItemUserId && cleanCurrentUserId && cleanItemUserId === cleanCurrentUserId);
-      if (!matchesEmail && !matchesUserId && !isDemo) {
+      if (!item.fromApi && !matchesEmail && !matchesUserId && !isDemo) {
         return false;
       }
 

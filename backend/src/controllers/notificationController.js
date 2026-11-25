@@ -785,6 +785,15 @@ export const getNotifications = async (req, res, next) => {
       console.warn('Unread messages query in notifications notice:', msgErr.message);
     }
 
+    // Attach explicit recipient identity on customer-scoped payloads so frontend privacy filters accept them cleanly
+    if (isCustomer) {
+      formatted = formatted.map((n) => ({
+        ...n,
+        userId: n.userId || user.id,
+        recipientEmail: n.recipientEmail || userEmail || undefined,
+      }));
+    }
+
     // Sort all notifications by timestamp descending so newest real action is always on top
     formatted.sort((a, b) => {
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
