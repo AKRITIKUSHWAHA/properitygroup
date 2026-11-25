@@ -167,8 +167,12 @@ export const createSurveyJob = async (req, res, next) => {
       return ApiResponse.success(res, { job: updatedJob }, 'Existing survey instruction updated without duplication');
     }
 
-    const count = await prisma.job.count();
-    const reference = `JOB-2026-${String(count + 101).padStart(3, '0')}`;
+    const lastJob = await prisma.job.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });
+    let reference = `JOB-2026-${String((lastJob?.id || 0) + 101).padStart(3, '0')}`;
+    const jobRefExists = await prisma.job.findUnique({ where: { reference }, select: { id: true } });
+    if (jobRefExists) {
+      reference = `JOB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
 
     const job = await prisma.job.create({
       data: {
@@ -440,6 +444,9 @@ export const rescheduleSurveyJob = async (req, res, next) => {
     }
 
     if (!job) {
+      if (!id || String(id) === 'undefined' || String(id) === 'null') {
+        throw ApiError.badRequest('Valid job reference or ID is required');
+      }
       let fallbackSurveyorId = null;
       const anySurveyor = await prisma.user.findFirst({ where: { role: 'SURVEYOR' } });
       if (anySurveyor) fallbackSurveyorId = anySurveyor.id;

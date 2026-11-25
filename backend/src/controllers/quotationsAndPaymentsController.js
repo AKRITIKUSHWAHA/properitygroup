@@ -157,10 +157,15 @@ export const createQuote = async (req, res, next) => {
       ? (typeof inclusions === 'string' ? inclusions : JSON.stringify(inclusions))
       : JSON.stringify({ client, clientEmail, clientPhone, property, surveyType, discount: disc });
 
-    // Database persistence with resilient fallback if local MySQL is offline
+    // Database persistence with unique reference generation
     try {
-      const count = await prisma.quote.count();
-      reference = `QTE-2026-${String(count + 101).padStart(3, '0')}`;
+      const lastQuote = await prisma.quote.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });
+      const candidateNum = (lastQuote?.id || 0) + 101;
+      reference = `QTE-2026-${String(candidateNum).padStart(3, '0')}`;
+      const refExists = await prisma.quote.findUnique({ where: { reference }, select: { id: true } });
+      if (refExists) {
+        reference = `QTE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
 
       if (leadId) {
         const numLead = Number(leadId);

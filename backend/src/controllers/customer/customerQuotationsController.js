@@ -370,7 +370,7 @@ export const acceptCustomerQuotation = async (req, res, next) => {
         to: recipientEmail,
         clientName,
         quoteRef,
-        surveyType,
+        surveyType: serviceType,
         propertyAddress,
         totalAmount,
       }).catch((e) => console.warn('[sendQuoteAcceptedEmail] background error:', e.message));
