@@ -327,6 +327,9 @@ export const assignSurveyor = async (req, res, next) => {
     const { surveyorId, inspectionDate, inspectionTime, keyCollectionDetails } = req.body;
     const jobId = parseInt(id);
 
+    const currentJob = await prisma.job.findUnique({ where: { id: jobId } });
+    const nextStage = currentJob && ['QUOTE', 'ACCEPTED', 'PAID'].includes(currentJob.stage) ? 'BOOKED' : currentJob?.stage;
+
     const job = await prisma.job.update({
       where: { id: jobId },
       data: {
@@ -334,6 +337,7 @@ export const assignSurveyor = async (req, res, next) => {
         inspectionDate: inspectionDate ? new Date(inspectionDate) : undefined,
         inspectionTime,
         keyCollectionDetails,
+        ...(nextStage ? { stage: nextStage } : {}),
       },
       include: {
         surveyor: { select: { id: true, name: true, email: true } },
@@ -427,6 +431,14 @@ export const rescheduleSurveyJob = async (req, res, next) => {
         });
       }
     }
+    let parsedDate = undefined;
+    if (inspectionDate) {
+      const d = new Date(inspectionDate);
+      if (!isNaN(d.getTime())) {
+        parsedDate = d;
+      }
+    }
+
     if (!job) {
       let fallbackSurveyorId = null;
       const anySurveyor = await prisma.user.findFirst({ where: { role: 'SURVEYOR' } });
@@ -446,14 +458,6 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           stage: 'BOOKED',
         },
       });
-    }
-
-    let parsedDate = undefined;
-    if (inspectionDate) {
-      const d = new Date(inspectionDate);
-      if (!isNaN(d.getTime())) {
-        parsedDate = d;
-      }
     }
 
     // Validate surveyor ID against database to avoid foreign key violation
@@ -485,7 +489,7 @@ export const rescheduleSurveyJob = async (req, res, next) => {
         inspectionTime: inspectionTime || job.inspectionTime,
         surveyorId: validSurveyorId,
         keyCollectionDetails: keyCollectionDetails !== undefined ? keyCollectionDetails : job.keyCollectionDetails,
-        stage: job.stage === 'QUOTE' ? 'BOOKED' : job.stage,
+        stage: ['QUOTE', 'ACCEPTED', 'PAID'].includes(job.stage) ? 'BOOKED' : job.stage,
       },
       include: {
         surveyor: { select: { id: true, name: true, email: true, phone: true } },

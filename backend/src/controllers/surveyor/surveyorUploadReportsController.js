@@ -66,7 +66,7 @@ export const submitDraftReport = async (req, res, next) => {
       data: {
         reportPdfUrl,
         reportGeneratedAt: new Date(),
-        stage: 'COMPLETED',
+        stage: 'PREPARING_REPORT',
       },
     });
 

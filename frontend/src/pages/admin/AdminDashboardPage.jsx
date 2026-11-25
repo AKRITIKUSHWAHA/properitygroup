@@ -162,9 +162,7 @@ export const AdminDashboardPage = () => {
                 id !== '7' &&
                 id !== '11' &&
                 id !== '12' &&
-                id !== '13' &&
-                id !== 'JOB-2026-101' &&
-                jobNo !== 'JOB-2026-101'
+                id !== '13'
               );
             });
             // Deduplicate multiple entries for identical client instruction

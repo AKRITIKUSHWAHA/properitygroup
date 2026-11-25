@@ -17,8 +17,7 @@ export const getSurveyTracking = async (req, res, next) => {
       where: {
         OR: [
           ...(userId ? [{ clientId: userId }] : []),
-          ...(userEmail ? [{ clientEmail: userEmail }, { clientEmail: { contains: userEmail } }] : []),
-          ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
+          ...(userEmail ? [{ clientEmail: userEmail }] : []),
         ],
       },
       include: {
@@ -32,41 +31,35 @@ export const getSurveyTracking = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!job && (userEmail || userName)) {
+    if (!job && userEmail) {
       try {
         const lead = await prisma.lead.findFirst({
           where: {
-            OR: [
-              ...(userEmail ? [{ clientEmail: userEmail }, { clientEmail: { contains: userEmail } }] : []),
-              ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
-            ],
+            clientEmail: userEmail,
           },
           orderBy: { createdAt: 'desc' },
         });
 
         if (lead) {
           const isQuoted =
-            lead.status === 'QUOTE_SENT' ||
+            ((lead.status === 'QUOTE_SENT' ||
             lead.status === 'QUOTED' ||
-            lead.status === 'CONVERTED' ||
-            Boolean(lead.estimatedValue);
-
-          const steps = [
-            { step: 1, label: 'Quote Proposal Requested', status: 'completed', time: lead.createdAt },
-            { step: 2, label: 'Fee & Inclusions Quoted', status: isQuoted ? 'completed' : 'pending', time: lead.createdAt },
-            { step: 3, label: 'Payment Settled (VAT Receipt)', status: 'pending' },
-            { step: 4, label: 'Terms of Engagement Signed', status: 'pending' },
-            { step: 5, label: 'Chartered Surveyor Allocated', status: 'pending' },
-            { step: 6, label: 'Estate Agent Key Collection', status: 'pending' },
-            { step: 7, label: 'On-Site Inspection Carried Out', status: 'pending' },
-            { step: 8, label: 'Draft Report Compilation', status: 'pending' },
-            { step: 9, label: 'Admin QA & Peer Audit Review', status: 'pending' },
-            { step: 10, label: 'Official RICS Report Released', status: 'pending' },
-          ];
-
-          const completedCount = steps.filter((s) => s.status === 'completed').length;
+            lead.status === 'CONVERTED') && Boolean(lead.estimatedValue && Number(lead.estimatedValue) > 0));
 
           const calculatedStep = lead.status === 'CONVERTED' ? 3 : (isQuoted ? 2 : 1);
+
+          const steps = [
+            { step: 1, label: 'Enquiry Received', status: 'completed', time: lead.createdAt },
+            { step: 2, label: 'Quote Issued', status: calculatedStep >= 2 ? 'completed' : 'pending', time: lead.createdAt },
+            { step: 3, label: 'Quote Accepted', status: calculatedStep >= 3 ? 'completed' : 'pending' },
+            { step: 4, label: 'Terms Signed', status: 'pending' },
+            { step: 5, label: 'Payment Confirmed', status: 'pending' },
+            { step: 6, label: 'Appointment Booked', status: 'pending' },
+            { step: 7, label: 'Inspection Completed', status: 'pending' },
+            { step: 8, label: 'Report Preparation', status: 'pending' },
+            { step: 9, label: 'Quality Check', status: 'pending' },
+            { step: 10, label: 'Report Delivered', status: 'pending' },
+          ];
 
           return ApiResponse.success(res, {
             jobReference: lead.reference,
@@ -76,8 +69,8 @@ export const getSurveyTracking = async (req, res, next) => {
             serviceType: lead.serviceType,
             currentStage: lead.status === 'CONVERTED' ? 'ACCEPTED' : (isQuoted ? 'QUOTE' : 'ENQUIRY'),
             currentStep: calculatedStep,
-            progressPercentage: `${completedCount * 10}%`,
-            progressScore: `${completedCount}/10 Steps Completed`,
+            progressPercentage: `${calculatedStep * 10}%`,
+            progressScore: `${calculatedStep}/10 Steps Completed`,
             steps,
           });
         }
@@ -88,7 +81,7 @@ export const getSurveyTracking = async (req, res, next) => {
       return ApiResponse.success(res, { tracking: null, message: 'No survey job found for your account' });
     }
 
-    const hasPaid = job.invoices.some((inv) => inv.status === 'PAID');
+    const hasPaid = job.invoices.some((inv) => inv.status === 'PAID') || job.stage === 'PAID';
     const hasSigned = job.terms.some((t) => t.signed);
     const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(job.stage);
     const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(job.stage);
@@ -98,28 +91,20 @@ export const getSurveyTracking = async (req, res, next) => {
       Boolean(job.reportPdfUrl) ||
       Boolean(job.reportGeneratedAt) ||
       job.status === 'QA_Review' ||
-      job.auditTimeline?.some((a) => a.action?.includes('QA') || a.details?.toLowerCase().includes('qa') || a.details?.toLowerCase().includes('draft report'));
+      job.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_SUBMITTED_FOR_QA');
 
-    // In RICS lifecycle, once on-site inspection is completed and draft is submitted to QA desk, it is Stage 9
-    const isQA = (job.stage === 'PREPARING_REPORT' && hasDraftSubmitted) || job.stage === 'PREPARING_REPORT';
+    const isDrafting =
+      job.stage === 'DRAFTING' ||
+      job.status === 'Drafting' ||
+      (job.stage === 'PREPARING_REPORT' && job.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_STARTED'));
 
-    const steps = [
-      { step: 1, label: 'Quote Proposal Requested', status: 'completed', time: job.createdAt },
-      { step: 2, label: 'Fee & Inclusions Quoted', status: 'completed', time: job.createdAt },
-      { step: 3, label: 'Payment Settled (VAT Receipt)', status: hasPaid ? 'completed' : 'pending' },
-      { step: 4, label: 'Terms of Engagement Signed', status: hasSigned ? 'completed' : 'pending' },
-      { step: 5, label: 'Chartered Surveyor Allocated', status: isBooked ? 'completed' : 'pending' },
-      { step: 6, label: 'Estate Agent Key Collection', status: isBooked ? 'completed' : 'pending' },
-      { step: 7, label: 'On-Site Inspection Carried Out', status: isInspected ? 'completed' : 'pending' },
-      { step: 8, label: 'Draft Report Compilation', status: isInspected ? 'completed' : 'pending' },
-      { step: 9, label: 'Admin QA & Peer Audit Review', status: isCompleted ? 'completed' : (isQA ? 'in_progress' : 'pending') },
-      { step: 10, label: 'Official RICS Report Released', status: isCompleted ? 'completed' : 'pending' },
-    ];
+    // Only mark QA (Step 9) once report draft is actually uploaded/submitted for QA review
+    const isQA = job.stage === 'QA_REVIEW' || job.status === 'QA_Review' || (job.stage === 'PREPARING_REPORT' && hasDraftSubmitted);
 
     let calculatedStep = 1;
     if (isCompleted) calculatedStep = 10;
     else if (isQA) calculatedStep = 9;
-    else if (job.stage === 'DRAFTING' || job.status === 'Drafting') calculatedStep = 8;
+    else if (isDrafting) calculatedStep = 8;
     else if (isInspected) calculatedStep = 7;
     else if (isBooked) calculatedStep = 6;
     else if (hasPaid) calculatedStep = 5;
@@ -127,6 +112,19 @@ export const getSurveyTracking = async (req, res, next) => {
     else if (job.stage === 'ACCEPTED' || job.quoteStatus === 'ACCEPTED') calculatedStep = 3;
     else if (job.stage === 'QUOTE') calculatedStep = 2;
     else calculatedStep = 1;
+
+    const steps = [
+      { step: 1, label: 'Enquiry Received', status: calculatedStep >= 1 ? 'completed' : 'pending', time: job.createdAt },
+      { step: 2, label: 'Quote Issued', status: calculatedStep >= 2 ? 'completed' : 'pending', time: job.createdAt },
+      { step: 3, label: 'Quote Accepted', status: calculatedStep >= 3 ? 'completed' : 'pending' },
+      { step: 4, label: 'Terms Signed', status: calculatedStep >= 4 ? 'completed' : 'pending' },
+      { step: 5, label: 'Payment Confirmed', status: calculatedStep >= 5 ? 'completed' : 'pending' },
+      { step: 6, label: 'Appointment Booked', status: calculatedStep >= 6 ? 'completed' : 'pending' },
+      { step: 7, label: 'Inspection Completed', status: calculatedStep >= 7 ? 'completed' : 'pending' },
+      { step: 8, label: 'Report Preparation', status: calculatedStep >= 8 ? 'completed' : 'pending' },
+      { step: 9, label: 'Quality Check', status: calculatedStep >= 9 ? (isCompleted ? 'completed' : 'in_progress') : 'pending' },
+      { step: 10, label: 'Report Delivered', status: isCompleted ? 'completed' : 'pending' },
+    ];
 
     const completedCount = steps.filter((s) => s.status === 'completed').length;
     const effectiveProgress = isCompleted ? 100 : (calculatedStep * 10);

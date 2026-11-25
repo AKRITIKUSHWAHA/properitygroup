@@ -420,28 +420,38 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
     console.warn('Error updating leads storage on acceptance', err);
   }
 
-  // 6. Non-blocking Backend API calls
+  // 6. Persist quotation acceptance in Backend DB (creates Job, Term, Invoice)
   try {
     const token = localStorage.getItem('property_group_auth_token');
-    const quoteId = parseInt(String(quoteOrJob.id || '').replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(quoteId) && quoteId > 0) {
-      fetch(`/api/v1/customer/quotations/${quoteId}/accept`, {
+    const acceptTarget =
+      quoteOrJob.numericId ||
+      quoteOrJob.dbId ||
+      quoteOrJob.reference ||
+      quoteOrJob.id ||
+      '';
+    if (acceptTarget) {
+      await fetch(`${getApiBaseUrl()}/customer/quotations/${encodeURIComponent(String(acceptTarget))}/accept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
           'x-user-email': clientEmail,
+          'x-user-name': clientName,
         },
       }).catch(() => {});
-      fetch(`${getApiBaseUrl()}/quotations-and-payments/quotes/${quoteId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-user-email': clientEmail,
-        },
-        body: JSON.stringify({ status: 'ACCEPTED' }),
-      }).catch(() => {});
+
+      const numericOnlyId = parseInt(String(quoteOrJob.numericId || quoteOrJob.dbId || '').replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(numericOnlyId) && numericOnlyId > 0) {
+        await fetch(`${getApiBaseUrl()}/quotations-and-payments/quotes/${numericOnlyId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'x-user-email': clientEmail,
+          },
+          body: JSON.stringify({ status: 'ACCEPTED' }),
+        }).catch(() => {});
+      }
     }
   } catch {}
 

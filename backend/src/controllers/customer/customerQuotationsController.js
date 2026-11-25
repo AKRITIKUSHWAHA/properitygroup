@@ -14,15 +14,14 @@ export const getCustomerQuotations = async (req, res, next) => {
     const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
     const userName = (headerName || req.user?.name || '').toLowerCase().trim();
 
-    // 1. Fetch live quotes from prisma.quote
+    // 1. Fetch live quotes from prisma.quote (strictly scoped by clientId or exact clientEmail)
     const quotes = await prisma.quote.findMany({
       where: {
         OR: [
           ...(userId ? [{ job: { clientId: userId } }] : []),
-          ...(userEmail ? [{ job: { clientEmail: userEmail } }, { job: { clientEmail: { contains: userEmail } } }] : []),
-          ...(userEmail ? [{ lead: { clientEmail: userEmail } }, { lead: { clientEmail: { contains: userEmail } } }] : []),
-          ...(userEmail ? [{ inclusions: { contains: userEmail } }] : []),
-          ...(userName && userName.length > 2 ? [{ inclusions: { contains: userName } }] : []),
+          ...(userEmail ? [{ job: { clientEmail: userEmail } }] : []),
+          ...(userEmail ? [{ lead: { clientEmail: userEmail } }] : []),
+          ...(userEmail ? [{ inclusions: { contains: `"clientEmail":"${userEmail}"` } }] : []),
         ],
       },
       include: {
@@ -98,17 +97,10 @@ export const getCustomerQuotations = async (req, res, next) => {
 
     // 2. Fetch any quoted/pending leads from prisma.lead belonging to this customer
     try {
-      if (userEmail || userId || (userName && userName.length > 2)) {
-        const leadConditions = [];
-        if (userEmail) {
-          leadConditions.push({ clientEmail: userEmail });
-          leadConditions.push({ clientEmail: { contains: userEmail } });
-        }
-        if (userName && userName.length > 2) leadConditions.push({ clientName: { contains: userName } });
-
+      if (userEmail) {
         const leads = await prisma.lead.findMany({
           where: {
-            OR: leadConditions,
+            clientEmail: userEmail,
           },
           include: {
             quotes: true,

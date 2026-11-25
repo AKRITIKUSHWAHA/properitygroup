@@ -71,6 +71,7 @@ import {
   customerPreviousSurveysApi,
 } from '../../api/customerApi';
 import { siteConfig } from '../../config/siteConfig';
+import { getApiBaseUrl, api } from '../../api/apiClient';
 import { dispatchQuoteAcceptance } from '../../services/autoQuoteService';
 import { emitNotification } from '../../utils/notificationService';
 
@@ -337,26 +338,29 @@ export const CustomerTermsPage = () => {
     localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
     (currentJob?.id && localStorage.getItem(`propertygroup_payment_claimed_${currentJob.id}`) === 'true');
 
-  // Once an instruction progresses to Stage 4 or beyond, terms are executed and binding under RICS
+  // Once terms are actually signed in DB/local or job has moved past booking, mark signed.
+  // Never auto-mark signed solely because payment/stage is 5 if apiTerm explicitly reports signed: false!
   const hasRealApiSignature = Boolean(apiTerm?.signed && (apiTerm?.signatureData || apiTerm?.signedAt));
+  const isJobPastBooking = Boolean(
+    ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(apiTerm?.job?.stage) ||
+    ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(apiTracking?.currentStage) ||
+    (apiTracking?.currentStep || 0) >= 6
+  );
   const isAlreadySigned = Boolean(
-    effectiveStage >= 4 ||
     hasRealApiSignature ||
-    apiTerm?.job?.stage === 'COMPLETE' ||
-    apiTracking?.currentStage === 'COMPLETE' ||
-    (apiTracking?.currentStep || 0) >= 4 ||
-    currentJob?.termsStatus === 'Signed' ||
+    isJobPastBooking ||
     currentAgreement?.status === 'Signed' ||
     currentAgreement?.signed === true ||
-    storedTermsSigned
+    storedTermsSigned ||
+    (!apiTerm && (effectiveStage >= 4 || currentJob?.termsStatus === 'Signed'))
   );
 
-  // Once an instruction progresses to Stage 5 or beyond, payment has cleared and booking is locked
+  // Payment is claimed/paid only when invoice is settled or user claimed bank transfer
   const isPaymentClaimed = Boolean(
-    effectiveStage >= 5 ||
-    apiTracking?.currentStage === 'COMPLETE' ||
+    isJobPastBooking ||
+    apiTerm?.job?.stage === 'PAID' ||
+    apiTracking?.currentStage === 'PAID' ||
     (apiTracking?.currentStep || 0) >= 5 ||
-    apiTerm?.job?.stage === 'COMPLETE' ||
     currentJob?.paymentStatus === 'Paid' ||
     (currentJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
     storedPaymentClaimed
@@ -368,21 +372,22 @@ export const CustomerTermsPage = () => {
   }, [surveyType]);
 
   // Workflow state: 'sign' | 'payment' | 'confirmed'
+  // Require signing FIRST if terms are not yet signed, even if payment was marked early
   const [stage, setStage] = useState(() => {
-    if (isPaymentClaimed || effectiveStage >= 5) return 'confirmed';
-    if (isAlreadySigned || effectiveStage >= 4) return 'payment';
-    return 'sign';
+    if (!isAlreadySigned) return 'sign';
+    if (isPaymentClaimed) return 'confirmed';
+    return 'payment';
   });
 
   useEffect(() => {
-    if (isPaymentClaimed || effectiveStage >= 5) {
-      setStage('confirmed');
-    } else if (isAlreadySigned || effectiveStage >= 4) {
-      setStage('payment');
-    } else {
+    if (!isAlreadySigned) {
       setStage('sign');
+    } else if (isPaymentClaimed) {
+      setStage('confirmed');
+    } else {
+      setStage('payment');
     }
-  }, [isPaymentClaimed, isAlreadySigned, effectiveStage]);
+  }, [isPaymentClaimed, isAlreadySigned]);
 
   const [showClausesAccordion, setShowClausesAccordion] = useState(false);
 
@@ -463,7 +468,7 @@ export const CustomerTermsPage = () => {
     setHasDrawn(false);
   };
 
-  const handleSignSubmit = (e) => {
+  const handleSignSubmit = async (e) => {
     e.preventDefault();
     if (!agreedToTerms) {
       addToast({
@@ -654,18 +659,23 @@ export const CustomerTermsPage = () => {
     // Call backend API to record execution and trigger Terms Signed confirmation email
     try {
       const token = localStorage.getItem('property_group_auth_token');
-      const userEmail = (user?.email || '').toLowerCase().trim();
-      const termNumericId = parseInt(String(currentAgreement?.id || currentJob?.id || '328').replace(/\D/g, ''), 10) || 7;
-      fetch(`/api/v1/customer/terms-to-sign/${termNumericId}/sign`, {
+      const resolvedEmail = (currentUser?.email || user?.email || '').toLowerCase().trim();
+      const termNumericId =
+        apiTerm?.id ||
+        currentJob?.terms?.[0]?.id ||
+        currentJob?.dbId ||
+        parseInt(String(currentAgreement?.id || currentJob?.id || '0').replace(/\D/g, ''), 10) ||
+        1;
+      await fetch(`${getApiBaseUrl()}/customer/terms-to-sign/${termNumericId}/sign`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-user-email': userEmail,
+          'x-user-email': resolvedEmail,
         },
         body: JSON.stringify({
           signatureData: capturedSignature,
-          clientName: user?.name || typedName,
+          clientName: currentUser?.name || typedName,
           property: propertyAddress,
           surveyType: surveyType,
         }),
@@ -698,7 +708,7 @@ export const CustomerTermsPage = () => {
       }
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const nowString = `${new Date().toLocaleDateString('en-GB')}, ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
       const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
 
@@ -834,20 +844,25 @@ export const CustomerTermsPage = () => {
       // Call backend API to record payment and trigger VAT receipt / payment confirmation email
       try {
         const token = localStorage.getItem('property_group_auth_token');
-        const userEmail = (user?.email || '').toLowerCase().trim();
-        const invoiceNumericId = parseInt(String(currentJob?.id || '328').replace(/\D/g, ''), 10) || 7;
-        fetch(`/api/v1/customer/invoices-and-payments/${invoiceNumericId}/pay`, {
+        const resolvedEmail = (currentUser?.email || user?.email || '').toLowerCase().trim();
+        const invoiceNumericId =
+          currentJob?.invoices?.[0]?.id ||
+          currentJob?.dbId ||
+          apiTerm?.job?.id ||
+          parseInt(String(currentJob?.id || '0').replace(/\D/g, ''), 10) ||
+          1;
+        await fetch(`${getApiBaseUrl()}/customer/invoices-and-payments/${invoiceNumericId}/pay`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'x-user-email': userEmail,
+            'x-user-email': resolvedEmail,
           },
           body: JSON.stringify({
             paymentMethod: 'Direct Bank Transfer (BACS Faster Payments)',
             amount: grossTotal,
             property: propertyAddress,
-            clientName: user?.name || currentJob?.customer || typedName,
+            clientName: currentUser?.name || currentJob?.customer || typedName,
             transferReference: bankProofRef || '',
           }),
         }).catch((e) => console.warn('Backend payment record error:', e));
@@ -1601,19 +1616,56 @@ export const CustomerTermsPage = () => {
 // 2. MY BOOKINGS PAGE
 // ==========================================
 export const CustomerBookingsPage = () => {
-  useEffect(() => { customerBookingsApi.getBookings().catch(() => {}); }, []);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { jobs, updateJob } = useJobs();
   const { addToast } = useToast();
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const [apiBookings, setApiBookings] = useState([]);
 
-  const myBookings = jobs.filter((j) => isJobForCustomer(j, user));
+  useEffect(() => {
+    Promise.allSettled([
+      customerBookingsApi.getBookings(),
+      customerDashboardApi.getDashboard(),
+    ]).then(([bkRes, dashRes]) => {
+      const bookings = bkRes.status === 'fulfilled' ? (bkRes.value?.data?.bookings || bkRes.value?.bookings || []) : [];
+      const dashJob = dashRes.status === 'fulfilled' ? (dashRes.value?.activeJob || dashRes.value?.data?.activeJob || null) : null;
+      const list = Array.isArray(bookings) ? [...bookings] : [];
+      if (dashJob && !dashJob.isLead && !list.some((b) => b.reference === dashJob.reference || b.id === dashJob.id)) {
+        list.unshift(dashJob);
+      }
+      if (list.length > 0) {
+        setApiBookings(list.map((b) => ({
+          ...b,
+          id: b.reference || String(b.id),
+          dbId: b.id,
+          jobNo: b.reference || String(b.id),
+          property: b.propertyAddress || b.property || 'Subject Property',
+          location: b.postcode || b.location || '',
+          surveyType: b.serviceType || b.surveyType || 'RICS Level 2 Home Survey',
+          surveyor: b.surveyor?.name || (typeof b.surveyor === 'string' ? b.surveyor : 'Pending Allocation'),
+          date: b.inspectionDate ? new Date(b.inspectionDate).toLocaleDateString('en-GB') : (b.date || 'Date: TBD'),
+          timeSlot: b.inspectionTime || b.timeSlot || 'Time: TBD',
+          status: b.stage === 'COMPLETE' ? 'Completed' : (b.stage === 'BOOKED' ? 'Booked' : (b.status || b.stage || 'Pending')),
+          termsStatus: b.terms?.some((t) => t.signed) || b.termsStatus === 'Signed' ? 'Signed' : 'Pending',
+          timelineStep: b.timelineStep || (b.stage === 'BOOKED' ? 6 : 5),
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const localBookings = jobs.filter((j) => isJobForCustomer(j, user));
+  const myBookings = localBookings.length > 0 ? localBookings.map((lb) => {
+    const apiMatch = apiBookings.find((ab) => ab.id === lb.id || ab.jobNo === lb.jobNo);
+    return apiMatch ? { ...lb, dbId: apiMatch.dbId, ...apiMatch, date: lb.date && !String(lb.date).includes('TBD') ? lb.date : apiMatch.date, timeSlot: lb.timeSlot && !String(lb.timeSlot).includes('TBD') ? lb.timeSlot : apiMatch.timeSlot } : lb;
+  }) : apiBookings;
+
   const [bookingModalJob, setBookingModalJob] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('10:00 - 13:00 (Morning Inspection)');
   const [agentNotes, setAgentNotes] = useState('');
 
-  const handleConfirmSlot = (e) => {
+  const handleConfirmSlot = async (e) => {
     e.preventDefault();
     if (!bookingModalJob || !selectedDate) {
       addToast({
@@ -1632,6 +1684,7 @@ export const CustomerBookingsPage = () => {
       date: formattedDate,
       timeSlot: selectedSlot,
       status: bookingModalJob.status === 'Completed' ? bookingModalJob.status : 'Booked',
+      stage: 'BOOKED',
       timelineStep: Math.max(bookingModalJob.timelineStep || 0, 6),
       agentDetails: agentNotes || bookingModalJob.agentDetails || '',
       activityLog: [
@@ -1654,6 +1707,19 @@ export const CustomerBookingsPage = () => {
     if (bookingModalJob.id) {
       localStorage.setItem(`propertygroup_booking_confirmed_${bookingModalJob.id}`, 'true');
     }
+
+    // Persist appointment booking in Backend DB (advances stage to BOOKED / Step 6)
+    try {
+      const targetRef = bookingModalJob.dbId || bookingModalJob.jobNo || bookingModalJob.id;
+      if (targetRef) {
+        await api.patch(`/survey-jobs/${encodeURIComponent(String(targetRef))}/reschedule`, {
+          inspectionDate: selectedDate,
+          inspectionTime: selectedSlot,
+          keyCollectionDetails: agentNotes || bookingModalJob.agentDetails || '',
+          reason: `Client requested inspection slot ${formattedDate} (${selectedSlot})`,
+        }).catch(() => {});
+      }
+    } catch {}
 
     try {
       const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
@@ -1939,7 +2005,7 @@ export const CustomerQuotationsPage = () => {
     return {
       id: `QUO-${j.id.replace('JOB-2026-', '')}`,
       jobId: j.id,
-      property: `${j.property}, ${j.location}`,
+      property: `${j.property || ''}${j.location ? `, ${j.location}` : ''}`,
       surveyType: j.surveyType,
       hasFee,
       net: hasFee ? `£${net.toFixed(2)}` : 'Pending Estimation',
@@ -2182,6 +2248,9 @@ export const CustomerQuotationsPage = () => {
       const rawTotal = parseFloat(String(targetQuote.total).replace(/[^0-9.]/g, '')) || 0;
       const payload = {
         id: targetQuote.id,
+        numericId: targetQuote.numericId || targetQuote.rawQuote?.id || null,
+        dbId: targetQuote.rawQuote?.id || targetQuote.numericId || null,
+        reference: targetQuote.reference || targetQuote.id,
         refNo: targetQuote.id,
         client: user?.name || userName || 'Valued Client',
         clientEmail: userEmail || user?.email || 'customer@demo.com',
@@ -2216,7 +2285,7 @@ export const CustomerQuotationsPage = () => {
       setRefreshKey((k) => k + 1);
 
       // Immediately navigate to Terms of Engagement Agreement to e-sign
-      setTimeout(() => {
+      setTimeout(async () => {
         navigate('/customer/terms-to-sign', {
           state: {
             quoteId: targetQuote.id,
@@ -2807,7 +2876,21 @@ export const CustomerInvoicesPage = () => {
 
     setIsProcessing(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      // 0. Persist payment in Backend DB
+      try {
+        const targetInvId = settlingInvoice.id || settlingInvoice.jobRef;
+        if (targetInvId) {
+          await customerInvoicesAndPaymentsApi.payInvoice(targetInvId, {
+            paymentMethod: 'Direct Bank Transfer (BACS Faster Payments)',
+            amount: settlingInvoice.grossTotal,
+            property: settlingInvoice.property,
+            clientName: user?.name || 'Valued Client',
+            transferReference: transferProofRef || '',
+          }).catch(() => {});
+        }
+      } catch {}
+
       // 1. Update job in store to Claimed (Verification Pending) per Client Bank Transfer specification (NOT auto-paid!)
       updateJob(settlingInvoice.jobRef, {
         paymentStatus: 'Claimed (Verification Pending)',
@@ -3392,7 +3475,7 @@ export const CustomerReportsPage = () => {
 
     const targetJob = myCompletedJobs.find((j) => j.id === r.jobRef || r.id.includes(j.id.replace('JOB-2026-', '')));
     if (targetJob && !targetJob.reviewSubmitted) {
-      setTimeout(() => {
+      setTimeout(async () => {
         setReviewPromptJob(targetJob);
       }, 500);
     }
@@ -3640,9 +3723,24 @@ export const CustomerTrackSurveyPage = () => {
             Number(trackPayload?.currentStep) || 0,
             dashPayload.activeJob.stage === 'ACCEPTED' ? 3 : 1
           );
+          const parsedTotalFee = parseFloat(String(dashPayload.activeJob.totalFee || dashPayload.stats?.totalFee || '').replace(/[^0-9.]/g, ''));
+          const resolvedApiTotal = dashPayload.activeJob.invoices?.[0]?.total || (!isNaN(parsedTotalFee) && parsedTotalFee > 0 ? parsedTotalFee : null);
+          const resolvedApiBase = dashPayload.activeJob.invoices?.[0]?.subtotal || (resolvedApiTotal ? Math.round((resolvedApiTotal / 1.2) * 100) / 100 : null);
+
+          if (step <= 2 && userEmail) {
+            try {
+              localStorage.removeItem(`propertygroup_quote_accepted_${userEmail}`);
+              localStorage.removeItem(`propertygroup_terms_signed_${userEmail}`);
+              localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
+              localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
+              localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
+            } catch {}
+          }
+
           const jobObj = {
             id: ref,
             jobNo: ref,
+            dbId: dashPayload.activeJob.id,
             customer: dashPayload.activeJob.clientName || currentUser?.name || 'Customer',
             clientName: dashPayload.activeJob.clientName || currentUser?.name || 'Customer',
             customerEmail: userEmail || dashPayload.activeJob.clientEmail || '',
@@ -3656,11 +3754,13 @@ export const CustomerTrackSurveyPage = () => {
             termsStatus: dashPayload.activeJob.termsStatus || (step >= 4 ? 'Signed' : 'Pending'),
             paymentStatus: dashPayload.activeJob.paymentStatus || (step >= 5 ? 'Paid' : 'Pending'),
             invoices: dashPayload.activeJob.invoices || [],
+            terms: dashPayload.activeJob.terms || [],
             quote: {
-              total: dashPayload.activeJob.invoices?.[0]?.total || null,
-              baseFee: dashPayload.activeJob.invoices?.[0]?.subtotal || null,
+              total: resolvedApiTotal,
+              baseFee: resolvedApiBase,
             },
-            totalAmount: dashPayload.activeJob.invoices?.[0]?.total || null,
+            totalAmount: resolvedApiTotal,
+            totalFee: dashPayload.activeJob.totalFee || null,
           };
           if (idx >= 0) {
             storedJobs[idx] = { ...storedJobs[idx], ...jobObj };
@@ -3710,6 +3810,7 @@ export const CustomerTrackSurveyPage = () => {
       customerEmail: userEmail,
       clientEmail: userEmail,
       invoices: apiDashboardJob.invoices,
+      terms: apiDashboardJob.terms,
     } : null) ||
     (apiTracking ? {
       id: apiTracking.jobReference || apiTracking.reference,

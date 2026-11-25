@@ -13,13 +13,12 @@ export const getCustomerDashboard = async (req, res, next) => {
     const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
     const userName = (headerName || req.user?.name || '').toLowerCase().trim();
 
-    // Fetch customer's primary active job
+    // Fetch customer's primary active job (strictly scoped by clientId or exact clientEmail)
     let activeJob = await prisma.job.findFirst({
       where: {
         OR: [
           ...(userId ? [{ clientId: userId }] : []),
           ...(userEmail ? [{ clientEmail: userEmail }] : []),
-          ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
         ],
         stage: { not: 'COMPLETE' },
       },
@@ -36,6 +35,7 @@ export const getCustomerDashboard = async (req, res, next) => {
         quotes: { orderBy: { createdAt: 'desc' }, take: 1 },
         terms: { orderBy: { createdAt: 'desc' }, take: 1 },
         invoices: { orderBy: { createdAt: 'desc' }, take: 1 },
+        auditTimeline: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -45,21 +45,25 @@ export const getCustomerDashboard = async (req, res, next) => {
     let activeInvoice = activeJob?.invoices?.[0] || null;
 
     if (activeJob) {
-      const hasPaid = activeJob.invoices?.some((inv) => inv.status === 'PAID') || activeInvoice?.status === 'PAID';
+      const hasPaid = activeJob.invoices?.some((inv) => inv.status === 'PAID') || activeInvoice?.status === 'PAID' || activeJob.stage === 'PAID';
       const hasSigned = activeJob.terms?.some((t) => t.signed) || activeTerm?.signed;
       const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
       const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
       const isCompleted = activeJob.stage === 'COMPLETE' || Boolean(activeJob.qaApprovedAt);
+      const hasDraftUploaded = Boolean(activeJob.reportPdfUrl) || Boolean(activeJob.reportGeneratedAt);
       const isQA =
-        activeJob.stage === 'PREPARING_REPORT' ||
+        activeJob.stage === 'QA_REVIEW' ||
         activeJob.status === 'QA_Review' ||
-        Boolean(activeJob.reportPdfUrl) ||
-        Boolean(activeJob.reportGeneratedAt);
+        (activeJob.stage === 'PREPARING_REPORT' && hasDraftUploaded);
+      const isDrafting =
+        activeJob.stage === 'DRAFTING' ||
+        activeJob.status === 'Drafting' ||
+        (activeJob.stage === 'PREPARING_REPORT' && activeJob.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_STARTED'));
 
       let calculatedStep = 1;
       if (isCompleted) calculatedStep = 10;
       else if (isQA) calculatedStep = 9;
-      else if (activeJob.stage === 'DRAFTING' || activeJob.status === 'Drafting') calculatedStep = 8;
+      else if (isDrafting) calculatedStep = 8;
       else if (isInspected) calculatedStep = 7;
       else if (isBooked) calculatedStep = 6;
       else if (hasPaid) calculatedStep = 5;
@@ -72,7 +76,7 @@ export const getCustomerDashboard = async (req, res, next) => {
         ...activeJob,
         timelineStep: calculatedStep,
         currentStep: calculatedStep,
-        status: isCompleted ? 'Completed' : (isQA ? 'QA_Review' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage)))),
+        status: isCompleted ? 'Completed' : (isQA ? 'QA_Review' : (isDrafting ? 'Drafting' : (isInspected ? 'Inspected' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage)))))),
         stage: isCompleted ? 'COMPLETE' : (isQA ? 'QA_REVIEW' : activeJob.stage),
         property: activeJob.propertyAddress,
         date: activeJob.inspectionDate ? new Date(activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
@@ -84,14 +88,11 @@ export const getCustomerDashboard = async (req, res, next) => {
     }
 
     // If no activeJob exists in prisma.job, check if there is an active lead in prisma.lead
-    if (!activeJob && (userEmail || userName)) {
+    if (!activeJob && userEmail) {
       try {
         const lead = await prisma.lead.findFirst({
           where: {
-            OR: [
-              ...(userEmail ? [{ clientEmail: userEmail }] : []),
-              ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
-            ],
+            clientEmail: userEmail,
           },
           include: {
             quotes: { orderBy: { createdAt: 'desc' }, take: 1 },

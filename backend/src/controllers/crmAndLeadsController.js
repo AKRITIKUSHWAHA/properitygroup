@@ -521,6 +521,19 @@ export const ingestLsdLead = async (req, res, next) => {
 export const deleteLead = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (typeof id === 'string' && id.includes('@')) {
+      const cleanEmail = id.toLowerCase().trim();
+      const emailLeads = await prisma.lead.findMany({ where: { clientEmail: cleanEmail }, select: { id: true } });
+      for (const el of emailLeads) {
+        await prisma.callLog.deleteMany({ where: { leadId: el.id } }).catch(() => {});
+        await prisma.complaintLog.deleteMany({ where: { leadId: el.id } }).catch(() => {});
+        await prisma.quote.deleteMany({ where: { leadId: el.id } }).catch(() => {});
+        await prisma.job.updateMany({ where: { leadId: el.id }, data: { leadId: null } }).catch(() => {});
+        await prisma.lead.delete({ where: { id: el.id } }).catch(() => {});
+      }
+      return ApiResponse.success(res, null, 'Leads removed successfully');
+    }
+
     const numId = parseInt(id, 10);
     const where = !isNaN(numId) && String(numId) === String(id)
       ? { OR: [{ id: numId }, { reference: String(id) }] }

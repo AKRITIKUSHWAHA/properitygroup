@@ -110,7 +110,7 @@ export const executeDigitalSignature = async (req, res, next) => {
         },
       });
 
-      if (term.jobId) {
+      if (term.jobId && (!term.job?.stage || term.job.stage === 'QUOTE')) {
         await prisma.job.update({
           where: { id: term.jobId },
           data: { stage: 'ACCEPTED' },

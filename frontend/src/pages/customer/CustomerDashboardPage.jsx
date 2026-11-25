@@ -171,9 +171,25 @@ export const CustomerDashboardPage = () => {
             ? 'Quoted'
             : 'Enquiry';
 
+          const parsedTotalFee = parseFloat(String(dashPayload.activeJob.totalFee || dashPayload.stats?.totalFee || '').replace(/[^0-9.]/g, ''));
+          const resolvedApiTotal = dashPayload.activeJob.invoices?.[0]?.total || (!isNaN(parsedTotalFee) && parsedTotalFee > 0 ? parsedTotalFee : null);
+          const resolvedApiBase = dashPayload.activeJob.invoices?.[0]?.subtotal || (resolvedApiTotal ? Math.round((resolvedApiTotal / 1.2) * 100) / 100 : null);
+
+          // If backend says current job is only at Step 1 or 2, purge any stale milestone flags for this email
+          if (calculatedStep <= 2 && userEmail) {
+            try {
+              localStorage.removeItem(`propertygroup_quote_accepted_${userEmail}`);
+              localStorage.removeItem(`propertygroup_terms_signed_${userEmail}`);
+              localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
+              localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
+              localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
+            } catch {}
+          }
+
           const syncedData = {
             id: jobRef,
             jobNo: jobRef,
+            dbId: dashPayload.activeJob.id,
             customer: dashPayload.activeJob.clientName || user?.name || 'Customer',
             clientName: dashPayload.activeJob.clientName || user?.name || 'Customer',
             customerEmail: userEmail || dashPayload.activeJob.clientEmail || '',
@@ -192,11 +208,13 @@ export const CustomerDashboardPage = () => {
             termsStatus: (isTermsSigned || calculatedStep >= 4 || isBooked || isInspected || isQA || isDelivered) ? 'Signed' : 'Pending',
             paymentStatus: (hasPaid || calculatedStep > 5 || isBooked || isInspected || isQA || isDelivered) ? 'Paid' : (isPaymentClaimed ? 'Claimed (Verification Pending)' : 'Pending'),
             invoices: dashPayload.activeJob.invoices || [],
+            terms: dashPayload.activeJob.terms || [],
             quote: {
-              total: dashPayload.activeJob.invoices?.[0]?.total || null,
-              baseFee: dashPayload.activeJob.invoices?.[0]?.subtotal || null,
+              total: resolvedApiTotal,
+              baseFee: resolvedApiBase,
             },
-            totalAmount: dashPayload.activeJob.invoices?.[0]?.total || null,
+            totalAmount: resolvedApiTotal,
+            totalFee: dashPayload.activeJob.totalFee || null,
           };
 
           if (idx >= 0) {
@@ -446,7 +464,8 @@ export const CustomerDashboardPage = () => {
       customerJob?.totalAmount ||
       customerJob?.agreedFee ||
       customerJob?.invoices?.[0]?.total ||
-      apiActiveJob?.invoices?.[0]?.total;
+      apiActiveJob?.invoices?.[0]?.total ||
+      (customerJob?.totalFee ? parseFloat(String(customerJob.totalFee).replace(/[^0-9.]/g, '')) : null);
     if (fee && !isNaN(Number(fee)) && Number(fee) > 0) return Number(fee);
     if (apiActiveJob?.stats?.totalFee) {
       const parsed = parseFloat(String(apiActiveJob.stats.totalFee).replace(/[^0-9.]/g, ''));

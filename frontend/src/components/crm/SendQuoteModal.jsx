@@ -212,6 +212,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
         postcode: lead?.postcode || '',
         surveyor: 'Pending Allocation',
         status: 'Quoted',
+        stage: 'QUOTE',
+        timelineStep: 2,
         termsStatus: 'Pending',
         paymentStatus: 'Unpaid',
         canBook: true,

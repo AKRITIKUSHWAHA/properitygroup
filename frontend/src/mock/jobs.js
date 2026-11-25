@@ -209,13 +209,8 @@ export const getStoredJobs = () => {
           activeUserEmail = (sess.email || '').toLowerCase().trim();
         } catch {}
 
-        return deduplicated.map((j) => {
-          if (!j.customerEmail && !j.clientEmail && activeUserEmail) {
-            return { ...j, customerEmail: activeUserEmail, clientEmail: activeUserEmail };
-          }
-          return j;
-        }).filter((j) => {
-          const email = (j.customerEmail || j.clientEmail || activeUserEmail || '').toLowerCase().trim();
+        return deduplicated.filter((j) => {
+          const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
           const name = (j.customer || j.clientName || j.name || '').toLowerCase().trim();
           const addr = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
           const idStr = String(j.id || '').toUpperCase().trim();
@@ -237,17 +232,8 @@ export const getStoredJobs = () => {
             !addr.startsWith('subject property') &&
             idStr !== 'QUO-PENDING' &&
             jobNoStr !== 'QUO-PENDING' &&
-            idStr !== '7' &&
-            idStr !== '11' &&
-            idStr !== '12' &&
-            idStr !== '13' &&
-            idStr !== 'JOB-2026-101' &&
-            jobNoStr !== 'JOB-2026-101' &&
             idStr !== 'JOB-2026-702' &&
-            jobNoStr !== 'JOB-2026-702' &&
-            jobNoStr !== 'JOB-2026-7289' &&
-            jobNoStr !== 'JOB-2026-6173' &&
-            jobNoStr !== 'JOB-2026-7681'
+            jobNoStr !== 'JOB-2026-702'
           );
         });
       }

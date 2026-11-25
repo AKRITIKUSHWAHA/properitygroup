@@ -327,12 +327,45 @@ export const deleteUser = async (req, res, next) => {
     await prisma.supportTicket.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
     await prisma.auditLog.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
     await prisma.message.deleteMany({ where: { senderId: targetUser.id } }).catch(() => {});
-    // Unlink any jobs so foreign keys don't block deletion
-    await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } }).catch(() => {});
+    // Unlink any surveyor jobs (never delete surveyor-assigned client jobs when deleting a surveyor)
     await prisma.job.updateMany({ where: { surveyorId: targetUser.id }, data: { surveyorId: null } }).catch(() => {});
-    // Clean up any lead with this user's email
-    if (targetUser.email) {
-      await prisma.lead.deleteMany({ where: { clientEmail: targetUser.email.toLowerCase().trim() } }).catch(() => {});
+
+    // For CUSTOMER accounts, cascade-delete all their jobs, quotes, terms, invoices, and leads
+    // so re-registering the same email NEVER inherits old completed/paid jobs!
+    const cleanTargetEmail = targetUser.email ? targetUser.email.toLowerCase().trim() : '';
+    if (targetUser.role === 'CUSTOMER') {
+      const userJobs = await prisma.job.findMany({
+        where: {
+          OR: [
+            { clientId: targetUser.id },
+            ...(cleanTargetEmail ? [{ clientEmail: cleanTargetEmail }] : []),
+          ],
+        },
+        select: { id: true },
+      }).catch(() => []);
+
+      for (const uj of userJobs) {
+        await prisma.supportTicket.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.customerReview.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.message.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.quote.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.term.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.invoice.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.callLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.complaintLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.auditLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
+        await prisma.job.delete({ where: { id: uj.id } }).catch(() => {});
+      }
+
+      if (cleanTargetEmail) {
+        await prisma.quote.deleteMany({ where: { inclusions: { contains: cleanTargetEmail } } }).catch(() => {});
+        await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } }).catch(() => {});
+      }
+    } else {
+      await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } }).catch(() => {});
+      if (cleanTargetEmail) {
+        await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } }).catch(() => {});
+      }
     }
 
     // Delete user from database

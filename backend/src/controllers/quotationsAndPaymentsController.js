@@ -516,8 +516,8 @@ export const settleBacsPayment = async (req, res, next) => {
       },
     });
 
-    // Advance job to PAID if currently QUOTE
-    if (invoice.job && invoice.job.stage === 'QUOTE') {
+    // Advance job to PAID if currently QUOTE or ACCEPTED
+    if (invoice.job && ['QUOTE', 'ACCEPTED'].includes(invoice.job.stage)) {
       await prisma.job.update({
         where: { id: invoice.jobId },
         data: { stage: 'PAID' },

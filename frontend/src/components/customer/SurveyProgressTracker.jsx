@@ -205,11 +205,21 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
     }
     try {
       const qList = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      if (qList.some((q) => (userEmail && (q.clientEmail || '').toLowerCase().trim() === userEmail) || (jobRef && (q.id === jobRef || q.jobNo === jobRef || q.jobId === jobRef)))) {
+      if (qList.some((q) => {
+        const matchesUser = (userEmail && (q.clientEmail || '').toLowerCase().trim() === userEmail) || (jobRef && (q.id === jobRef || q.jobNo === jobRef || q.jobId === jobRef));
+        if (!matchesUser) return false;
+        const hasRealFee = Number(q.baseFee) > 0 || Number(q.totalAmount) > 0 || ['sent', 'quoted', 'accepted', 'paid'].includes(String(q.status || '').toLowerCase());
+        return hasRealFee;
+      })) {
         return true;
       }
       const lList = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-      if (lList.some((l) => (userEmail && (l.customerEmail || '').toLowerCase().trim() === userEmail) && (l.status === 'Quoted' || l.status === 'Quote Sent' || (l.estimatedValue && !String(l.estimatedValue).toLowerCase().includes('pending'))))) {
+      if (lList.some((l) => {
+        const matchesUser = userEmail && (l.customerEmail || '').toLowerCase().trim() === userEmail;
+        if (!matchesUser) return false;
+        const estNum = parseFloat(String(l.estimatedValue || '').replace(/[^0-9.]/g, ''));
+        return l.status === 'Quoted' || l.status === 'Quote Sent' || (!isNaN(estNum) && estNum > 0);
+      })) {
         return true;
       }
     } catch {}

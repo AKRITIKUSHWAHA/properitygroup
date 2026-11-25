@@ -17,7 +17,6 @@ export const getCustomerReports = async (req, res, next) => {
         OR: [
           ...(userId ? [{ clientId: userId }] : []),
           ...(userEmail ? [{ clientEmail: userEmail }] : []),
-          ...(userName && userName.length > 2 ? [{ clientName: { contains: userName } }] : []),
         ],
         stage: { in: ['PREPARING_REPORT', 'COMPLETE'] },
       },
