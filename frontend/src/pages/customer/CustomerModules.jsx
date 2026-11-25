@@ -1687,6 +1687,7 @@ export const CustomerBookingsPage = () => {
       stage: 'BOOKED',
       timelineStep: Math.max(bookingModalJob.timelineStep || 0, 6),
       agentDetails: agentNotes || bookingModalJob.agentDetails || '',
+      _skipBackendSync: true,
       activityLog: [
         {
           id: Date.now(),

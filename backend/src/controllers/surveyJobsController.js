@@ -226,7 +226,7 @@ export const updateJobStage = async (req, res, next) => {
     }
 
     if (!targetStage || !STAGE_ORDER.includes(targetStage)) {
-      targetStage = 'PREPARING_REPORT';
+      throw ApiError.badRequest(`Invalid target stage "${newStage}". Valid stages: ${STAGE_ORDER.join(', ')}`);
     }
 
     const jobId = parseInt(id);
@@ -331,8 +331,12 @@ export const assignSurveyor = async (req, res, next) => {
     const { surveyorId, inspectionDate, inspectionTime, keyCollectionDetails } = req.body;
     const jobId = parseInt(id);
 
-    const currentJob = await prisma.job.findUnique({ where: { id: jobId } });
-    const nextStage = currentJob && ['QUOTE', 'ACCEPTED', 'PAID'].includes(currentJob.stage) ? 'BOOKED' : currentJob?.stage;
+    const currentJob = await prisma.job.findUnique({ where: { id: jobId }, include: { invoices: true, terms: true } });
+    const hasPaid = currentJob?.invoices?.some((i) => i.status === 'PAID');
+    const hasSigned = currentJob?.terms?.some((t) => t.signed);
+    const nextStage = currentJob && inspectionDate && (currentJob.stage === 'PAID' || (hasPaid && hasSigned))
+      ? 'BOOKED'
+      : currentJob?.stage;
 
     const job = await prisma.job.update({
       where: { id: jobId },
@@ -489,14 +493,27 @@ export const rescheduleSurveyJob = async (req, res, next) => {
       }
     }
 
+    // Reject placeholder "Date: TBD" reschedules from background UI syncs
+    if (!parsedDate && (!inspectionTime || String(inspectionTime).toLowerCase().includes('tbd')) && surveyorId === undefined && keyCollectionDetails === undefined) {
+      return ApiResponse.success(res, { job }, 'No valid inspection date or details provided');
+    }
+
+    const fullJob = await prisma.job.findUnique({
+      where: { id: job.id },
+      include: { invoices: true, terms: true },
+    });
+    const hasPaidInv = fullJob?.invoices?.some((i) => i.status === 'PAID');
+    const hasSignedTerms = fullJob?.terms?.some((t) => t.signed);
+    const canMoveToBooked = Boolean(parsedDate) && (job.stage === 'PAID' || (hasPaidInv && hasSignedTerms));
+
     const updated = await prisma.job.update({
       where: { id: job.id },
       data: {
         inspectionDate: parsedDate !== undefined ? parsedDate : job.inspectionDate,
-        inspectionTime: inspectionTime || job.inspectionTime,
+        inspectionTime: (inspectionTime && !String(inspectionTime).toLowerCase().includes('tbd')) ? inspectionTime : job.inspectionTime,
         surveyorId: validSurveyorId,
         keyCollectionDetails: keyCollectionDetails !== undefined ? keyCollectionDetails : job.keyCollectionDetails,
-        stage: ['QUOTE', 'ACCEPTED', 'PAID'].includes(job.stage) ? 'BOOKED' : job.stage,
+        stage: (canMoveToBooked && ['QUOTE', 'ACCEPTED', 'PAID'].includes(job.stage)) ? 'BOOKED' : job.stage,
       },
       include: {
         surveyor: { select: { id: true, name: true, email: true, phone: true } },

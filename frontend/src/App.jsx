@@ -121,7 +121,7 @@ const PortalRedirect = () => {
 function AppRoutes() {
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v16_full_lifecycle';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v17_no_auto_book';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',

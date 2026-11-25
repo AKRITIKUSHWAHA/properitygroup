@@ -362,9 +362,9 @@ export const useJobs = () => {
           id,
           jobNo: id,
           reference: id,
-          status: 'Booked',
-          stage: 'BOOKED',
-          timelineStep: 6,
+          status: 'Enquiry',
+          stage: 'ENQUIRY',
+          timelineStep: 1,
           ...updates,
         });
       }
@@ -372,29 +372,39 @@ export const useJobs = () => {
     });
 
     const token = localStorage.getItem('property_group_auth_token');
-    if (token && (updates.stage || updates.status)) {
+    const VALID_STAGES = ['QUOTE', 'PAID', 'ACCEPTED', 'BOOKED', 'PREPARING_REPORT', 'COMPLETE'];
+    if (token && !updates._skipBackendSync && (updates.stage || updates.status)) {
       let stageName = (updates.stage || updates.status || '').toUpperCase().replace(/\s+/g, '_');
       if (['INSPECTED', 'DRAFTING', 'QA_REVIEW'].includes(stageName)) {
         stageName = 'PREPARING_REPORT';
       } else if (['COMPLETED', 'DELIVERED'].includes(stageName)) {
         stageName = 'COMPLETE';
       }
-      fetch(`/api/v1/survey-jobs/${id}/stage`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          newStage: stageName,
-          reason: updates.reason || 'Status updated via UI',
-        }),
-      }).catch(() => {});
+      if (VALID_STAGES.includes(stageName)) {
+        fetch(`/api/v1/survey-jobs/${id}/stage`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            newStage: stageName,
+            reason: updates.reason || 'Status updated via UI',
+          }),
+        }).catch(() => {});
+      }
     }
-    if (token && (updates.date || updates.inspectionDate || updates.timeSlot)) {
+    const rawDateCandidate = String(updates.inspectionDate || updates.date || '').trim();
+    const hasRealDate = Boolean(
+      rawDateCandidate &&
+      /\d/.test(rawDateCandidate) &&
+      !rawDateCandidate.toLowerCase().includes('tbd') &&
+      !rawDateCandidate.toLowerCase().includes('pending')
+    );
+    if (token && !updates._skipBackendSync && hasRealDate) {
       let numericSurveyorId = updates.surveyorId;
       if (typeof numericSurveyorId === 'string') {
-        numericSurveyorId = parseInt(numericSurveyorId.replace('srv-', ''), 10) || 1;
+        numericSurveyorId = parseInt(numericSurveyorId.replace('srv-', ''), 10) || undefined;
       }
       fetch(`/api/v1/survey-jobs/${id}/reschedule`, {
         method: 'PATCH',
@@ -403,10 +413,10 @@ export const useJobs = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          inspectionDate: updates.inspectionDate || updates.date,
-          inspectionTime: updates.inspectionTime || updates.timeSlot,
-          surveyorId: numericSurveyorId,
-          reason: updates.rescheduleReason || updates.reason || 'Rescheduled via CRM',
+          inspectionDate: rawDateCandidate,
+          inspectionTime: updates.inspectionTime || (updates.timeSlot && !String(updates.timeSlot).toLowerCase().includes('tbd') ? updates.timeSlot : undefined),
+          ...(numericSurveyorId ? { surveyorId: numericSurveyorId } : {}),
+          reason: updates.rescheduleReason || updates.reason || 'Rescheduled via UI',
         }),
       }).catch(() => {});
     }
@@ -422,7 +432,7 @@ export const useJobs = () => {
       return [newJob, ...filtered];
     });
     const token = localStorage.getItem('property_group_auth_token');
-    if (token) {
+    if (token && newJob._syncBackend) {
       fetch('/api/v1/survey-jobs', {
         method: 'POST',
         headers: {

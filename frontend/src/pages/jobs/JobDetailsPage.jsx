@@ -345,7 +345,7 @@ export const JobDetailsPage = () => {
       paymentStatus: 'Paid',
       customerEmail: targetEmail,
       canBook: true,
-      timelineStep: Math.max(job.timelineStep || 0, 6),
+      timelineStep: Math.max(job.timelineStep || 0, 5),
       activityLog: [
         {
           id: Date.now(),

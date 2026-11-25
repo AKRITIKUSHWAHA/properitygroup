@@ -226,9 +226,6 @@ export const CustomerDashboardPage = () => {
           setTimeout(() => {
             window.dispatchEvent(new Event('propertygroup_jobs_updated'));
           }, 0);
-          if (updateJob && idx >= 0) {
-            updateJob(storedJobs[idx].id, syncedData);
-          }
         } catch {}
       }
     });
