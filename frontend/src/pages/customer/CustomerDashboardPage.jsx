@@ -105,39 +105,6 @@ export const CustomerDashboardPage = () => {
   const [apiActiveJob, setApiActiveJob] = useState(null);
   const [apiTracking, setApiTracking] = useState(null);
 
-  // Auto-correct any corrupted enquiry records in localStorage where paymentStatus was erroneously set to Claimed or step jumped
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('propertygroup_jobs');
-      if (raw) {
-        const stored = JSON.parse(raw);
-        let changed = false;
-        const cleaned = stored.map((j) => {
-          const isEnquiry = j.status === 'Enquiry' || j.stage === 'enquiry' || j.stage === 'ENQUIRY' || j.isNewInstruction || !j.quote;
-          if (isEnquiry && (j.paymentStatus === 'Claimed (Verification Pending)' || (j.timelineStep || 0) > 1 || j.termsStatus === 'Signed' || j.status === 'Accepted' || j.stage === 'accepted')) {
-            changed = true;
-            return {
-              ...j,
-              paymentStatus: 'Pending',
-              termsStatus: 'Pending',
-              quoteStatus: 'Pending',
-              timelineStep: 1,
-              stage: 'enquiry',
-              status: 'Enquiry',
-            };
-          }
-          return j;
-        });
-        if (changed) {
-          localStorage.setItem('propertygroup_jobs', JSON.stringify(cleaned));
-          setTimeout(() => {
-            window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-          }, 0);
-        }
-      }
-    } catch {}
-  }, []);
-
   // Sync Customer Dashboard & Tracking from live backend API
   useEffect(() => {
     Promise.all([
@@ -207,6 +174,12 @@ export const CustomerDashboardPage = () => {
           const syncedData = {
             id: jobRef,
             jobNo: jobRef,
+            customer: dashPayload.activeJob.clientName || user?.name || 'Customer',
+            clientName: dashPayload.activeJob.clientName || user?.name || 'Customer',
+            customerEmail: userEmail || dashPayload.activeJob.clientEmail || '',
+            clientEmail: userEmail || dashPayload.activeJob.clientEmail || '',
+            customerPhone: dashPayload.activeJob.clientPhone || '',
+            clientPhone: dashPayload.activeJob.clientPhone || '',
             property: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
             propertyAddress: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
             surveyType: dashPayload.activeJob.serviceType,
@@ -218,6 +191,12 @@ export const CustomerDashboardPage = () => {
             timeSlot: dashPayload.activeJob.inspectionTime || 'Time: TBD',
             termsStatus: (isTermsSigned || calculatedStep >= 4 || isBooked || isInspected || isQA || isDelivered) ? 'Signed' : 'Pending',
             paymentStatus: (hasPaid || calculatedStep > 5 || isBooked || isInspected || isQA || isDelivered) ? 'Paid' : (isPaymentClaimed ? 'Claimed (Verification Pending)' : 'Pending'),
+            invoices: dashPayload.activeJob.invoices || [],
+            quote: {
+              total: dashPayload.activeJob.invoices?.[0]?.total || null,
+              baseFee: dashPayload.activeJob.invoices?.[0]?.subtotal || null,
+            },
+            totalAmount: dashPayload.activeJob.invoices?.[0]?.total || null,
           };
 
           if (idx >= 0) {
@@ -286,21 +265,16 @@ export const CustomerDashboardPage = () => {
       }
       return apiActiveJob?.inspectionTime || baseJob?.timeSlot || 'Time: TBD';
     })(),
-    timelineStep: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
-      ? 1
-      : Math.max(Number(baseJob?.timelineStep) || 0, apiStepNumber),
-    status: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
-      ? 'Enquiry'
-      : (isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry'))))))),
-    stage: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
-      ? 'ENQUIRY'
-      : (apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY'))),
-    paymentStatus: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
-      ? 'Pending'
-      : (isApiJobPaid ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending')),
-    termsStatus: (baseJob?.status === 'Enquiry' || baseJob?.stage === 'enquiry' || baseJob?.isNewInstruction || !baseJob?.quote)
-      ? 'Pending'
-      : ((apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4 || baseJob?.termsStatus === 'Signed') ? 'Signed' : 'Pending'),
+    timelineStep: Math.max(
+      Number(baseJob?.timelineStep) || 0,
+      Number(apiActiveJob?.timelineStep) || 0,
+      apiStepNumber,
+      1
+    ),
+    status: (isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry'))))))),
+    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY')),
+    paymentStatus: (isApiJobPaid || baseJob?.paymentStatus === 'Paid') ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending'),
+    termsStatus: (baseJob?.termsStatus === 'Signed' || isApiJobSigned || apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4) ? 'Signed' : 'Pending',
   } : null;
 
   const historyJobs = myCustomerJobs.filter((j) => j.id !== activeJob?.id);
@@ -462,9 +436,45 @@ export const CustomerDashboardPage = () => {
   const completedReports = allCustomerJobs.filter((j) => isJobDelivered(j, userEmail));
   const confirmedBookings = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Booked' || j.status === 'Scheduled' || (j.timelineStep || 0) >= 6));
   const activeBookings = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && j.status !== 'Cancelled');
-  const pendingQuotes = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Enquiry' || j.status === 'Quoted' || j.termsStatus === 'Pending' || (j.timelineStep || 0) <= 2));
+  const pendingQuotes = allCustomerJobs.filter((j) => !isJobDelivered(j, userEmail) && (j.status === 'Quoted' || (j.timelineStep === 2)));
 
   // Dynamic isolated stat cards
+  const resolvedFee = (() => {
+    let fee =
+      customerJob?.quote?.total ||
+      (customerJob?.quote?.baseFee ? customerJob.quote.baseFee * 1.2 : null) ||
+      customerJob?.totalAmount ||
+      customerJob?.agreedFee ||
+      customerJob?.invoices?.[0]?.total ||
+      apiActiveJob?.invoices?.[0]?.total;
+    if (fee && !isNaN(Number(fee)) && Number(fee) > 0) return Number(fee);
+    if (apiActiveJob?.stats?.totalFee) {
+      const parsed = parseFloat(String(apiActiveJob.stats.totalFee).replace(/[^0-9.]/g, ''));
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    try {
+      const allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      const matchQuote = allQuotes.find((q) => {
+        const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
+        return (qEmail && userEmail && qEmail === userEmail) || (customerJob?.id && (q.id === customerJob.id || q.jobNo === customerJob.id || q.jobId === customerJob.id));
+      });
+      if (matchQuote) {
+        const qFee = matchQuote.totalAmount || (matchQuote.baseFee ? matchQuote.baseFee * 1.2 : null) || matchQuote.total;
+        if (qFee && !isNaN(Number(qFee)) && Number(qFee) > 0) return Number(qFee);
+      }
+      const allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const matchLead = allLeads.find((l) => {
+        const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
+        return (lEmail && userEmail && lEmail === userEmail) || (customerJob?.id && (l.id === customerJob.id || l.reference === customerJob.id));
+      });
+      if (matchLead && matchLead.estimatedValue) {
+        const num = parseFloat(String(matchLead.estimatedValue).replace(/[^0-9.]/g, ''));
+        if (!isNaN(num) && num > 0) return num;
+      }
+    } catch {}
+    return null;
+  })();
+
   const statCards = [
     {
       id: 'bookings',
@@ -486,18 +496,12 @@ export const CustomerDashboardPage = () => {
         ? `${pendingQuotes.length} ${pendingQuotes.some(q => q.status === 'Enquiry' || q.timelineStep === 1) ? 'In Review' : 'New'}`
         : isDeliveredActive
         ? '0 Active'
-        : customerJob
-        ? (customerJob.status === 'Enquiry' || (customerJob.timelineStep || 0) <= 2 ? '1 In Review' : '1 Confirmed')
-        : '0 Quotes',
+        : (currentStageStep >= 3 ? '1 Confirmed' : (resolvedFee ? '1 Proposal' : (customerJob ? '1 In Review' : '0 Quotes'))),
       subtext: pendingQuotes.length > 0
         ? 'Review & accept proposal'
         : isDeliveredActive
         ? 'All proposals concluded'
-        : customerJob
-        ? (customerJob.status === 'Enquiry' || (customerJob.timelineStep || 0) <= 2
-            ? 'Awaiting NJS fee proposal'
-            : `${customerJob.property || customerJob.propertyAddress || 'Your Property'} (${customerJob.quote?.baseFee ? '£' + (customerJob.quote.baseFee * 1.2).toFixed(0) : 'Proposal Confirmed'})`)
-        : 'No open quotes',
+        : (currentStageStep >= 3 ? 'Quotation accepted' : (resolvedFee ? `Fee proposal: £${resolvedFee.toFixed(2)}` : 'Awaiting NJS fee proposal')),
       icon: Receipt,
       color: 'bg-indigo-50 text-indigo-600',
       path: '/customer/quotations',
@@ -506,74 +510,50 @@ export const CustomerDashboardPage = () => {
       id: 'payment',
       title: 'Payment Status',
       value: (() => {
-        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return '£0.00';
+        const isPaid = isDeliveredActive || customerJob?.paymentStatus === 'Paid' || currentStageStep >= 6;
+        if (isPaid) return resolvedFee ? `Paid (£${resolvedFee.toFixed(2)})` : '£0.00 (Settled)';
         if (!customerJob) return '£0.00';
-        const isQuoteAccepted =
-          customerJob.quoteStatus === 'Accepted' ||
-          customerJob.status === 'Accepted' ||
-          customerJob.termsStatus === 'Signed' ||
-          (customerJob.timelineStep || 0) >= 3;
-        const rawFee =
-          customerJob.quote?.total ||
-          (customerJob.quote?.baseFee ? customerJob.quote.baseFee * 1.2 : null) ||
-          customerJob.totalAmount;
-        if (isQuoteAccepted && rawFee) {
-          return `£${Number(rawFee).toFixed(2)}`;
-        }
-        if (
+        const isClaimed =
           customerJob.paymentStatus === 'Claimed (Verification Pending)' ||
           customerJob.paymentStatus === 'Claimed' ||
-          customerJob.paymentStatus?.includes('Claimed')
-        ) {
-          return rawFee ? `£${Number(rawFee).toFixed(2)}` : 'Claimed';
+          customerJob.paymentStatus?.includes('Claimed') ||
+          currentStageStep === 5;
+        if (isClaimed) {
+          return resolvedFee ? `£${resolvedFee.toFixed(2)}` : 'Payment Claimed';
+        }
+        if (resolvedFee) {
+          return `£${resolvedFee.toFixed(2)}`;
         }
         return 'Pending Quote';
       })(),
       subtext: (() => {
-        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return 'All fees settled';
+        const isPaid = isDeliveredActive || customerJob?.paymentStatus === 'Paid' || currentStageStep >= 6;
+        if (isPaid) return 'Payment confirmed & verified by NJS';
         if (!customerJob) return 'No balance due';
-        if (
+        const isClaimed =
           customerJob.paymentStatus === 'Claimed (Verification Pending)' ||
           customerJob.paymentStatus === 'Claimed' ||
-          customerJob.paymentStatus?.includes('Claimed')
-        ) {
-          return 'Payment Claimed — Awaiting NJS Admin Verification';
+          customerJob.paymentStatus?.includes('Claimed') ||
+          currentStageStep === 5;
+        if (isClaimed) {
+          return 'Bank transfer submitted — awaiting verification';
         }
-        const isQuoteAccepted =
-          customerJob.quoteStatus === 'Accepted' ||
-          customerJob.status === 'Accepted' ||
-          customerJob.termsStatus === 'Signed' ||
-          (customerJob.timelineStep || 0) >= 3;
-        const rawFee =
-          customerJob.quote?.total ||
-          (customerJob.quote?.baseFee ? customerJob.quote.baseFee * 1.2 : null) ||
-          customerJob.totalAmount;
-        if (isQuoteAccepted && rawFee) {
-          return 'Bank transfer pending settlement';
+        if (resolvedFee) {
+          return currentStageStep >= 3 ? 'Bank transfer pending settlement' : 'Official fee proposal issued';
         }
         return 'Awaiting NJS fee proposal';
       })(),
       icon: Building2,
       color: (() => {
-        if (isDeliveredActive || customerJob?.paymentStatus === 'Paid') return 'bg-emerald-50 text-emerald-600';
-        if (
+        const isPaid = isDeliveredActive || customerJob?.paymentStatus === 'Paid' || currentStageStep >= 6;
+        if (isPaid) return 'bg-emerald-50 text-emerald-600';
+        const isClaimed =
           customerJob?.paymentStatus === 'Claimed (Verification Pending)' ||
           customerJob?.paymentStatus === 'Claimed' ||
-          customerJob?.paymentStatus?.includes('Claimed')
-        ) {
-          return 'bg-amber-50 text-amber-700';
-        }
-        const isQuoteAccepted =
-          customerJob?.quoteStatus === 'Accepted' ||
-          customerJob?.status === 'Accepted' ||
-          customerJob?.termsStatus === 'Signed' ||
-          (customerJob?.timelineStep || 0) >= 3;
-        if (
-          isQuoteAccepted &&
-          (customerJob?.quote?.total || customerJob?.quote?.baseFee || customerJob?.totalAmount)
-        ) {
-          return 'bg-blue-50 text-blue-700';
-        }
+          customerJob?.paymentStatus?.includes('Claimed') ||
+          currentStageStep === 5;
+        if (isClaimed) return 'bg-amber-50 text-amber-700';
+        if (resolvedFee) return 'bg-blue-50 text-blue-700';
         return 'bg-slate-50 text-slate-700';
       })(),
       path: '/customer/invoices-and-payments',

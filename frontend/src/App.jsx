@@ -121,7 +121,7 @@ const PortalRedirect = () => {
 function AppRoutes() {
 
   React.useEffect(() => {
-    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v14_step1_isolated';
+    const WIPE_KEY = 'njs_fresh_slate_v2026_clean_v15_api_authoritative';
     if (!localStorage.getItem(WIPE_KEY)) {
       [
         'propertygroup_quotes',
@@ -156,8 +156,10 @@ function AppRoutes() {
           if (
             k &&
             (k.includes('payment_claimed') ||
+              k.includes('payment_paid') ||
               k.includes('terms_signed') ||
               k.includes('quote_accepted') ||
+              k.includes('booking_confirmed') ||
               k.includes('delivered_') ||
               k.includes('inspection_completed_') ||
               k.includes('drafting_') ||

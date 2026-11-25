@@ -33,17 +33,16 @@ import {
  * Shared single source of truth for RICS 10-Stage calculation across all pages
  */
 export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
-  if (!job) return 1;
-
-  const jobRef = (job?.jobNo || job?.id || job?.reference || '').toString().trim();
+  const safeJob = job || {};
+  const jobRef = (safeJob?.jobNo || safeJob?.id || safeJob?.reference || apiTracking?.jobReference || apiTracking?.reference || '').toString().trim();
   const cleanRef = jobRef.replace(/[^a-zA-Z0-9_-]/g, '');
   const digitsRef = jobRef.replace(/[^0-9]/g, '');
 
-  const status = String(job?.status || '').toLowerCase().trim();
-  const stage = String(job?.stage || '').toUpperCase().trim();
-  const termsStatus = String(job?.termsStatus || '').toLowerCase().trim();
-  const paymentStatus = String(job?.paymentStatus || '').toLowerCase().trim();
-  const step = Number(job?.timelineStep) || 0;
+  const status = String(safeJob?.status || '').toLowerCase().trim();
+  const stage = String(safeJob?.stage || '').toUpperCase().trim();
+  const termsStatus = String(safeJob?.termsStatus || '').toLowerCase().trim();
+  const paymentStatus = String(safeJob?.paymentStatus || '').toLowerCase().trim();
+  const step = Number(safeJob?.timelineStep) || 0;
 
   const apiStep = Number(apiTracking?.currentStep || apiTracking?.timelineStep || 0);
   const apiStage = String(
@@ -53,22 +52,35 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
     ''
   ).toUpperCase().trim();
 
-  // STRICT RULE 1: Fresh Enquiry / New Instruction ALWAYS starts at Step 1!
-  if (
-    status === 'enquiry' ||
-    stage === 'ENQUIRY' ||
-    status === 'new' ||
-    stage === 'NEW' ||
-    job?.isNewInstruction ||
-    (!job?.quote && termsStatus !== 'signed' && paymentStatus !== 'paid' && status !== 'accepted' && stage !== 'ACCEPTED')
-  ) {
-    return 1;
-  }
+  // ── AUTHORITATIVE API STEP ──────────────────────────────────────────────────
+  // If backend gives us a definitive step/stage, use it as the FLOOR.
+  // This prevents stale localStorage flags from overriding the real backend state.
+  // We still allow localStorage to push HIGHER (e.g. customer signed terms locally
+  // before backend has been updated), but never LOWER than what API says.
+  const apiAuthoritativeStep = (() => {
+    if (apiStep >= 1) return apiStep;
+    if (apiStage === 'COMPLETE') return 10;
+    if (apiStage === 'QA_REVIEW') return 9;
+    if (apiStage === 'PREPARING_REPORT' || apiStage === 'DRAFTING') return 8;
+    if (apiStage === 'INSPECTED') return 7;
+    if (apiStage === 'BOOKED') return 6;
+    if (apiStage === 'PAID') return 5;
+    if (apiStage === 'SIGNED') return 4;
+    if (apiStage === 'ACCEPTED') return 3;
+    if (apiStage === 'QUOTE' || apiStage === 'QUOTED') return 2;
+    if (stage === 'ACCEPTED') return 3;
+    if (stage === 'QUOTE' || stage === 'QUOTED') return 2;
+    if (step >= 1) return step;
+    return 0;
+  })();
+
+  // ── STEP CHECKS (each check allows localStorage to push HIGHER than API, not lower) ──────────
 
   // 10. Completed / Delivered
   const isDeliveredLocal =
-    Boolean((jobRef && localStorage.getItem(`propertygroup_delivered_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true'));
+    Boolean((jobRef && (localStorage.getItem(`propertygroup_delivered_${jobRef}`) === 'true' || localStorage.getItem(`propertygroup_report_delivered_${jobRef}`) === 'true')) ||
+    (cleanRef && (localStorage.getItem(`propertygroup_delivered_${cleanRef}`) === 'true' || localStorage.getItem(`propertygroup_report_delivered_${cleanRef}`) === 'true')) ||
+    (userEmail && (localStorage.getItem(`propertygroup_delivered_${userEmail}`) === 'true' || localStorage.getItem(`propertygroup_report_delivered_${userEmail}`) === 'true')));
   if (
     status === 'completed' || status === 'delivered' ||
     stage === 'COMPLETE' || stage === 'COMPLETED' ||
@@ -82,7 +94,8 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   const isQALocal =
     Boolean((jobRef && localStorage.getItem(`propertygroup_qareview_${jobRef}`) === 'true') ||
     (cleanRef && localStorage.getItem(`propertygroup_qareview_${cleanRef}`) === 'true') ||
-    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true'));
+    (digitsRef && localStorage.getItem(`propertygroup_qareview_JOB-2026-${digitsRef}`) === 'true') ||
+    (userEmail && localStorage.getItem(`propertygroup_qareview_${userEmail}`) === 'true'));
   if (
     status === 'qa_review' || status === 'qa review' ||
     stage === 'QA_REVIEW' || apiStage === 'QA_REVIEW' ||
@@ -94,7 +107,8 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   // 8. Drafting / Preparing Report
   const isDraftingLocal =
     Boolean((jobRef && localStorage.getItem(`propertygroup_drafting_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true'));
+    (cleanRef && localStorage.getItem(`propertygroup_drafting_${cleanRef}`) === 'true') ||
+    (userEmail && localStorage.getItem(`propertygroup_drafting_${userEmail}`) === 'true'));
   if (
     status === 'drafting' || status === 'preparing report' ||
     stage === 'PREPARING_REPORT' || stage === 'DRAFTING' ||
@@ -107,7 +121,8 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   // 7. Inspection Completed
   const isInspectedLocal =
     Boolean((jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true') ||
-    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true'));
+    (cleanRef && localStorage.getItem(`propertygroup_inspection_completed_${cleanRef}`) === 'true') ||
+    (userEmail && localStorage.getItem(`propertygroup_inspection_completed_${userEmail}`) === 'true'));
   if (
     status === 'inspected' ||
     stage === 'INSPECTED' || apiStage === 'INSPECTED' ||
@@ -117,54 +132,95 @@ export const computeRICSStage = (job, apiTracking = null, userEmail = '') => {
   }
 
   // 6. Appointment Booked
+  const isBookedLocal =
+    Boolean((userEmail && localStorage.getItem(`propertygroup_booking_confirmed_${userEmail}`) === 'true') ||
+    (jobRef && localStorage.getItem(`propertygroup_booking_confirmed_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_booking_confirmed_${cleanRef}`) === 'true'));
   if (
     status === 'booked' || status === 'scheduled' ||
     stage === 'BOOKED' || stage === 'SCHEDULED' ||
     apiStage === 'BOOKED' || apiStage === 'SCHEDULED' ||
-    step === 6 || apiStep === 6
+    step === 6 || apiStep === 6 || isBookedLocal
   ) {
     return 6;
   }
 
   // 5. Payment Confirmed
+  // Only allow localStorage payment flags if API says we're at step >= 3 (quote accepted).
+  // This prevents stale "payment_paid" flags from promoting a Step-1 or Step-2 job to Step 5.
+  const isPaymentLocalAllowed = apiAuthoritativeStep >= 3;
+  const isPaymentLocal = isPaymentLocalAllowed &&
+    Boolean((userEmail && (localStorage.getItem(`propertygroup_payment_paid_${userEmail}`) === 'true' || localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true')) ||
+    (jobRef && (localStorage.getItem(`propertygroup_payment_paid_${jobRef}`) === 'true' || localStorage.getItem(`propertygroup_payment_claimed_${jobRef}`) === 'true')) ||
+    (cleanRef && (localStorage.getItem(`propertygroup_payment_paid_${cleanRef}`) === 'true' || localStorage.getItem(`propertygroup_payment_claimed_${cleanRef}`) === 'true')));
   if (
     paymentStatus === 'paid' || paymentStatus.includes('claimed') ||
     stage === 'PAID' || apiStage === 'PAID' ||
-    step === 5 || apiStep === 5
+    step === 5 || apiStep === 5 || isPaymentLocal
   ) {
     return 5;
   }
 
   // 4. Terms Signed
+  // Only allow localStorage terms flags if API says we're at step >= 3.
+  const isSignedLocalAllowed = apiAuthoritativeStep >= 3;
+  const isSignedLocal = isSignedLocalAllowed &&
+    Boolean((userEmail && localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true') ||
+    (jobRef && localStorage.getItem(`propertygroup_terms_signed_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_terms_signed_${cleanRef}`) === 'true'));
   if (
     termsStatus === 'signed' ||
     stage === 'SIGNED' || apiStage === 'SIGNED' ||
-    step === 4 || apiStep === 4
+    step === 4 || apiStep === 4 || isSignedLocal
   ) {
     return 4;
   }
 
   // 3. Quote Accepted
+  const isAcceptedLocal =
+    Boolean((userEmail && localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true') ||
+    (jobRef && localStorage.getItem(`propertygroup_quote_accepted_${jobRef}`) === 'true') ||
+    (cleanRef && localStorage.getItem(`propertygroup_quote_accepted_${cleanRef}`) === 'true'));
   if (
-    status === 'accepted' || job?.quoteStatus === 'Accepted' ||
+    status === 'accepted' || safeJob?.quoteStatus === 'Accepted' ||
     stage === 'ACCEPTED' || apiStage === 'ACCEPTED' ||
-    step === 3 || apiStep === 3
+    step === 3 || apiStep === 3 || isAcceptedLocal ||
+    apiAuthoritativeStep >= 3
   ) {
-    return 3;
+    return Math.max(3, apiAuthoritativeStep);
   }
 
   // 2. Quote Issued
-  if (
-    status === 'quoted' ||
-    stage === 'QUOTE' || stage === 'QUOTED' ||
-    apiStage === 'QUOTE' || apiStage === 'QUOTED' ||
-    step === 2 || apiStep === 2
-  ) {
-    return 2;
+  const hasQuoteIssued = (() => {
+    if (
+      status === 'quoted' ||
+      stage === 'QUOTE' || stage === 'QUOTED' ||
+      apiStage === 'QUOTE' || apiStage === 'QUOTED' ||
+      step === 2 || apiStep === 2 ||
+      Boolean(safeJob?.quote && (safeJob.quote.baseFee || safeJob.quote.total)) ||
+      Boolean(safeJob?.invoices && safeJob.invoices.length > 0) ||
+      apiAuthoritativeStep >= 2
+    ) {
+      return true;
+    }
+    try {
+      const qList = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      if (qList.some((q) => (userEmail && (q.clientEmail || '').toLowerCase().trim() === userEmail) || (jobRef && (q.id === jobRef || q.jobNo === jobRef || q.jobId === jobRef)))) {
+        return true;
+      }
+      const lList = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      if (lList.some((l) => (userEmail && (l.customerEmail || '').toLowerCase().trim() === userEmail) && (l.status === 'Quoted' || l.status === 'Quote Sent' || (l.estimatedValue && !String(l.estimatedValue).toLowerCase().includes('pending'))))) {
+        return true;
+      }
+    } catch {}
+    return false;
+  })();
+  if (hasQuoteIssued) {
+    return Math.max(2, apiAuthoritativeStep);
   }
 
-  // Default fallback: 1 (Enquiry)
-  return 1;
+  // Default fallback: use API authoritative step if available, else 1 (Enquiry)
+  return Math.max(1, apiAuthoritativeStep);
 };
 
 export const getSurveyStages = (job) => {

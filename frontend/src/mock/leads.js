@@ -55,17 +55,10 @@ if (typeof window !== 'undefined' && window.localStorage) {
           const idStr = String(l.id || '').trim();
           const refStr = String(l.reference || '').trim();
           return (
-            !name.includes('abc') &&
             !name.includes('akku') &&
-            !email.includes('abc@') &&
             !email.includes('akku') &&
-            !addr.includes('www,uk') &&
             !addr.includes('mp nagar') &&
             !addr.includes('bhopal') &&
-            !idStr.includes('8518') &&
-            !refStr.includes('8518') &&
-            l.id !== 54 &&
-            l.dbId !== 54 &&
             l.id !== 7 &&
             l.id !== 11 &&
             l.id !== 12 &&
@@ -112,19 +105,10 @@ export const getStoredLeads = () => {
               (email && (deletedSet.has(email) || deletedSet.has(email.toLowerCase())));
 
             const isTestPhantom =
-              name.includes('abc') ||
               name.includes('akku') ||
-              email.includes('abc@') ||
               email.includes('akku') ||
-              addr.includes('www,uk') ||
               addr.includes('mp nagar') ||
               addr.includes('bhopal') ||
-              idStr.includes('8518') ||
-              dbIdStr.includes('8518') ||
-              refStr.includes('8518') ||
-              formattedRef.includes('8518') ||
-              l.id === 54 ||
-              l.dbId === 54 ||
               l.id === 7 ||
               l.id === 11 ||
               l.id === 12 ||

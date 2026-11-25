@@ -1,0 +1,43 @@
+- generic [ref=e3]:
+  - dialog "Navigation Sidebar" [ref=e4]:
+    - img "NJS Property Group" [ref=e7]
+    - generic [ref=e8]:
+      - link "Dashboard" [ref=e9] [cursor=pointer]:
+        - /url: /admin/dashboard
+      - link "Users & Roles" [ref=e17] [cursor=pointer]:
+        - /url: /admin/users-and-roles
+      - link "Companies" [ref=e25] [cursor=pointer]:
+        - /url: /admin/companies
+      - link "Surveyors" [ref=e32] [cursor=pointer]:
+        - /url: /admin/surveyors
+      - link "CRM & Leads" [ref=e39] [cursor=pointer]:
+        - /url: /admin/crm-and-leads
+      - link "Survey Jobs" [ref=e47] [cursor=pointer]:
+        - /url: /admin/survey-jobs
+      - link "Messages Inbox" [ref=e54] [cursor=pointer]:
+        - /url: /admin/messages
+      - link "Quotations & Payments" [ref=e59] [cursor=pointer]:
+        - /url: /admin/quotations-and-payments
+      - link "Terms & Documents" [ref=e64] [cursor=pointer]:
+        - /url: /admin/terms-and-documents
+      - link "Reports & Analytics" [ref=e71] [cursor=pointer]:
+        - /url: /admin/reports-and-analytics
+      - link "Settings" [ref=e76] [cursor=pointer]:
+        - /url: /admin/settings
+    - generic [ref=e83]:
+      - generic [ref=e84]:
+        - generic [ref=e85]: AS
+        - generic [ref=e86]: Aashi Saket
+      - button "Sign Out" [ref=e88] [cursor=pointer]
+  - generic [ref=e92]:
+    - banner [ref=e93]:
+      - generic [ref=e94]:
+        - generic [ref=e95]: INDEPENDENT RICS-ALIGNED SURVEYORS
+        - textbox "Search surveys, settings, clients, UK postcodes..." [ref=e100]
+      - generic [ref=e101]:
+        - generic [ref=e102]: Wed, 25 Nov 2026
+        - button "View notifications" [ref=e107]
+        - button "User profile and menu" [ref=e113] [cursor=pointer]:
+          - generic [ref=e114]: AS
+          - generic [ref=e117]: Aashi Saket
+    - main [ref=e121]

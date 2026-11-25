@@ -258,10 +258,20 @@ export const AdminDashboardPage = () => {
 
   // Map raw job timelineStep to canonical 6-stage name
   const getJobStage = (job) => {
-    const rawStep = job?.timelineStep || 4;
+    // Use the backend stage directly if available
+    const backendStage = (job?.stage || '').toUpperCase();
+    if (backendStage === 'COMPLETE') return 'Complete';
+    if (backendStage === 'PREPARING_REPORT' || backendStage === 'QA_REVIEW') return 'Preparing report';
+    if (backendStage === 'BOOKED' || backendStage === 'INSPECTED') return 'Booked';
+    if (backendStage === 'PAID') return 'Paid';
+    if (backendStage === 'ACCEPTED') return 'Accepted';
+    if (backendStage === 'QUOTE' || backendStage === 'QUOTED') return 'Quote';
+
+    // Fallback to timelineStep if no stage
+    const rawStep = job?.timelineStep || 2;
     if (rawStep <= 2) return 'Quote';
-    if (rawStep === 3) return 'Paid';
-    if (rawStep === 4 || rawStep === 5) return 'Accepted';
+    if (rawStep === 3) return 'Accepted';
+    if (rawStep === 4 || rawStep === 5) return 'Paid';
     if (rawStep === 6) return 'Booked';
     if (rawStep === 7 || rawStep === 8 || rawStep === 9) return 'Preparing report';
     return 'Complete';

@@ -66,6 +66,18 @@ const mapBackendJobToFrontend = (bj) => {
   const termsSigned = Array.isArray(bj.terms) && bj.terms.some((t) => t.signed);
   const invoicePaid = Array.isArray(bj.invoices) && bj.invoices.some((i) => i.status === 'PAID');
 
+  let calculatedTimelineStep = 1;
+  if (stage === 'COMPLETE') calculatedTimelineStep = 10;
+  else if (stage === 'QA_REVIEW') calculatedTimelineStep = 9;
+  else if (stage === 'DRAFTING' || stage === 'PREPARING_REPORT') calculatedTimelineStep = 8;
+  else if (stage === 'INSPECTED') calculatedTimelineStep = 7;
+  else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') calculatedTimelineStep = 6;
+  else if (invoicePaid) calculatedTimelineStep = 5;
+  else if (termsSigned) calculatedTimelineStep = 4;
+  else if (stage === 'ACCEPTED' || bj.status === 'Accepted') calculatedTimelineStep = 3;
+  else if (stage === 'QUOTE' || stage === 'QUOTED') calculatedTimelineStep = 2;
+  else calculatedTimelineStep = 1;
+
   const termsStatus = termsSigned ? 'Signed' : (Array.isArray(bj.terms) && bj.terms.length > 0 ? 'Sent' : 'Pending');
   const paymentStatus = invoicePaid ? 'Paid' : (Array.isArray(bj.invoices) && bj.invoices.length > 0 ? 'Invoice Sent' : 'Awaiting Payment');
   const canBook = termsSigned && invoicePaid;
@@ -92,6 +104,8 @@ const mapBackendJobToFrontend = (bj) => {
     surveyor: surveyorName,
     surveyorId: sId,
     status: mappedStatus,
+    stage: bj.stage || 'QUOTE',
+    timelineStep: Number(bj.timelineStep) || calculatedTimelineStep,
     termsStatus,
     paymentStatus,
     canBook: canBook || mappedStatus === 'Scheduled' || mappedStatus === 'Completed',

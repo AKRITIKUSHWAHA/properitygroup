@@ -55,6 +55,7 @@ import { useTerms, TERMS_TEMPLATES, getTemplateForService } from '../../mock/ter
 import { useQuotes } from '../../mock/quotes';
 import { useLeads } from '../../mock/leads';
 import {
+  customerDashboardApi,
   customerQuotationsApi,
   customerBookingsApi,
   customerTrackSurveyApi,
@@ -214,6 +215,16 @@ export const CustomerTermsPage = () => {
   const currentJob =
     (activeJobId && myJobs.find((j) => j.id === activeJobId || j.jobNo === activeJobId)) ||
     myJobs[0] ||
+    (apiTerm?.job ? {
+      ...apiTerm.job,
+      id: apiTerm.job.reference || apiTerm.job.id,
+      jobNo: apiTerm.job.reference || apiTerm.job.id,
+      property: apiTerm.job.propertyAddress,
+      propertyAddress: apiTerm.job.propertyAddress,
+      surveyType: apiTerm.job.serviceType,
+      customerEmail: userEmail,
+      clientEmail: userEmail,
+    } : null) ||
     null;
 
   // 2. Locate linked agreement in terms repository
@@ -327,9 +338,10 @@ export const CustomerTermsPage = () => {
     (currentJob?.id && localStorage.getItem(`propertygroup_payment_claimed_${currentJob.id}`) === 'true');
 
   // Once an instruction progresses to Stage 4 or beyond, terms are executed and binding under RICS
+  const hasRealApiSignature = Boolean(apiTerm?.signed && (apiTerm?.signatureData || apiTerm?.signedAt));
   const isAlreadySigned = Boolean(
     effectiveStage >= 4 ||
-    apiTerm?.signed ||
+    hasRealApiSignature ||
     apiTerm?.job?.stage === 'COMPLETE' ||
     apiTracking?.currentStage === 'COMPLETE' ||
     (apiTracking?.currentStep || 0) >= 4 ||
@@ -1634,6 +1646,13 @@ export const CustomerBookingsPage = () => {
 
     if (updateJob) {
       updateJob(bookingModalJob.id, payload);
+    }
+
+    if (userEmail) {
+      localStorage.setItem(`propertygroup_booking_confirmed_${userEmail}`, 'true');
+    }
+    if (bookingModalJob.id) {
+      localStorage.setItem(`propertygroup_booking_confirmed_${bookingModalJob.id}`, 'true');
     }
 
     try {
@@ -3579,32 +3598,13 @@ export const CustomerReportsPage = () => {
 export const CustomerTrackSurveyPage = () => {
   const navigate = useNavigate();
   const [apiTracking, setApiTracking] = useState(null);
-  useEffect(() => {
-    customerTrackSurveyApi.getTracking()
-      .then((res) => {
-        const payload = res?.currentStage || res?.currentStep || res?.jobReference || res?.reference ? res : (res?.data || res);
-        if (payload && (payload.currentStage || payload.jobReference || payload.reference || payload.currentStep || payload.propertyAddress || payload.property)) {
-          setApiTracking(payload);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const [apiDashboardJob, setApiDashboardJob] = useState(null);
   const { user } = useAuth();
   const { jobs } = useJobs();
   const { quotes = [] } = useQuotes();
   const { leads = [] } = useLeads();
   const { agreements = [] } = useTerms();
   const [, setTick] = useState(0);
-
-  useEffect(() => {
-    const handleUpdate = () => setTick((t) => t + 1);
-    window.addEventListener('propertygroup_jobs_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
-    return () => {
-      window.removeEventListener('propertygroup_jobs_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
-    };
-  }, []);
 
   const sessionUser = (() => {
     try {
@@ -3618,6 +3618,72 @@ export const CustomerTrackSurveyPage = () => {
   const userEmail = (currentUser?.email || rememberedEmail || '').toLowerCase().trim();
   const isDemo = userEmail === 'customer@demo.com';
 
+  useEffect(() => {
+    Promise.allSettled([
+      customerTrackSurveyApi.getTracking(),
+      customerDashboardApi.getDashboard(),
+    ]).then(([trackRes, dashRes]) => {
+      const trackPayload = trackRes.status === 'fulfilled' ? (trackRes.value?.currentStage || trackRes.value?.currentStep || trackRes.value?.jobReference || trackRes.value?.reference ? trackRes.value : (trackRes.value?.data || trackRes.value)) : null;
+      if (trackPayload && (trackPayload.currentStage || trackPayload.jobReference || trackPayload.reference || trackPayload.currentStep || trackPayload.propertyAddress || trackPayload.property)) {
+        setApiTracking(trackPayload);
+      }
+
+      const dashPayload = dashRes.status === 'fulfilled' ? (dashRes.value?.activeJob ? dashRes.value : (dashRes.value?.data || dashRes.value)) : null;
+      if (dashPayload?.activeJob) {
+        setApiDashboardJob(dashPayload.activeJob);
+        try {
+          const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+          const ref = dashPayload.activeJob.reference || dashPayload.activeJob.id;
+          const idx = storedJobs.findIndex((j) => j.id === ref || j.jobNo === ref || (userEmail && (j.customerEmail || '').toLowerCase() === userEmail));
+          const step = Math.max(
+            Number(dashPayload.activeJob.timelineStep) || 0,
+            Number(trackPayload?.currentStep) || 0,
+            dashPayload.activeJob.stage === 'ACCEPTED' ? 3 : 1
+          );
+          const jobObj = {
+            id: ref,
+            jobNo: ref,
+            customer: dashPayload.activeJob.clientName || currentUser?.name || 'Customer',
+            clientName: dashPayload.activeJob.clientName || currentUser?.name || 'Customer',
+            customerEmail: userEmail || dashPayload.activeJob.clientEmail || '',
+            clientEmail: userEmail || dashPayload.activeJob.clientEmail || '',
+            property: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
+            propertyAddress: dashPayload.activeJob.propertyAddress || dashPayload.activeJob.property,
+            surveyType: dashPayload.activeJob.serviceType,
+            timelineStep: step,
+            status: dashPayload.activeJob.status || (step >= 3 ? 'Accepted' : 'Enquiry'),
+            stage: dashPayload.activeJob.stage || (step >= 3 ? 'ACCEPTED' : 'ENQUIRY'),
+            termsStatus: dashPayload.activeJob.termsStatus || (step >= 4 ? 'Signed' : 'Pending'),
+            paymentStatus: dashPayload.activeJob.paymentStatus || (step >= 5 ? 'Paid' : 'Pending'),
+            invoices: dashPayload.activeJob.invoices || [],
+            quote: {
+              total: dashPayload.activeJob.invoices?.[0]?.total || null,
+              baseFee: dashPayload.activeJob.invoices?.[0]?.subtotal || null,
+            },
+            totalAmount: dashPayload.activeJob.invoices?.[0]?.total || null,
+          };
+          if (idx >= 0) {
+            storedJobs[idx] = { ...storedJobs[idx], ...jobObj };
+          } else {
+            storedJobs.unshift(jobObj);
+          }
+          localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
+          window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+        } catch {}
+      }
+    }).catch(() => {});
+  }, [userEmail]);
+
+  useEffect(() => {
+    const handleUpdate = () => setTick((t) => t + 1);
+    window.addEventListener('propertygroup_jobs_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('propertygroup_jobs_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
   const myCustomerJobs = jobs
     .filter((j) => isJobForCustomer(j, currentUser))
     .filter((j) => {
@@ -3630,7 +3696,31 @@ export const CustomerTrackSurveyPage = () => {
   const [activeJobId, setActiveJobId] = useState(() => {
     return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
   });
-  const myJob = myCustomerJobs.find((j) => j.id === activeJobId) || myCustomerJobs[0] || null;
+  const myJob =
+    myCustomerJobs.find((j) => j.id === activeJobId) ||
+    myCustomerJobs[0] ||
+    (apiDashboardJob ? {
+      ...apiDashboardJob,
+      id: apiDashboardJob.reference || apiDashboardJob.id,
+      jobNo: apiDashboardJob.reference || apiDashboardJob.id,
+      property: apiDashboardJob.propertyAddress || apiDashboardJob.property,
+      surveyType: apiDashboardJob.serviceType,
+      timelineStep: apiDashboardJob.timelineStep || (apiDashboardJob.stage === 'ACCEPTED' ? 3 : 1),
+      stage: apiDashboardJob.stage || 'ACCEPTED',
+      customerEmail: userEmail,
+      clientEmail: userEmail,
+      invoices: apiDashboardJob.invoices,
+    } : null) ||
+    (apiTracking ? {
+      id: apiTracking.jobReference || apiTracking.reference,
+      jobNo: apiTracking.jobReference || apiTracking.reference,
+      property: apiTracking.propertyAddress || apiTracking.property,
+      surveyType: apiTracking.serviceType,
+      timelineStep: apiTracking.currentStep || (apiTracking.currentStage === 'ACCEPTED' ? 3 : 1),
+      stage: apiTracking.currentStage || 'ACCEPTED',
+      customerEmail: userEmail,
+      clientEmail: userEmail,
+    } : null);
   const historyJobs = myCustomerJobs.filter((j) => j.id !== myJob?.id);
 
   const myQuote = quotes.find((q) => {

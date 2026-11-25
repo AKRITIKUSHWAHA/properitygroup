@@ -179,28 +179,6 @@ export const getStoredJobs = () => {
             updatedJob.surveyor = 'test surveyor';
             updatedJob.surveyorEmail = updatedJob.surveyorEmail || 'surveyor@njspropertygroup.com';
           }
-          const isEnquiry = updatedJob.status === 'Enquiry' || updatedJob.stage === 'enquiry' || updatedJob.stage === 'ENQUIRY' || updatedJob.isNewInstruction || !updatedJob.quote;
-          if (isEnquiry) {
-            if (
-              updatedJob.timelineStep !== 1 ||
-              updatedJob.status !== 'Enquiry' ||
-              updatedJob.stage !== 'enquiry' ||
-              updatedJob.termsStatus !== 'Pending' ||
-              updatedJob.paymentStatus !== 'Pending' ||
-              updatedJob.quoteStatus === 'Accepted'
-            ) {
-              needsResave = true;
-              return {
-                ...updatedJob,
-                paymentStatus: 'Pending',
-                termsStatus: 'Pending',
-                quoteStatus: 'Pending',
-                timelineStep: 1,
-                stage: 'enquiry',
-                status: 'Enquiry',
-              };
-            }
-          }
           return updatedJob;
         });
 
@@ -224,8 +202,20 @@ export const getStoredJobs = () => {
             localStorage.setItem('propertygroup_jobs', JSON.stringify(deduplicated));
           } catch {}
         }
-        return deduplicated.filter((j) => {
-          const email = (j.customerEmail || j.clientEmail || '').toLowerCase().trim();
+
+        let activeUserEmail = '';
+        try {
+          const sess = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+          activeUserEmail = (sess.email || '').toLowerCase().trim();
+        } catch {}
+
+        return deduplicated.map((j) => {
+          if (!j.customerEmail && !j.clientEmail && activeUserEmail) {
+            return { ...j, customerEmail: activeUserEmail, clientEmail: activeUserEmail };
+          }
+          return j;
+        }).filter((j) => {
+          const email = (j.customerEmail || j.clientEmail || activeUserEmail || '').toLowerCase().trim();
           const name = (j.customer || j.clientName || j.name || '').toLowerCase().trim();
           const addr = (j.property || j.propertyAddress || j.location || '').toLowerCase().trim();
           const idStr = String(j.id || '').toUpperCase().trim();
