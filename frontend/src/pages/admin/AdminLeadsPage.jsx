@@ -395,17 +395,10 @@ export const AdminLeadsPage = () => {
             const email = (l.clientEmail || l.customerEmail || '').toLowerCase().trim();
             const addr = (l.propertyAddress || l.property || '').toLowerCase().trim();
             const isTestPhantom =
-              name.includes('abc') ||
               name.includes('akku') ||
-              email.includes('abc@') ||
               email.includes('akku') ||
-              addr.includes('www,uk') ||
               addr.includes('mp nagar') ||
               addr.includes('bhopal') ||
-              rawId.includes('8518') ||
-              ref.includes('8518') ||
-              formattedRef.includes('8518') ||
-              l.id === 54 ||
               l.id === 7 ||
               l.id === 11 ||
               l.id === 12 ||
