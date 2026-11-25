@@ -224,7 +224,7 @@ export const getNotifications = async (req, res, next) => {
       } else if (isCustomer && userEmail) {
         const clientLeads = await prisma.lead.findMany({
           where: {
-            clientEmail: { equals: userEmail, mode: 'insensitive' },
+            clientEmail: userEmail,
             ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
           orderBy: { createdAt: 'desc' },
@@ -289,8 +289,8 @@ export const getNotifications = async (req, res, next) => {
         const clientQuotes = await prisma.quote.findMany({
           where: {
             OR: [
-              { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
-              { lead: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
+              { job: { clientEmail: userEmail } },
+              { lead: { clientEmail: userEmail } },
             ],
             ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
@@ -372,8 +372,8 @@ export const getNotifications = async (req, res, next) => {
         const clientTerms = await prisma.term.findMany({
           where: {
             OR: [
-              { clientEmail: { equals: userEmail, mode: 'insensitive' } },
-              { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
+              { clientEmail: userEmail },
+              { job: { clientEmail: userEmail } },
             ],
             ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
@@ -442,8 +442,8 @@ export const getNotifications = async (req, res, next) => {
         const clientInvoices = await prisma.invoice.findMany({
           where: {
             OR: [
-              { clientEmail: { equals: userEmail, mode: 'insensitive' } },
-              { job: { clientEmail: { equals: userEmail, mode: 'insensitive' } } },
+              { clientEmail: userEmail },
+              { job: { clientEmail: userEmail } },
             ],
             ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
@@ -546,7 +546,7 @@ export const getNotifications = async (req, res, next) => {
           where: {
             OR: [
               { surveyorId: user.id },
-              { surveyor: { email: { equals: userEmail, mode: 'insensitive' } } },
+              { surveyor: { email: userEmail } },
             ],
           },
           orderBy: { updatedAt: 'desc' },
@@ -556,7 +556,7 @@ export const getNotifications = async (req, res, next) => {
           const timestamp = j.qaApprovedAt || j.reportGeneratedAt || j.updatedAt || j.createdAt;
           const timeStr = formatNotificationTimeStr(timestamp);
 
-          if (j.qaApprovedAt || j.stage === 'COMPLETED') {
+          if (j.qaApprovedAt || j.stage === 'COMPLETE') {
             dynamicNotifs.push({
               id: `live-job-qa-${j.id}`,
               title: `✅ Report QA Approved & Dispatched`,
@@ -607,7 +607,7 @@ export const getNotifications = async (req, res, next) => {
           where: {
             OR: [
               { clientId: user.id },
-              { clientEmail: { equals: userEmail, mode: 'insensitive' } },
+              { clientEmail: userEmail },
             ],
             ...(userCreatedAt ? { createdAt: { gte: userCreatedAt } } : {}),
           },
@@ -952,7 +952,7 @@ export const createNotification = async (req, res, next) => {
     if (!parsedUserId && targetEmail) {
       try {
         const foundUser = await prisma.user.findFirst({
-          where: { email: { equals: targetEmail.toLowerCase().trim(), mode: 'insensitive' } },
+          where: { email: targetEmail.toLowerCase().trim() },
         });
         if (foundUser) {
           parsedUserId = foundUser.id;

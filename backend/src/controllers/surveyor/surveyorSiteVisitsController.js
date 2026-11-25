@@ -93,7 +93,7 @@ export const completeSiteVisit = async (req, res, next) => {
           {
             OR: [
               { surveyorId },
-              ...(surveyorEmail ? [{ surveyor: { email: { equals: surveyorEmail, mode: 'insensitive' } } }] : []),
+              ...(surveyorEmail ? [{ surveyor: { email: surveyorEmail } }] : []),
             ],
           },
         ],
@@ -122,7 +122,7 @@ export const completeSiteVisit = async (req, res, next) => {
       let targetCustomerId = job.clientId || null;
       if (job.clientEmail && job.clientEmail.includes('@')) {
         const clientUser = await prisma.user.findFirst({
-          where: { email: { equals: job.clientEmail.toLowerCase().trim(), mode: 'insensitive' } },
+          where: { email: job.clientEmail.toLowerCase().trim() },
           select: { id: true },
         });
         if (clientUser) targetCustomerId = clientUser.id;
