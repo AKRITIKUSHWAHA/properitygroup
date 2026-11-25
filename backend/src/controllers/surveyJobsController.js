@@ -146,7 +146,7 @@ export const createSurveyJob = async (req, res, next) => {
       where: {
         clientEmail: cleanEmail,
         propertyAddress: cleanAddress,
-        stage: { in: ['QUOTE', 'NEW', 'ACCEPTED', 'PAID'] },
+        stage: { in: ['QUOTE', 'ACCEPTED', 'PAID'] },
       },
     });
 
