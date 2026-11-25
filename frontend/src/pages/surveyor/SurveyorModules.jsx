@@ -118,6 +118,8 @@ export const SurveyorCalendarPage = () => {
       role: 'CUSTOMER',
       userId: apt?.clientId || apt?.userId,
       recipientEmail: targetEmail,
+      jobId: apt?.dbId || apt?.id || aptId,
+      jobRef,
       title: '🔍 Site Inspection Completed',
       desc: `Surveyor ${currentSurveyor} completed the physical site inspection for ${propertyAddr}. Your technical survey report is now being drafted.`,
       type: 'booking',
@@ -154,7 +156,7 @@ export const SurveyorCalendarPage = () => {
     }).catch(() => {});
 
     // 4. Sync backend stage
-    api.patch(`/survey-jobs/${apt?.id || aptId}/stage`, {
+    api.patch(`/survey-jobs/${apt?.dbId || apt?.id || aptId}/stage`, {
       newStage: 'PREPARING_REPORT',
       reason: `Surveyor ${currentSurveyor} completed site visit.`,
     }).catch(() => {});
@@ -1520,6 +1522,8 @@ export const SurveyorUploadReportsPage = () => {
       role: 'CUSTOMER',
       userId: activeJobObj?.clientId || activeJobObj?.userId,
       recipientEmail: targetEmail,
+      jobId: activeJobObj?.dbId || activeJobObj?.id || selectedJob,
+      jobRef,
       title: '📝 Survey Report Drafting Started',
       desc: `Surveyor ${currentSurveyor} is now drafting your official RICS survey report for ${propertyAddr}.`,
       type: 'booking',
@@ -1558,7 +1562,7 @@ export const SurveyorUploadReportsPage = () => {
     }
 
     // 4. Sync backend stage
-    api.patch(`/survey-jobs/${activeJobObj?.id || selectedJob}/stage`, {
+    api.patch(`/survey-jobs/${activeJobObj?.dbId || activeJobObj?.id || selectedJob}/stage`, {
       newStage: 'PREPARING_REPORT',
       reason: `Surveyor ${currentSurveyor} started report drafting.`,
     }).catch(() => {});
@@ -1618,9 +1622,11 @@ export const SurveyorUploadReportsPage = () => {
       role: 'CUSTOMER',
       userId: activeJobObj?.clientId || activeJobObj?.userId,
       recipientEmail: targetEmail,
+      jobId: activeJobObj?.dbId || activeJobObj?.id || selectedJob,
+      jobRef,
       title: '🛡️ Quality Assurance Review Underway',
       desc: `Surveyor ${currentSurveyor} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
-      type: 'booking',
+      type: 'report',
       link: '/customer/track-my-survey',
     }).catch(() => {});
 
@@ -1629,8 +1635,8 @@ export const SurveyorUploadReportsPage = () => {
       role: 'ADMIN',
       title: `Draft Report Submitted for QA Review — ${jobRef}`,
       desc: `Surveyor ${currentSurveyor} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
-      type: 'booking',
-      link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
+      type: 'report',
+      link: '/admin/reports-and-analytics',
     }).catch(() => {});
 
     // 3. Dispatch Surveyor In-App Notification
@@ -1663,11 +1669,22 @@ export const SurveyorUploadReportsPage = () => {
       window.dispatchEvent(new Event('property_group_sent_emails_updated'));
     } catch {}
 
-    // 4. Sync backend stage
-    api.patch(`/survey-jobs/${activeJobObj?.id || selectedJob}/stage`, {
-      newStage: 'PREPARING_REPORT',
-      reason: `Surveyor ${currentSurveyor} submitted draft report for QA audit.`,
-    }).catch(() => {});
+    // 4. Persist draft report URL + QA submission to backend MySQL (sets reportPdfUrl & reportGeneratedAt + Stage 9)
+    const targetBackendId = activeJobObj?.dbId || activeJobObj?.id || selectedJob;
+    const matchedFile = uploadedFiles.find((f) => String(f.jobId) === String(selectedJob) && f.url) || uploadedFiles[0];
+    const draftReportUrl = matchedFile?.url || `/uploads/reports/Draft_Report_${jobRef}_v1.pdf`;
+
+    try {
+      await surveyorUploadReportsApi.submitDraft(targetBackendId, {
+        reportPdfUrl: draftReportUrl,
+        conditionSummary: reportStandard,
+      });
+    } catch {
+      await api.patch(`/survey-jobs/${targetBackendId}/stage`, {
+        newStage: 'PREPARING_REPORT',
+        reason: `Surveyor ${currentSurveyor} submitted draft report for QA audit.`,
+      }).catch(() => {});
+    }
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));

@@ -35,7 +35,7 @@ export const getCustomerDashboard = async (req, res, next) => {
         quotes: { orderBy: { createdAt: 'desc' }, take: 1 },
         terms: { orderBy: { createdAt: 'desc' }, take: 1 },
         invoices: { orderBy: { createdAt: 'desc' }, take: 1 },
-        auditTimeline: { orderBy: { createdAt: 'desc' }, take: 5 },
+        auditTimeline: { orderBy: { createdAt: 'desc' }, take: 15 },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -50,7 +50,14 @@ export const getCustomerDashboard = async (req, res, next) => {
       const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
       const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
       const isCompleted = activeJob.stage === 'COMPLETE' || Boolean(activeJob.qaApprovedAt);
-      const hasDraftUploaded = Boolean(activeJob.reportPdfUrl) || Boolean(activeJob.reportGeneratedAt);
+      const hasDraftUploaded =
+        Boolean(activeJob.reportPdfUrl) ||
+        Boolean(activeJob.reportGeneratedAt) ||
+        activeJob.auditTimeline?.some(
+          (a) =>
+            a.action === 'DRAFT_REPORT_SUBMITTED_FOR_QA' ||
+            (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /submitted draft report|qa audit|qa review/i.test(a.details || ''))
+        );
       const isQA =
         activeJob.stage === 'QA_REVIEW' ||
         activeJob.status === 'QA_Review' ||
@@ -58,7 +65,12 @@ export const getCustomerDashboard = async (req, res, next) => {
       const isDrafting =
         activeJob.stage === 'DRAFTING' ||
         activeJob.status === 'Drafting' ||
-        (activeJob.stage === 'PREPARING_REPORT' && activeJob.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_STARTED'));
+        (activeJob.stage === 'PREPARING_REPORT' &&
+          activeJob.auditTimeline?.some(
+            (a) =>
+              a.action === 'DRAFT_REPORT_STARTED' ||
+              (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /started report drafting|drafting commenced/i.test(a.details || ''))
+          ));
 
       let calculatedStep = 1;
       if (isCompleted) calculatedStep = 10;

@@ -117,10 +117,22 @@ export const getReportsMetrics = async (req, res, next) => {
 export const approveQaReport = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const jobId = parseInt(id);
+    const jobId = parseInt(id, 10);
+
+    const existing = await prisma.job.findFirst({
+      where: {
+        OR: [
+          ...(!isNaN(jobId) ? [{ id: jobId }] : []),
+          { reference: String(id) },
+        ],
+      },
+    });
+    if (!existing) {
+      throw ApiError.notFound(`Job #${id} not found`);
+    }
 
     const job = await prisma.job.update({
-      where: { id: jobId },
+      where: { id: existing.id },
       data: {
         qaApprovedBy: req.user.name,
         qaApprovedAt: new Date(),
@@ -148,30 +160,39 @@ export const approveQaReport = async (req, res, next) => {
           surveyType: job.serviceType || 'RICS Level 2 Home Survey',
           reportPdfUrl: job.reportPdfUrl,
         }).catch((e) => console.warn('[sendReportReadyEmail QA] background error:', e.message));
+      }
 
-        const targetUser = await prisma.user.findFirst({ where: { email: job.clientEmail } });
-        if (targetUser || job.clientId) {
-          await prisma.notification.create({
-            data: {
-              userId: targetUser ? targetUser.id : job.clientId,
-              role: 'CUSTOMER',
-              title: 'RICS Survey Report Ready',
-              desc: `Your accredited RICS survey report for ${job.propertyAddress} has passed QA review and is ready for download.`,
-              type: 'REPORT',
-              link: '/customer/my-reports',
-            },
-          });
-        }
+      let targetCustomerId = job.clientId || null;
+      if (job.clientEmail && job.clientEmail.includes('@')) {
+        const targetUser = await prisma.user.findFirst({
+          where: { email: { equals: job.clientEmail.toLowerCase().trim(), mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (targetUser) targetCustomerId = targetUser.id;
+      }
+
+      if (targetCustomerId) {
         await prisma.notification.create({
           data: {
-            role: 'ADMIN',
-            title: `Report QA Approved - ${job.reference}`,
-            desc: `Survey report for ${job.propertyAddress} approved and published to client portal.`,
-            type: 'REPORT',
-            link: '/admin/reports/qa-review',
+            userId: targetCustomerId,
+            role: 'CUSTOMER',
+            title: '🎉 RICS Survey Report Ready',
+            desc: `Your accredited RICS survey report for ${job.propertyAddress} has passed QA review and is ready for download.`,
+            type: 'report',
+            link: '/customer/my-reports',
           },
         });
       }
+
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `Report QA Approved - ${job.reference}`,
+          desc: `Survey report for ${job.propertyAddress} approved and published to client portal.`,
+          type: 'report',
+          link: '/admin/reports-and-analytics',
+        },
+      });
     } catch (emailErr) {}
 
     return ApiResponse.success(res, { job }, 'RICS report passed QA audit and released to customer');
@@ -209,10 +230,22 @@ export const rejectQaReport = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
-    const jobId = parseInt(id);
+    const jobId = parseInt(id, 10);
+
+    const existing = await prisma.job.findFirst({
+      where: {
+        OR: [
+          ...(!isNaN(jobId) ? [{ id: jobId }] : []),
+          { reference: String(id) },
+        ],
+      },
+    });
+    if (!existing) {
+      throw ApiError.notFound(`Job #${id} not found`);
+    }
 
     const job = await prisma.job.update({
-      where: { id: jobId },
+      where: { id: existing.id },
       data: {
         stage: 'PREPARING_REPORT',
       },

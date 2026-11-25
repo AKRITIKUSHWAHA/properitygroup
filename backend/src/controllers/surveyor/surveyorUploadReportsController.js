@@ -41,8 +41,9 @@ export const submitDraftReport = async (req, res, next) => {
     const { id } = req.params;
     let reportPdfUrl = req.body?.reportPdfUrl;
     const conditionSummary = req.body?.conditionSummary;
-    const jobId = parseInt(id);
+    const jobId = parseInt(id, 10);
     const surveyorId = req.user.id;
+    const surveyorEmail = (req.user?.email || '').toLowerCase().trim();
 
     // If file was uploaded via multipart/form-data
     if (req.file) {
@@ -53,8 +54,22 @@ export const submitDraftReport = async (req, res, next) => {
       throw ApiError.badRequest('Report PDF document or uploaded file is required');
     }
 
+    const idFilters = [];
+    if (!isNaN(jobId)) idFilters.push({ id: jobId });
+    idFilters.push({ reference: String(id) });
+
     const job = await prisma.job.findFirst({
-      where: { id: jobId, surveyorId },
+      where: {
+        OR: idFilters,
+        AND: [
+          {
+            OR: [
+              { surveyorId },
+              ...(surveyorEmail ? [{ surveyor: { email: { equals: surveyorEmail, mode: 'insensitive' } } }] : []),
+            ],
+          },
+        ],
+      },
     });
 
     if (!job) {
@@ -62,7 +77,7 @@ export const submitDraftReport = async (req, res, next) => {
     }
 
     const updated = await prisma.job.update({
-      where: { id: jobId },
+      where: { id: job.id },
       data: {
         reportPdfUrl,
         reportGeneratedAt: new Date(),
@@ -79,19 +94,42 @@ export const submitDraftReport = async (req, res, next) => {
       },
     });
 
-    // If marked completed directly, notify customer
+    // Notify Customer & Admin directly in database so cross-browser portals stay in sync
     try {
+      let targetCustomerId = job.clientId || null;
       if (job.clientEmail && job.clientEmail.includes('@')) {
-        sendReportReadyEmail({
-          to: job.clientEmail,
-          clientName: job.clientName || 'Valued Client',
-          jobRef: job.reference,
-          propertyAddress: job.propertyAddress || 'Subject Property',
-          surveyType: job.serviceType || 'RICS Level 2 Home Survey',
-          reportPdfUrl,
-        }).catch((e) => console.warn('[sendReportReadyEmail Surveyor] background error:', e.message));
+        const clientUser = await prisma.user.findFirst({
+          where: { email: { equals: job.clientEmail.toLowerCase().trim(), mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (clientUser) targetCustomerId = clientUser.id;
       }
-    } catch (emailErr) {}
+
+      if (targetCustomerId) {
+        await prisma.notification.create({
+          data: {
+            userId: targetCustomerId,
+            role: 'CUSTOMER',
+            title: '🛡️ Quality Assurance Review Underway',
+            desc: `Surveyor ${req.user.name} submitted the draft RICS report for ${job.propertyAddress} to Admin Quality Assurance.`,
+            type: 'report',
+            link: '/customer/track-my-survey',
+          },
+        });
+      }
+
+      await prisma.notification.create({
+        data: {
+          role: 'ADMIN',
+          title: `Draft Report Submitted for QA Review — ${job.reference}`,
+          desc: `Surveyor ${req.user.name} submitted a draft report for ${job.propertyAddress} (${job.clientName}) for Admin QA sign-off.`,
+          type: 'report',
+          link: '/admin/reports-and-analytics',
+        },
+      });
+    } catch (notifErr) {
+      console.warn('[submitDraftReport] notification creation warning:', notifErr.message);
+    }
 
     return ApiResponse.success(
       res,

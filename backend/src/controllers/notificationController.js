@@ -619,7 +619,7 @@ export const getNotifications = async (req, res, next) => {
           const timestamp = j.qaApprovedAt || j.updatedAt || j.createdAt;
           const timeStr = formatNotificationTimeStr(timestamp);
 
-          if (j.qaApprovedAt || j.stage === 'COMPLETED') {
+          if (j.qaApprovedAt || j.stage === 'COMPLETE') {
             dynamicNotifs.push({
               id: `live-job-qa-${j.id}`,
               title: `🎉 Your RICS Survey Report is Ready!`,
@@ -629,6 +629,29 @@ export const getNotifications = async (req, res, next) => {
               read: false,
               type: 'report',
               link: '/customer/my-reports',
+            });
+          } else if (j.reportPdfUrl || j.reportGeneratedAt) {
+            const qaTime = j.reportGeneratedAt || timestamp;
+            dynamicNotifs.push({
+              id: `live-job-qareview-${j.id}`,
+              title: `🛡️ Quality Assurance Review Underway`,
+              desc: `Your draft RICS survey report for ${j.propertyAddress} has been submitted for Admin Quality Assurance review.`,
+              time: formatNotificationTimeStr(qaTime),
+              createdAt: qaTime,
+              read: false,
+              type: 'report',
+              link: '/customer/track-my-survey',
+            });
+          } else if (j.stage === 'PREPARING_REPORT') {
+            dynamicNotifs.push({
+              id: `live-job-prep-${j.id}`,
+              title: `🔍 Site Inspection Completed`,
+              desc: `Physical inspection of ${j.propertyAddress} is completed and your survey report is now being prepared.`,
+              time: timeStr,
+              createdAt: timestamp,
+              read: false,
+              type: 'booking',
+              link: '/customer/track-my-survey',
             });
           } else if (j.inspectionDate) {
             dynamicNotifs.push({
@@ -885,7 +908,7 @@ export const markAllAsRead = async (req, res, next) => {
  */
 export const createNotification = async (req, res, next) => {
   try {
-    const { userId, userEmail, recipientEmail, customerEmail, role, title, desc, type = 'booking', amount, link } = req.body;
+    const { userId, userEmail, recipientEmail, customerEmail, jobId, jobRef, role, title, desc, type = 'booking', amount, link } = req.body;
 
     if (!title || !desc) {
       throw ApiError.badRequest('Title and description are required');
@@ -899,11 +922,37 @@ export const createNotification = async (req, res, next) => {
       }
     }
 
-    const targetEmail = recipientEmail || userEmail || customerEmail || (typeof userId === 'string' && userId.includes('@') ? userId : null);
+    let targetEmail = recipientEmail || userEmail || customerEmail || (typeof userId === 'string' && userId.includes('@') ? userId : null);
+
+    // Fallback: resolve target customer from jobId or jobRef if email/userId wasn't passed
+    const validRole = role && ['ADMIN', 'SURVEYOR', 'CUSTOMER'].includes(String(role).toUpperCase())
+      ? String(role).toUpperCase()
+      : null;
+
+    if (!parsedUserId && !targetEmail && validRole === 'CUSTOMER' && (jobId || jobRef)) {
+      try {
+        const refCandidate = jobRef || String(jobId);
+        const numericId = jobId ? parseInt(jobId, 10) : NaN;
+        const jobMatch = await prisma.job.findFirst({
+          where: {
+            OR: [
+              ...(!isNaN(numericId) ? [{ id: numericId }] : []),
+              { reference: String(refCandidate) },
+            ],
+          },
+          select: { clientId: true, clientEmail: true },
+        });
+        if (jobMatch) {
+          if (jobMatch.clientId) parsedUserId = jobMatch.clientId;
+          if (jobMatch.clientEmail) targetEmail = jobMatch.clientEmail;
+        }
+      } catch {}
+    }
+
     if (!parsedUserId && targetEmail) {
       try {
         const foundUser = await prisma.user.findFirst({
-          where: { email: targetEmail.toLowerCase().trim() },
+          where: { email: { equals: targetEmail.toLowerCase().trim(), mode: 'insensitive' } },
         });
         if (foundUser) {
           parsedUserId = foundUser.id;
@@ -911,9 +960,21 @@ export const createNotification = async (req, res, next) => {
       } catch {}
     }
 
-    const validRole = role && ['ADMIN', 'SURVEYOR', 'CUSTOMER'].includes(String(role).toUpperCase())
-      ? String(role).toUpperCase()
-      : null;
+    // Deduplicate identical notifications sent within the last 60 seconds
+    const recentCutoff = new Date(Date.now() - 60 * 1000);
+    const existingRecent = await prisma.notification.findFirst({
+      where: {
+        role: validRole,
+        userId: parsedUserId,
+        title,
+        createdAt: { gte: recentCutoff },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existingRecent) {
+      return ApiResponse.success(res, { notification: existingRecent }, 'Notification already logged');
+    }
 
     const notification = await prisma.notification.create({
       data: {

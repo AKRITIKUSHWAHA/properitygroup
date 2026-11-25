@@ -91,12 +91,21 @@ export const getSurveyTracking = async (req, res, next) => {
       Boolean(job.reportPdfUrl) ||
       Boolean(job.reportGeneratedAt) ||
       job.status === 'QA_Review' ||
-      job.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_SUBMITTED_FOR_QA');
+      job.auditTimeline?.some(
+        (a) =>
+          a.action === 'DRAFT_REPORT_SUBMITTED_FOR_QA' ||
+          (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /submitted draft report|qa audit|qa review/i.test(a.details || ''))
+      );
 
     const isDrafting =
       job.stage === 'DRAFTING' ||
       job.status === 'Drafting' ||
-      (job.stage === 'PREPARING_REPORT' && job.auditTimeline?.some((a) => a.action === 'DRAFT_REPORT_STARTED'));
+      (job.stage === 'PREPARING_REPORT' &&
+        job.auditTimeline?.some(
+          (a) =>
+            a.action === 'DRAFT_REPORT_STARTED' ||
+            (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /started report drafting|drafting commenced/i.test(a.details || ''))
+        ));
 
     // Only mark QA (Step 9) once report draft is actually uploaded/submitted for QA review
     const isQA = job.stage === 'QA_REVIEW' || job.status === 'QA_Review' || (job.stage === 'PREPARING_REPORT' && hasDraftSubmitted);

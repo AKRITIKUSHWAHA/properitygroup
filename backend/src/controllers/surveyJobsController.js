@@ -288,6 +288,66 @@ export const updateJobStage = async (req, res, next) => {
       });
     } catch {}
 
+    // Notify Customer when transitioning through PREPARING_REPORT sub-phases (Inspected / Drafting / QA Review)
+    if (targetStage === 'PREPARING_REPORT') {
+      try {
+        const reasonText = String(reason || '').trim();
+        const isFirstEntry = job.stage !== 'PREPARING_REPORT';
+        const isQaReason = /submitted draft report|qa audit|qa review/i.test(reasonText);
+        const isDraftReason = /started report drafting|drafting commenced/i.test(reasonText);
+        const isInspectReason = /completed site visit|inspection completed/i.test(reasonText);
+
+        if (isFirstEntry || isQaReason || isDraftReason || isInspectReason) {
+          let targetCustomerId = job.clientId || null;
+          if (job.clientEmail && job.clientEmail.includes('@')) {
+            const targetUser = await prisma.user.findFirst({
+              where: { email: { equals: job.clientEmail.toLowerCase().trim(), mode: 'insensitive' } },
+              select: { id: true },
+            });
+            if (targetUser) targetCustomerId = targetUser.id;
+          }
+
+          if (targetCustomerId) {
+            let notifTitle = '🔍 Site Inspection Completed';
+            let notifDesc = `Physical inspection for ${job.propertyAddress || 'your property'} is complete and report preparation has begun.`;
+            let notifType = 'booking';
+
+            if (isQaReason) {
+              notifTitle = '🛡️ Quality Assurance Review Underway';
+              notifDesc = `Your draft RICS survey report for ${job.propertyAddress || 'your property'} has been submitted for Admin Quality Assurance.`;
+              notifType = 'report';
+            } else if (isDraftReason) {
+              notifTitle = '📝 Survey Report Drafting Started';
+              notifDesc = `Your Chartered Surveyor is now drafting your official RICS survey report for ${job.propertyAddress || 'your property'}.`;
+            }
+
+            const recentCutoff = new Date(Date.now() - 60 * 1000);
+            const alreadyExists = await prisma.notification.findFirst({
+              where: {
+                userId: targetCustomerId,
+                role: 'CUSTOMER',
+                title: notifTitle,
+                createdAt: { gte: recentCutoff },
+              },
+            });
+
+            if (!alreadyExists) {
+              await prisma.notification.create({
+                data: {
+                  userId: targetCustomerId,
+                  role: 'CUSTOMER',
+                  title: notifTitle,
+                  desc: notifDesc,
+                  type: notifType,
+                  link: '/customer/track-my-survey',
+                },
+              });
+            }
+          }
+        }
+      } catch (notifErr) {}
+    }
+
     // Dispatch Report Ready email if stage transitioned to COMPLETE
     if (targetStage === 'COMPLETE' && job.stage !== 'COMPLETE') {
       try {

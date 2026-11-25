@@ -205,6 +205,7 @@ export const AdminReportsPage = () => {
       status: 'Complete',
       qaApprovedAt: new Date().toISOString(),
     });
+    window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     addToast({
       type: 'success',
       title: 'Report QA Approved & Released',
