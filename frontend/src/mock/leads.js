@@ -38,121 +38,16 @@ export const formatLeadReference = (id, source) => {
 
 export const INITIAL_LEADS = [];
 
-const LEADS_STORAGE_KEY = 'propertygroup_crm_leads_v1';
-const DELETED_LEADS_KEY = 'propertygroup_deleted_lead_ids';
+// In-memory session store (no business data persisted in localStorage)
+let memoryLeads = [];
 
-// Auto-purge any obsolete test / dummy records from browser localStorage
-if (typeof window !== 'undefined' && window.localStorage) {
-  try {
-    const raw = localStorage.getItem(LEADS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        const cleaned = parsed.filter((l) => {
-          const name = (l.customerName || l.clientName || '').toLowerCase().trim();
-          const email = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
-          const addr = (l.property || l.propertyAddress || '').toLowerCase().trim();
-          const idStr = String(l.id || '').trim();
-          const refStr = String(l.reference || '').trim();
-          return (
-            !name.includes('akku') &&
-            !email.includes('akku') &&
-            !addr.includes('mp nagar') &&
-            !addr.includes('bhopal') &&
-            l.id !== 7 &&
-            l.id !== 11 &&
-            l.id !== 12 &&
-            l.id !== 13
-          );
-        });
-        if (cleaned.length !== parsed.length) {
-          localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(cleaned));
-        }
-      }
-    }
-  } catch {}
-}
-
-export const getStoredLeads = () => {
-  try {
-    if (!localStorage.getItem('njs_fresh_leads_clean_v1')) {
-      localStorage.removeItem(LEADS_STORAGE_KEY);
-      localStorage.setItem('njs_fresh_leads_clean_v1', 'true');
-      return [];
-    }
-    const rawDeleted = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
-    const deletedSet = new Set(JSON.parse(rawDeleted).map(String));
-
-    const raw = localStorage.getItem(LEADS_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed
-          .filter((l) => {
-            const name = (l.customerName || l.clientName || '').toLowerCase().trim();
-            const email = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
-            const addr = (l.property || l.propertyAddress || '').toLowerCase().trim();
-            const idStr = String(l.id || '').trim();
-            const dbIdStr = String(l.dbId || '').trim();
-            const refStr = String(l.reference || '').trim();
-            const formattedRef = formatLeadReference(l.reference || l.id, l.source);
-
-            const isDeleted =
-              deletedSet.has(idStr) ||
-              deletedSet.has(dbIdStr) ||
-              deletedSet.has(refStr) ||
-              deletedSet.has(formattedRef) ||
-              (email && (deletedSet.has(email) || deletedSet.has(email.toLowerCase())));
-
-            const isTestPhantom =
-              name.includes('akku') ||
-              email.includes('akku') ||
-              addr.includes('mp nagar') ||
-              addr.includes('bhopal') ||
-              l.id === 7 ||
-              l.id === 11 ||
-              l.id === 12 ||
-              l.id === 13;
-
-            return !isDeleted && !isTestPhantom;
-          })
-          .map((l) => {
-            const emailStr = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
-            const fallbackName = emailStr.includes('niamh')
-              ? 'Niamh Richmond'
-              : 'Private Client';
-            const resolvedName = l.customerName || l.clientName || l.customer || fallbackName;
-            const resolvedEnquiry = l.enquiry || l.serviceType || l.surveyType || 'Homebuyer Survey — Level 2';
-            return {
-              ...l,
-              id: formatLeadReference(l.id, l.source),
-              customerName: resolvedName,
-              clientName: resolvedName,
-              customer: resolvedName,
-              enquiry: resolvedEnquiry,
-              serviceType: resolvedEnquiry,
-              surveyType: resolvedEnquiry,
-            };
-          });
-      }
-    }
-  } catch (e) {
-    console.error('Failed reading leads from storage', e);
-  }
-  return [];
-};
+export const getStoredLeads = () => memoryLeads;
 
 export const saveStoredLeads = (leads) => {
-  try {
-    const serialized = JSON.stringify(leads);
-    if (localStorage.getItem(LEADS_STORAGE_KEY) === serialized) {
-      return;
-    }
-    localStorage.setItem(LEADS_STORAGE_KEY, serialized);
+  memoryLeads = Array.isArray(leads) ? leads : [];
+  queueMicrotask(() => {
     window.dispatchEvent(new Event('propertygroup_leads_updated'));
-  } catch (e) {
-    console.error('Failed saving leads to storage', e);
-  }
+  });
 };
 
 export const useLeads = () => {
@@ -163,10 +58,46 @@ export const useLeads = () => {
       setLeadsState(getStoredLeads());
     };
     window.addEventListener('propertygroup_leads_updated', onUpdate);
-    window.addEventListener('storage', onUpdate);
+
+    const token = localStorage.getItem('property_group_auth_token');
+    let isAdminUser = false;
+    try {
+      const session = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+      const role = String(session?.role || '').toLowerCase();
+      isAdminUser = role === 'admin' || role === 'super_admin';
+    } catch {
+      isAdminUser = false;
+    }
+    if (token && isAdminUser && memoryLeads.length === 0) {
+      api
+        .get('/crm-and-leads')
+        .then((res) => {
+          const raw = res?.leads || res?.data?.leads || [];
+          if (Array.isArray(raw) && raw.length > 0 && memoryLeads.length === 0) {
+            saveStoredLeads(
+              raw.map((l) => ({
+                ...l,
+                dbId: l.id,
+                id: formatLeadReference(l.reference || l.id, l.source),
+                customerName: l.clientName || 'Private Client',
+                clientName: l.clientName || 'Private Client',
+                customer: l.clientName || 'Private Client',
+                customerEmail: l.clientEmail || '',
+                customerPhone: l.clientPhone || '',
+                property: l.propertyAddress || '',
+                enquiry: l.serviceType || 'Homebuyer Survey — Level 2',
+                serviceType: l.serviceType || 'Homebuyer Survey — Level 2',
+              }))
+            );
+          }
+        })
+        .catch((err) => {
+          console.warn('Failed to load CRM leads from API:', err);
+        });
+    }
+
     return () => {
       window.removeEventListener('propertygroup_leads_updated', onUpdate);
-      window.removeEventListener('storage', onUpdate);
     };
   }, []);
 
@@ -189,6 +120,7 @@ export const useLeads = () => {
         };
       })
     );
+    if (extraData?.skipApi) return;
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
       const statusMap = {
@@ -205,7 +137,9 @@ export const useLeads = () => {
       api.patch(`/crm-and-leads/${leadId}/status`, {
         status: statusMap[newStatus] || (newStatus ? newStatus.toUpperCase() : 'NEW'),
         ...(numVal !== undefined && !isNaN(numVal) ? { estimatedValue: numVal } : {}),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Failed to sync lead status update:', err);
+      });
     }
   };
 
@@ -220,15 +154,17 @@ export const useLeads = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          clientName: newLead.customerName || 'Private Client',
-          clientEmail: newLead.customerEmail || 'client@example.com',
-          clientPhone: newLead.customerPhone || '+44 7700 900000',
-          propertyAddress: newLead.property || newLead.location || 'London Property',
-          postcode: newLead.location?.split(',')?.pop()?.trim() || 'W1K 2PB',
+          clientName: newLead.customerName || '',
+          clientEmail: newLead.customerEmail || '',
+          clientPhone: newLead.customerPhone || null,
+          propertyAddress: newLead.property || newLead.location || '',
+          postcode: newLead.postcode || newLead.location?.split(',')?.pop()?.trim() || '',
           serviceType: newLead.enquiry || 'RICS Level 2 Home Survey',
           source: 'WEBSITE',
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Failed to sync new lead to backend:', err);
+      });
     }
   };
 
@@ -248,21 +184,6 @@ export const useLeads = () => {
       })
     );
 
-    // Persist deleted lead ID in localStorage so refreshes never bring it back
-    try {
-      const raw = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
-      const ids = JSON.parse(raw);
-      const strId = String(leadId).trim();
-      if (!ids.includes(strId)) {
-        ids.push(strId);
-      }
-      if (cleanEmail && !ids.includes(cleanEmail)) {
-        ids.push(cleanEmail);
-      }
-      localStorage.setItem(DELETED_LEADS_KEY, JSON.stringify(ids));
-    } catch (_) {}
-
-    // Dispatch DELETE to backend API
     const token = localStorage.getItem('property_group_auth_token');
     if (token) {
       fetch(`/api/v1/crm-and-leads/${encodeURIComponent(leadId)}`, {
@@ -270,7 +191,9 @@ export const useLeads = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Failed to delete lead on backend:', err);
+      });
     }
   };
 

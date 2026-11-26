@@ -26,11 +26,61 @@ export const getSurveyorJobs = async (req, res, next) => {
       where,
       include: {
         company: { select: { name: true, branchName: true, keyCollectionProtocol: true } },
+        auditTimeline: {
+          where: {
+            OR: [
+              { action: { contains: 'INSPECTED' } },
+              { action: 'SITE_EVIDENCE_LOGGED' },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, action: true, details: true, createdAt: true },
+        },
       },
       orderBy: { inspectionDate: 'asc' },
     });
 
-    return ApiResponse.success(res, { jobs, total: jobs.length });
+    const enrichedJobs = jobs.map(({ auditTimeline = [], ...job }) => {
+      const inspectedLog = auditTimeline.find((l) => String(l.action || '').includes('INSPECTED'));
+      const inspectedAt = inspectedLog?.createdAt || null;
+      const slaDeadline = inspectedAt
+        ? new Date(new Date(inspectedAt).getTime() + 48 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const siteEvidence = auditTimeline
+        .filter((l) => l.action === 'SITE_EVIDENCE_LOGGED')
+        .map((l) => {
+          try {
+            const parsed = JSON.parse(l.details || '{}');
+            return {
+              id: l.id,
+              room: parsed.room || 'Site Note',
+              note: parsed.note || '',
+              url: parsed.url || null,
+              time: parsed.time || new Date(l.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+              createdAt: l.createdAt,
+            };
+          } catch {
+            return {
+              id: l.id,
+              room: 'Site Note',
+              note: l.details || '',
+              url: null,
+              time: new Date(l.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+              createdAt: l.createdAt,
+            };
+          }
+        });
+
+      return {
+        ...job,
+        inspectedAt,
+        slaDeadline,
+        siteEvidence,
+      };
+    });
+
+    return ApiResponse.success(res, { jobs: enrichedJobs, total: enrichedJobs.length });
   } catch (error) {
     next(error);
   }

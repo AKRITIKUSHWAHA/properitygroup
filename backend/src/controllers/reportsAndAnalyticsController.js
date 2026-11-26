@@ -11,7 +11,7 @@ export const getReportsAndAnalytics = async (req, res, next) => {
     const { status, surveyorId, search } = req.query;
 
     const where = {
-      stage: { in: ['PREPARING_REPORT', 'COMPLETE'] },
+      stage: { in: ['INSPECTED', 'DRAFTING', 'QA_REVIEW', 'COMPLETE'] },
     };
 
     if (surveyorId) where.surveyorId = parseInt(surveyorId);
@@ -56,25 +56,25 @@ export const getReportsMetrics = async (req, res, next) => {
   try {
     const [completedReports, pendingQa, paidInvoices, allJobs, allQuotes] = await Promise.all([
       prisma.job.count({ where: { stage: 'COMPLETE' } }),
-      prisma.job.count({ where: { stage: 'PREPARING_REPORT', qaApprovedAt: null } }),
-      prisma.invoice.findMany({ where: { status: 'PAID' }, select: { total: true } }).catch(() => []),
+      prisma.job.count({ where: { stage: { in: ['DRAFTING', 'QA_REVIEW'] }, qaApprovedAt: null } }),
+      prisma.invoice.findMany({ where: { status: 'PAID' }, select: { total: true } }),
       prisma.job.findMany({
         select: {
           id: true,
           reference: true,
           serviceType: true,
-          fee: true,
           stage: true,
+          invoices: { select: { total: true, status: true } },
         },
-      }).catch(() => []),
-      prisma.quote.findMany({ select: { id: true, status: true, totalFee: true } }).catch(() => []),
+      }),
+      prisma.quote.findMany({ select: { id: true, status: true, totalAmount: true } }),
     ]);
 
     const totalPaid = Array.isArray(paidInvoices)
       ? paidInvoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0)
       : 0;
 
-    // Service Breakdown calculation from real jobs
+    // Service Breakdown calculation from real jobs & their invoices
     const breakdownMap = {};
     allJobs.forEach((j) => {
       const type = j.serviceType || 'RICS Level 2 Home Survey';
@@ -82,7 +82,10 @@ export const getReportsMetrics = async (req, res, next) => {
         breakdownMap[type] = { count: 0, totalFee: 0 };
       }
       breakdownMap[type].count += 1;
-      breakdownMap[type].totalFee += (Number(j.fee) || 0);
+      const jobPaid = (j.invoices || [])
+        .filter((inv) => inv.status === 'PAID')
+        .reduce((s, inv) => s + (Number(inv.total) || 0), 0);
+      breakdownMap[type].totalFee += jobPaid;
     });
 
     const breakdown = Object.keys(breakdownMap).map((k) => ({
@@ -150,16 +153,20 @@ export const approveQaReport = async (req, res, next) => {
     });
 
     // Dispatch Official Final Report Ready Email to Customer & CC Admin
+    let emailSent = false;
+    let emailError = null;
     try {
       if (job.clientEmail && job.clientEmail.includes('@')) {
-        sendReportReadyEmail({
+        const emailRes = await sendReportReadyEmail({
           to: job.clientEmail,
           clientName: job.clientName || 'Valued Client',
           jobRef: job.reference,
           propertyAddress: job.propertyAddress || 'Subject Property',
           surveyType: job.serviceType || 'RICS Level 2 Home Survey',
           reportPdfUrl: job.reportPdfUrl,
-        }).catch((e) => console.warn('[sendReportReadyEmail QA] background error:', e.message));
+        });
+        emailSent = Boolean(emailRes?.success);
+        emailError = emailRes?.error || null;
       }
 
       let targetCustomerId = job.clientId || null;
@@ -193,9 +200,12 @@ export const approveQaReport = async (req, res, next) => {
           link: '/admin/reports-and-analytics',
         },
       });
-    } catch (emailErr) {}
+    } catch (emailErr) {
+      console.error('[sendReportReadyEmail QA] error:', emailErr.message);
+      emailError = emailErr.message;
+    }
 
-    return ApiResponse.success(res, { job }, 'RICS report passed QA audit and released to customer');
+    return ApiResponse.success(res, { job, emailSent, emailError }, 'RICS report passed QA audit and released to customer');
   } catch (error) {
     next(error);
   }
@@ -216,7 +226,7 @@ export const uploadReportUrl = async (req, res, next) => {
       data: {
         reportPdfUrl,
         reportGeneratedAt: new Date(),
-        stage: 'PREPARING_REPORT',
+        stage: 'QA_REVIEW',
       },
     });
 
@@ -247,7 +257,7 @@ export const rejectQaReport = async (req, res, next) => {
     const job = await prisma.job.update({
       where: { id: existing.id },
       data: {
-        stage: 'PREPARING_REPORT',
+        stage: 'DRAFTING',
       },
     });
 
@@ -261,16 +271,20 @@ export const rejectQaReport = async (req, res, next) => {
     });
 
     if (job.surveyorId) {
-      await prisma.notification.create({
-        data: {
-          userId: job.surveyorId,
-          role: 'SURVEYOR',
-          title: `QA Revision Requested - ${job.reference}`,
-          desc: `Admin requested revisions: ${notes || 'Please review defect observations.'}`,
-          type: 'REPORT',
-          link: '/surveyor/upload-reports',
-        },
-      }).catch(() => {});
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: job.surveyorId,
+            role: 'SURVEYOR',
+            title: `QA Revision Requested - ${job.reference}`,
+            desc: `Admin requested revisions: ${notes || 'Please review defect observations.'}`,
+            type: 'REPORT',
+            link: '/surveyor/upload-reports',
+          },
+        });
+      } catch (notifErr) {
+        console.error('[reportsAndAnalyticsController] Failed to dispatch surveyor QA notification:', notifErr.message);
+      }
     }
 
     return ApiResponse.success(res, { job }, 'Report returned to surveyor for revision');

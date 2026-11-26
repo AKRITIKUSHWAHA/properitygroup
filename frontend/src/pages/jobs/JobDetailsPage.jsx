@@ -16,22 +16,14 @@ import {
   Key,
   Home,
   Check,
-  Plus,
   Download,
   CheckCircle2,
-  AlertCircle,
-  Building2,
   Clock,
-  Sparkles,
   PhoneCall,
-  ShieldAlert,
   Lock,
-  Upload,
   CalendarDays,
-  FileUp,
   XCircle,
   Archive,
-  RefreshCw,
   Zap,
   Eye,
   ShieldCheck,
@@ -166,7 +158,9 @@ export const JobDetailsPage = () => {
       const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
       const firstEmail = Object.keys(reg)[0];
       if (firstEmail) regUser = { ...reg[firstEmail], email: firstEmail };
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to parse registered customers cache:', err);
+    }
 
     return {
       id: jobId || 'JOB-2026-001',
@@ -177,7 +171,7 @@ export const JobDetailsPage = () => {
       customerEmail: regUser.email || '',
       customerPhone: regUser.phone || '',
       surveyType: regUser.serviceType || 'RICS Level 3 Building Survey',
-      property: regUser.address || '14 High Street',
+      property: regUser.address || '',
       location: regUser.postcode || 'London',
       postcode: regUser.postcode || 'London',
       surveyor: 'Pending Allocation',
@@ -302,7 +296,9 @@ export const JobDetailsPage = () => {
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
 
     // SurveyBooker Trigger 4 (Part B): Dispatch final report ready email with download & Trustpilot review link
-    await dispatchFinalReportReadyEmail(job).catch(() => {});
+    await dispatchFinalReportReadyEmail(job).catch((err) => {
+      console.warn('Failed to dispatch final report ready email:', err);
+    });
 
     addToast({
       type: 'success',
@@ -574,15 +570,17 @@ export const JobDetailsPage = () => {
       desc: `Your property survey for ${job.property || job.propertyAddress || 'your property'} has moved to "${stepName}".`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Failed to emit milestone notification:', err);
+    });
 
     if (emailResult && emailResult.wasSent) {
       addToast({
         type: 'success',
         title: stepIndex === 5 ? 'Job Completed & Trustpilot Triggered' : 'Milestone Updated & Client Emailed',
         message: stepIndex === 5
-          ? `Final report released & Trustpilot review invitation dispatched to ${job.customerEmail || 'customer@demo.com'}.`
-          : `Dispatched automated notification to ${job.customerEmail || 'customer@demo.com'} for ${stepName}.`,
+          ? `Final report released & Trustpilot review invitation dispatched to ${job.customerEmail || 'the client'}.`
+          : `Dispatched automated notification to ${job.customerEmail || 'the client'} for ${stepName}.`,
       });
     } else {
       addToast({

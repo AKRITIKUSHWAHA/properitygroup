@@ -136,7 +136,7 @@ model ComplaintLog {
 model Job {
   id                      Int              @id @default(autoincrement())
   reference               String           @unique
-  stage                   JobStage         @default(QUOTE)
+  stage                   JobStage         @default(QUOTE_ISSUED)
   serviceType             String           @default("RICS Level 2 Home Survey")
   propertyAddress         String
   postcode                String
@@ -220,6 +220,10 @@ model Term {
   updatedAt       DateTime  @updatedAt
   job             Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
+  /// One active (non-superseded) term per job enforced at app-layer in termsAndDocumentsController.
+  /// A partial unique index (WHERE documentTitle NOT LIKE '[SUPERSEDED]%') cannot be expressed in
+  /// Prisma DSL (MySQL partial indexes are not yet supported by prisma migrate).
+  /// App-layer guard: before create, check term.findFirst({ where: { jobId, NOT: { documentTitle: { startsWith: '[SUPERSEDED]' } } } }).
   @@index([jobId], map: "terms_jobId_fkey")
   @@map("terms")
 }
@@ -361,11 +365,15 @@ enum UserStatus {
 }
 
 enum JobStage {
-  QUOTE
+  ENQUIRY
+  QUOTE_ISSUED
+  QUOTE_ACCEPTED
+  TERMS_SIGNED
   PAID
-  ACCEPTED
   BOOKED
-  PREPARING_REPORT
+  INSPECTED
+  DRAFTING
+  QA_REVIEW
   COMPLETE
 }
 
@@ -383,6 +391,7 @@ enum QuoteStatus {
   ACCEPTED
   DECLINED
   EXPIRED
+  SUPERSEDED
 }
 
 enum InvoiceStatus {

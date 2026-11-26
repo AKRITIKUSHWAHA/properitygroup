@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { generateQuoteReference, generateInvoiceNumber } from '../utils/references.js';
 
 export const getQuotes = async (req, res, next) => {
   try {
@@ -36,8 +37,7 @@ export const createQuote = async (req, res, next) => {
     const vatAmount = parseFloat(((fee * vatRate) / 100).toFixed(2));
     const totalAmount = parseFloat((fee + vatAmount).toFixed(2));
 
-    const count = await prisma.quote.count();
-    const reference = `QTE-2026-${String(count + 101).padStart(3, '0')}`;
+    const reference = await generateQuoteReference();
 
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + validDays);
@@ -87,8 +87,7 @@ export const acceptQuote = async (req, res, next) => {
 
     // If linked to a job, advance to PAID or generate invoice
     if (quote.jobId) {
-      const invoiceCount = await prisma.invoice.count();
-      const invoiceNumber = `INV-2026-${String(invoiceCount + 101).padStart(3, '0')}`;
+      const invoiceNumber = await generateInvoiceNumber();
 
       await prisma.invoice.create({
         data: {

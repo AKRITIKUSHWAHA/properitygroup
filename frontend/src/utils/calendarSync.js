@@ -214,10 +214,10 @@ export const downloadIcsFile = (filename, content) => {
 /**
  * Builds Apple Calendar Webcal / iCal subscription URL
  */
-export const getCalendarSubscriptionUrls = (surveyorId = 22) => {
+export const getCalendarSubscriptionUrls = (surveyorId = 22, feedToken = '') => {
   const backendBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-  const token = `njs-cal-srv-${surveyorId}`;
-  const feedHttpsUrl = `${backendBase}/surveyor/my-calendar/feed.ics?surveyorId=${surveyorId}&token=${token}`;
+  const token = feedToken || '';
+  const feedHttpsUrl = `${backendBase}/surveyor/my-calendar/feed.ics?surveyorId=${surveyorId}&token=${encodeURIComponent(token)}`;
 
   // Webcal replaces http:// or https:// with webcal:// for native iOS / macOS subscription
   const webcalUrl = feedHttpsUrl.replace(/^https?:\/\//i, 'webcal://');

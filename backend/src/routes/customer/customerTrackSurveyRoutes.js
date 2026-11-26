@@ -9,6 +9,7 @@ router.use(authorizeRoles('CUSTOMER'));
 
 // Customer Menu 4: Track My Survey
 router.get('/', getSurveyTracking);
+router.get('/:id', getSurveyTracking);
 
 export default router;
 

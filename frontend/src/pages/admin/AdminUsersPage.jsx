@@ -49,26 +49,10 @@ const DEFAULT_PLATFORM_USERS = [
     clientJobsCount: 0,
     assignedJobsCount: 0,
   },
-  {
-    id: 'USR-45',
-    dbId: 45,
-    name: 'test surveyor',
-    email: 'njssurveyor@gmail.com',
-    role: 'surveyor',
-    roleLabel: 'Chartered Surveyor',
-    org: 'NJS Chartered Surveyors Practice',
-    status: 'Active',
-    phone: '1234567890',
-    createdAt: '21 Nov 2026',
-    lastLogin: 'Active Today',
-    clientJobsCount: 0,
-    assignedJobsCount: 8,
-  },
 ];
 
 const PROTECTED_PLATFORM_EMAILS = new Set([
   'njsadmin@gmail.com',
-  'njssurveyor@gmail.com',
 ]);
 
 export const AdminUsersPage = () => {
@@ -92,31 +76,11 @@ export const AdminUsersPage = () => {
         ? (leadsRes.value?.data?.leads || leadsRes.value?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []))
         : [];
 
-      // 1. Strict persistent deletion registry
-      const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
-      const deletedSet = new Set(JSON.parse(rawDeleted).map((k) => String(k).toLowerCase().trim()));
-
       const roleLabelMap = { ADMIN: 'Admin', SURVEYOR: 'Chartered Surveyor', CUSTOMER: 'Customer' };
       const mapped = rawUsers
         .filter((u) => {
           const email = (u.email || '').toLowerCase().trim();
-          const idStr = String(u.id).toLowerCase();
-          const formattedId = `usr-${String(u.id).padStart(2, '0')}`.toLowerCase();
           if (u.status === 'INACTIVE' || (email && email.startsWith('deleted_'))) {
-            return false;
-          }
-          if (
-            email === 'admin@demo.com' ||
-            email === 'surveyor@demo.com' ||
-            email === 'customer@demo.com' ||
-            email === 'customer2@demo.com' ||
-            email.includes('astp750') ||
-            email.includes('alexander.sterling') ||
-            u.name === 'Alexander Sterling'
-          ) {
-            return false;
-          }
-          if (!PROTECTED_PLATFORM_EMAILS.has(email) && (deletedSet.has(email) || deletedSet.has(idStr) || deletedSet.has(formattedId))) {
             return false;
           }
           return Boolean(email);
@@ -131,15 +95,12 @@ export const AdminUsersPage = () => {
             ? `${updatedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, ${updatedDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
             : '—';
 
-          const cleanEmail = (u.email || '').toLowerCase().trim();
-          const storedPhone = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
-          const storedOrg = localStorage.getItem(`njs_user_org_${cleanEmail}`);
           const defaultRoleOrg = u.role === 'ADMIN'
             ? 'NJS Property Group HQ'
             : u.role === 'SURVEYOR'
             ? 'NJS Chartered Surveyors Practice'
             : 'Private Client';
-          const resolvedOrg = u.companyName || u.company?.name || storedOrg || defaultRoleOrg;
+          const resolvedOrg = u.companyName || u.company?.name || defaultRoleOrg;
           return {
             id: `USR-${String(u.id).padStart(2, '0')}`,
             dbId: u.id,
@@ -149,7 +110,7 @@ export const AdminUsersPage = () => {
             roleLabel: roleLabelMap[u.role] || u.role,
             org: resolvedOrg,
             status: u.status === 'ACTIVE' ? 'Active' : (u.status === 'BLOCKED' ? 'Blocked' : 'Inactive'),
-            phone: u.phone || storedPhone || '—',
+            phone: u.phone || '—',
             createdAt: formattedCreated,
             rawCreatedAt: u.createdAt,
             lastLogin: formattedLastActive,
@@ -159,21 +120,13 @@ export const AdminUsersPage = () => {
           };
         });
 
-      // Always guarantee default active database users are present
-      DEFAULT_PLATFORM_USERS.forEach((defUser) => {
-        if (!mapped.some((u) => u.email?.toLowerCase().trim() === defUser.email.toLowerCase())) {
-          mapped.push(defUser);
-        }
-      });
-
-      setUsers(mapped.length > 0 ? mapped : DEFAULT_PLATFORM_USERS);
+      setUsers(mapped);
     } catch (err) {
-      console.warn('Backend users fetch error, activating resilient user fallback:', err);
-      setUsers(DEFAULT_PLATFORM_USERS);
+      console.warn('Backend users fetch error:', err);
     }
   };
 
-  const [users, setUsers] = useState(DEFAULT_PLATFORM_USERS);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     fetchUsers();
@@ -207,7 +160,6 @@ export const AdminUsersPage = () => {
     password: '',
     role: 'surveyor',
     org: '',
-    phone: '',
     // Surveyor specific
     credentials: 'MRICS Chartered Valuation Surveyor',
     postcodes: 'SW, W, KT, GU',
@@ -223,11 +175,33 @@ export const AdminUsersPage = () => {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+    const trimmedName = formData.name.trim();
+    const trimmedEmail = formData.email.trim();
+    const trimmedPassword = formData.password.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
       addToast({
         type: 'warning',
-        title: 'Missing Fields',
-        message: 'Please provide legal name, email, and a password.',
+        title: 'Missing Required Fields',
+        message: 'Please provide legal name, email address, and login password.',
+      });
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      addToast({
+        type: 'warning',
+        title: 'Invalid Password',
+        message: 'Login password must be at least 6 characters long.',
+      });
+      return;
+    }
+
+    if (formData.role === 'surveyor' && (!formData.credentials?.trim() || !formData.postcodes?.trim())) {
+      addToast({
+        type: 'warning',
+        title: 'Missing Surveyor Details',
+        message: 'Please provide RICS qualification and coverage postcode sectors.',
       });
       return;
     }
@@ -273,38 +247,6 @@ export const AdminUsersPage = () => {
         lastLogin: 'Never',
         status: 'Active',
       };
-
-      try {
-        if (cleanPw) {
-          localStorage.setItem(`njs_user_pw_${cleanEmail}`, cleanPw);
-        }
-        if (cleanPhone) {
-          localStorage.setItem(`njs_user_phone_${cleanEmail}`, cleanPhone);
-        }
-        if (defaultOrg) {
-          localStorage.setItem(`njs_user_org_${cleanEmail}`, defaultOrg);
-        }
-        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        registered[cleanEmail] = {
-          id: newUser.id,
-          name: newUser.name,
-          email: cleanEmail,
-          phone: cleanPhone || formData.phone?.trim() || '',
-          address: formData.address?.trim() || '',
-          postcode: formData.postcode?.trim().toUpperCase() || '',
-          clientType: formData.clientType,
-          role: formData.role,
-          roleLabel: newUser.roleLabel,
-          password: cleanPw,
-          company: defaultOrg,
-          status: 'Active',
-        };
-        localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
-
-        const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
-        const updatedDeleted = JSON.parse(rawDeleted).filter((k) => k !== cleanEmail && k !== newUser.id.toLowerCase());
-        localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(updatedDeleted));
-      } catch {}
 
       setUsers((prev) => [newUser, ...prev]);
       fetchUsers();
@@ -353,36 +295,13 @@ export const AdminUsersPage = () => {
     setRevealedPasswords((prev) => ({ ...prev, [clean]: !prev[clean] }));
   };
 
-  const getUserPassword = (email) => {
-    if (!email) return null;
-    const cleanEmail = email.toLowerCase().trim();
-    try {
-      const stored = localStorage.getItem(`njs_user_pw_${cleanEmail}`);
-      if (stored) return stored;
-    } catch {}
-    try {
-      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-      if (registered[cleanEmail]?.password) {
-        return registered[cleanEmail].password;
-      }
-    } catch {}
-    return null;
-  };
+  const getUserPassword = () => null;
 
   const getUserPhone = (email) => {
     if (!email) return '—';
     const cleanEmail = email.toLowerCase().trim();
-    try {
-      const stored = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
-      if (stored) return stored;
-    } catch {}
-    try {
-      const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-      if (registered[cleanEmail]?.phone) {
-        return registered[cleanEmail].phone;
-      }
-    } catch {}
-    return '—';
+    const matched = users.find((u) => (u.email || '').toLowerCase().trim() === cleanEmail);
+    return matched?.phone || '—';
   };
 
   const [editingUser, setEditingUser] = useState(null);
@@ -423,19 +342,11 @@ export const AdminUsersPage = () => {
         name: viewingUser?.name,
         role: viewingUser?.role === 'super_admin' ? 'ADMIN' : (viewingUser?.role === 'surveyor' ? 'SURVEYOR' : 'CUSTOMER'),
       });
-      try {
-        localStorage.setItem(`njs_user_pw_${targetEmail}`, cleanPw);
-        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        if (registered[targetEmail]) {
-          registered[targetEmail].password = cleanPw;
-          localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
-        }
-      } catch {}
 
       addToast({
         type: 'success',
         title: 'Password Updated',
-        message: `Password for ${viewingUser.name} has been set to: ${cleanPw}`,
+        message: `Password for ${viewingUser.name} has been updated.`,
       });
       setIsResettingPassword(false);
       setNewQuickPassword('');
@@ -483,41 +394,6 @@ export const AdminUsersPage = () => {
     const cleanPhone = editFormData.phone?.trim() || '';
     const cleanOrg = editFormData.org?.trim() || '';
 
-    // Update localStorage blocked list
-    try {
-      const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
-      if (isBlocking && targetEmail) {
-        if (!blockedList.includes(targetEmail)) {
-          blockedList.push(targetEmail);
-          localStorage.setItem('property_group_blocked_users', JSON.stringify(blockedList));
-        }
-      } else if (targetEmail) {
-        const filtered = blockedList.filter((em) => em !== targetEmail);
-        localStorage.setItem('property_group_blocked_users', JSON.stringify(filtered));
-      }
-    } catch {}
-
-    if (cleanPhone && targetEmail) {
-      try {
-        localStorage.setItem(`njs_user_phone_${targetEmail}`, cleanPhone);
-      } catch {}
-    }
-
-    if (targetEmail) {
-      try {
-        if (cleanOrg) {
-          localStorage.setItem(`njs_user_org_${targetEmail}`, cleanOrg);
-        } else {
-          localStorage.removeItem(`njs_user_org_${targetEmail}`);
-        }
-        const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-        if (registered[targetEmail]) {
-          registered[targetEmail].company = cleanOrg;
-          localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
-        }
-      } catch {}
-    }
-
     setUsers((prev) =>
       prev.map((u) =>
         u.id === editingUser.id || (editingUser.dbId && u.dbId === editingUser.dbId) || (targetEmail && u.email?.toLowerCase() === targetEmail)
@@ -545,14 +421,6 @@ export const AdminUsersPage = () => {
       };
       if (editFormData.password && editFormData.password.trim().length >= 6) {
         payload.password = editFormData.password.trim();
-        try {
-          localStorage.setItem(`njs_user_pw_${targetEmail}`, editFormData.password.trim());
-          const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-          if (registered[targetEmail]) {
-            registered[targetEmail].password = editFormData.password.trim();
-            localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
-          }
-        } catch {}
       }
       await adminUsersAndRolesApi.updateUser(targetId, payload);
       fetchUsers();
@@ -577,13 +445,9 @@ export const AdminUsersPage = () => {
 
     if (
       cleanEmail === 'njsadmin@gmail.com' ||
-      cleanEmail === 'njssurveyor@gmail.com' ||
       userName === 'NJS Operations Admin' ||
-      userName === 'admin' ||
       userId === 29 ||
-      userId === 45 ||
       userId === 'USR-29' ||
-      userId === 'USR-45' ||
       userId === 'USR-01'
     ) {
       addToast({
@@ -626,7 +490,9 @@ export const AdminUsersPage = () => {
       if (targetUser?.dbId && !delLeads.includes(String(targetUser.dbId))) delLeads.push(String(targetUser.dbId));
       if (userId && !delLeads.includes(String(userId))) delLeads.push(String(userId));
       localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(delLeads));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to update deleted user registry cache:', err);
+    }
 
     // 3. Remove from localStorage registered customers & credentials
     try {
@@ -700,21 +566,26 @@ export const AdminUsersPage = () => {
       window.dispatchEvent(new Event('propertygroup_agreements_updated'));
       window.dispatchEvent(new Event('propertygroup_users_updated'));
       window.dispatchEvent(new Event('storage'));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to purge local user cache:', err);
+    }
 
     // 4. Call backend API to delete from database (User and Lead)
     try {
       const apiTarget = targetUser?.dbId || cleanEmail || userId;
       await adminUsersAndRolesApi.deleteUser(apiTarget);
     } catch (err) {
-      console.warn('Backend user delete error:', err?.message || err);
+      console.error('Backend user delete error:', err?.message || err);
+      addToast({
+        type: 'error',
+        title: 'Delete Failed',
+        message: err?.message || 'Could not delete user account from database.',
+      });
+      return;
     }
     try {
       if (cleanEmail) {
         await adminCrmAndLeadsApi.deleteLead(cleanEmail);
-      }
-      if (targetUser?.dbId) {
-        await adminCrmAndLeadsApi.deleteLead(targetUser.dbId);
       }
     } catch (err) {
       console.warn('Backend lead delete error:', err?.message || err);

@@ -1,0 +1,540 @@
+﻿D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\customer\customerInvoicesAndPaymentsController.js:116: const ref = (req.body.transferReference || req.body.bacsReference || `BACS-CLAIM-${Date.now()}`).trim();
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\crmAndLeadsController.js:357: const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\messagesController.js:148: gte: new Date(Date.now() - 3000),
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\notificationController.js:983: const recentCutoff = new Date(Date.now() - 60 * 1000);
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\publicEnquiryController.js:53: const referenceId = `${prefix}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\quotationsAndPaymentsController.js:366: bacsReference: bacsReference || `BACS-${Date.now()}`,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\surveyJobsController.js:331: const recentCutoff = new Date(Date.now() - 60 * 1000);
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\termsAndDocumentsController.js:150: tamperAuditHash: 'audit_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\usersAndRolesController.js:380: data: { status: 'INACTIVE', email: `deleted_${Date.now()}_${targetUser.email}` },
+D:\Kiaan Work\oct nov\propertygroup\backend\src\middlewares\uploadMiddleware.js:36: const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\bookingReminderJob.js:17: const nowMs = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\quoteService.js:67: : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\stripeService.js:70: sessionId: `sim_cs_${Date.now()}`,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\userPresenceService.js:13: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\userPresenceService.js:29: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\userPresenceService.js:45: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\backend\src\utils\references.js:5: *  - No Math.random()
+D:\Kiaan Work\oct nov\propertygroup\backend\src\utils\references.js:40: const fallback = `${prefix}-${year}-${Date.now()}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\adminApi.js:13: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\adminApi.js:76: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\apiClient.js:4: * Automatically attaches Authorization Bearer token from localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\apiClient.js:40: ? token || (typeof localStorage !== 'undefined' ? localStorage.getItem('property_group_auth_token') : null)
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\apiClient.js:45: sessionUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('property_group_user_session') || '{}') : null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\publicApi.js:39: const referenceId = `ENQ-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:3: import { DEMO_USERS } from '../mock/users';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:4: import { ROLE_NAVIGATION } from '../mock/navigation';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:19: // Initialize user strictly from localStorage; default to null if not authenticated
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:22: const stored = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:28: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:29: localStorage.removeItem(AUTH_TOKEN_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:36: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:37: localStorage.removeItem(AUTH_TOKEN_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:38: sessionStorage.clear();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:62: localStorage.setItem(AUTH_TOKEN_KEY, res.token);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:72: localStorage.setItem(STORAGE_KEY, JSON.stringify(userObj));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:79: localStorage.setItem(STORAGE_KEY, JSON.stringify(targetUser));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:110: const deletedKeys = JSON.parse(localStorage.getItem('propertygroup_deleted_user_keys') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:123: const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:140: localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:270: localStorage.removeItem(AUTH_TOKEN_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:280: localStorage.setItem(STORAGE_KEY, JSON.stringify(matchedUser));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:283: localStorage.setItem(`${REMEMBERED_EMAIL_KEY}_${matchedUser.role}`, trimmedEmail);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:284: localStorage.setItem(REMEMBERED_EMAIL_KEY, trimmedEmail);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:286: localStorage.removeItem(`${REMEMBERED_EMAIL_KEY}_${matchedUser.role}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:287: localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:351: localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:374: id: backendUser ? `usr_${backendUser.id}` : 'usr_cust_' + Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:407: ].forEach((k) => localStorage.removeItem(k));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:411: localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:444: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:445: localStorage.removeItem(AUTH_TOKEN_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:454: ].forEach((k) => localStorage.removeItem(k));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:477: localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\RolePermissionsManager.jsx:40: import { ROLE_NAVIGATION } from '../../mock/navigation';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\RolePermissionsManager.jsx:41: import { useRolePermissions, MENU_DESCRIPTIONS } from '../../mock/permissions';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:22: import { SURVEYORS, useJobs, normalizeToUKDate } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:145: return JSON.parse(localStorage.getItem('propertygroup_calendar_custom_tasks') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:465: id: `tsk-${Date.now()}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:477: localStorage.setItem('propertygroup_calendar_custom_tasks', JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:19: import { SURVEYORS, useJobs, normalizeToUKDate } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:20: import { useLeads } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:282: const tempRef = `JOB-PENDING-${Date.now()}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\AdminMessagesModal.jsx:17: import { useMessages } from '../../mock/messages';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:31: import { useClientProfiles } from '../../mock/clientProfiles';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:4: import { LEAD_SOURCES, LEAD_STATUSES } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:76: id: `${prefix}-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RecordBacsPaymentModal.jsx:20: const invoiceNo = record?.invoiceNo || `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RecordBacsPaymentModal.jsx:23: `BACS-${Math.floor(10000 + Math.random() * 90000)}-${clientName.split(' ')[0].toUpperCase()}`
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:16: import { useJobs, SURVEYORS } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:17: import { useClientProfiles } from '../../mock/clientProfiles';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:45: const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendQuoteModal.jsx:28: import { useClientProfiles } from '../../mock/clientProfiles';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendQuoteModal.jsx:30: import { formatLeadReference } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:25: import { TERMS_TEMPLATES, getTemplateForService, createAutoFilledAgreement, useTerms } from '../../mock/terms';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:26: import { useJobs, SURVEYORS } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:224: id: currentJob?.id || `JOB-2026-${Math.floor(100 + Math.random() * 900)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:254: // 1. Save in agreements state / localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:263: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:274: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\SurveyBookerWorkflowBuckets.jsx:17: import { useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\SurveyBookerWorkflowBuckets.jsx:18: import { useLeads } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\SurveyBookerWorkflowBuckets.jsx:19: import { useTerms } from '../../mock/terms';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\ExpertWitnessForm.jsx:82: instructionRef: res?.referenceId || `CPR-${Math.floor(200000 + Math.random() * 800000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:111: const generatedRef = res?.referenceId || `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:121: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:143: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter(l => l.id !== generatedRef)]));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:146: const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:148: localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:156: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:182: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:183: localStorage.setItem(`propertygroup_active_job_${cleanEmail}`, generatedRef);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:17: import { getStoredLeads, saveStoredLeads } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:89: const ref = `QUO-${Math.floor(100000 + Math.random() * 900000)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:106: id: `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:140: const localNotifs = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:167: const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:355: const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:357: localStorage.setItem('njs_read_notifs', JSON.stringify(Array.from(readSet)));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:371: const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:373: localStorage.setItem('njs_read_notifs', JSON.stringify(Array.from(readSet)));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:36: import { ROLE_NAVIGATION } from '../mock/navigation';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:37: import { useRolePermissions } from '../mock/permissions';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:119: const isAcceptedFlag = localStorage.getItem(`propertygroup_quote_accepted_${uEmail}`) === 'true';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:122: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:131: const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:163: const raw = localStorage.getItem('propertygroup_conversations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\ToastContext.jsx:14: const id = Date.now().toString() + Math.random().toString(36).substring(2, 7);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:14: const stored = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:19: console.warn('Failed to parse client profiles from localStorage:', e);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:26: localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:28: console.warn('Failed to save client profiles to localStorage:', e);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:36: id: `CLT-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:50: id: `CALL-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:74: id: `CLT-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\clientProfiles.js:88: id: `CMP-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:309: const stored = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:331: const stored = localStorage.getItem(SENT_LOG_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:341: localStorage.setItem(STORAGE_KEY, JSON.stringify(automations));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:349: localStorage.setItem(SENT_LOG_KEY, JSON.stringify(sentLogs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:369: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:399: id: `EML-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:114: const raw = localStorage.getItem('propertygroup_jobs');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:151: localStorage.setItem('propertygroup_jobs', JSON.stringify(deduplicated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:157: const sess = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:177: if (localStorage.getItem('propertygroup_jobs') === serialized) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:180: localStorage.setItem('propertygroup_jobs', serialized);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:209: if (localStorage.getItem('propertygroup_jobs') !== serialized) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:210: localStorage.setItem('propertygroup_jobs', serialized);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:224: localStorage.setItem('propertygroup_inspection_completed', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:225: if (customerEmail) localStorage.setItem(`propertygroup_inspection_completed_${customerEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:228: localStorage.setItem('propertygroup_drafting', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:229: if (customerEmail) localStorage.setItem(`propertygroup_drafting_${customerEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:232: localStorage.setItem('propertygroup_qareview', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:233: if (customerEmail) localStorage.setItem(`propertygroup_qareview_${customerEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:236: localStorage.setItem('propertygroup_delivered', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:237: localStorage.setItem('propertygroup_payment_paid', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:239: localStorage.setItem(`propertygroup_delivered_${customerEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:240: localStorage.setItem(`propertygroup_payment_paid_${customerEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:301: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:361: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:28: if (!id) return `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:34: const numPart = strId.replace(/[^0-9]/g, '') || String(Math.floor(1000 + Math.random() * 9000));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:48: if (!localStorage.getItem('njs_fresh_leads_clean_v1')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:49: localStorage.removeItem(LEADS_STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:50: localStorage.setItem('njs_fresh_leads_clean_v1', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:53: const rawDeleted = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:56: const raw = localStorage.getItem(LEADS_STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:106: if (localStorage.getItem(LEADS_STORAGE_KEY) === serialized) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:109: localStorage.setItem(LEADS_STORAGE_KEY, serialized);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:151: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:173: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:210: // Persist deleted lead ID in localStorage so refreshes never bring it back
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:212: const raw = localStorage.getItem(DELETED_LEADS_KEY) || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:221: localStorage.setItem(DELETED_LEADS_KEY, JSON.stringify(ids));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:225: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:11: if (!localStorage.getItem('njs_fresh_messages_clean_v1')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:12: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:13: localStorage.setItem('njs_fresh_messages_clean_v1', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:16: const stored = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:28: const stored = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:54: localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:56: console.warn('Unable to persist conversations to localStorage', e);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:64: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:123: localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:132: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:173: localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:75: if (!localStorage.getItem('njs_fresh_partners_clean_v1')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:76: localStorage.removeItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:77: localStorage.setItem('njs_fresh_partners_clean_v1', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:80: const raw = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:90: localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:114: const raw = localStorage.getItem(STORAGE_KEY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:133: // Save permissions to localStorage and trigger global sync + backend DB persistence
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:136: localStorage.setItem(STORAGE_KEY, JSON.stringify(newPermissions));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:168: localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:173: // Silently fallback to localStorage on network issue or guest mode
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\quotes.js:9: const raw = localStorage.getItem('propertygroup_quotes');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\quotes.js:24: localStorage.setItem('propertygroup_quotes', JSON.stringify(quotes));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\quotes.js:56: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\terms.js:538: const refNumber = `TRM-2026-${String(job.id || job.jobNo || Math.floor(100 + Math.random() * 900)).replace(/[^0-9]/g, '').slice(-3) || '085'}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\terms.js:563: auditCode: `DOC-SENT-${Math.floor(10000 + Math.random() * 89999)}-DISPATCHED`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\terms.js:594: const raw = localStorage.getItem('propertygroup_agreements');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\terms.js:609: localStorage.setItem('propertygroup_agreements', JSON.stringify(agreements));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\terms.js:655: auditCode: details.auditCode || `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:29: import { useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:30: import { useLeads } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:31: import { useMessages } from '../../mock/messages';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:37: import { SURVEYORS, useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:42: import { LEAD_SOURCES, LEAD_STATUSES, useLeads, formatLeadReference } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:362: const rawDeleted = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:717: // Delete lead permanently from state, localStorage, and backend database
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:723: // 1. Immediately delete from state & localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:728: const raw = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:736: localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(ids));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:27: import { useQuotes } from '../../mock/quotes';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:44: const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:49: const leads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:55: const profiles = JSON.parse(localStorage.getItem('property_group_client_profiles_v1') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:60: const jobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:85: const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:789: const newId = `QUO-2026-${Math.floor(110 + Math.random() * 889)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:794: invoiceNo: `INV-2026-${Math.floor(110 + Math.random() * 889)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:810: dueDate: new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-GB'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminReportsPage.jsx:29: import { useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminReportsPage.jsx:329: const storedPhone = typeof window !== 'undefined' ? localStorage.getItem(`njs_user_phone_${cleanEmail}`) : null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:33: // Load Resend email config from localStorage or defaults
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:36: const saved = localStorage.getItem('propertygroup_resend_settings') || localStorage.getItem('propertygroup_smtp_settings');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:91: localStorage.setItem('propertygroup_resend_settings', JSON.stringify(emailConfig));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:92: localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(emailConfig));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:153: localStorage.setItem('propertygroup_resend_settings', JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:154: localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:376: localStorage.setItem('propertygroup_resend_settings', JSON.stringify(DEFAULT_EMAIL_CONFIG));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:377: localStorage.setItem('propertygroup_smtp_settings', JSON.stringify(DEFAULT_EMAIL_CONFIG));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSurveyorsPage.jsx:47: const storedPhone = typeof window !== 'undefined' ? localStorage.getItem(`njs_user_phone_${cleanEmail}`) : null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:29: import { TERMS_TEMPLATES, useTerms } from '../../mock/terms';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:449: const newId = `AGR-2026-${Math.floor(100 + Math.random() * 899)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:466: auditCode: `DOC-SENT-${Math.floor(10000 + Math.random() * 89999)}-DISPATCHED`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:568: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:32: import { useClientProfiles } from '../../mock/clientProfiles';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:96: const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:135: const storedPhone = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:136: const storedOrg = localStorage.getItem(`njs_user_org_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:279: localStorage.setItem(`njs_user_pw_${cleanEmail}`, cleanPw);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:282: localStorage.setItem(`njs_user_phone_${cleanEmail}`, cleanPhone);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:285: localStorage.setItem(`njs_user_org_${cleanEmail}`, defaultOrg);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:287: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:302: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:304: const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:306: localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(updatedDeleted));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:360: const stored = localStorage.getItem(`njs_user_pw_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:364: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:376: const stored = localStorage.getItem(`njs_user_phone_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:380: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:427: localStorage.setItem(`njs_user_pw_${targetEmail}`, cleanPw);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:428: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:431: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:458: const storedOrg = cleanEmail ? localStorage.getItem(`njs_user_org_${cleanEmail}`) : null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:486: // Update localStorage blocked list
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:488: const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:492: localStorage.setItem('property_group_blocked_users', JSON.stringify(blockedList));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:496: localStorage.setItem('property_group_blocked_users', JSON.stringify(filtered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:502: localStorage.setItem(`njs_user_phone_${targetEmail}`, cleanPhone);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:509: localStorage.setItem(`njs_user_org_${targetEmail}`, cleanOrg);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:511: localStorage.removeItem(`njs_user_org_${targetEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:513: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:516: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:549: localStorage.setItem(`njs_user_pw_${targetEmail}`, editFormData.password.trim());
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:550: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:553: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:607: // 2. Persist deleted user keys in localStorage so refreshes NEVER bring it back
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:609: const rawDeleted = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:620: localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(deletedKeys));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:623: const rawDelLeads = localStorage.getItem('propertygroup_deleted_lead_ids') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:628: localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(delLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:631: // 3. Remove from localStorage registered customers & credentials
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:633: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:642: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:645: localStorage.removeItem(`njs_user_pw_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:646: localStorage.removeItem(`njs_user_phone_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:647: localStorage.removeItem(`njs_user_org_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:648: localStorage.removeItem(`propertygroup_terms_signed_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:649: localStorage.removeItem(`propertygroup_terms_signed_date_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:650: localStorage.removeItem(`propertygroup_payment_claimed_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:651: localStorage.removeItem(`propertygroup_active_job_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:652: localStorage.removeItem(`propertygroup_user_signature_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:653: localStorage.removeItem(`propertygroup_user_sig_type_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:654: localStorage.removeItem(`propertygroup_delivered_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:655: localStorage.removeItem(`propertygroup_payment_paid_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:656: localStorage.removeItem(`propertygroup_qareview_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:657: localStorage.removeItem(`propertygroup_drafting_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:658: localStorage.removeItem(`propertygroup_inspection_completed_${cleanEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:662: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:668: localStorage.setItem('propertygroup_jobs', JSON.stringify(filteredJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:670: const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:675: localStorage.setItem('propertygroup_quotes', JSON.stringify(filteredQuotes));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:677: const storedAgreements = JSON.parse(localStorage.getItem('propertygroup_terms_agreements') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:682: localStorage.setItem('propertygroup_terms_agreements', JSON.stringify(filteredAgreements));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:684: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:689: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(filteredLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:692: const curSession = JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:694: localStorage.removeItem('property_group_user_session');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:695: localStorage.removeItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\ActivatePage.jsx:58: localStorage.setItem('property_group_auth_token', res.token);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\ActivatePage.jsx:61: localStorage.setItem('property_group_auth_user', JSON.stringify(res.user));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:178: const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:46: // 1. Check registered customers in localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:47: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:59: if (cust.password || localStorage.getItem(`njs_user_pw_${cleanEmail}`)) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:66: const leads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:31: import { useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:89: Boolean((jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:90: (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true'));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:111: return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:134: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:188: localStorage.removeItem(`propertygroup_quote_accepted_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:189: localStorage.removeItem(`propertygroup_terms_signed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:190: localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:191: localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:192: localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:232: localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:331: const newJobId = `JOB-2026-${Math.floor(100 + Math.random() * 899)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:355: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:367: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:368: localStorage.setItem('propertygroup_jobs', JSON.stringify([newJob, ...storedJobs]));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:369: localStorage.setItem(`propertygroup_active_job_${userEmail}`, newJobId);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:375: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:398: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter((l) => l.id !== newJobId)]));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:400: const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:402: localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:480: const allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:489: const allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:740: localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:50: import { useJobs, SURVEYORS } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:53: import { useMessages } from '../../mock/messages';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:54: import { useTerms, TERMS_TEMPLATES, getTemplateForService } from '../../mock/terms';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:55: import { useQuotes } from '../../mock/quotes';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:56: import { useLeads } from '../../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:156: return JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:163: const rememberedEmail = (localStorage.getItem('property_group_remembered_email') || '').toLowerCase().trim();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:189: allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:195: allJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:201: allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:205: const activeJobId = localStorage.getItem(`propertygroup_active_job_${userEmail}`) || null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:259: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:332: localStorage.getItem(`propertygroup_terms_signed_${userEmail}`) === 'true' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:333: localStorage.getItem(`propertygroup_terms_signed_${userStorageKey}`) === 'true' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:334: (currentJob?.id && localStorage.getItem(`propertygroup_terms_signed_${currentJob.id}`) === 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:337: localStorage.getItem(`propertygroup_payment_claimed_${userEmail}`) === 'true' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:338: localStorage.getItem(`propertygroup_payment_claimed_${userStorageKey}`) === 'true' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:339: (currentJob?.id && localStorage.getItem(`propertygroup_payment_claimed_${currentJob.id}`) === 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:401: return localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`) || currentAgreement?.signatureValue || '';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:408: return localStorage.getItem(`propertygroup_user_sig_type_${userStorageKey}`) || currentAgreement?.signatureType || 'typed';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:518: localStorage.setItem(`propertygroup_user_signature_${userStorageKey}`, capturedSignature);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:519: localStorage.setItem(`propertygroup_user_sig_type_${userStorageKey}`, signatureType);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:526: const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:528: localStorage.setItem(`propertygroup_terms_signed_${userStorageKey}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:529: localStorage.setItem(`propertygroup_terms_signed_date_${userStorageKey}`, nowSignString);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:531: localStorage.setItem(`propertygroup_terms_signed_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:545: id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:546: refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:575: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:583: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:595: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:625: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:634: const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:641: localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:645: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:652: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:661: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:712: const generatedAuditCode = `DOC-ESIGN-${Math.floor(10000 + Math.random() * 89999)}-VERIFIED`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:715: localStorage.setItem(`propertygroup_payment_claimed_${userStorageKey}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:717: localStorage.setItem(`propertygroup_payment_claimed_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:733: id: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:734: refNo: `AGR-2026-${Math.floor(100 + Math.random() * 899)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:776: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:817: const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:824: localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:829: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:836: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:845: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:934: (userEmail && localStorage.getItem(`propertygroup_quote_accepted_${userEmail}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:935: (userStorageKey && localStorage.getItem(`propertygroup_quote_accepted_${userStorageKey}`) === 'true')
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1691: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1704: localStorage.setItem(`propertygroup_booking_confirmed_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1707: localStorage.setItem(`propertygroup_booking_confirmed_${bookingModalJob.id}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1724: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1731: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1910: // Clean up any stale dummy fallback quotes from localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1912: const rawQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1920: localStorage.setItem('propertygroup_quotes', JSON.stringify(cleaned));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1958: const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1966: // Read latest quotes from localStorage for instant reactive feedback
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1969: const rawQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1977: const rawJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2178: id: urlQuoteRef || `QUO-2026-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2179: jobId: urlQuoteRef || `JOB-2026-${Date.now().toString().slice(-4)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2272: localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2273: localStorage.setItem('propertygroup_quote_accepted', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2412: localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2413: localStorage.setItem('propertygroup_quote_accepted', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2484: localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2485: localStorage.setItem('propertygroup_quote_accepted', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2793: (uEmail && localStorage.getItem(`propertygroup_delivered_${uEmail}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2794: (jRef && localStorage.getItem(`propertygroup_delivered_${jRef}`) === 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2803: (uEmail && localStorage.getItem(`propertygroup_payment_paid_${uEmail}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2804: (jRef && localStorage.getItem(`propertygroup_payment_paid_${jRef}`) === 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2842: const storedSig = localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2843: const storedSigType = localStorage.getItem(`propertygroup_user_sig_type_${userStorageKey}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2903: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2910: // 2. Also update localStorage so all tabs reflect immediately
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2912: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2926: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3377: const storedSig = localStorage.getItem(`propertygroup_user_signature_${userStorageKey}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3647: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3695: return JSON.parse(localStorage.getItem('property_group_user_session') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3701: const rememberedEmail = (localStorage.getItem('property_group_remembered_email') || '').toLowerCase().trim();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3719: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3733: localStorage.removeItem(`propertygroup_quote_accepted_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3734: localStorage.removeItem(`propertygroup_terms_signed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3735: localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3736: localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3737: localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3771: localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3798: return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3843: const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4044: localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4050: (j?.id && typeof window !== 'undefined' && localStorage.getItem(`propertygroup_report_delivered_${j.id}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4051: (j?.jobNo && typeof window !== 'undefined' && localStorage.getItem(`propertygroup_report_delivered_${j.jobNo}`) === 'true') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4052: (typeof window !== 'undefined' && localStorage.getItem('propertygroup_report_delivered') === 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4262: localStorage.setItem(`propertygroup_active_job_${userEmail}`, hj.id);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4611: // Cross-tab instantaneous synchronizer (BroadcastChannel + localStorage storage event)
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4816: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4868: localStorage.setItem('njs_last_chat_dispatch', String(Date.now()));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5313: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5597: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5623: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5640: localStorage.setItem('property_group_user_session', JSON.stringify(updatedUser));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5641: const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5647: localStorage.setItem('property_group_registered_customers', JSON.stringify(registered));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5744: const saved = localStorage.getItem(`propertygroup_support_tickets_${userEmail}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5786: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5787: ticketNo: `TKT-2026-${Math.floor(100 + Math.random() * 900)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5813: localStorage.setItem(`propertygroup_support_tickets_${userEmail}`, JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:44: import { useJobs } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:45: import { useQuotes } from '../../mock/quotes';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:51: import { useClientProfiles } from '../../mock/clientProfiles';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:52: import { useEmailAutomations } from '../../mock/emailAutomations';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:56: import { useMessages } from '../../mock/messages';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:166: const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:227: const isDelivered = localStorage.getItem('propertygroup_delivered') === 'true' || job?.status === 'Completed' || (job?.timelineStep || 0) >= 10;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:282: localStorage.setItem('propertygroup_delivered', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:283: localStorage.setItem('propertygroup_payment_paid', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:285: localStorage.setItem(`propertygroup_delivered_${targetEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:286: localStorage.setItem(`propertygroup_payment_paid_${targetEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:295: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:322: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:340: localStorage.setItem('propertygroup_payment_paid', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:342: localStorage.setItem(`propertygroup_payment_paid_${targetEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:351: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:514: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:527: id: Date.now() + 1,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:560: localStorage.setItem('propertygroup_delivered', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:561: localStorage.setItem('propertygroup_payment_paid', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:564: localStorage.setItem(`propertygroup_delivered_${cEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:565: localStorage.setItem(`propertygroup_payment_paid_${cEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:696: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:723: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:770: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1366: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:29: } from '../../mock/partners';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:31: import { useJobs, isJobForSurveyor } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:153: const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:163: const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:219: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:256: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:318: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:328: localStorage.setItem(`surveyor_photos_${primaryJob.id}`, JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:334: localStorage.setItem(`propertygroup_drafting_${primaryJob.id}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:344: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:412: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:36: import { useJobs, isJobForSurveyor, normalizeToUKDate } from '../../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:101: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1119: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1183: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1478: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1552: id: Date.now(),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1596: id: `EML-QA-${Date.now()}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1608: const existing = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1609: localStorage.setItem('property_group_sent_emails_v1', JSON.stringify([emailRecord, ...existing.slice(0, 49)]));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:2002: setHolidays([...holidays, { id: Date.now(), ...newHoliday, status: 'Logged' }]);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:6: import { renderEmailTemplate, DEFAULT_EMAIL_AUTOMATIONS } from '../mock/emailAutomations';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:7: import { getStoredQuotes, saveStoredQuotes } from '../mock/quotes';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:8: import { getStoredLeads, saveStoredLeads } from '../mock/leads';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:9: import { normalizeToUKDate } from '../mock/jobs';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:75: const quoteRef = lead.quoteReference || `QUO-2026-${Math.floor(100 + Math.random() * 900)}`;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:81: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:169: id: `EML-AQ-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:185: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:186: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:223: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:276: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:318: id: `EML-AC-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:333: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:334: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:345: localStorage.setItem(`propertygroup_quote_accepted_${clientEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:346: localStorage.setItem('propertygroup_quote_accepted', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:347: const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:364: localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:372: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:389: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:399: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:417: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:425: const token = localStorage.getItem('property_group_auth_token');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:509: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:574: id: `EML-REM-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:589: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:590: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:601: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:619: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:627: const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:644: localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:666: storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:671: const now = Date.now();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:786: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:847: id: `EML-INSP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:862: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:863: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:874: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:893: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:949: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1015: id: `EML-REP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1030: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1031: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1040: // 3. Mark delivery in localStorage flags
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1041: localStorage.setItem('propertygroup_delivered', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1042: localStorage.setItem(`propertygroup_delivered_${clientEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1046: const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1066: localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1127: const rawAutomations = localStorage.getItem('property_group_email_automations_v1');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1197: id: `EML-BOOK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1217: id: `EML-SRV-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1232: const existingLogs = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1233: localStorage.setItem(
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1242: // 3. Persist flags in localStorage
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1244: localStorage.setItem('propertygroup_booking_confirmed', 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1246: localStorage.setItem(`propertygroup_booking_confirmed_${clientEmail}`, 'true');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\calendarSync.js:185: `UID:job-${apt.id || Date.now()}@njspropertygroup.com`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:6: * saves to localStorage queue, and syncs to backend /notifications.
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:26: id: `client-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:46: // 2. Persist to localStorage queue so notifications are preserved across reloads and offline
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:48: const existing = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:50: localStorage.setItem('propertygroup_local_notifications', JSON.stringify(updated));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:419: doc.text(`SHA256:NJS-${jobNo}-${Date.now().toString(16).toUpperCase()}-IP:${ipAddress}`, 65, curY + 41);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:667: doc.text(`Transaction Reference: TXN-NJS-${Date.now().toString(16).toUpperCase()}`, 20, txnY);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:126: if (!localStorage.getItem(WIPE_KEY)) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:151: localStorage.removeItem(key);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:155: for (let i = localStorage.length - 1; i >= 0; i--) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:156: const k = localStorage.key(i);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:178: localStorage.removeItem(k);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:183: localStorage.setItem(WIPE_KEY, 'true');

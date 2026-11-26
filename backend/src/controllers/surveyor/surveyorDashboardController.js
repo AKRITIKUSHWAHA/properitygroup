@@ -24,7 +24,7 @@ export const getSurveyorDashboard = async (req, res, next) => {
       prisma.job.count({
         where: {
           surveyorId,
-          stage: { in: ['BOOKED', 'PREPARING_REPORT'] },
+          stage: { in: ['BOOKED', 'INSPECTED', 'DRAFTING', 'QA_REVIEW'] },
         },
       }),
       prisma.job.count({
@@ -39,7 +39,7 @@ export const getSurveyorDashboard = async (req, res, next) => {
       prisma.job.count({
         where: {
           surveyorId,
-          stage: 'PREPARING_REPORT',
+          stage: { in: ['INSPECTED', 'DRAFTING'] },
         },
       }),
     ]);
@@ -48,7 +48,7 @@ export const getSurveyorDashboard = async (req, res, next) => {
     const upcomingInspections = await prisma.job.findMany({
       where: {
         surveyorId,
-        stage: { in: ['BOOKED', 'PREPARING_REPORT'] },
+        stage: { in: ['BOOKED', 'INSPECTED'] },
       },
       select: {
         id: true,

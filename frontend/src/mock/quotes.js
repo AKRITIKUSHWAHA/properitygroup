@@ -1,36 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getApiBaseUrl } from '../api/apiClient';
 
-// Initial Quotations, Invoices, and Payments (Clean state for fresh client testing)
+// Initial Quotations, Invoices, and Payments (In-memory session store; DB is source of truth)
 export const INITIAL_QUOTES = [];
+let memoryQuotes = [];
 
-export const getStoredQuotes = () => {
-  try {
-    const raw = localStorage.getItem('propertygroup_quotes');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((q) => {
-          const name = (q.customer || q.clientName || '').toLowerCase().trim();
-          const email = (q.customerEmail || q.clientEmail || '').toLowerCase().trim();
-          const addr = (q.property || q.propertyAddress || '').toLowerCase().trim();
-          return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && q.id !== 7;
-        });
-      }
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  return [];
-};
+export const getStoredQuotes = () => memoryQuotes;
 
 export const saveStoredQuotes = (quotes) => {
-  try {
-    localStorage.setItem('propertygroup_quotes', JSON.stringify(quotes));
-    window.dispatchEvent(new Event('propertygroup_quotes_updated'));
-  } catch (e) {
-    console.error(e);
-  }
+  memoryQuotes = Array.isArray(quotes) ? quotes : [];
+  window.dispatchEvent(new Event('propertygroup_quotes_updated'));
 };
 
 export const useQuotes = () => {
@@ -41,10 +20,8 @@ export const useQuotes = () => {
       setQuotesState(getStoredQuotes());
     };
     window.addEventListener('propertygroup_quotes_updated', onUpdate);
-    window.addEventListener('storage', onUpdate);
     return () => {
       window.removeEventListener('propertygroup_quotes_updated', onUpdate);
-      window.removeEventListener('storage', onUpdate);
     };
   }, []);
 
@@ -70,7 +47,9 @@ export const useQuotes = () => {
           baseFee: newQuote.baseFee || 650.0,
           vatRate: 20.0,
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Failed to sync new quote to backend:', err);
+      });
     }
   }, [setQuotes]);
 

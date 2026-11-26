@@ -8,6 +8,7 @@ import {
   updateJobStage,
   assignSurveyor,
   rescheduleSurveyJob,
+  triggerBookingReminders,
 } from '../controllers/surveyJobsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
@@ -20,6 +21,7 @@ router.use(authorizeRoles('ADMIN', 'SURVEYOR', 'CUSTOMER'));
 // Menu 6: Survey Jobs Endpoints
 router.get('/', getSurveyJobs);
 router.get('/metrics', getSurveyJobsMetrics);
+router.post('/reminders/run', authorizeRoles('ADMIN'), triggerBookingReminders);
 router.get('/:id', getSurveyJobById);
 router.post('/', authorizeRoles('ADMIN', 'CUSTOMER'), createSurveyJob);
 router.delete('/:id', authorizeRoles('ADMIN'), deleteSurveyJob);

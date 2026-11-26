@@ -2,6 +2,7 @@ import app from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { startBookingReminderScheduler } from './services/bookingReminderJob.js';
 
 const PORT = env.PORT || 5000;
 
@@ -11,42 +12,8 @@ async function bootstrap() {
     try {
       await prisma.$connect();
       logger.success('Connected successfully to MySQL database via Prisma ORM.');
-
-      // Purge obsolete test / dummy records permanently
-      try {
-        await prisma.job.deleteMany({
-          where: {
-            OR: [
-              { id: 7 },
-              { clientName: { contains: 'akku' } },
-              { propertyAddress: { contains: 'MP Nagar' } },
-              { propertyAddress: { contains: 'Bhopal' } },
-              { propertyAddress: { contains: 'Plot No 45' } },
-              { reference: 'JOB-2026-101' },
-            ],
-          },
-        });
-        await prisma.lead.deleteMany({
-          where: {
-            OR: [
-              { id: 7 },
-              { clientName: { contains: 'akku' } },
-              { propertyAddress: { contains: 'MP Nagar' } },
-              { propertyAddress: { contains: 'Bhopal' } },
-            ],
-          },
-        });
-        await prisma.user.deleteMany({
-          where: {
-            OR: [
-              { name: { contains: 'akku' } },
-              { email: { contains: 'akku' } },
-            ],
-          },
-        });
-      } catch {}
     } catch (dbErr) {
-      logger.warn(`MySQL database server not reachable at startup (${dbErr.message}). Server running in resilient mode with live Resend email dispatch active.`);
+      logger.error(`Failed to connect to MySQL database at startup: ${dbErr.message}`);
     }
 
     const server = app.listen(PORT, () => {
@@ -54,9 +21,12 @@ async function bootstrap() {
       logger.info(`Health check endpoint: http://localhost:${PORT}/api/v1/health`);
     });
 
+    const reminderTimer = startBookingReminderScheduler();
+
     // Graceful Shutdown Handlers
     const shutdown = async (signal) => {
       logger.info(`${signal} signal received. Closing HTTP server and database pool...`);
+      if (reminderTimer) clearInterval(reminderTimer);
       server.close(async () => {
         await prisma.$disconnect();
         logger.info('Database pool closed. Exiting process.');

@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { prisma } from '../config/db.js';
+import { ApiError } from '../utils/ApiError.js';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const isStripeConfigured = Boolean(stripeSecretKey && stripeSecretKey.startsWith('sk_'));
@@ -63,6 +64,13 @@ export const createCheckoutSession = async ({
     };
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    throw new ApiError(
+      503,
+      'Online card payment gateway is not configured. Please use bank transfer (BACS) or contact support.'
+    );
+  }
+
   // Graceful Sandbox / Dev Simulation when API key is not yet provided by client
   console.log(`[STRIPE SIMULATION] Checkout session created for ${jobReference} - £${amount} (${customerEmail})`);
   return {
@@ -82,36 +90,168 @@ export const handleStripeWebhookEvent = async (event) => {
     const session = event.data.object;
     const { jobId, invoiceId, jobReference } = session.metadata || {};
 
-    console.log(`[STRIPE WEBHOOK] Payment received for Job ${jobReference || jobId}`);
+    console.log(`[STRIPE WEBHOOK] Checkout session completed for Job ${jobReference || jobId}`);
 
-    // Update invoice status in database
+    let invoice = null;
     if (invoiceId) {
-      const invId = parseInt(invoiceId);
+      const invId = parseInt(invoiceId, 10);
       if (!isNaN(invId)) {
-        await prisma.invoice.update({
-          where: { id: invId },
-          data: {
-            status: 'PAID',
-            paymentMethod: 'STRIPE_CARD',
-            paidAt: new Date(),
-          },
-        }).catch((err) => console.warn('Could not update invoice on webhook:', err.message));
+        invoice = await prisma.invoice.findUnique({ where: { id: invId } });
+      }
+    }
+    if (!invoice && jobId) {
+      const jId = parseInt(jobId, 10);
+      if (!isNaN(jId)) {
+        invoice = await prisma.invoice.findFirst({ where: { jobId: jId } });
       }
     }
 
-    // Update job stage in database
-    if (jobId) {
-      const jId = parseInt(jobId);
+    if (invoice) {
+      if (invoice.status === 'PAID') {
+        console.log(`[STRIPE WEBHOOK] Invoice ${invoice.id} is already marked PAID. Idempotent skip.`);
+      } else {
+        const stripeTxnId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
+        const transactionOps = [
+          prisma.invoice.update({
+            where: { id: invoice.id },
+            data: {
+              status: 'PAID',
+              paymentMethod: 'STRIPE_CARD',
+              stripePaymentIntentId: stripeTxnId || invoice.stripePaymentIntentId,
+              paidAt: new Date(),
+            },
+          }),
+        ];
+
+        const targetJobId = invoice.jobId || (jobId ? parseInt(jobId, 10) : null);
+        if (targetJobId && !isNaN(targetJobId)) {
+          transactionOps.push(
+            prisma.job.update({
+              where: { id: targetJobId },
+              data: { stage: 'PAID' },
+            })
+          );
+        }
+
+        await prisma.$transaction(transactionOps);
+        console.log(`[STRIPE WEBHOOK] Invoice ${invoice.id} and Job ${targetJobId} atomically updated to PAID.`);
+        await sendPaymentNotifications(invoice, targetJobId);
+      }
+    }
+  }
+
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object;
+    const { jobId, invoiceId, jobReference } = paymentIntent.metadata || {};
+
+    console.log(`[STRIPE WEBHOOK] PaymentIntent succeeded: ${paymentIntent.id} for Job ${jobReference || jobId || 'N/A'}`);
+
+    let invoice = null;
+    if (invoiceId) {
+      const invId = parseInt(invoiceId, 10);
+      if (!isNaN(invId)) {
+        invoice = await prisma.invoice.findUnique({ where: { id: invId } });
+      }
+    }
+    if (!invoice && jobId) {
+      const jId = parseInt(jobId, 10);
       if (!isNaN(jId)) {
-        await prisma.job.update({
-          where: { id: jId },
-          data: { stage: 'CONFIRMED' },
-        }).catch(() => {});
+        invoice = await prisma.invoice.findFirst({ where: { jobId: jId } });
+      }
+    }
+    if (!invoice && paymentIntent.id) {
+      invoice = await prisma.invoice.findFirst({ where: { stripePaymentIntentId: paymentIntent.id } });
+    }
+
+    if (invoice) {
+      if (invoice.status === 'PAID') {
+        console.log(`[STRIPE WEBHOOK] Invoice ${invoice.id} is already marked PAID. Idempotent skip.`);
+      } else {
+        const transactionOps = [
+          prisma.invoice.update({
+            where: { id: invoice.id },
+            data: {
+              status: 'PAID',
+              paymentMethod: 'STRIPE_CARD',
+              stripePaymentIntentId: paymentIntent.id,
+              paidAt: new Date(),
+            },
+          }),
+        ];
+
+        const targetJobId = invoice.jobId || (jobId ? parseInt(jobId, 10) : null);
+        if (targetJobId && !isNaN(targetJobId)) {
+          transactionOps.push(
+            prisma.job.update({
+              where: { id: targetJobId },
+              data: { stage: 'PAID' },
+            })
+          );
+        }
+
+        await prisma.$transaction(transactionOps);
+        console.log(`[STRIPE WEBHOOK] Invoice ${invoice.id} and Job ${targetJobId} atomically updated to PAID via payment_intent.succeeded.`);
+        await sendPaymentNotifications(invoice, targetJobId);
       }
     }
   }
 
   return { received: true };
+};
+
+const sendPaymentNotifications = async (invoice, targetJobId) => {
+  try {
+    const job = targetJobId ? await prisma.job.findUnique({ where: { id: targetJobId } }) : null;
+    const clientName = invoice.clientName || job?.clientName || 'Client';
+    const property = job?.propertyAddress || 'Subject Property';
+    const amount = parseFloat(invoice.total || 0).toFixed(2);
+
+    if (targetJobId) {
+      const existingAdminNotif = await prisma.notification.findFirst({
+        where: {
+          role: 'ADMIN',
+          type: 'READY_TO_BOOK',
+          link: `/admin/jobs/${targetJobId}`,
+        },
+      });
+
+      if (!existingAdminNotif) {
+        await prisma.notification.create({
+          data: {
+            role: 'ADMIN',
+            title: `Payment Received - Ready to Book (£${amount})`,
+            desc: `Payment received, ${clientName}, ${property}, £${amount}. Assign surveyor and book inspection.`,
+            type: 'READY_TO_BOOK',
+            amount: `£${amount}`,
+            link: `/admin/jobs/${targetJobId}`,
+          },
+        });
+      }
+    }
+
+    const recipientEmail = invoice.clientEmail || job?.clientEmail;
+    let targetUser = null;
+    if (recipientEmail) {
+      targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
+    }
+    const targetUserId = targetUser ? targetUser.id : job?.clientId;
+
+    if (targetUserId) {
+      await prisma.notification.create({
+        data: {
+          userId: targetUserId,
+          role: 'CUSTOMER',
+          title: 'Payment Received',
+          desc: 'Payment received. Next: choose your inspection date',
+          type: 'PAYMENT',
+          amount: `£${amount}`,
+          link: '/customer/my-bookings',
+        },
+      });
+    }
+  } catch (err) {
+    console.error('[Stripe webhook notification error]:', err.message);
+  }
 };
 
 export const verifyWebhookSignature = (rawBody, signature) => {

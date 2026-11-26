@@ -134,7 +134,9 @@ export const getNotifications = async (req, res, next) => {
           select: { id: true },
         });
         userIds = Array.from(new Set([user.id, ...matchingUsers.map((u) => u.id)].filter(Boolean)));
-      } catch {}
+      } catch (err) {
+        console.error('[notificationController] Failed to query matching users by email:', err.message);
+      }
     }
 
     const isSurveyor = (user.role || '').toLowerCase() === 'surveyor';
@@ -168,6 +170,7 @@ export const getNotifications = async (req, res, next) => {
         Intl.DateTimeFormat(undefined, { timeZone: h });
         return h;
       } catch {
+        // Harmless: client sent an unrecognised time zone identifier; fall back to server default
         return undefined;
       }
     })();
@@ -179,6 +182,7 @@ export const getNotifications = async (req, res, next) => {
       try {
         return `${d.toLocaleDateString('en-GB', clientTz ? { timeZone: clientTz } : undefined)}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...(clientTz ? { timeZone: clientTz } : {}) })}`;
       } catch {
+        // Harmless: timezone locale conversion failed; fall back to standard en-GB UTC/local format
         return `${d.toLocaleDateString('en-GB')}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
       }
     };
@@ -903,7 +907,9 @@ export const markAllAsRead = async (req, res, next) => {
           data: { readByAdmin: true },
         });
       }
-    } catch {}
+    } catch (msgErr) {
+      console.error('[notificationController] Failed to mark messages as read:', msgErr.message);
+    }
 
     return ApiResponse.success(res, null, 'All notifications marked as read');
   } catch (error) {
@@ -955,7 +961,9 @@ export const createNotification = async (req, res, next) => {
           if (jobMatch.clientId) parsedUserId = jobMatch.clientId;
           if (jobMatch.clientEmail) targetEmail = jobMatch.clientEmail;
         }
-      } catch {}
+      } catch (jobErr) {
+        console.warn('[notificationController] Fallback job match failed:', jobErr.message);
+      }
     }
 
     if (!parsedUserId && targetEmail) {
@@ -966,7 +974,9 @@ export const createNotification = async (req, res, next) => {
         if (foundUser) {
           parsedUserId = foundUser.id;
         }
-      } catch {}
+      } catch (userErr) {
+        console.warn('[notificationController] Fallback user lookup failed:', userErr.message);
+      }
     }
 
     // Deduplicate identical notifications sent within the last 60 seconds
@@ -998,6 +1008,37 @@ export const createNotification = async (req, res, next) => {
     });
 
     return ApiResponse.created(res, { notification }, 'Notification created successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/v1/notifications/:id
+ * Delete a DB notification (or acknowledge dismissal of a synthesized alert)
+ */
+export const deleteNotification = async (req, res, next) => {
+  try {
+    const rawId = String(req.params.id || '').trim();
+    const id = parseInt(rawId, 10);
+
+    if (!/^\d+$/.test(rawId) || isNaN(id)) {
+      return ApiResponse.success(res, null, 'Notification dismissed');
+    }
+
+    const notification = await prisma.notification.findUnique({ where: { id } });
+    if (!notification) {
+      throw ApiError.notFound('Notification not found');
+    }
+
+    const userRole = (req.user?.role || '').toUpperCase();
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    if (!isAdmin && notification.userId && notification.userId !== req.user.id) {
+      throw ApiError.forbidden('You are not authorized to delete this notification');
+    }
+
+    await prisma.notification.delete({ where: { id } });
+    return ApiResponse.success(res, null, 'Notification deleted successfully');
   } catch (error) {
     next(error);
   }

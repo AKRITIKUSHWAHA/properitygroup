@@ -7,10 +7,8 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
 export const getCustomerReports = async (req, res, next) => {
   try {
     const userId = req.user?.id;
-    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
-    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
-    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
+    const userName = req.user?.name || 'Valued Client';
 
     const reports = await prisma.job.findMany({
       where: {
@@ -18,7 +16,11 @@ export const getCustomerReports = async (req, res, next) => {
           ...(userId ? [{ clientId: userId }] : []),
           ...(userEmail ? [{ clientEmail: userEmail }] : []),
         ],
-        stage: { in: ['PREPARING_REPORT', 'COMPLETE'] },
+        // Customer only sees report after QA approval: stage must be COMPLETE
+        // and report PDF must exist and QA must be approved.
+        stage: 'COMPLETE',
+        reportPdfUrl: { not: null },
+        qaApprovedAt: { not: null },
       },
       select: {
         id: true,

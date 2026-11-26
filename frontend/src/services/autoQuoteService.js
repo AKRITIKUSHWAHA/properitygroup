@@ -6,7 +6,7 @@
 import { renderEmailTemplate, DEFAULT_EMAIL_AUTOMATIONS } from '../mock/emailAutomations';
 import { getStoredQuotes, saveStoredQuotes } from '../mock/quotes';
 import { getStoredLeads, saveStoredLeads } from '../mock/leads';
-import { normalizeToUKDate } from '../mock/jobs';
+import { normalizeToUKDate, getStoredJobs, saveStoredJobs } from '../mock/jobs';
 import { getApiBaseUrl, api } from '../api/apiClient';
 
 const STANDARD_SURVEY_BASE_FEES = {
@@ -236,8 +236,12 @@ export const dispatchAutoQuoteForLead = async (lead, customOverrides = {}) => {
         leadId: lead.id,
         quoteRef: quoteRef,
       }),
-    }).catch(() => {});
-  } catch {}
+    }).catch((err) => {
+      console.warn('Auto-quote email API dispatch error:', err);
+    });
+  } catch (err) {
+    console.warn('Auto-quote backend dispatch skipped:', err);
+  }
 
   return {
     success: true,
@@ -263,7 +267,7 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
   const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
   const formattedTime = `${formattedDate}, ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
 
-  const clientEmail = (quoteOrJob.clientEmail || quoteOrJob.customerEmail || 'customer@demo.com').toLowerCase().trim();
+  const clientEmail = (quoteOrJob.clientEmail || quoteOrJob.customerEmail || '').toLowerCase().trim();
   const clientName = quoteOrJob.client || quoteOrJob.customerName || quoteOrJob.customer || 'Valued Client';
   const propertyAddress = quoteOrJob.property || quoteOrJob.propertyAddress || quoteOrJob.location || 'Subject Property, London';
   const surveyType = quoteOrJob.surveyType || quoteOrJob.enquiry || 'RICS Level 2 Home Survey';
@@ -340,11 +344,9 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
     console.warn('Error saving sent email log', err);
   }
 
-  // 3. Update Quotes Storage: mark as Accepted
+  // 3. Update in-memory Quotes store: mark as Accepted
   try {
-    localStorage.setItem(`propertygroup_quote_accepted_${clientEmail}`, 'true');
-    localStorage.setItem('propertygroup_quote_accepted', 'true');
-    const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+    const storedQuotes = getStoredQuotes();
     const updatedQuotes = storedQuotes.map((q) => {
       const match =
         q.id === quoteOrJob.id ||
@@ -361,15 +363,14 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
       }
       return q;
     });
-    localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
-    window.dispatchEvent(new Event('propertygroup_quotes_updated'));
+    saveStoredQuotes(updatedQuotes);
   } catch (err) {
-    console.warn('Error updating quotes storage on acceptance', err);
+    console.warn('Error updating quotes store on acceptance', err);
   }
 
-  // 4. Update Jobs Storage: mark stage as Accepted / quoteStatus: Accepted
+  // 4. Update in-memory Jobs store: mark stage as Accepted / quoteStatus: Accepted
   try {
-    const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+    const storedJobs = getStoredJobs();
     const targetId = String(quoteOrJob.id || quoteOrJob.jobNo || quoteOrJob.refNo || '').toUpperCase().trim();
     const updatedJobs = storedJobs.map((j) => {
       const jId = String(j.id || j.jobNo || '').toUpperCase().trim();
@@ -379,24 +380,21 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
           ...j,
           status: j.status === 'Completed' || j.status === 'Paid' ? j.status : 'Accepted',
           quoteStatus: 'Accepted',
-          stage: 'accepted',
+          stage: 'QUOTE_ACCEPTED',
           acceptedAt: formattedTime,
           timelineStep: Math.max(j.timelineStep || 0, 3),
         };
       }
       return j;
     });
-    localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
-    setTimeout(() => {
-      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-    }, 0);
+    saveStoredJobs(updatedJobs);
   } catch (err) {
-    console.warn('Error updating jobs storage on acceptance', err);
+    console.warn('Error updating jobs store on acceptance', err);
   }
 
-  // 5. Update Leads Storage: mark status as Converted / Accepted
+  // 5. Update in-memory Leads store: mark status as Converted / Accepted
   try {
-    const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+    const storedLeads = getStoredLeads();
     const updatedLeads = storedLeads.map((l) => {
       const match =
         l.id === quoteOrJob.id ||
@@ -414,10 +412,9 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
       }
       return l;
     });
-    localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
-    window.dispatchEvent(new Event('propertygroup_leads_updated'));
+    saveStoredLeads(updatedLeads);
   } catch (err) {
-    console.warn('Error updating leads storage on acceptance', err);
+    console.warn('Error updating leads store on acceptance', err);
   }
 
   // 6. Persist quotation acceptance in Backend DB (creates Job, Term, Invoice)
@@ -435,10 +432,10 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-user-email': clientEmail,
-          'x-user-name': clientName,
         },
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Customer quote accept API error:', err);
+      });
 
       const numericOnlyId = parseInt(String(quoteOrJob.numericId || quoteOrJob.dbId || '').replace(/[^0-9]/g, ''), 10);
       if (!isNaN(numericOnlyId) && numericOnlyId > 0) {
@@ -447,13 +444,16 @@ export const dispatchQuoteAcceptance = async (quoteOrJob, customOverrides = {}) 
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'x-user-email': clientEmail,
           },
           body: JSON.stringify({ status: 'ACCEPTED' }),
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn('Quote status PATCH error:', err);
+        });
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Quote accept backend sync skipped:', err);
+  }
 
   return {
     success: true,
@@ -486,7 +486,7 @@ export const dispatchUnbookedBookingReminder = async (jobOrQuote, customOverride
   const clientEmail = (
     jobOrQuote.customerEmail ||
     jobOrQuote.clientEmail ||
-    'customer@demo.com'
+    ''
   ).toLowerCase().trim();
   const clientName =
     jobOrQuote.customer ||
@@ -761,7 +761,7 @@ export const dispatchPostInspectionUpdate = async (jobOrRecord, customOverrides 
   const clientEmail = (
     jobOrRecord.customerEmail ||
     jobOrRecord.clientEmail ||
-    'customer@demo.com'
+    ''
   ).toLowerCase().trim();
   const clientName =
     jobOrRecord.customer ||
@@ -924,7 +924,7 @@ export const dispatchFinalReportReadyEmail = async (jobOrRecord, customOverrides
   const clientEmail = (
     jobOrRecord.customerEmail ||
     jobOrRecord.clientEmail ||
-    'customer@demo.com'
+    ''
   ).toLowerCase().trim();
   const clientName =
     jobOrRecord.customer ||
@@ -1095,7 +1095,7 @@ export const dispatchBookingConfirmationEmail = async (jobOrBooking, customOverr
   const clientEmail = (
     jobOrBooking.customerEmail ||
     jobOrBooking.clientEmail ||
-    'customer@demo.com'
+    ''
   ).toLowerCase().trim();
   const clientName =
     jobOrBooking.customer ||
@@ -1248,7 +1248,9 @@ Head of Residential Surveying | NJS Property Group`;
     if (clientEmail) {
       localStorage.setItem(`propertygroup_booking_confirmed_${clientEmail}`, 'true');
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Failed to persist booking confirmation flag:', err);
+  }
 
   // 4. Also call backend API to assign surveyor / send backend email if backend job id is known
   try {
@@ -1259,9 +1261,13 @@ Head of Residential Surveying | NJS Property Group`;
         inspectionDate: jobOrBooking.date || jobOrBooking.inspectionDate,
         inspectionTime: timeSlot,
         keyCollectionDetails: jobOrBooking.propertyDetails?.accessDetails || 'Keys with estate agent',
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn('Failed to sync surveyor assignment to backend:', err);
+      });
     }
-  } catch {}
+  } catch (err) {
+    console.warn('Booking surveyor assignment sync skipped:', err);
+  }
 
   return { success: true, emailLogRecord, surveyorEmailLog };
 };

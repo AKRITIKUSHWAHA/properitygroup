@@ -530,9 +530,10 @@ export const createAutoFilledAgreement = ({
     ? TERMS_TEMPLATES.find((t) => t.serviceKey === templateKey || t.id === templateKey) || getTemplateForService(job.surveyType)
     : getTemplateForService(job.surveyType);
 
-  const baseFee = Number(job.quote?.baseFee || (job.surveyType?.includes('Level 3') ? 1450 : 770));
-  const vatAmount = Math.round(baseFee * 0.2);
-  const totalAmount = baseFee + vatAmount;
+  const rawFee = job.quote?.baseFee ?? job.baseFee ?? (job.totalAmount ? job.totalAmount / 1.2 : null);
+  const baseFee = rawFee !== null && !isNaN(Number(rawFee)) ? Number(rawFee) : 0;
+  const vatAmount = baseFee > 0 ? Math.round(baseFee * 0.2) : 0;
+  const totalAmount = baseFee > 0 ? baseFee + vatAmount : 0;
 
   const refNumber = `TRM-2026-${String(job.id || job.jobNo || Math.floor(100 + Math.random() * 900)).replace(/[^0-9]/g, '').slice(-3) || '085'}`;
 
@@ -543,12 +544,12 @@ export const createAutoFilledAgreement = ({
     id: refNumber,
     refNo: refNumber,
     jobNo: job.jobNo || job.id || 'JOB-2026-085',
-    client: job.customer || job.clientName || 'Private Client',
-    signerEmail: job.customerEmail || job.clientEmail || 'client@example.co.uk',
-    clientPhone: job.customerPhone || job.clientPhone || '+44 7700 900000',
-    property: job.property || job.propertyAddress || '14 Mayfair Gate, London',
-    location: job.location || 'London, UK',
-    postcode: job.postcode || 'W1K 2PB',
+    client: job.customer || job.clientName || '',
+    signerEmail: job.customerEmail || job.clientEmail || '',
+    clientPhone: job.customerPhone || job.clientPhone || '',
+    property: job.property || job.propertyAddress || '',
+    location: job.location || '',
+    postcode: job.postcode || '',
     serviceKey: template.serviceKey,
     templateId: template.id,
     templateName: template.name,
@@ -585,36 +586,15 @@ export const createAutoFilledAgreement = ({
   };
 };
 
-// Initial Sent / Signed / Pending Agreements List (Clean state for fresh client testing)
+// Initial Sent / Signed / Pending Agreements List (In-memory session store; DB is source of truth)
 export const INITIAL_AGREEMENTS = [];
+let memoryAgreements = [];
 
-export const getStoredAgreements = () => {
-  try {
-    const raw = localStorage.getItem('propertygroup_agreements');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((a) => {
-          const name = (a.customer || a.clientName || '').toLowerCase().trim();
-          const email = (a.customerEmail || a.clientEmail || '').toLowerCase().trim();
-          const addr = (a.property || a.propertyAddress || '').toLowerCase().trim();
-          return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && a.id !== 7;
-        });
-      }
-    }
-  } catch (e) {
-    console.error(e);
-  }
-  return [];
-};
+export const getStoredAgreements = () => memoryAgreements;
 
 export const saveStoredAgreements = (agreements) => {
-  try {
-    localStorage.setItem('propertygroup_agreements', JSON.stringify(agreements));
-    window.dispatchEvent(new Event('propertygroup_agreements_updated'));
-  } catch (e) {
-    console.error(e);
-  }
+  memoryAgreements = Array.isArray(agreements) ? agreements : [];
+  window.dispatchEvent(new Event('propertygroup_agreements_updated'));
 };
 
 export const useTerms = () => {
@@ -625,10 +605,8 @@ export const useTerms = () => {
       setAgreementsState(getStoredAgreements());
     };
     window.addEventListener('propertygroup_agreements_updated', onUpdate);
-    window.addEventListener('storage', onUpdate);
     return () => {
       window.removeEventListener('propertygroup_agreements_updated', onUpdate);
-      window.removeEventListener('storage', onUpdate);
     };
   }, []);
 

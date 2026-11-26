@@ -193,19 +193,25 @@ export const AdminSurveyorsPage = () => {
     e.stopPropagation();
     setActiveDropdownId(null);
     if (window.confirm(`Are you sure you want to offboard ${name} from active panel?`)) {
-      setSurveyorsList((prev) => prev.filter((s) => s.id !== id));
       const targetId = dbId || (typeof id === 'number' ? id : parseInt(String(id).replace('srv-', ''), 10));
       if (targetId) {
         try {
           await adminSurveyorsApi.updateSurveyor(targetId, { available: false, status: 'INACTIVE' });
         } catch (err) {
-          console.warn('Backend surveyor offboard error:', err?.message || err);
+          console.error('Backend surveyor offboard error:', err?.message || err);
+          addToast({
+            type: 'error',
+            title: 'Offboard Failed',
+            message: err?.message || `Could not offboard ${name} in database.`,
+          });
+          return;
         }
       }
+      setSurveyorsList((prev) => prev.filter((s) => s.id !== id));
       addToast({
         type: 'info',
         title: 'Surveyor Offboarded',
-        message: `${name} has been removed from active rota.`,
+        message: `${name} has been marked inactive and removed from active rota.`,
       });
     }
   };

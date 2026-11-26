@@ -30,6 +30,7 @@ import {
   Sparkles,
   UserX,
   UserCheck,
+  Trash2,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { Tabs } from '../../components/common/Tabs';
@@ -46,37 +47,20 @@ import {
   dispatchPostInspectionUpdate,
   dispatchFinalReportReadyEmail,
 } from '../../services/autoQuoteService';
+import {
+  normalizeJobStage,
+  getStageStep,
+  getStageLabel,
+} from '../../utils/jobStages';
 
 // Mapper from Backend Job model to Frontend Job state
 const mapBackendJobToFrontend = (bj) => {
-  let mappedStatus = 'Action Required';
-  const stage = (bj.stage || '').toUpperCase();
-  if (stage === 'COMPLETE') {
-    mappedStatus = 'Completed';
-  } else if (stage === 'QA_REVIEW' || (stage === 'PREPARING_REPORT' && (bj.status === 'QA_Review' || bj.timelineStep === 9))) {
-    mappedStatus = 'QA Review';
-  } else if (stage === 'PREPARING_REPORT' || stage === 'IN_PROGRESS') {
-    mappedStatus = 'In Progress';
-  } else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') {
-    mappedStatus = 'Scheduled';
-  } else if (stage === 'QUOTE' || stage === 'INSTRUCTION' || stage === 'NEW') {
-    mappedStatus = 'Action Required';
-  }
+  const stage = normalizeJobStage(bj.stage);
+  const calculatedTimelineStep = getStageStep(stage);
+  const mappedStatus = getStageLabel(stage);
 
   const termsSigned = Array.isArray(bj.terms) && bj.terms.some((t) => t.signed);
   const invoicePaid = Array.isArray(bj.invoices) && bj.invoices.some((i) => i.status === 'PAID');
-
-  let calculatedTimelineStep = 1;
-  if (stage === 'COMPLETE') calculatedTimelineStep = 10;
-  else if (stage === 'QA_REVIEW') calculatedTimelineStep = 9;
-  else if (stage === 'DRAFTING' || stage === 'PREPARING_REPORT') calculatedTimelineStep = 8;
-  else if (stage === 'INSPECTED') calculatedTimelineStep = 7;
-  else if (stage === 'BOOKED' || stage === 'CONFIRMED' || stage === 'SCHEDULED' || stage === 'INSPECTION_BOOKED') calculatedTimelineStep = 6;
-  else if (invoicePaid) calculatedTimelineStep = 5;
-  else if (termsSigned) calculatedTimelineStep = 4;
-  else if (stage === 'ACCEPTED' || bj.status === 'Accepted') calculatedTimelineStep = 3;
-  else if (stage === 'QUOTE' || stage === 'QUOTED') calculatedTimelineStep = 2;
-  else calculatedTimelineStep = 1;
 
   const termsStatus = termsSigned ? 'Signed' : (Array.isArray(bj.terms) && bj.terms.length > 0 ? 'Sent' : 'Pending');
   const paymentStatus = invoicePaid ? 'Paid' : (Array.isArray(bj.invoices) && bj.invoices.length > 0 ? 'Invoice Sent' : 'Awaiting Payment');
@@ -95,16 +79,16 @@ const mapBackendJobToFrontend = (bj) => {
       : 'Date: TBD',
     timeSlot: bj.inspectionTime || 'Time: TBD',
     customer: bj.clientName || 'Private Client',
-    customerEmail: bj.clientEmail || 'client@example.com',
-    customerPhone: bj.clientPhone || '+44 7700 900000',
+    customerEmail: bj.clientEmail || '',
+    customerPhone: bj.clientPhone || '',
     surveyType: bj.serviceType || 'RICS Level 2 Home Survey',
     property: bj.propertyAddress || 'London Property',
     location: bj.postcode ? `${bj.postcode}, London` : 'London, UK',
-    postcode: bj.postcode || 'W1K 2PB',
+    postcode: bj.postcode || '—',
     surveyor: surveyorName,
     surveyorId: sId,
     status: mappedStatus,
-    stage: bj.stage || 'QUOTE',
+    stage: stage,
     timelineStep: Number(bj.timelineStep) || calculatedTimelineStep,
     termsStatus,
     paymentStatus,
@@ -123,6 +107,7 @@ const JobRowActions = ({
   onSendBookingReminder,
   onSendPostInspectionUpdate,
   onSendReportReadyEmail,
+  onDeleteJob,
 }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
@@ -354,7 +339,21 @@ const JobRowActions = ({
             className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer text-left"
           >
             <CalendarClock className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-            <span>Reschedule Inspection</span>
+            <span>Assign Surveyor</span>
+          </button>
+
+          {/* Delete Survey Job Action */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+              if (onDeleteJob) onDeleteJob(job);
+            }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer text-left border-t border-slate-100 mt-1 pt-2"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+            <span>Delete Survey Job</span>
           </button>
           </div>,
           document.body
@@ -387,25 +386,7 @@ export const AdminJobsPage = () => {
             if (apiJobs.length === 0) {
               setJobs([]);
             } else {
-              const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
-                const email = (bj.customerEmail || '').toLowerCase().trim();
-                const name = (bj.customer || '').toLowerCase().trim();
-                const prop = (bj.property || '').toLowerCase().trim();
-                const id = String(bj.id || '').trim();
-                const jobNo = String(bj.jobNo || '').trim().toUpperCase();
-                return (
-                  email !== 'customer@demo.com' &&
-                  email !== 'customer2@demo.com' &&
-                  !email.includes('akku') &&
-                  !name.includes('akku') &&
-                  !prop.includes('mp nagar') &&
-                  !prop.includes('bhopal') &&
-                  !prop.includes('plot no 45') &&
-                  id !== '7' &&
-                  id !== 'JOB-2026-101' &&
-                  jobNo !== 'JOB-2026-101'
-                );
-              });
+              const mapped = apiJobs.map(mapBackendJobToFrontend);
               // Deduplicate multiple entries for identical client instruction
               const seen = new Set();
               const deduplicated = [];
@@ -507,11 +488,11 @@ export const AdminJobsPage = () => {
     adminSurveyJobsApi
       .createJob({
         serviceType: newJob.surveyType || 'RICS Level 2 Home Survey',
-        propertyAddress: newJob.property || newJob.location || 'London Property',
-        postcode: newJob.postcode || 'SW1A 1AA',
+        propertyAddress: newJob.property || newJob.location || '',
+        postcode: newJob.postcode || '',
         clientName: newJob.customer || 'Private Client',
-        clientEmail: newJob.customerEmail || 'client@example.com',
-        clientPhone: newJob.customerPhone || '+44 7700 900000',
+        clientEmail: newJob.customerEmail || '',
+        clientPhone: newJob.customerPhone || '',
         baseFee: 650.0,
       })
       .then((res) => {
@@ -1096,6 +1077,38 @@ export const AdminJobsPage = () => {
                             onSendBookingReminder={handleSendBookingReminder}
                             onSendPostInspectionUpdate={handleSendPostInspectionUpdate}
                             onSendReportReadyEmail={handleSendReportReadyEmail}
+                            onDeleteJob={async (targetJob) => {
+                              const jobLabel = targetJob.jobNo || targetJob.id;
+                              if (!window.confirm(`Permanently delete survey job ${jobLabel} (${targetJob.customer}) from the database?`)) {
+                                return;
+                              }
+                              const apiId = targetJob.dbId || targetJob.jobNo || targetJob.id;
+                              try {
+                                await adminSurveyJobsApi.deleteJob(apiId);
+                              } catch (err) {
+                                console.error('Backend job delete error:', err);
+                                addToast({
+                                  type: 'error',
+                                  title: 'Delete Failed',
+                                  message: err?.message || `Could not delete job ${jobLabel} from database.`,
+                                });
+                                return;
+                              }
+                              setJobs((prev) =>
+                                prev.filter(
+                                  (j) =>
+                                    j.id !== targetJob.id &&
+                                    (!targetJob.dbId || j.dbId !== targetJob.dbId) &&
+                                    j.jobNo !== targetJob.jobNo
+                                )
+                              );
+                              window.dispatchEvent(new Event('propertygroup_jobs_updated'));
+                              addToast({
+                                type: 'info',
+                                title: 'Survey Job Deleted',
+                                message: `${jobLabel} has been permanently deleted from the database.`,
+                              });
+                            }}
                           />
                         </td>
                       </tr>

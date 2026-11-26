@@ -1,11 +1,13 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { issueQuote } from '../services/quoteService.js';
 import {
-  sendQuoteProposalEmail,
   sendQuoteAcceptedEmail,
   sendInvoiceReceiptEmail,
+  sendPortalActivationEmail,
 } from '../services/emailService.js';
+import { ensureCustomerUser, generateActivationToken } from '../services/customerUserService.js';
 
 /**
  * Superadmin Menu 8: Quotations & Payments (UK 20% VAT, Invoicing, Stripe & BACS)
@@ -116,198 +118,40 @@ export const createQuote = async (req, res, next) => {
     const {
       jobId,
       leadId,
-      client: inputClient,
-      clientName,
-      clientEmail: inputClientEmail,
-      clientPhone,
-      property: inputProperty,
-      propertyAddress,
-      surveyType: inputSurveyType,
       baseFee,
       discount = 0,
+      surveyType,
       inclusions,
       validDays = 30,
     } = req.body;
-
-    const client = inputClient || clientName || '';
-    const clientEmail = inputClientEmail || '';
-    const property = inputProperty || propertyAddress || '';
-    const surveyType = inputSurveyType || '';
 
     if (!baseFee || parseFloat(baseFee) <= 0) {
       throw ApiError.badRequest('Valid base inspection fee is required');
     }
 
-    const fee = parseFloat(baseFee);
-    const disc = parseFloat(discount) || 0;
-    const subtotal = Math.max(0, fee - disc);
-    const vatRate = 20.0; // Statutory UK 20% VAT
-    const vatAmount = parseFloat(((subtotal * vatRate) / 100).toFixed(2));
-    const totalAmount = parseFloat((subtotal + vatAmount).toFixed(2));
-
     const validUntil = new Date();
     validUntil.setDate(validUntil.getDate() + validDays);
 
-    let reference = `QTE-2026-${Math.floor(100 + Math.random() * 900)}`;
-    let quote = null;
-    let leadRecord = null;
-    let parsedLeadId = null;
+    const result = await issueQuote({
+      leadId,
+      jobId,
+      baseFee,
+      discount,
+      serviceType: surveyType,
+      inclusions: inclusions ? (typeof inclusions === 'string' ? inclusions : JSON.stringify(inclusions)) : undefined,
+      validUntil,
+      issuedBy: req.user?.id,
+    });
 
-    const inclusionsData = inclusions
-      ? (typeof inclusions === 'string' ? inclusions : JSON.stringify(inclusions))
-      : JSON.stringify({ client, clientEmail, clientPhone, property, surveyType, discount: disc });
-
-    // Database persistence with unique reference generation
-    try {
-      const lastQuote = await prisma.quote.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });
-      const candidateNum = (lastQuote?.id || 0) + 101;
-      reference = `QTE-2026-${String(candidateNum).padStart(3, '0')}`;
-      const refExists = await prisma.quote.findUnique({ where: { reference }, select: { id: true } });
-      if (refExists) {
-        reference = `QTE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      }
-
-      if (leadId) {
-        const numLead = Number(leadId);
-        try {
-          if (!isNaN(numLead) && String(numLead) === String(leadId)) {
-            leadRecord = await prisma.lead.findUnique({ where: { id: numLead } });
-          } else {
-            leadRecord = await prisma.lead.findFirst({ where: { reference: String(leadId) } });
-          }
-        } catch (fErr) {}
-        if (leadRecord) {
-          parsedLeadId = leadRecord.id;
-        }
-      }
-
-      let numericJobId = jobId ? parseInt(jobId, 10) : null;
-      if (!numericJobId && property) {
-        try {
-          const existingJob = await prisma.job.findFirst({
-            where: { propertyAddress: { contains: property.slice(0, 15) } },
-            select: { id: true },
-          });
-          if (existingJob) numericJobId = existingJob.id;
-        } catch (jErr) {}
-      }
-
-      quote = await prisma.quote.create({
-        data: {
-          reference,
-          jobId: numericJobId,
-          leadId: parsedLeadId,
-          baseFee: fee,
-          vatRate,
-          vatAmount,
-          totalAmount,
-          inclusions: inclusionsData,
-          status: 'SENT',
-          validUntil,
-        },
-        include: {
-          job: { select: { id: true, reference: true, propertyAddress: true, clientName: true, clientEmail: true } },
-          lead: { select: { id: true, reference: true, clientName: true } },
-        },
-      });
-
-      if (parsedLeadId) {
-        try {
-          await prisma.lead.update({
-            where: { id: parsedLeadId },
-            data: { status: 'QUOTE_SENT', estimatedValue: totalAmount },
-          });
-        } catch (lErr) {}
-      }
-    } catch (dbErr) {
-      console.warn('MySQL DB persistence skipped for quote (server running in resilient mode):', dbErr.message);
-      quote = {
-        reference,
-        baseFee: fee,
-        vatRate,
-        vatAmount,
-        totalAmount,
-        inclusions: inclusionsData,
-        status: 'SENT',
-        validUntil,
-      };
-    }
-
-    // Dispatch formal RICS quote proposal email via Resend to client & CC admin
-    let recipientEmail = (clientEmail || req.body.clientEmail || leadRecord?.clientEmail || '').trim();
-    let recipientName = (client || req.body.clientName || leadRecord?.clientName || 'Valued Client').trim();
-    let targetProperty = (property || req.body.propertyAddress || leadRecord?.propertyAddress || 'Subject Property').trim();
-    let targetSurveyType = (surveyType || req.body.surveyType || leadRecord?.serviceType || 'RICS Level 2 Home Survey').trim();
-
-    if (parsedLeadId && (!recipientEmail || !recipientName)) {
-      try {
-        const lead = await prisma.lead.findUnique({ where: { id: parsedLeadId } });
-        if (lead) {
-          recipientEmail = recipientEmail || lead.clientEmail;
-          recipientName = recipientName || lead.clientName;
-          targetProperty = targetProperty || lead.propertyAddress;
-          targetSurveyType = targetSurveyType || lead.serviceType;
-        }
-      } catch (err) {}
-    }
-
-    let emailSent = false;
-    if (recipientEmail) {
-      try {
-        const frontendBase = process.env.CLIENT_URL?.split(',')[0] || process.env.FRONTEND_URL || 'http://localhost:5175';
-        const cleanRef = quote?.reference || reference;
-        const targetQuoteLink =
-          req.body.quoteLink ||
-          `${frontendBase}/customer/my-quotations?quoteRef=${encodeURIComponent(cleanRef)}&property=${encodeURIComponent(targetProperty)}&survey=${encodeURIComponent(targetSurveyType)}&fee=${totalAmount.toFixed(2)}&email=${encodeURIComponent(recipientEmail)}`;
-
-        const emailRes = await sendQuoteProposalEmail({
-          to: recipientEmail,
-          clientName: recipientName || 'Valued Client',
-          quoteAmount: totalAmount.toFixed(2),
-          surveyType: targetSurveyType || 'RICS Level 2 Home Survey',
-          propertyAddress: targetProperty || 'Subject Property',
-          quoteLink: targetQuoteLink,
-        });
-        emailSent = Boolean(emailRes?.success);
-      } catch (emailErr) {
-        console.warn('Resend quotation email warning:', emailErr.message);
-      }
-
-      // In-App Notification for Customer & Admin
-      try {
-        const targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
-        await prisma.notification.create({
-          data: {
-            userId: targetUser?.id || null,
-            role: 'CUSTOMER',
-            title: 'Formal Survey Quotation Ready',
-            desc: `A formal RICS quote of £${totalAmount.toFixed(2)} has been prepared for ${targetProperty}.`,
-            type: 'QUOTE',
-            amount: `£${totalAmount.toFixed(2)}`,
-            link: '/customer/quotations',
-          },
-        });
-        await prisma.notification.create({
-          data: {
-            role: 'ADMIN',
-            title: `Quote Proposal Issued - £${totalAmount.toFixed(2)}`,
-            desc: `Quote proposal ${quote?.reference || reference} sent to ${recipientName} (${recipientEmail}).`,
-            type: 'QUOTE',
-            amount: `£${totalAmount.toFixed(2)}`,
-            link: '/admin/finance/quotations',
-          },
-        });
-      } catch (nErr) {
-        console.warn('Quote notification create warning:', nErr.message);
-      }
-    }
+    const { quote, emailSent, emailError } = result;
+    const recipientEmail = quote.lead?.clientEmail || quote.job?.clientEmail || '';
 
     return ApiResponse.created(
-      res, 
-      { quote, emailSent, recipientEmail }, 
-      emailSent 
-        ? `Quote issued and formal proposal emailed to ${recipientEmail}` 
-        : 'Quote issued with 20% UK VAT calculated'
+      res,
+      { quote, emailSent, emailError, recipientEmail },
+      emailSent
+        ? `Quote ${quote.reference} issued and formal proposal emailed to client`
+        : `Quote ${quote.reference} issued in portal (Email delivery: ${emailError || 'Resend not configured'})`
     );
   } catch (error) {
     next(error);
@@ -361,7 +205,10 @@ export const updateQuote = async (req, res, next) => {
       if (quote.inclusions) {
         parsedInclusions = JSON.parse(quote.inclusions);
       }
-    } catch (e) {}
+    } catch {
+      // Harmless: Inclusions may be legacy plain text string or invalid JSON, fall back to empty object
+      parsedInclusions = {};
+    }
 
     const updatedInclusions = {
       ...parsedInclusions,
@@ -395,7 +242,9 @@ export const updateQuote = async (req, res, next) => {
           where: { id: updated.leadId },
           data: { estimatedValue: totalAmount },
         });
-      } catch (err) {}
+      } catch (err) {
+        console.error('[quotationsAndPayments] Failed to sync estimatedValue to lead:', err.message);
+      }
     }
 
     if (updated.jobId) {
@@ -404,7 +253,9 @@ export const updateQuote = async (req, res, next) => {
           where: { jobId: updated.jobId, status: { not: 'PAID' } },
           data: { subtotal, vatAmount, total: totalAmount },
         });
-      } catch (err) {}
+      } catch (err) {
+        console.error('[quotationsAndPayments] Failed to sync fee updates to non-paid invoices:', err.message);
+      }
     }
 
     return ApiResponse.success(
@@ -433,7 +284,7 @@ export const updateQuoteStatus = async (req, res, next) => {
       quote = await prisma.quote.findFirst({ where: { reference: String(id) } });
     }
 
-    // Resilient fallback: Try matching without prefix or partial reference (e.g. QUO-2026-373 vs QTE-2026-373)
+    // Fallback reference resolution: match without prefix or partial reference (e.g. QUO-2026-373 vs QTE-2026-373)
     if (!quote) {
       const cleanRef = String(id).replace(/^(QUO|QTE)-/i, '');
       quote = await prisma.quote.findFirst({
@@ -449,20 +300,8 @@ export const updateQuoteStatus = async (req, res, next) => {
 
     const normalizedStatus = (status || 'ACCEPTED').toUpperCase();
 
-    // If quotation was created purely in frontend state/localStorage, handle gracefully without 404
     if (!quote) {
-      return ApiResponse.success(
-        res,
-        {
-          quote: {
-            id: isNaN(quoteId) ? 999 : quoteId,
-            reference: String(id),
-            status: normalizedStatus === 'PAID' ? 'ACCEPTED' : normalizedStatus,
-            updatedAt: new Date(),
-          },
-        },
-        'Quotation status updated successfully'
-      );
+      throw ApiError.notFound(`Quotation not found with identifier: ${id}`);
     }
 
     const updated = await prisma.quote.update({
@@ -474,23 +313,30 @@ export const updateQuoteStatus = async (req, res, next) => {
       include: { job: true, lead: true },
     });
 
+    let emailSent = false;
+    let emailError = null;
     if (normalizedStatus === 'ACCEPTED' && quote.status !== 'ACCEPTED') {
       try {
         const clientEmail = updated.lead?.clientEmail || updated.job?.clientEmail;
         if (clientEmail && clientEmail.includes('@')) {
-          sendQuoteAcceptedEmail({
+          const emailRes = await sendQuoteAcceptedEmail({
             to: clientEmail,
             clientName: updated.lead?.clientName || updated.job?.clientName || 'Valued Client',
             quoteRef: updated.reference,
             surveyType: updated.job?.serviceType || updated.lead?.serviceType || 'RICS Level 2 Home Survey',
             propertyAddress: updated.job?.propertyAddress || updated.lead?.propertyAddress || 'Subject Property',
             totalAmount: updated.totalAmount,
-          }).catch((e) => console.warn('[sendQuoteAcceptedEmail] background error:', e.message));
+          });
+          emailSent = Boolean(emailRes?.success);
+          emailError = emailRes?.error || null;
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('[sendQuoteAcceptedEmail updateQuoteStatus] error:', err.message);
+        emailError = err.message;
+      }
     }
 
-    return ApiResponse.success(res, { quote: updated }, 'Quotation status updated');
+    return ApiResponse.success(res, { quote: updated, emailSent, emailError }, 'Quotation status updated');
   } catch (error) {
     next(error);
   }
@@ -511,23 +357,29 @@ export const settleBacsPayment = async (req, res, next) => {
       throw ApiError.notFound('Invoice record not found');
     }
 
-    const updated = await prisma.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        status: 'PAID',
-        paymentMethod: 'BACS_TRANSFER',
-        bacsReference: bacsReference || `BACS-${Date.now()}`,
-        paidAt: new Date(),
-      },
-    });
+    const transactionOps = [
+      prisma.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          status: 'PAID',
+          paymentMethod: 'BACS_TRANSFER',
+          bacsReference: bacsReference || `BACS-${Date.now()}`,
+          paidAt: new Date(),
+        },
+      }),
+    ];
 
-    // Advance job to PAID if currently QUOTE or ACCEPTED
+    // Advance job to PAID if currently before PAID
     if (invoice.job && ['QUOTE', 'ACCEPTED'].includes(invoice.job.stage)) {
-      await prisma.job.update({
-        where: { id: invoice.jobId },
-        data: { stage: 'PAID' },
-      });
+      transactionOps.push(
+        prisma.job.update({
+          where: { id: invoice.jobId },
+          data: { stage: 'PAID' },
+        })
+      );
     }
+
+    const [updated] = await prisma.$transaction(transactionOps);
 
     await prisma.auditLog.create({
       data: {
@@ -539,55 +391,93 @@ export const settleBacsPayment = async (req, res, next) => {
     });
 
     // Dispatch Official VAT Receipt Email for BACS Settlement
+    let emailSent = false;
+    let emailError = null;
     try {
       const recipientEmail = invoice.clientEmail || invoice.job?.clientEmail;
       if (recipientEmail && recipientEmail.includes('@')) {
-        sendInvoiceReceiptEmail({
+        const emailRes = await sendInvoiceReceiptEmail({
           to: recipientEmail,
           clientName: invoice.clientName || invoice.job?.clientName || 'Valued Client',
           invoiceRef: invoice.invoiceNumber,
           amount: invoice.total,
           paymentMethod: `BACS Direct Settlement (Ref: ${bacsReference || 'Bank Transfer'})`,
           propertyAddress: invoice.job?.propertyAddress || 'Subject Property',
-        }).catch((e) => console.warn('[sendInvoiceReceiptEmail BACS] background error:', e.message));
+        });
+        emailSent = Boolean(emailRes?.success);
+        emailError = emailRes?.error || null;
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error('[sendInvoiceReceiptEmail BACS] error:', err.message);
+      emailError = err.message;
+    }
 
-    // In-App Notification for Client & Admin
+    // In-App Notifications for Client & Admin
     try {
       const recipientEmail = invoice.clientEmail || invoice.job?.clientEmail;
       let targetUser = null;
       if (recipientEmail) {
         targetUser = await prisma.user.findFirst({ where: { email: recipientEmail } });
       }
-      if (targetUser || invoice.job?.clientId) {
+      const targetUserId = targetUser ? targetUser.id : invoice.job?.clientId;
+
+      // Customer notification: "Payment received. Next: choose your inspection date" link /customer/my-bookings
+      if (targetUserId) {
         await prisma.notification.create({
           data: {
-            userId: targetUser ? targetUser.id : invoice.job?.clientId,
+            userId: targetUserId,
             role: 'CUSTOMER',
-            title: `BACS Payment Reconciled - £${invoice.total}`,
-            desc: `Your BACS bank transfer for invoice ${invoice.invoiceNumber} has been verified and settled. HMRC 20% VAT receipt issued.`,
+            title: 'Payment Received',
+            desc: 'Payment received. Next: choose your inspection date',
             type: 'PAYMENT',
             amount: `£${parseFloat(invoice.total || 0).toFixed(2)}`,
-            link: '/customer/invoices-and-payments',
+            link: '/customer/my-bookings',
           },
         });
       }
-      await prisma.notification.create({
-        data: {
-          role: 'ADMIN',
-          title: `BACS Payment Reconciled - £${invoice.total}`,
-          desc: `BACS payment for invoice ${invoice.invoiceNumber} confirmed. Ref: ${bacsReference || 'Bank Transfer'}.`,
-          type: 'PAYMENT',
-          amount: `£${parseFloat(invoice.total || 0).toFixed(2)}`,
-          link: '/admin/finance/invoices',
-        },
-      });
+
+      // Deduplicated Admin notification
+      if (invoice.jobId) {
+        const existingAdminNotif = await prisma.notification.findFirst({
+          where: {
+            role: 'ADMIN',
+            type: 'READY_TO_BOOK',
+            link: `/admin/jobs/${invoice.jobId}`,
+          },
+        });
+
+        if (!existingAdminNotif) {
+          const clientName = invoice.clientName || invoice.job?.clientName || 'Client';
+          const property = invoice.job?.propertyAddress || 'Subject Property';
+          const amount = parseFloat(invoice.total || 0).toFixed(2);
+
+          await prisma.notification.create({
+            data: {
+              role: 'ADMIN',
+              title: `Payment Received - Ready to Book (£${amount})`,
+              desc: `Payment received, ${clientName}, ${property}, £${amount}. Assign surveyor and book inspection.`,
+              type: 'READY_TO_BOOK',
+              amount: `£${amount}`,
+              link: `/admin/jobs/${invoice.jobId}`,
+            },
+          });
+        }
+      }
     } catch (nErr) {
-      console.warn('BACS notification create warning:', nErr.message);
+      console.error('[BACS notification error]:', nErr.message);
+      if (invoice.jobId) {
+        await prisma.auditLog.create({
+          data: {
+            jobId: invoice.jobId,
+            userId: req.user?.id || null,
+            action: 'NOTIFICATION_DISPATCH_FAILED',
+            details: `Failed to create notification on BACS settlement: ${nErr.message}`,
+          },
+        }).catch((ae) => console.error('[AuditLog fallback error]:', ae.message));
+      }
     }
 
-    return ApiResponse.success(res, { invoice: updated }, 'BACS payment confirmed and reconciled');
+    return ApiResponse.success(res, { invoice: updated, emailSent, emailError }, 'BACS payment confirmed and reconciled');
   } catch (error) {
     next(error);
   }

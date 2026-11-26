@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Smartphone,
@@ -14,16 +14,31 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { getCalendarSubscriptionUrls, downloadIcsFile } from '../../utils/calendarSync';
+import { api } from '../../api/apiClient';
 
 export const SurveyorCalendarSyncModal = ({ isOpen, onClose, surveyor, appointments = [] }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('apple'); // 'apple' | 'google' | 'outlook'
+  const [feedToken, setFeedToken] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    api
+      .get('/surveyor/my-calendar/feed-token')
+      .then((res) => {
+        const tok = res?.data?.feedToken || res?.feedToken || '';
+        if (tok) setFeedToken(tok);
+      })
+      .catch((err) => {
+        console.warn('Failed to load surveyor calendar feed token:', err);
+      });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const surveyorId = surveyor?.id || 22;
   const surveyorName = surveyor?.name || 'Surveyor';
-  const urls = getCalendarSubscriptionUrls(surveyorId);
+  const urls = getCalendarSubscriptionUrls(surveyorId, feedToken);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(urls.httpsUrl);

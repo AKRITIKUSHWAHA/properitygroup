@@ -1,6 +1,9 @@
+import crypto from 'crypto';
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendTermsProposalEmail } from '../services/emailService.js';
+import { generateTermReference } from '../utils/references.js';
 
 /**
  * Superadmin Menu 9: Terms & Documents (Legal Terms, Digital Signature Audit)
@@ -66,25 +69,68 @@ export const issueTermsAgreement = async (req, res, next) => {
     }
 
     if (!job) {
-      job = await prisma.job.findFirst();
+      throw ApiError.notFound('Survey job not found for terms dispatch.');
     }
 
-    const count = await prisma.term.count();
-    const reference = `TRM-2026-${String(count + 101).padStart(3, '0')}`;
+    const acceptedQuote = await prisma.quote.findFirst({
+      where: { jobId: job.id, status: 'ACCEPTED' },
+    });
+    if (!acceptedQuote) {
+      throw ApiError.badRequest('Cannot dispatch Terms of Engagement before a quotation has been accepted.');
+    }
+
+    const recipientEmail = clientEmail || job.clientEmail;
+    if (!recipientEmail) {
+      throw ApiError.badRequest('Client email is required to dispatch terms.');
+    }
+
+    const reference = await generateTermReference();
+
+    // App-layer uniqueness guard: one active term per job (non-superseded)
+    const existingActiveTerm = await prisma.term.findFirst({
+      where: {
+        jobId: job.id,
+        NOT: { documentTitle: { startsWith: '[SUPERSEDED]' } },
+      },
+    });
+    if (existingActiveTerm) {
+      throw ApiError.conflict(`An active term already exists for this job (${existingActiveTerm.reference}). Supersede it before creating a new one.`);
+    }
 
     const term = await prisma.term.create({
       data: {
         reference,
-        jobId: job ? job.id : 1,
-        clientName: clientName || (job ? job.clientName : 'Valued Client'),
-        clientEmail: clientEmail || (job ? job.clientEmail : 'client@example.com'),
-        documentTitle: documentTitle || 'RICS Standard Home Survey Terms of Engagement',
+        jobId: job.id,
+        clientName: clientName || job.clientName || 'Valued Client',
+        clientEmail: recipientEmail,
+        documentTitle: documentTitle || `${job.serviceType || 'RICS Standard'} Terms of Engagement`,
         content: content || 'Standard statutory liability clauses and RICS inspection scope.',
         signed: false,
       },
     });
 
-    return ApiResponse.created(res, { term }, 'Terms of Engagement dispatched for customer signature');
+    let emailSent = false;
+    let emailError = null;
+    if (recipientEmail && recipientEmail.includes('@')) {
+      const emailRes = await sendTermsProposalEmail({
+        to: recipientEmail,
+        clientName: clientName || job.clientName || 'Valued Client',
+        jobRef: job.reference,
+        propertyAddress: job.propertyAddress,
+        surveyType: job.serviceType,
+        documentTitle: term.documentTitle,
+      });
+      emailSent = Boolean(emailRes?.success);
+      emailError = emailRes?.error || null;
+    }
+
+    return ApiResponse.created(
+      res,
+      { term, emailSent, emailError },
+      emailSent
+        ? 'Terms of Engagement dispatched and emailed to customer for signature'
+        : `Terms of Engagement created in portal (Email delivery failed: ${emailError || 'Resend not configured'})`
+    );
   } catch (error) {
     next(error);
   }
@@ -94,15 +140,32 @@ export const markTermSigned = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { signatureData, signerIp } = req.body;
+    const termId = parseInt(id, 10);
+
+    const existingTerm = await prisma.term.findUnique({ where: { id: termId } });
+    if (!existingTerm) {
+      throw ApiError.notFound('Terms agreement not found');
+    }
+
+    const signedAt = new Date();
+    const resolvedIp =
+      signerIp ||
+      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      req.ip ||
+      'unknown';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const hashData = `${termId}|${existingTerm.jobId}|${existingTerm.clientEmail}|${signedAt.toISOString()}|${resolvedIp}|${userAgent}`;
+    const tamperAuditHash = crypto.createHash('sha256').update(hashData).digest('hex');
 
     const term = await prisma.term.update({
-      where: { id: parseInt(id) },
+      where: { id: termId },
       data: {
         signed: true,
         signatureData: signatureData || 'Digital Signature',
-        signedAt: new Date(),
-        signerIp: signerIp || req.ip || '127.0.0.1',
-        tamperAuditHash: 'audit_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+        signedAt,
+        signerIp: resolvedIp,
+        tamperAuditHash,
       },
     });
 

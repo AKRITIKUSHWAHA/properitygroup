@@ -3,6 +3,7 @@ import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { sendTermsSignedEmail } from '../../services/emailService.js';
+import { generateTermReference } from '../../utils/references.js';
 
 /**
  * Customer Menu 7: Terms to Sign (/customer/terms-to-sign)
@@ -38,7 +39,7 @@ export const getTermsToSign = async (req, res, next) => {
     let resultTerm = term;
     if (term) {
       // Only advance to signed if term itself is signed or job has already passed booking into inspection/report
-      const isJobAdvanced = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(term.job?.stage);
+      const isJobAdvanced = ['BOOKED', 'INSPECTED', 'DRAFTING', 'QA_REVIEW', 'COMPLETE'].includes(term.job?.stage);
       resultTerm = {
         ...term,
         signed: Boolean(term.signed || isJobAdvanced),
@@ -57,37 +58,33 @@ export const executeDigitalSignature = async (req, res, next) => {
     const { signatureData, property, surveyType, clientName: bodyClientName } = req.body;
     const termId = parseInt(id);
     const userId = req.user?.id;
-    const userEmail = (req.user?.email || req.headers['x-user-email'] || '').toLowerCase().trim();
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
     const isAdmin = req.user?.role === 'ADMIN' || req.user?.role === 'SUPER_ADMIN';
 
     let term = null;
-    try {
-      if (!isNaN(termId) && termId > 0) {
-        term = await prisma.term.findFirst({
-          where: {
-            OR: [
-              { id: termId },
-              { reference: String(id) },
-              { jobId: termId },
-            ],
-          },
-          include: { job: true },
-        });
-      }
-      if (!term) {
-        term = await prisma.term.findFirst({
-          where: {
-            OR: [
-              { clientEmail: userEmail },
-              ...(userEmail ? [{ job: { clientEmail: userEmail } }] : []),
-            ],
-          },
-          include: { job: true },
-          orderBy: { createdAt: 'desc' },
-        });
-      }
-    } catch (err) {
-      console.warn('[executeDigitalSignature] query error:', err.message);
+    if (!isNaN(termId) && termId > 0) {
+      term = await prisma.term.findUnique({
+        where: { id: termId },
+        include: { job: true },
+      });
+    } else {
+      term = await prisma.term.findFirst({
+        where: { reference: String(id) },
+        include: { job: true },
+      });
+    }
+
+    if (!term) {
+      throw ApiError.notFound('Terms agreement not found.');
+    }
+
+    const isOwner =
+      (term.job?.clientId && term.job.clientId === userId) ||
+      (userEmail && term.clientEmail?.toLowerCase() === userEmail) ||
+      (userEmail && term.job?.clientEmail?.toLowerCase() === userEmail);
+
+    if (!isOwner && !isAdmin) {
+      throw ApiError.forbidden('You do not have permission to sign this agreement.');
     }
 
     const signedAt = new Date();
@@ -110,11 +107,21 @@ export const executeDigitalSignature = async (req, res, next) => {
         },
       });
 
-      if (term.jobId && (!term.job?.stage || term.job.stage === 'QUOTE')) {
+      if (term.jobId && (!term.job?.stage || ['QUOTE_ISSUED', 'QUOTE_ACCEPTED'].includes(term.job.stage))) {
         await prisma.job.update({
           where: { id: term.jobId },
-          data: { stage: 'ACCEPTED' },
-        }).catch(() => {});
+          data: { stage: 'TERMS_SIGNED' },
+        }).catch(async (err) => {
+          console.error('[Terms Job stage update error]:', err.message);
+          await prisma.auditLog.create({
+            data: {
+              jobId: term.jobId,
+              userId: userId || null,
+              action: 'STAGE_UPDATE_FAILED',
+              details: `Failed to update job stage on terms sign: ${err.message}`,
+            },
+          }).catch((ae) => console.error('[AuditLog fallback error]:', ae.message));
+        });
       }
     } else {
       // Find matching job for user to create a real term
@@ -129,36 +136,72 @@ export const executeDigitalSignature = async (req, res, next) => {
       });
 
       if (matchingJob) {
-        updatedTerm = await prisma.term.create({
-          data: {
-            reference: `TRM-2026-${matchingJob.id}`,
+        const resolvedEmail = userEmail || matchingJob.clientEmail;
+        if (!resolvedEmail) {
+          throw ApiError.badRequest('Client email is required to execute Terms of Engagement.');
+        }
+
+        // App-layer uniqueness guard: only create a fresh term if no active (non-superseded) term exists
+        const existingActiveTerm = await prisma.term.findFirst({
+          where: {
             jobId: matchingJob.id,
-            clientName: bodyClientName || req.user?.name || matchingJob.clientName || 'Valued Client',
-            clientEmail: userEmail || matchingJob.clientEmail || 'client@example.com',
-            documentTitle: 'RICS Standard Terms of Engagement',
-            content: 'RICS Standard Terms of Engagement',
-            signed: true,
-            signatureData: signatureData || req.user?.name || 'Digitally Signed',
-            signedAt,
-            signerIp,
-            signerUserAgent,
-            tamperAuditHash,
+            NOT: { documentTitle: { startsWith: '[SUPERSEDED]' } },
           },
-          include: { job: true },
         });
+
+        if (existingActiveTerm && !existingActiveTerm.signed) {
+          // Reuse and sign the existing unsigned term instead of creating a duplicate
+          updatedTerm = await prisma.term.update({
+            where: { id: existingActiveTerm.id },
+            data: {
+              signed: true,
+              signatureData: signatureData || req.user?.name || 'Digitally Signed',
+              signedAt,
+              signerIp,
+              signerUserAgent,
+              tamperAuditHash,
+            },
+            include: { job: true },
+          });
+        } else if (existingActiveTerm && existingActiveTerm.signed) {
+          // Already signed — return it without creating a duplicate
+          updatedTerm = await prisma.term.findUnique({ where: { id: existingActiveTerm.id }, include: { job: true } });
+        } else {
+          updatedTerm = await prisma.term.create({
+            data: {
+              reference: await generateTermReference(),
+              jobId: matchingJob.id,
+              clientName: bodyClientName || req.user?.name || matchingJob.clientName || 'Valued Client',
+              clientEmail: resolvedEmail,
+              documentTitle: 'RICS Standard Terms of Engagement',
+              content: 'RICS Standard Terms of Engagement',
+              signed: true,
+              signatureData: signatureData || req.user?.name || 'Digitally Signed',
+              signedAt,
+              signerIp,
+              signerUserAgent,
+              tamperAuditHash,
+            },
+            include: { job: true },
+          });
+        }
+      } else {
+        throw ApiError.notFound('Terms agreement or active instruction not found for this account.');
       }
     }
 
     // Dispatch Terms Signed Confirmation Email to Customer & CC Admin
+    let emailSent = false;
+    let emailError = null;
     try {
       const recipientEmail = userEmail || req.user?.email || term?.clientEmail || term?.job?.clientEmail;
       const clientDisplayName = bodyClientName || req.user?.name || term?.clientName || term?.job?.clientName || 'Valued Client';
-      const resolvedJobRef = term?.job?.reference || `JOB-2026-${termId || id || '328'}`;
-      const resolvedSurveyType = surveyType || term?.job?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
-      const resolvedProperty = property || term?.job?.propertyAddress || '14 Mayfair Gate, Mayfair, London W1K 2PB';
+      const resolvedJobRef = term?.job?.reference || `JOB-2026-${termId || id || 'NJS'}`;
+      const resolvedSurveyType = surveyType || term?.job?.serviceType || 'RICS Property Survey';
+      const resolvedProperty = property || term?.job?.propertyAddress || 'Property Address Not Available';
 
       if (recipientEmail && recipientEmail.includes('@')) {
-        sendTermsSignedEmail({
+        const emailRes = await sendTermsSignedEmail({
           to: recipientEmail,
           clientName: clientDisplayName,
           jobRef: resolvedJobRef,
@@ -167,7 +210,9 @@ export const executeDigitalSignature = async (req, res, next) => {
           signedAt,
           signerIp,
           tamperAuditHash,
-        }).catch((e) => console.warn('[sendTermsSignedEmail] background error:', e.message));
+        });
+        emailSent = Boolean(emailRes?.success);
+        emailError = emailRes?.error || null;
       }
 
       // In-App Notifications for Customer & Admin
@@ -177,11 +222,24 @@ export const executeDigitalSignature = async (req, res, next) => {
             userId,
             role: 'CUSTOMER',
             title: `✓ RICS Terms of Engagement Executed`,
-            desc: `Your electronic contract has been confirmed. Our operations team is finalizing surveyor booking.`,
+            desc: `Your electronic contract has been confirmed. Next step: settle the invoice to unlock booking.`,
             type: 'terms',
-            link: '/customer/track-survey',
+            link: '/customer/invoices-and-payments',
           },
-        }).catch(() => {});
+        }).catch(async (err) => {
+          console.error('[Customer Terms Signed Notification error]:', err.message);
+          const targetJobId = term?.jobId || updatedTerm?.jobId;
+          if (targetJobId) {
+            await prisma.auditLog.create({
+              data: {
+                jobId: targetJobId,
+                userId,
+                action: 'NOTIFICATION_DISPATCH_FAILED',
+                details: `Failed to dispatch customer terms signed notification: ${err.message}`,
+              },
+            }).catch((ae) => console.error('[AuditLog fallback error]:', ae.message));
+          }
+        });
       }
 
       prisma.notification.create({
@@ -192,14 +250,27 @@ export const executeDigitalSignature = async (req, res, next) => {
           type: 'terms',
           link: '/admin/terms',
         },
-      }).catch(() => {});
+      }).catch(async (err) => {
+        console.error('[Admin Terms Signed Notification error]:', err.message);
+        const targetJobId = term?.jobId || updatedTerm?.jobId;
+        if (targetJobId) {
+          await prisma.auditLog.create({
+            data: {
+              jobId: targetJobId,
+              userId: userId || null,
+              action: 'NOTIFICATION_DISPATCH_FAILED',
+              details: `Failed to dispatch admin terms signed notification: ${err.message}`,
+            },
+          }).catch((ae) => console.error('[AuditLog fallback error]:', ae.message));
+        }
+      });
     } catch (emailErr) {
-      console.warn('[sendTermsSignedEmail] warning:', emailErr.message);
+      console.error('[sendTermsSignedEmail] error:', emailErr.message);
     }
 
     return ApiResponse.success(
       res,
-      { term: updatedTerm || { id: termId, signed: true } },
+      { term: updatedTerm || { id: termId, signed: true }, emailSent, emailError },
       'Terms of Engagement executed successfully. Your survey appointment is now being booked!'
     );
   } catch (error) {

@@ -48,7 +48,9 @@ export const BookingCalendar = () => {
           setActiveSurveyors(raw);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load surveyors for booking calendar:', err);
+      });
   }, []);
 
   const surveyorList = useMemo(() => {
@@ -229,7 +231,7 @@ export const BookingCalendar = () => {
         s.name?.toLowerCase() === (newJob.surveyor || '').toLowerCase() ||
         String(s.dbId) === String(newJob.surveyorId).replace(/^srv-/, '')
     );
-    const assignedSurveyorName = srvMatch?.name || newJob.surveyor || 'test surveyor';
+    const assignedSurveyorName = srvMatch?.name || newJob.surveyor || 'Chartered Surveyor';
     const assignedSurveyorEmail = srvMatch?.email || newJob.surveyorEmail || 'surveyor@njspropertygroup.com';
     const assignedSurveyorId = srvMatch?.id || newJob.surveyorId || 'srv-1';
 
@@ -278,7 +280,7 @@ export const BookingCalendar = () => {
       desc: `Your property inspection for ${completeJob.property} is confirmed for ${completeJob.date} (${completeJob.timeSlot}) with surveyor ${completeJob.surveyor}.`,
       type: 'booking',
       link: '/customer/appointment-details',
-    }).catch(() => {});
+    }).catch((err) => console.warn('Customer booking notification notice:', err));
 
     // 2. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -288,7 +290,7 @@ export const BookingCalendar = () => {
       desc: `You have been allocated a physical on-site inspection for ${completeJob.property} on ${completeJob.date} (${completeJob.timeSlot}). Customer: ${completeJob.customer}.`,
       type: 'booking',
       link: '/surveyor/my-calendar',
-    }).catch(() => {});
+    }).catch((err) => console.warn('Surveyor booking notification notice:', err));
 
     // 3. Dispatch Admin In-App Notification
     emitNotification({
@@ -297,7 +299,7 @@ export const BookingCalendar = () => {
       desc: `Inspection appointment scheduled for ${completeJob.customer} (${completeJob.property}) on ${completeJob.date} (${completeJob.timeSlot}) with ${completeJob.surveyor}.`,
       type: 'booking',
       link: '/admin/calendar',
-    }).catch(() => {});
+    }).catch((err) => console.warn('Admin booking notification notice:', err));
 
     // 4. Dispatch Email Confirmation to Registered Customer & Surveyor Rota
     dispatchBookingConfirmationEmail(completeJob).catch((e) => console.warn('Booking email dispatch notice:', e));
@@ -475,7 +477,9 @@ export const BookingCalendar = () => {
       const updated = [newTask, ...prev];
       try {
         localStorage.setItem('propertygroup_calendar_custom_tasks', JSON.stringify(updated));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to save custom calendar tasks:', err);
+      }
       return updated;
     });
     setNewTaskTitle('');

@@ -6,10 +6,17 @@ export const errorHandler = (err, req, res, next) => {
 
   // Handle Prisma Known Request Errors
   if (err.code === 'P2002') {
-    const target = err.meta?.target || 'field';
-    error = ApiError.badRequest(`Duplicate value for unique field: ${target}`);
+    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : (err.meta?.target || 'field');
+    error = ApiError.conflict(`Duplicate value for unique field: ${target}`);
   } else if (err.code === 'P2025') {
-    error = ApiError.notFound('Record not found in database');
+    error = ApiError.notFound(err.meta?.cause || 'Record not found in database');
+  } else if (err.code === 'P2003') {
+    const field = err.meta?.field_name || 'relation';
+    error = ApiError.badRequest(`Foreign key constraint failed on ${field}`);
+  } else if (err.name === 'PrismaClientValidationError') {
+    error = ApiError.badRequest('Database query validation error: invalid data provided');
+  } else if (err.name === 'ValidationError') {
+    error = ApiError.badRequest(err.message || 'Validation failed', err.errors || []);
   } else if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || 500;
     const message = error.message || 'Internal Server Error';

@@ -3,6 +3,7 @@ import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { sendWebsiteEnquiryNotificationEmail } from '../services/emailService.js';
+import { ensureCustomerUser } from '../services/customerUserService.js';
 
 /**
  * Public Website Enquiry & Quote Submission Controller
@@ -51,66 +52,69 @@ export const submitPublicEnquiry = async (req, res, next) => {
     const prefix = enquiryCategory === 'SURVEY_QUOTE' ? 'NJS' : 'ENQ';
     const referenceId = `${prefix}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Check if customer is already registered in users table
-    let existingUser = null;
+    // Ensure customer account is provisioned in DB users table (Status: PENDING)
+    let customerUser = null;
     try {
-      existingUser = await prisma.user.findUnique({
-        where: { email: customerEmail },
+      customerUser = await ensureCustomerUser({
+        email: customerEmail,
+        name: customerName,
+        phone: customerPhone,
       });
     } catch (userErr) {
-      console.warn('Customer account lookup note:', userErr.message);
+      console.error('[publicEnquiry] Customer account provisioning error:', userErr.message);
     }
-    const isExistingUser = Boolean(existingUser);
+    const isExistingUser = Boolean(customerUser && customerUser.status === 'ACTIVE');
 
-    // Persist Lead information strictly to MySQL CRM leads table
-    let dbSaved = false;
-    try {
-      await prisma.lead.create({
-        data: {
-          reference: referenceId,
-          clientName: customerName,
-          clientEmail: customerEmail,
-          clientPhone: customerPhone || null,
-          propertyAddress: propertyAddress || propertyPostcode || 'UK Property Enquiry',
-          postcode: propertyPostcode || 'N/A',
-          serviceType: serviceName,
-          propertyType: propertyType || body.instructingRole || null,
-          source: 'WEBSITE',
-          status: 'NEW',
-        },
-      });
-      dbSaved = true;
-    } catch (dbErr) {
-      console.warn('Public enquiry DB persistence skipped/unavailable:', dbErr.message);
-    }
+    // Persist Lead information strictly to MySQL CRM leads table (Core data write: must succeed)
+    await prisma.lead.create({
+      data: {
+        reference: referenceId,
+        clientName: customerName,
+        clientEmail: customerEmail,
+        clientPhone: customerPhone || null,
+        propertyAddress: propertyAddress || propertyPostcode || 'UK Property Enquiry',
+        postcode: propertyPostcode || 'N/A',
+        serviceType: serviceName,
+        propertyType: propertyType || body.instructingRole || null,
+        source: 'WEBSITE',
+        status: 'NEW',
+      },
+    });
+    const dbSaved = true;
 
     // Dispatch notification email to info@njspropertygroup.com
-    const emailResult = await sendWebsiteEnquiryNotificationEmail({
-      referenceId,
-      enquiryCategory,
-      customerName,
-      customerEmail,
-      customerPhone,
-      serviceName,
-      propertyType,
-      propertyAddress,
-      propertyPostcode,
-      approxBedrooms,
-      timescale,
-      additionalNotes,
-      lawFirmName: body.lawFirmName,
-      disputeType: body.disputeType,
-      courtDeadline: body.courtDeadline,
-      isSingleJointExpert: body.isSingleJointExpert,
-      sourcePage: body.sourcePage,
-    });
+    let emailResult = null;
+    try {
+      emailResult = await sendWebsiteEnquiryNotificationEmail({
+        referenceId,
+        enquiryCategory,
+        customerName,
+        customerEmail,
+        customerPhone,
+        serviceName,
+        propertyType,
+        propertyAddress,
+        propertyPostcode,
+        approxBedrooms,
+        timescale,
+        additionalNotes,
+        lawFirmName: body.lawFirmName,
+        disputeType: body.disputeType,
+        courtDeadline: body.courtDeadline,
+        isSingleJointExpert: body.isSingleJointExpert,
+        sourcePage: body.sourcePage,
+      });
+    } catch (mailErr) {
+      console.error('[publicEnquiry] Email notification dispatch failed:', mailErr.message);
+      emailResult = { success: false, emailSent: false, error: mailErr.message };
+    }
 
     // In-App Notification for Client (if existing user) & Admin
     try {
-      if (existingUser) {
+      if (customerUser) {
         await prisma.notification.create({
           data: {
-            userId: existingUser.id,
+            userId: customerUser.id,
             role: 'CUSTOMER',
             title: 'Quote Request Received',
             desc: `Your quote request for ${serviceName} (${propertyAddress || propertyPostcode || 'Subject Property'}) has been logged. Ref: ${referenceId}`,
@@ -130,7 +134,7 @@ export const submitPublicEnquiry = async (req, res, next) => {
         },
       });
     } catch (notifErr) {
-      console.warn('Public enquiry notification create warning:', notifErr.message);
+      console.error('[publicEnquiry] In-app notification creation failed:', notifErr.message);
     }
 
     return ApiResponse.created(
@@ -142,11 +146,14 @@ export const submitPublicEnquiry = async (req, res, next) => {
         isExistingUser,
         customerEmail,
         customerName,
+        emailSent: Boolean(emailResult?.emailSent || emailResult?.success),
+        emailError: emailResult?.error || null,
         emailNotification: {
-          recipient: emailResult.notifiedEmail,
-          emailSent: Boolean(emailResult.emailSent),
-          provider: emailResult.provider,
-          messageId: emailResult.messageId || null,
+          recipient: emailResult?.notifiedEmail,
+          emailSent: Boolean(emailResult?.emailSent || emailResult?.success),
+          emailError: emailResult?.error || null,
+          provider: emailResult?.provider,
+          messageId: emailResult?.messageId || null,
         },
       },
       emailResult.emailSent

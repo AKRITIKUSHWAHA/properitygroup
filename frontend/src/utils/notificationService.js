@@ -48,7 +48,9 @@ export async function emitNotification({
       const existing = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
       const updated = [notifObj, ...existing.filter((n) => n.id !== notifObj.id)].slice(0, 50);
       localStorage.setItem('propertygroup_local_notifications', JSON.stringify(updated));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to cache local notification:', err);
+    }
   }
 
   // 3. Persist to backend API so it stays across refreshes and devices
@@ -67,7 +69,9 @@ export async function emitNotification({
         amount: amount ? String(amount) : undefined,
         link,
       },
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Failed to persist notification to backend:', err);
+    });
   } catch (err) {
     console.warn('Backend notification sync note:', err?.message || err);
   }

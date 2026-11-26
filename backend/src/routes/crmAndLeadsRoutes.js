@@ -11,11 +11,12 @@ import {
   ingestLsdLead,
 } from '../controllers/crmAndLeadsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
+import { webhookRateLimiter } from '../middlewares/rateLimiter.js';
 
 const router = Router();
 
 // Public / External Webhook for Local Surveyors Direct (LSD) Ingestion
-router.post('/lsd', ingestLsdLead);
+router.post('/lsd', webhookRateLimiter, ingestLsdLead);
 
 router.use(verifyJWT);
 router.use(authorizeRoles('ADMIN'));

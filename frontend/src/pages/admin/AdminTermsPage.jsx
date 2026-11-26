@@ -534,25 +534,73 @@ export const AdminTermsPage = () => {
     });
   };
 
-  const handleMarkSigned = (id) => {
-    markAgreementSigned(id);
+  const handleMarkSigned = async (id) => {
     const agr = agreements.find((a) => a.id === id || a.refNo === id);
     if (agr?.dbId) {
-      adminTermsAndDocumentsApi.markSigned(agr.dbId).catch(() => {});
+      try {
+        await adminTermsAndDocumentsApi.markSigned(agr.dbId);
+        markAgreementSigned(id);
+        addToast({
+          type: 'success',
+          title: 'Terms Marked as Executed',
+          message: `Agreement ${id} has been marked as legally signed and verified.`,
+        });
+      } catch (err) {
+        console.error('Failed to mark terms signed in backend:', err);
+        addToast({
+          type: 'error',
+          title: 'Update Failed',
+          message: err?.message || 'Could not update terms signature status on server.',
+        });
+      }
+    } else {
+      markAgreementSigned(id);
+      addToast({
+        type: 'success',
+        title: 'Terms Marked as Executed',
+        message: `Agreement ${id} has been marked as legally signed and verified.`,
+      });
     }
-    addToast({
-      type: 'success',
-      title: 'Terms Marked as Executed',
-      message: `Agreement ${id} has been marked as legally signed and verified.`,
-    });
   };
 
-  const handleResendTerms = (agreement) => {
-    addToast({
-      type: 'info',
-      title: 'Signature Link Dispatched',
-      message: `Authentication token resent to ${agreement.signerEmail} for ${agreement.refNo}.`,
-    });
+  const handleResendTerms = async (agreement) => {
+    let emailSent = false;
+    const token = localStorage.getItem('property_group_auth_token');
+    if (token) {
+      try {
+        const res = await fetch('/api/v1/terms-and-documents/terms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            jobId: agreement.jobId || agreement.id,
+            documentTitle: agreement.serviceName || 'RICS Terms of Engagement',
+            clientEmail: agreement.signerEmail,
+            clientName: agreement.signerName,
+          }),
+        });
+        const data = await res.json();
+        emailSent = Boolean(data?.data?.emailSent || data?.emailSent);
+      } catch (err) {
+        console.error('Terms resend error:', err);
+      }
+    }
+
+    if (emailSent) {
+      addToast({
+        type: 'success',
+        title: 'Signature Link Dispatched & Email Delivered',
+        message: `Authentication token resent to ${agreement.signerEmail} for ${agreement.refNo}.`,
+      });
+    } else {
+      addToast({
+        type: 'warning',
+        title: 'Email could not be delivered',
+        message: `Terms link prepared, but email could not be delivered to ${agreement.signerEmail} (RESEND_API_KEY missing or invalid).`,
+      });
+    }
   };
 
   // Tabs computation: All, Signed, Sent, Pending

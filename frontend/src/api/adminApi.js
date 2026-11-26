@@ -163,6 +163,12 @@ export const adminSurveyJobsApi = {
     statsCache.invalidate();
     return api.patch(`/survey-jobs/${id}/reschedule`, rescheduleData);
   },
+  deleteJob: (id) => {
+    jobsCache.invalidate();
+    bucketsCache.invalidate();
+    statsCache.invalidate();
+    return api.delete(`/survey-jobs/${encodeURIComponent(id)}`);
+  },
 };
 
 // Menu 7: Messages Inbox

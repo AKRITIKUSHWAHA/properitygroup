@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Navigate, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   Eye,
   EyeOff,
-  Building2,
   ShieldCheck,
   UserCheck,
   User,
@@ -11,17 +10,11 @@ import {
   AlertCircle,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
   CheckCircle2,
   LogIn,
   UserPlus,
-  Mail,
-  Phone,
-  MapPin,
-  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
-import { siteConfig } from '../../config/siteConfig';
 
 // Dedicated, executive portal configurations for Customer, Surveyor, and Admin
 export const ROLES_CONFIG = {
@@ -116,11 +109,10 @@ export const resolveRole = (roleParam, searchParamRole, roleProp, pathname) => {
 };
 
 export const LoginPage = ({ roleProp = null, initialMode = null, initialTab = 'login' }) => {
-  const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
   const [searchParams] = useSearchParams();
-  const { user, setUser, login, registerCustomer, getRememberedEmail } = useAuth();
+  const { login, registerCustomer } = useAuth();
   const urlEmail = searchParams.get('email');
 
   const activeRoleKey = resolveRole(
@@ -252,16 +244,20 @@ export const LoginPage = ({ roleProp = null, initialMode = null, initialTab = 'l
 
     setIsLoading(true);
     try {
+      const registeredEmail = regData.email.trim().toLowerCase();
       await registerCustomer({
         fullName: regData.fullName.trim(),
-        email: regData.email.trim().toLowerCase(),
+        email: registeredEmail,
         phone: regData.phone?.trim() || '',
         address: regData.address?.trim() || '',
         postcode: regData.postcode?.trim() || '',
         password: regData.password,
-        autoLogin: true,
+        autoLogin: false,
       });
-      // registerCustomer redirects directly to /customer/my-dashboard
+      setIsLoading(false);
+      setActiveTab('login');
+      setEmail(registeredEmail);
+      setPassword('');
     } catch (err) {
       setIsLoading(false);
       const msg = err.message || '';

@@ -1,0 +1,146 @@
+﻿=== GIT STATUS ===
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   backend/package-lock.json
+	modified:   backend/package.json
+	modified:   backend/prisma/schema.prisma
+	modified:   backend/src/config/db.js
+	modified:   backend/src/config/env.js
+	modified:   backend/src/controllers/authController.js
+	modified:   backend/src/controllers/crmAndLeadsController.js
+	modified:   backend/src/controllers/customer/customerBookingsController.js
+	modified:   backend/src/controllers/customer/customerDashboardController.js
+	modified:   backend/src/controllers/customer/customerInvoicesAndPaymentsController.js
+	modified:   backend/src/controllers/customer/customerMessagesController.js
+	modified:   backend/src/controllers/customer/customerQuotationsController.js
+	modified:   backend/src/controllers/customer/customerReportsController.js
+	modified:   backend/src/controllers/customer/customerSupportController.js
+	modified:   backend/src/controllers/customer/customerTermsToSignController.js
+	modified:   backend/src/controllers/customer/customerTrackSurveyController.js
+	modified:   backend/src/controllers/dashboardController.js
+	modified:   backend/src/controllers/jobController.js
+	modified:   backend/src/controllers/leadController.js
+	modified:   backend/src/controllers/notificationController.js
+	modified:   backend/src/controllers/publicEnquiryController.js
+	modified:   backend/src/controllers/quotationsAndPaymentsController.js
+	modified:   backend/src/controllers/quoteController.js
+	modified:   backend/src/controllers/reportsAndAnalyticsController.js
+	modified:   backend/src/controllers/settingsController.js
+	modified:   backend/src/controllers/surveyJobsController.js
+	modified:   backend/src/controllers/surveyor/surveyorAvailabilityController.js
+	modified:   backend/src/controllers/surveyor/surveyorCalendarController.js
+	modified:   backend/src/controllers/surveyor/surveyorDashboardController.js
+	modified:   backend/src/controllers/surveyor/surveyorSiteVisitsController.js
+	modified:   backend/src/controllers/surveyor/surveyorUploadReportsController.js
+	modified:   backend/src/controllers/termsAndDocumentsController.js
+	modified:   backend/src/controllers/usersAndRolesController.js
+	modified:   backend/src/middlewares/authMiddleware.js
+	modified:   backend/src/middlewares/errorHandler.js
+	modified:   backend/src/routes/authRoutes.js
+	modified:   backend/src/routes/customer/customerTrackSurveyRoutes.js
+	modified:   backend/src/routes/settingsRoutes.js
+	modified:   backend/src/routes/surveyJobsRoutes.js
+	modified:   backend/src/server.js
+	modified:   backend/src/services/emailService.js
+	modified:   backend/src/services/stripeService.js
+	modified:   backend/src/utils/ApiError.js
+	modified:   frontend/package.json
+	modified:   frontend/src/App.jsx
+	modified:   frontend/src/api/apiClient.js
+	modified:   frontend/src/api/authApi.js
+	modified:   frontend/src/auth/AuthContext.jsx
+	modified:   frontend/src/components/NotificationDropdown.jsx
+	modified:   frontend/src/components/calendar/BookingCalendar.jsx
+	modified:   frontend/src/components/calendar/NewBookingModal.jsx
+	modified:   frontend/src/components/crm/SendQuoteModal.jsx
+	modified:   frontend/src/components/crm/SendTermsModal.jsx
+	modified:   frontend/src/components/customer/SurveyProgressTracker.jsx
+	modified:   frontend/src/components/dashboard/SurveyBookerWorkflowBuckets.jsx
+	modified:   frontend/src/components/forms/QuoteRequestForm.jsx
+	modified:   frontend/src/mock/emailAutomations.js
+	modified:   frontend/src/mock/jobs.js
+	modified:   frontend/src/mock/leads.js
+	modified:   frontend/src/mock/quotes.js
+	modified:   frontend/src/mock/terms.js
+	modified:   frontend/src/pages/admin/AdminDashboardPage.jsx
+	modified:   frontend/src/pages/admin/AdminJobsPage.jsx
+	modified:   frontend/src/pages/admin/AdminLeadsPage.jsx
+	modified:   frontend/src/pages/admin/AdminReportsPage.jsx
+	modified:   frontend/src/pages/admin/AdminSettingsPage.jsx
+	modified:   frontend/src/pages/admin/AdminTermsPage.jsx
+	modified:   frontend/src/pages/admin/AdminUsersPage.jsx
+	modified:   frontend/src/pages/customer/CustomerDashboardPage.jsx
+	modified:   frontend/src/pages/customer/CustomerModules.jsx
+	modified:   frontend/src/pages/surveyor/SurveyorDashboardPage.jsx
+	modified:   frontend/src/pages/surveyor/SurveyorModules.jsx
+	modified:   frontend/src/services/autoQuoteService.js
+	modified:   frontend/vite.config.js
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	PROJECT_STATUS.md
+	PROJECT_STATUS_2.md
+	audit_evidence/
+	backend/prisma/clean_test_data.js
+	backend/prisma/diagnose.sql
+	backend/prisma/fix_data.js
+	backend/prisma/migrate_job_stages.js
+	backend/prisma/migrations/
+	backend/src/services/bookingReminderJob.js
+	backend/src/services/customerUserService.js
+	backend/src/services/quoteService.js
+	backend/src/utils/jobStages.js
+	backend/src/utils/references.js
+	backend/tests/
+	backend/vitest.config.js
+	frontend/src/pages/auth/ActivatePage.jsx
+	frontend/src/utils/jobStages.js
+	frontend/tests/
+	scan_hooks.mjs
+
+no changes added to commit (use "git add" and/or "git commit -a")
+=== GIT BRANCH ===
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/main
+=== LAST 30 COMMITS ===
+570ea88 | 2026-11-25 | fix: display backend customer notifications in Bell dropdown without dropping items missing payload email
+7e6b05d | 2026-11-25 | fix: sync MySQL-compatible Prisma filters across backend mirror
+ee398c0 | 2026-11-25 | fix: remove invalid NEW JobStage enum value from duplicate check
+0307892 | 2026-11-25 | fix: sync QA upload, admin approval, and cross-browser customer Step 7-10 notifications
+660ceaa | 2026-11-25 | fix(jobs-sync): prevent CustomerDashboardPage sync and Date: TBD updateJob calls from auto-jumping to Step 6 BOOKED
+e5577ef | 2026-11-25 | fix(admin-crm): remove hardcoded abc/www,uk phantom filters blocking real website leads in AdminLeadsPage
+09459b2 | 2026-11-25 | fix(quotes-jobs): prevent reference collision, fix serviceType var in acceptCustomerQuotation, guard undefined jobId
+2c03fad | 2026-11-25 | fix(lifecycle): fix all 10 RICS stages, cascade-delete customer jobs on user removal, remove fuzzy clientName matching, sync bookings/terms/payments to DB
+e8d2ccc | 2026-11-25 | fix(customer-portal): fix 10-stage RICS progression - API authoritative step, stale localStorage, blank screen, leads abc filter, admin stage labels
+dd5ffe9 | 2026-11-25 | fix(customer-portal): resolve ReferenceError isDemo in NotificationDropdown and purge phantom quoted lead from CRM
+9dbea57 | 2026-11-25 | fix(customer-portal): isolate new leads strictly to Stage 1 Enquiry, eliminate email-level milestone contamination and fix blank screen crashes
+e69f9f6 | 2026-11-25 | Fix backend syntax error and wipe stale local cached jobs to strictly mirror empty DB
+2441626 | 2026-11-25 | Fix client portal punch list: isolate notifications, suspend sample reports, turn off auto fee, wire quote & support notifications, gate terms on fee acceptance
+f5c10fa | 2026-11-24 | fix(customer): resolve ReferenceError isLocalDelivered in CustomerTrackSurveyPage
+05a91a0 | 2026-11-24 | clean: remove mock client profiles and preserve only verified admin and surveyor users
+3bc8b19 | 2026-11-24 | feat(notifications): wire comprehensive multi-role notifications across surveyor field portal and site actions
+9b29a13 | 2026-11-24 | feat: enhance surveyor calendar diary, add multi-role booking notifications, and dispatch confirmation email
+a561ac9 | 2026-11-24 | fix: deduplicate survey jobs and inspection tasks in calendar to-do list
+185e928 | 2026-11-24 | fix: resolve undefined myJobs reference in SurveyorDashboardPage and clean regUser fallbacks
+685f9cb | 2026-11-24 | fix: calendar surveyor dropdown list and inspection slot booking display
+da3d45c | 2026-11-24 | fix(customer): fix enquiry step jumping to stage 5, auto-correct paymentStatus and enforce clean step 1 for new bookings
+6473859 | 2026-11-24 | fix(customer): isolate new customer data, purge dummy fallbacks and enforce clean registration state
+6dd6478 | 2026-11-24 | fix(header-terms): remove customer login button, center header announcement, and synchronize client terms
+f9f4f6c | 2026-11-24 | fix(customer): synchronize live API tracking and invoices with customer terms, payments, and dashboard
+10e156d | 2026-11-24 | fix(customer): auto-reflect terms executed and invoice settled when survey progresses past stage 4 and 5
+85c61bf | 2026-11-24 | fix(stages): synchronize Stage 9 QA Review across customer tracking, dashboard, surveyor, and backend controllers
+325282f | 2026-11-24 | fix(customer): synchronize 10-Stage RICS progress tracker between dashboard and track my survey
+87ee015 | 2026-11-24 | fix(customer-terms): resolve TDZ ReferenceError on baseFee and vatAmount initialization
+dac23d8 | 2026-11-24 | fix(customer): ensure Sign Terms button passes quote state and terms-to-sign syncs backend accepted quote
+32e8a50 | 2026-11-24 | fix(customer-terms): unlock terms of engagement immediately upon quote acceptance and when agreement is issued
+=== PRISMA VALIDATE ===
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+The schema at prisma\schema.prisma is valid 🚀
+=== HEALTH CHECK ===
+{"status":"healthy","timestamp":"2026-11-25T18:00:55.343Z","service":"NJS Property Group API","database":"MySQL (Prisma ORM)","menusCovered":["1. Dashboard (/api/v1/dashboard)","2. Users & Roles (/api/v1/users-and-roles)","3. Companies (/api/v1/companies)","4. Surveyors (/api/v1/surveyors)","5. CRM & Leads (/api/v1/crm-and-leads)","6. Survey Jobs (/api/v1/survey-jobs)","7. Messages Inbox (/api/v1/messages)","8. Quotations & Payments (/api/v1/quotations-and-payments)","9. Terms & Documents (/api/v1/terms-and-documents)","10. Reports & Analytics (/api/v1/reports-and-analytics)","11. Settings (/api/v1/settings)"]}

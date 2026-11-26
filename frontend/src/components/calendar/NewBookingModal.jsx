@@ -47,7 +47,9 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit, surveyors = [], ini
           setActiveSurveyors(raw);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load surveyors in NewBookingModal:', err);
+      });
   }, [isOpen, surveyors]);
 
   // Load CRM leads from backend API
@@ -154,9 +156,9 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit, surveyors = [], ini
     date: initialDate || todayUK,
     timeSlot: '10:00 - 13:00',
     accessType: 'Keys with Selling Agent',
-    keyRef: 'Foxtons Mayfair Ref #FX-402',
-    conciergeCode: '#8492',
-    sellingAgent: 'Sarah Croft (020 7629 8171)',
+    keyRef: '',
+    conciergeCode: '',
+    sellingAgent: '',
     termsSigned: false,
     paymentReceived: false,
   });
@@ -279,16 +281,17 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit, surveyors = [], ini
     const canBook = formData.termsSigned && formData.paymentReceived;
     const cleanDate = normalizeToUKDate(formData.date) || formData.date;
 
+    const tempRef = `JOB-PENDING-${Date.now()}`;
     const newJob = {
-      id: `JOB-2026-${Math.floor(100 + Math.random() * 899)}`,
-      jobNo: `JOB-2026-${Math.floor(100 + Math.random() * 899)}`,
+      id: tempRef,
+      jobNo: tempRef,
       customer: formData.customer.trim(),
-      customerEmail: formData.customerEmail.trim() || 'client@example.co.uk',
-      customerPhone: formData.customerPhone.trim() || '+44 7700 900000',
+      customerEmail: formData.customerEmail.trim(),
+      customerPhone: formData.customerPhone.trim(),
       surveyType: formData.surveyType,
       property: formData.property.trim(),
       location: formData.location.trim(),
-      surveyor: selectedSurveyor ? selectedSurveyor.name : (surveyorList[0]?.name || 'test surveyor'),
+      surveyor: selectedSurveyor ? selectedSurveyor.name : (surveyorList[0]?.name || 'Chartered Surveyor'),
       surveyorId: selectedSurveyor ? selectedSurveyor.id : (surveyorList[0]?.id || 'srv-1'),
       surveyorEmail: selectedSurveyor?.email || (surveyorList[0]?.email || 'surveyor@njspropertygroup.com'),
       date: cleanDate,
@@ -306,7 +309,7 @@ export const NewBookingModal = ({ isOpen, onClose, onSubmit, surveyors = [], ini
         bedrooms: '3 Bedrooms, 2 Bathrooms',
         tenure: 'Freehold',
         listedBuilding: 'None',
-        accessDetails: `${formData.accessType}: ${formData.keyRef} (Concierge/Code: ${formData.conciergeCode})`,
+        accessDetails: [formData.accessType, formData.keyRef, formData.conciergeCode ? `Concierge/Code: ${formData.conciergeCode}` : ''].filter(Boolean).join(' • '),
         yearBuilt: 'c. 1950',
         propertyType: 'Residential Property',
       },

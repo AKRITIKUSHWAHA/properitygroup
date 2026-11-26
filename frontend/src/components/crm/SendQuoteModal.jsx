@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { siteConfig } from '../../config/siteConfig';
 import {
   X,
   Send,
@@ -25,8 +26,6 @@ import {
   Calculator
 } from 'lucide-react';
 import { useToast } from '../ToastContext';
-import { useQuotes } from '../../mock/quotes';
-import { useJobs } from '../../mock/jobs';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { adminQuotationsAndPaymentsApi } from '../../api/adminApi';
 import { formatLeadReference } from '../../mock/leads';
@@ -44,8 +43,6 @@ const STANDARD_FEES = {
 
 export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   const { addToast } = useToast();
-  const { addQuote } = useQuotes();
-  const { addJob } = useJobs();
   const { addCallLog } = useClientProfiles();
 
   // Mode tab: 'form' (configure numbers) or 'preview' (customer email layout)
@@ -92,8 +89,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   };
 
   const [surveyType, setSurveyType] = useState(() => resolveInitialSurveyType(lead?.enquiry));
-  const [baseFee, setBaseFee] = useState(() => resolveInitialBaseFee(lead));
-  const [discount, setDiscount] = useState(0);
+  const [baseFee, setBaseFee] = useState(() => String(resolveInitialBaseFee(lead)));
+  const [discount, setDiscount] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset cleanly whenever a new lead is passed
@@ -102,8 +99,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
       const initialType = resolveInitialSurveyType(lead.enquiry);
       const initialFee = resolveInitialBaseFee(lead);
       setSurveyType(initialType);
-      setBaseFee(initialFee);
-      setDiscount(0);
+      setBaseFee(String(initialFee));
+      setDiscount('0');
       setModalMode('form');
     }
   }, [lead]);
@@ -115,7 +112,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
     const newType = e.target.value;
     setSurveyType(newType);
     if (STANDARD_FEES[newType]) {
-      setBaseFee(STANDARD_FEES[newType]);
+      setBaseFee(String(STANDARD_FEES[newType]));
     }
   };
 
@@ -147,99 +144,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
     }
 
     setIsSubmitting(true);
-    const quoteId = `QUO-2026-${Math.floor(100 + Math.random() * 900)}`;
-
-    const newQuoteRecord = {
-      id: quoteId,
-      refNo: quoteId,
-      invoiceNo: `INV-${quoteId.replace('QUO-', '')}`,
-      client: targetName,
-      clientEmail: targetEmail,
-      clientPhone: targetPhone,
-      property: targetAddress,
-      location: lead?.location || '',
-      surveyType: surveyType,
-      baseFee: currentBaseFee,
-      extras: [],
-      discount: discountAmount,
-      amountExVat: subtotal,
-      vatAmount: vatAmount,
-      totalAmount: totalAmount,
-      status: 'Sent', // 'Sent' = Quoted to client
-      type: 'quotation',
-      date: new Date().toLocaleDateString('en-GB'),
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'), // 14 days validity
-      paidDate: null,
-      paymentMethod: null,
-    };
-
-    // Add to quotations store
-    addQuote(newQuoteRecord);
-
-    // Register customer in local customer registry with full details
-    try {
-      const storedCustomers = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-      const custEmail = targetEmail.toLowerCase().trim();
-      storedCustomers[custEmail] = {
-        ...(storedCustomers[custEmail] || {}),
-        id: storedCustomers[custEmail]?.id || `usr_client_${Date.now()}`,
-        email: custEmail,
-        name: targetName || storedCustomers[custEmail]?.name || 'Client',
-        role: 'customer',
-        roleLabel: 'Property Client',
-        company: 'NJS Property Group',
-        phone: targetPhone || storedCustomers[custEmail]?.phone || '',
-        address: targetAddress || storedCustomers[custEmail]?.address || '',
-        city: lead?.location || storedCustomers[custEmail]?.city || '',
-        postcode: lead?.postcode || storedCustomers[custEmail]?.postcode || '',
-      };
-      localStorage.setItem('property_group_registered_customers', JSON.stringify(storedCustomers));
-    } catch {}
-
-    // Add as active quoted job so customer portal and diary track it
-    try {
-      addJob({
-        id: `JOB-${quoteId.replace('QUO-', '')}`,
-        jobNo: `JOB-${quoteId.replace('QUO-', '')}`,
-        date: new Date().toLocaleDateString('en-GB'),
-        timeSlot: 'Pending Allocation',
-        customer: targetName,
-        customerEmail: targetEmail,
-        customerPhone: targetPhone,
-        surveyType: surveyType,
-        property: targetAddress,
-        location: lead?.location || '',
-        postcode: lead?.postcode || '',
-        surveyor: 'Pending Allocation',
-        status: 'Quoted',
-        stage: 'QUOTE',
-        timelineStep: 2,
-        termsStatus: 'Pending',
-        paymentStatus: 'Unpaid',
-        canBook: true,
-        quote: {
-          baseFee: currentBaseFee,
-          discount: discountAmount,
-          total: totalAmount,
-        },
-      });
-    } catch {}
-
-    // Add auto-logged note in client profile
-    addCallLog(targetEmail, {
-      clientName: targetName,
-      clientPhone: targetPhone,
-      clientAddress: `${targetAddress}, ${lead?.location || ''}`,
-      direction: 'Outbound',
-      staff: 'Sarah Jenkins',
-      duration: '3 mins',
-      subject: `Quotation Sent (${quoteId})`,
-      notes: `Dispatched formal fee proposal of £${totalAmount.toFixed(2)} inc. VAT for ${surveyType} at ${targetAddress}. Lead marked as Quoted (Deal Live). Quote ref: ${quoteId}.`,
-      tags: ['Quote Sent', 'Quoted', lead?.source || 'Website'],
-    });
 
     try {
-      const dynamicQuoteLink = `${window.location.origin}/login?email=${encodeURIComponent(targetEmail)}&quote=${quoteId}&role=customer`;
       // Call backend API to persist quote in MySQL and dispatch live Resend proposal email
       const res = await adminQuotationsAndPaymentsApi.createQuote({
         leadId: lead?.dbId || lead?.id,
@@ -250,43 +156,53 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
         propertyAddress: targetAddress,
         surveyType: surveyType,
         discount: discountAmount,
-        quoteLink: dynamicQuoteLink,
       });
 
-      const emailSent = Boolean(res?.data?.emailSent || res?.emailSent);
+      const responseData = res?.data || res;
+      const createdQuote = responseData?.quote;
+      const quoteRef = createdQuote?.reference || `QUO-2026-${lead?.id || 'REF'}`;
+      const emailSent = Boolean(responseData?.emailSent);
 
-      // Callback to update lead status to 'Quoted' in parent
+      // Add auto-logged note in client profile
+      addCallLog(targetEmail, {
+        clientName: targetName,
+        clientPhone: targetPhone,
+        clientAddress: `${targetAddress}, ${lead?.location || ''}`,
+        direction: 'Outbound',
+        staff: 'Sarah Jenkins',
+        duration: '3 mins',
+        subject: `Quotation Sent (${quoteRef})`,
+        notes: `Dispatched formal fee proposal of £${totalAmount.toFixed(2)} inc. VAT for ${surveyType} at ${targetAddress}. Lead marked as Quoted. Quote ref: ${quoteRef}.`,
+        tags: ['Quote Sent', 'Quoted', lead?.source || 'Website'],
+      });
+
+      // Callback to update lead status in parent UI, skipping redundant API call
       if (onQuoteSent && lead?.id) {
-        onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteId);
+        onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteRef, { skipApi: true });
       }
 
       if (emailSent) {
-        console.log(`[Resend Live] Quote proposal emailed to ${targetEmail}`);
         addToast({
           type: 'success',
           title: 'Quotation Dispatched & Email Delivered',
-          message: `Formal quote proposal ${quoteId} (£${totalAmount.toFixed(2)}) sent to ${targetEmail}. Deal status set to 'Quoted'.`,
+          message: `Formal quote proposal ${quoteRef} (£${totalAmount.toFixed(2)}) sent to ${targetEmail}. Deal status set to 'Quoted'.`,
         });
       } else {
         addToast({
-          type: 'success',
-          title: 'Quotation Generated & Deal Live',
-          message: `Quote proposal ${quoteId} (£${totalAmount.toFixed(2)}) registered for ${targetName}.`,
+          type: 'warning',
+          title: 'Email could not be delivered',
+          message: `Quote proposal ${quoteRef} registered, but email could not be delivered to ${targetEmail} (RESEND_API_KEY missing or invalid).`,
         });
       }
 
       onClose();
     } catch (err) {
       console.warn('Backend quote creation warning:', err.message);
-      if (onQuoteSent && lead?.id) {
-        onQuoteSent(lead.id, `£${totalAmount.toFixed(2)}`, quoteId);
-      }
       addToast({
-        type: 'warning',
-        title: 'Quote Dispatched (Email Notification Pending)',
-        message: `Quote registered in CRM. If email to ${targetEmail} is delayed, check spam or verify delivery.`,
+        type: 'error',
+        title: 'Quote Dispatch Failed',
+        message: err.message || 'Could not issue quotation. Please try again.',
       });
-      onClose();
     } finally {
       setIsSubmitting(false);
     }
@@ -460,7 +376,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                         step="5"
                         min="50"
                         value={baseFee}
-                        onChange={(e) => setBaseFee(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => setBaseFee(e.target.value)}
                         className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 text-xs focus:ring-2 focus:ring-[#0B1F4D]/20 focus:outline-none"
                         required
                       />
@@ -482,7 +398,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                         step="5"
                         min="0"
                         value={discount}
-                        onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => setDiscount(e.target.value)}
                         className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 text-xs focus:ring-2 focus:ring-[#0B1F4D]/20 focus:outline-none"
                         placeholder="0"
                       />
@@ -714,7 +630,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                     </span>
                     <span className="text-[11px] text-slate-200">
                       Call our survey coordinators directly on{' '}
-                      <strong className="text-white font-bold">03339 997 578</strong> or reply to this email to confirm your preferred inspection date.
+                      <strong className="text-white font-bold">{siteConfig.contact.telephoneDisplay}</strong> or reply to this email to confirm your preferred inspection date.
                     </span>
                   </div>
                 </div>

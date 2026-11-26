@@ -16,4 +16,8 @@ export const authApi = {
   logout: async () => {
     return api.post('/auth/logout');
   },
+
+  activate: async (token, password) => {
+    return api.post('/auth/activate', { token, password });
+  },
 };

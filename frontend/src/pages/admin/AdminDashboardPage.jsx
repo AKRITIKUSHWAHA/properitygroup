@@ -3,22 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Search,
-  Filter,
-  User,
   MapPin,
-  Calendar,
   Building,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-  PhoneCall,
   FileText,
-  CreditCard,
-  FileSignature,
-  CalendarCheck,
   ChevronRight,
-  ExternalLink,
-  MessageSquare,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { SurveyBookerWorkflowBuckets } from '../../components/dashboard/SurveyBookerWorkflowBuckets';
@@ -81,12 +69,12 @@ const mapBackendJobToFrontend = (bj) => {
       : null,
     timeSlot: bj.inspectionTime || null,
     customer: bj.clientName || 'Private Client',
-    customerEmail: bj.clientEmail || 'client@example.com',
-    customerPhone: bj.clientPhone || '+44 7700 900000',
+    customerEmail: bj.clientEmail || '',
+    customerPhone: bj.clientPhone || '',
     surveyType: bj.serviceType || 'RICS Level 2 Home Survey',
     property: bj.propertyAddress || 'London Property',
     location: bj.postcode ? `${bj.postcode}, London` : 'London, UK',
-    postcode: bj.postcode || 'W1K 2PB',
+    postcode: bj.postcode || '—',
     surveyor: surveyorName,
     surveyorId: sId,
     status: mappedStatus,
@@ -98,16 +86,6 @@ const mapBackendJobToFrontend = (bj) => {
     backendSynced: true,
   };
 };
-
-// Canonical 6-Step SurveyBooker Pipeline
-const STAGES = [
-  'Quote',
-  'Paid',
-  'Accepted',
-  'Booked',
-  'Preparing report',
-  'Complete',
-];
 
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -145,26 +123,7 @@ export const AdminDashboardPage = () => {
           if (apiJobs.length === 0) {
             setJobs([]);
           } else {
-            const mapped = apiJobs.map(mapBackendJobToFrontend).filter((bj) => {
-              const email = (bj.customerEmail || '').toLowerCase().trim();
-              const name = (bj.customer || '').toLowerCase().trim();
-              const prop = (bj.property || '').toLowerCase().trim();
-              const id = String(bj.id || '').trim();
-              const jobNo = String(bj.jobNo || '').trim().toUpperCase();
-              return (
-                email !== 'customer@demo.com' &&
-                email !== 'customer2@demo.com' &&
-                !email.includes('akku') &&
-                !name.includes('akku') &&
-                !prop.includes('mp nagar') &&
-                !prop.includes('bhopal') &&
-                !prop.includes('plot no 45') &&
-                id !== '7' &&
-                id !== '11' &&
-                id !== '12' &&
-                id !== '13'
-              );
-            });
+            const mapped = apiJobs.map(mapBackendJobToFrontend);
             // Deduplicate multiple entries for identical client instruction
             const seen = new Set();
             const deduplicated = [];
@@ -187,12 +146,7 @@ export const AdminDashboardPage = () => {
           if (rawLeads.length === 0) {
             setLeads([]);
           } else {
-            const cleanLeads = rawLeads.filter((l) => {
-              const name = (l.clientName || '').toLowerCase().trim();
-              const email = (l.clientEmail || '').toLowerCase().trim();
-              const addr = (l.propertyAddress || '').toLowerCase().trim();
-              return !name.includes('akku') && !email.includes('akku') && !addr.includes('mp nagar') && !addr.includes('bhopal') && l.id !== 7 && l.id !== 11 && l.id !== 12 && l.id !== 13;
-            });
+            const cleanLeads = rawLeads;
             const statusMap = {
               NEW: 'New',
               CONTACTED: 'Contacted',
@@ -203,6 +157,8 @@ export const AdminDashboardPage = () => {
             };
             const mappedLeads = cleanLeads.map((l) => ({
               id: l.reference || `NJS-2026-${l.id}`,
+              dbId: l.id,
+              reference: l.reference || `NJS-2026-${l.id}`,
               customerName: l.clientName || 'Private Client',
               customerEmail: l.clientEmail || '',
               customerPhone: l.clientPhone || '',
@@ -250,7 +206,7 @@ export const AdminDashboardPage = () => {
 
   const handleOpenClientProfile = (e, email) => {
     e.stopPropagation();
-    setSelectedClientEmail(email || 'customer@demo.com');
+    setSelectedClientEmail(email || '');
     setIsClientModalOpen(true);
   };
 
@@ -362,7 +318,13 @@ export const AdminDashboardPage = () => {
         return job.termsStatus === 'Not Sent' || job.status === 'Accepted';
       }
       if (activeBucketFilter === 'jobs-to-book') {
-        return !job.canBook || job.termsStatus !== 'Signed' || job.paymentStatus !== 'Paid';
+        return (
+          job.canBook &&
+          job.termsStatus === 'Signed' &&
+          job.paymentStatus === 'Paid' &&
+          job.status !== 'Scheduled' &&
+          job.status !== 'Completed'
+        );
       }
       if (activeBucketFilter === 'appointments') {
         return job.status === 'Booked' || job.status === 'Scheduled' || job.timelineStep === 7;
@@ -725,10 +687,11 @@ export const AdminDashboardPage = () => {
           isOpen={!!quotingLead}
           onClose={() => setQuotingLead(null)}
           lead={quotingLead}
-          onQuoteSent={(leadId, quotedAmount, quoteRef) => {
+          onQuoteSent={(leadId, quotedAmount, quoteRef, options = {}) => {
             updateLeadStatus(leadId, 'Quoted', {
               estimatedValue: quotedAmount,
               quoteRef: quoteRef,
+              ...options,
             });
             setQuotingLead(null);
             addToast({

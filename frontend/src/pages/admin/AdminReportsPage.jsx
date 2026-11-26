@@ -137,48 +137,27 @@ export const AdminReportsPage = () => {
   const { addToast } = useToast();
   const { jobs, updateJob, addJob } = useJobs();
 
-  // Local state for QA desk jobs (persisted in localStorage for immediate responsive rendering)
-  const [localQaJobs, setLocalQaJobs] = useState(() => {
-    try {
-      const stored = localStorage.getItem('njs_qa_desk_jobs');
-      const parsed = stored ? JSON.parse(stored) : [];
-      return Array.isArray(parsed) ? parsed.filter((j) => !String(j.id || '').includes('JOB-2026-QA')) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const saveLocalQaJobs = (updated) => {
-    setLocalQaJobs(updated);
-    try {
-      localStorage.setItem('njs_qa_desk_jobs', JSON.stringify(updated));
-    } catch {}
-  };
-
-  // Active Main View Tab: 'analytics' or 'qa-desk'
+  // Filter jobs pending QA audit or revision from backend-backed jobs queue
   const [activeTab, setActiveTab] = useState('analytics');
   const [inspectingJob, setInspectingJob] = useState(null);
   const [revisionModalJob, setRevisionModalJob] = useState(null);
   const [revisionNotes, setRevisionNotes] = useState('');
   const [isSubmittingQa, setIsSubmittingQa] = useState(false);
 
-  // Filter jobs pending QA audit or revision (combining local QA desk and global jobs queue)
   const pendingQaJobs = useMemo(() => {
-    const list = [...localQaJobs];
-    const seen = new Set(list.map((j) => String(j.id)));
+    const list = [];
+    const seen = new Set();
 
     jobs.forEach((j) => {
       const s = (j.stage || '').toUpperCase();
       const st = (j.status || '').toLowerCase();
       const isQa =
-        s === 'PREPARING_REPORT' ||
         s === 'DRAFTING' ||
         s === 'QA_REVIEW' ||
         s === 'INSPECTED' ||
         st.includes('draft') ||
         st.includes('qa') ||
         st.includes('revision') ||
-        st.includes('preparing') ||
         j.timelineStep === 8 ||
         j.timelineStep === 9;
 
@@ -188,18 +167,22 @@ export const AdminReportsPage = () => {
       }
     });
 
-    return list.filter((j) => (j.status || '').toLowerCase() !== 'complete' && (j.stage || '').toUpperCase() !== 'COMPLETE' && !String(j.id || '').includes('JOB-2026-QA'));
-  }, [jobs, localQaJobs]);
+    return list.filter((j) => (j.status || '').toLowerCase() !== 'complete' && (j.stage || '').toUpperCase() !== 'COMPLETE');
+  }, [jobs]);
 
   const handleApproveQa = async (job) => {
     const jobId = job.dbId || job.id;
     try {
       await adminReportsAndAnalyticsApi.approveQa(jobId);
     } catch (e) {
-      console.warn('API approveQa warning:', e.message);
+      addToast({
+        type: 'error',
+        title: 'QA Approval Failed',
+        message: e.response?.data?.message || e.message || 'Could not approve QA report on server.',
+      });
+      return;
     }
 
-    saveLocalQaJobs(localQaJobs.filter((j) => j.id !== job.id));
     updateJob(job.id, {
       stage: 'COMPLETE',
       status: 'Complete',
@@ -223,18 +206,18 @@ export const AdminReportsPage = () => {
     const jobId = revisionModalJob.dbId || revisionModalJob.id;
     try {
       await adminReportsAndAnalyticsApi.rejectQa(jobId, revisionNotes);
-    } catch (e) {
-      console.warn('API rejectQa warning:', e.message);
+    } catch (err) {
+      setIsSubmittingQa(false);
+      addToast({
+        type: 'error',
+        title: 'QA Rejection Failed',
+        message: err.response?.data?.message || err.message || 'Could not return report for revision.',
+      });
+      return;
     }
 
-    saveLocalQaJobs(
-      localQaJobs.map((j) =>
-        j.id === revisionModalJob.id
-          ? { ...j, status: 'Revision Requested', qaNotes: revisionNotes }
-          : j
-      )
-    );
     updateJob(revisionModalJob.id, {
+      stage: 'DRAFTING',
       status: 'Revision Requested',
       qaNotes: revisionNotes,
     });
@@ -535,7 +518,7 @@ export const AdminReportsPage = () => {
   ];
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6 pb-6 min-w-0">
       {/* Page Header */}
       <PageHeader
         title="Reports & Analytics Desk"
@@ -547,34 +530,34 @@ export const AdminReportsPage = () => {
       />
 
       {/* Top View Selector: Financial Analytics vs QA Review Desk */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs">
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-full sm:w-auto">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs min-w-0">
+        <div className="flex flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-full sm:w-auto overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('analytics')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'analytics'
                 ? 'bg-[#0B1F4D] text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4 shrink-0" />
             <span>Financial Analytics &amp; SLAs</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('qa-desk')}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 sm:flex-none px-3.5 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer ${
               activeTab === 'qa-desk'
                 ? 'bg-[#0B1F4D] text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
             }`}
           >
-            <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+            <ClipboardCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>Admin QA Desk &amp; Release</span>
             {pendingQaJobs.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 animate-pulse">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 animate-pulse shrink-0">
                 {pendingQaJobs.length} Pending
               </span>
             )}
@@ -607,44 +590,44 @@ export const AdminReportsPage = () => {
       {/* VIEW 1: ADMIN QA REVIEW DESK (Mandatory Peer-Review Protocol) */}
       {/* ======================================================== */}
       {activeTab === 'qa-desk' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
+        <div className="space-y-6 animate-in fade-in duration-150 min-w-0">
           {/* QA Protocol Banner */}
-          <div className="p-5 sm:p-6 bg-gradient-to-r from-[#0B1F4D] to-[#1E3A8A] text-white rounded-3xl shadow-sm border border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded bg-sky-400/20 text-sky-200 border border-sky-400/30">
+          <div className="p-3.5 sm:p-5 bg-gradient-to-r from-[#0B1F4D] to-[#1E3A8A] text-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-[10px] sm:text-[11px] font-black tracking-wider uppercase px-2 py-0.5 rounded bg-sky-400/20 text-sky-200 border border-sky-400/30">
                   RICS Quality Assurance Protocol
                 </span>
-                <span className="text-xs text-slate-300">•</span>
-                <span className="text-xs text-slate-300 font-semibold">Regulated Practice</span>
+                <span className="text-xs text-slate-300 hidden sm:inline">•</span>
+                <span className="text-xs text-slate-300 font-semibold hidden sm:inline">Regulated Practice</span>
               </div>
-              <h3 className="text-lg font-extrabold text-white">
+              <h3 className="text-sm sm:text-lg font-extrabold text-white">
                 Technical QA Sign-Off &amp; Client Report Release
               </h3>
-              <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-300 max-w-2xl leading-relaxed line-clamp-2 sm:line-clamp-none">
                 Every draft report submitted by a chartered surveyor undergoes technical review. You can inspect draft findings, send internal revision notes back to the surveyor (hidden from customer), or QA-approve &amp; release the official report to the customer portal with automated email notification.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0 bg-white/10 p-3.5 rounded-2xl border border-white/15">
+            <div className="flex items-center justify-around sm:justify-start gap-3 sm:gap-4 shrink-0 bg-white/10 px-3 py-2 sm:p-3.5 rounded-xl sm:rounded-2xl border border-white/15 w-full sm:w-auto">
               <div className="text-center">
                 <span className="text-[10px] font-bold uppercase text-sky-200 block">Pending Audits</span>
-                <span className="text-2xl font-black text-white">{pendingQaJobs.length}</span>
+                <span className="text-lg sm:text-2xl font-black text-white">{pendingQaJobs.length}</span>
               </div>
-              <div className="h-8 w-px bg-white/20" />
+              <div className="h-6 sm:h-8 w-px bg-white/20" />
               <div className="text-center">
                 <span className="text-[10px] font-bold uppercase text-emerald-300 block">SLA Target</span>
-                <span className="text-sm font-bold text-white">&lt; 48 Hours</span>
+                <span className="text-xs sm:text-sm font-bold text-white">&lt; 48 Hours</span>
               </div>
             </div>
           </div>
 
           {/* Pending QA Reports Table */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden min-w-0">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h4 className="font-extrabold text-[#0B1F4D] text-sm flex items-center gap-2">
-                  <ClipboardCheck className="w-4 h-4 text-[#2563EB]" />
+                  <ClipboardCheck className="w-4 h-4 text-[#2563EB] shrink-0" />
                   <span>Reports Awaiting QA Audit ({pendingQaJobs.length})</span>
                 </h4>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -664,100 +647,191 @@ export const AdminReportsPage = () => {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
-                    <tr>
-                      <th className="py-3 px-4">Job Reference</th>
-                      <th className="py-3 px-4">Subject Property</th>
-                      <th className="py-3 px-4">Client</th>
-                      <th className="py-3 px-4">Survey Standard</th>
-                      <th className="py-3 px-4">Assigned Surveyor</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">QA Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {pendingQaJobs.map((job) => {
-                      const isRevision = job.status === 'Revision Requested';
-                      return (
-                        <tr key={job.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-4 font-mono font-bold text-[#0B1F4D]">
+              <>
+                {/* Mobile & Tablet Responsive Cards */}
+                <div className="lg:hidden divide-y divide-slate-100">
+                  {pendingQaJobs.map((job) => {
+                    const isRevision = job.status === 'Revision Requested';
+                    return (
+                      <div key={job.id} className="p-4 space-y-3 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-xs text-[#0B1F4D] bg-slate-100 px-2.5 py-1 rounded-lg">
                             {job.jobNo || job.reference || job.id}
-                          </td>
-                          <td className="py-3 px-4 max-w-xs">
-                            <div className="font-bold text-slate-900 truncate">{job.property || job.propertyAddress}</div>
-                            <div className="text-[11px] text-slate-400 truncate">{job.location}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-semibold text-slate-800">{job.customer || job.clientName}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{job.customerEmail || job.clientEmail}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-semibold text-[#2563EB]">{job.surveyType || job.serviceType}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-semibold text-slate-800">{job.surveyor || 'Assigned Surveyor'}</div>
+                          </span>
+                          {isRevision ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 whitespace-nowrap">
+                              <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                              Revision Requested
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse whitespace-nowrap">
+                              <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                              Under QA Review
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="font-bold text-sm text-slate-900 break-words">
+                            {job.property || job.propertyAddress}
+                          </div>
+                          {job.location && (
+                            <div className="text-xs text-slate-400 break-words">{job.location}</div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-slate-50/80 p-3 rounded-xl border border-slate-100 text-xs">
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Client</span>
+                            <div className="font-semibold text-slate-800 truncate">{job.customer || job.clientName}</div>
+                            <div className="text-[11px] text-slate-400 font-mono truncate">{job.customerEmail || job.clientEmail}</div>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Survey Standard</span>
+                            <span className="font-semibold text-[#2563EB] break-words">{job.surveyType || job.serviceType}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Assigned Surveyor</span>
+                            <div className="font-semibold text-slate-800 truncate">{job.surveyor || 'Assigned Surveyor'}</div>
                             <div className="text-[11px] text-slate-400">Chartered Surveyor</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            {isRevision ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                <AlertTriangle className="w-3 h-3 text-rose-600" />
-                                Revision Requested
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                Under QA Review
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* Inspect Draft */}
-                              <button
-                                type="button"
-                                onClick={() => setInspectingJob(job)}
-                                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Inspect draft findings"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Inspect</span>
-                              </button>
+                          </div>
+                        </div>
 
-                              {/* Reject / Request Revision */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRevisionModalJob(job);
-                                  setRevisionNotes(job.qaNotes || '');
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
-                                title="Return report to surveyor for revision"
-                              >
-                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                                <span>Amend</span>
-                              </button>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setInspectingJob(job)}
+                            className="flex-1 sm:flex-none px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                            title="Inspect draft findings"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>Inspect</span>
+                          </button>
 
-                              {/* Approve & Release */}
-                              <button
-                                type="button"
-                                onClick={() => handleApproveQa(job)}
-                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                                title="Authorize QA pass and publish to customer portal"
-                              >
-                                <CheckCheck className="w-3.5 h-3.5" />
-                                <span>Approve &amp; Release</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRevisionModalJob(job);
+                              setRevisionNotes(job.qaNotes || '');
+                            }}
+                            className="flex-1 sm:flex-none px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
+                            title="Return report to surveyor for revision"
+                          >
+                            <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>Amend</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleApproveQa(job)}
+                            className="w-full sm:w-auto sm:ml-auto px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
+                            title="Authorize QA pass and publish to customer portal"
+                          >
+                            <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                            <span>Approve &amp; Release</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100">
+                      <tr>
+                        <th className="py-3 px-4 whitespace-nowrap">Job Reference</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Subject Property</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Client</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Survey Standard</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Assigned Surveyor</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                        <th className="py-3 px-4 text-right whitespace-nowrap">QA Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pendingQaJobs.map((job) => {
+                        const isRevision = job.status === 'Revision Requested';
+                        return (
+                          <tr key={job.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-4 font-mono font-bold text-[#0B1F4D] whitespace-nowrap">
+                              {job.jobNo || job.reference || job.id}
+                            </td>
+                            <td className="py-3 px-4 max-w-xs">
+                              <div className="font-bold text-slate-900 truncate">{job.property || job.propertyAddress}</div>
+                              <div className="text-[11px] text-slate-400 truncate">{job.location}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-slate-800">{job.customer || job.clientName}</div>
+                              <div className="text-[11px] text-slate-400 font-mono">{job.customerEmail || job.clientEmail}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-semibold text-[#2563EB]">{job.surveyType || job.serviceType}</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-slate-800">{job.surveyor || 'Assigned Surveyor'}</div>
+                              <div className="text-[11px] text-slate-400">Chartered Surveyor</div>
+                            </td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              {isRevision ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 whitespace-nowrap">
+                                  <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                                  Revision Requested
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 animate-pulse whitespace-nowrap">
+                                  <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+                                  Under QA Review
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* Inspect Draft */}
+                                <button
+                                  type="button"
+                                  onClick={() => setInspectingJob(job)}
+                                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                  title="Inspect draft findings"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <span>Inspect</span>
+                                </button>
+
+                                {/* Reject / Request Revision */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRevisionModalJob(job);
+                                    setRevisionNotes(job.qaNotes || '');
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                                  title="Return report to surveyor for revision"
+                                >
+                                  <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                  <span>Amend</span>
+                                </button>
+
+                                {/* Approve & Release */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveQa(job)}
+                                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-colors flex items-center gap-1 shadow-xs cursor-pointer whitespace-nowrap"
+                                  title="Authorize QA pass and publish to customer portal"
+                                >
+                                  <CheckCheck className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Approve &amp; Release</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -904,13 +978,13 @@ export const AdminReportsPage = () => {
         </div>
 
         {/* Panel 2: Canonical SurveyBooker 6-Stage Operational SLAs */}
-        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>SurveyBooker Operational Milestone SLAs</span>
             </h3>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
               Active SLA Target: &lt; 48h
             </span>
           </div>
@@ -921,7 +995,7 @@ export const AdminReportsPage = () => {
 
           <div className="space-y-2.5 text-xs">
             {/* Stage 1: Quote */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <div>
@@ -936,7 +1010,7 @@ export const AdminReportsPage = () => {
             </div>
 
             {/* Stage 2-3: Terms & Paid */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <div>
@@ -951,7 +1025,7 @@ export const AdminReportsPage = () => {
             </div>
 
             {/* Stage 4-6: Complete */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <div>

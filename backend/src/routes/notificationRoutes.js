@@ -4,6 +4,7 @@ import {
   markAsRead,
   markAllAsRead,
   createNotification,
+  deleteNotification,
 } from '../controllers/notificationController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
@@ -23,5 +24,8 @@ router.patch('/:id/read', markAsRead);
 
 // POST /api/v1/notifications - Admin, Surveyor, or Customer can trigger role-targeted lifecycle alerts
 router.post('/', authorizeRoles('ADMIN', 'SURVEYOR', 'CUSTOMER'), createNotification);
+
+// DELETE /api/v1/notifications/:id - Dismiss / delete single notification
+router.delete('/:id', deleteNotification);
 
 export default router;

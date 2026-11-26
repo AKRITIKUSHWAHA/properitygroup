@@ -1,0 +1,272 @@
+﻿D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\customer\customerMessagesController.js:165: if (u.email.includes('demo.com') || u.email.includes('njspropertygroup.com')) {
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:130: if (!user && (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com')) {
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:136: name: cleanEmail === 'njsadmin@gmail.com' ? 'NJS Operations Admin' : 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:150: if (!user && (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail === 'surveyor@demo.com')) {
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:160: phone: '+44 7700 900456',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:170: if (!user && cleanEmail === 'customer@demo.com') {
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:180: phone: '+44 7700 900123',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:207: (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com') &&
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:213: (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail === 'surveyor@demo.com') &&
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\authController.js:219: cleanEmail === 'customer@demo.com' &&
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\crmAndLeadsController.js:392: clientEmail: clientEmail || 'client@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\notificationController.js:42: desc: 'Client Emma Watson digitally signed contract for quotation #KQ-9042',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\notificationController.js:49: desc: 'Full advance payment received for Building Survey (Commercial, Mayfair)',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\controllers\notificationController.js:76: desc: 'Access confirmed: Keys with Foxtons Mayfair Branch (Ref #FX-402). Concierge code available in job file.',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:53: admin: { email: 'admin@demo.com', pw: 'admin123' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:54: super_admin: { email: 'admin@demo.com', pw: 'admin123' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:55: surveyor: { email: 'surveyor@demo.com', pw: 'surveyor123' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:56: customer: { email: 'customer@demo.com', pw: 'customer123' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:213: const validAdmin = (trimmedEmail === 'admin@demo.com' || trimmedEmail === 'njsadmin@gmail.com') && (cleanPw === 'admin123' || cleanPw === 'password123' || cleanPw === 'Password123!');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:214: const validSurveyor = (trimmedEmail === 'surveyor@demo.com' || trimmedEmail === 'njssurveyor@gmail.com') && (cleanPw === 'surveyor123' || cleanPw === 'password123' || cleanPw === 'Password123!');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:215: const validCustomer = (trimmedEmail === 'customer@demo.com') && (cleanPw === 'customer123' || cleanPw === 'password123');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:52: customer: 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:53: customerName: 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:54: clientName: 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:55: customerEmail: 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:56: property: '14 Mayfair Gate, Mayfair, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:57: propertyAddress: '14 Mayfair Gate, Mayfair, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:299: <span className="text-[11px] text-slate-400">Recipient: customer@demo.com</span>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\admin\EmailTemplatePreviewModal.jsx:310: <span>Emma Watson &lt;customer@demo.com&gt;</span>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:157: keyRef: 'Foxtons Mayfair Ref #FX-402',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:287: customerEmail: formData.customerEmail.trim() || 'client@example.co.uk',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:288: customerPhone: formData.customerPhone.trim() || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:518: placeholder="fiona@example.co.uk"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:532: placeholder="+44 7700 900..."
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:670: placeholder="e.g. Foxtons Mayfair #FX-402"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:55: staff: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:67: assignedTo: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:78: email: clientEmail || lead?.customerEmail || 'test@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:79: phone: lead?.customerPhone || lead?.phone || '+44 7700 900147',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:123: staff: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:158: assignedTo: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:435: <option value="Alexander Sterling">Alexander Sterling (Admin)</option>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\ClientProfileModal.jsx:669: <option value="Alexander Sterling">Alexander Sterling (Admin Lead)</option>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:2: import { User, Mail, Phone, MapPin, Building2, PoundSterling, FileText, Send, Sparkles } from 'lucide-react';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:9: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:79: customerPhone: formData.customerPhone.trim() || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:193: placeholder="name@example.co.uk"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:210: placeholder="+44 7700 900..."
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\NewLeadModal.jsx:326: <PoundSterling className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RecordBacsPaymentModal.jsx:2: import { CreditCard, PoundSterling, Building, Calendar, CheckCircle2, FileText, Download } from 'lucide-react';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendQuoteModal.jsx:5: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:9: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\RecentActivityRow.jsx:19: property: '14 Mayfair Gate, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\RecentActivityRow.jsx:30: desc: 'Quotation #KQ-2026-948 approved for Level 3 Building Survey in Kensington',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\dashboard\RecentActivityRow.jsx:31: property: '24 Kensington Palace Gardens, W8 4QQ',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\ExpertWitnessForm.jsx:207: placeholder="e.g. Sterling &amp; Partners LLP"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:549: placeholder="e.g. name@example.com"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:567: placeholder="e.g. 07700 900123"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\hero\HeroSlider.jsx:204: placeholder="e.g. SW1A 1AA or GU1 4AA"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:41: { label: 'London (SW1)', code: 'SW1A 1AA' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:72: setPostcodeError('Please enter a valid UK postcode (e.g. SW1A 1AA)');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\InstantQuoteCalculator.jsx:187: placeholder="e.g. SW1A 1AA or GU1 2PF"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\ReviewsSection.jsx:22: location: 'Kensington, London W8',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\SampleReportSection.jsx:104: Don't guess what your final document will contain. Our comprehensive digital reports feature high-resolution defect photographs, prioritized action tables, and plain-English summaries so you can negotiate repairs before exchanging contracts.
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\home\SampleReportSection.jsx:204: Property: 24 Cranley Mews, South Kensington, London SW7 3NX
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:3: import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, Loader2, MessageSquare } from 'lucide-react';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:119: const isAdmin = (user?.role || '').toLowerCase() === 'super_admin' || (user?.role || '').toLowerCase() === 'admin' || user?.email === 'admin@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:123: const isDemo = Boolean(userEmail && (userEmail === 'customer@demo.com' || userEmail.includes('demo')));
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:278: desc.includes('emma watson') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:279: title.includes('emma watson') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:523: {isPay && <PoundSterling className="w-4 h-4" />}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\PlaceholderModule.jsx:8: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\config\siteConfig.js:58: principalTowns: ["Westminster", "Kensington & Chelsea", "Camden", "Richmond", "Wandsworth", "Islington", "Greenwich", "Hammersmith & Fulham", "Ealing", "Hillingdon", "Barnet", "Ilford"],
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\emailAutomations.js:394: const recipientEmail = jobData.customerEmail || 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:60: user.email === 'admin@demo.com' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:3: // Initial messages between Customer (Emma Watson) and NJS Operations Desk
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:99: const isHarrison = (senderName || '').toLowerCase().includes('harrison') || conversationId.includes('harrison') || conversationId === 'conv-3';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:102: jobId: isHarrison ? 'JOB-2026-082' : (conversationId.startsWith('JOB-') ? conversationId : 'JOB-2026-080'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:103: clientEmail: isHarrison ? 'harrison@demo.com' : 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:104: clientName: senderName || (isHarrison ? 'Harrison Croft' : 'Customer'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:105: clientPhone: isHarrison ? '+44 7700 900512' : '+44 7700 900147',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:106: property: isHarrison ? '12 Pembroke Square, Kensington, London W8 6PA' : '14 Mayfair Gate, Mayfair, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:107: surveyType: isHarrison ? 'RICS Level 3 Building Survey' : 'RICS Level 2 Home Survey',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:143: senderName: senderName || (role === 'admin' ? 'Alexander Sterling (Admin)' : 'Customer'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:9: 'W1K 2PB': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:10: postcode: 'W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:11: address: '14 Mayfair Gate, South Audley Street, London',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:14: conservationArea: 'Mayfair Conservation Area (Grade II Listed Proximity)',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:49: 'SW1A 1AA': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\partners.js:50: postcode: 'SW1A 1AA',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:17: 'admin@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:19: email: 'admin@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:20: name: 'Alexander Sterling',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:31: 'surveyor@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:34: email: 'surveyor@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:41: phone: '+44 7700 900382',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:57: phone: '+44 7700 900382',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:63: 'oliver@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:66: email: 'oliver@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:73: phone: '+44 7700 900412',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:89: phone: '+44 7700 900412',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:95: 'claire@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:98: email: 'claire@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:105: phone: '+44 7700 900721',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:111: 'jonathan@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:114: email: 'jonathan@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:121: phone: '+44 7700 900890',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:127: 'fiona@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:130: email: 'fiona@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:137: phone: '+44 7700 900911',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:143: 'customer@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:145: email: 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:146: name: 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:152: phone: '+44 7700 900147',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:157: 'customer2@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:159: email: 'customer2@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:160: name: 'Harrison Croft',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:166: phone: '+44 7700 900512',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:171: 'harrison@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:173: email: 'harrison@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:174: name: 'Harrison Croft',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:180: phone: '+44 7700 900512',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:185: 'partner@demo.com': {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:187: email: 'partner@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\users.js:192: company: 'Foxtons Mayfair Branch',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminCompaniesPage.jsx:645: placeholder="e.g. Victoria Sterling"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:84: customerEmail: bj.clientEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:85: customerPhone: bj.clientPhone || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:89: postcode: bj.postcode || 'W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:229: setSelectedClientEmail(email || 'customer@demo.com');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminDashboardPage.jsx:477: placeholder="e.g. London, Mayfair, SW1A..."
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:81: customerEmail: bj.clientEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:82: customerPhone: bj.clientPhone || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:86: postcode: bj.postcode || 'W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:476: postcode: newJob.postcode || 'SW1A 1AA',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:478: clientEmail: newJob.customerEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminJobsPage.jsx:479: clientPhone: newJob.customerPhone || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:16: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:226: <PoundSterling className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:267: <PoundSterling className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:905: <PoundSterling className="w-5 h-5" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:1567: <PoundSterling className="w-4 h-4" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:6: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:38: if (!cleanEmail || cleanEmail === 'customer@demo.com') return 'Emma Watson';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:39: if (cleanEmail === 'customer2@demo.com') return 'David Harrison';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:72: return 'Emma Watson';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:80: if (cleanEmail === 'customer@demo.com') return '+44 7700 900147';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:89: return phone || '+44 7700 900147';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:97: if (cleanEmail === 'customer@demo.com') return '14 Mayfair Gate, Mayfair, London W1K 2PB';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:264: <PoundSterling className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:390: 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:796: clientEmail: formData.clientEmail.trim() || 'client@example.co.uk',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:797: clientPhone: formData.clientPhone || '+44 7700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1154: // Financial KPI Summaries
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1190: <PoundSterling className="w-3.5 h-3.5" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1358: placeholder="e.g. 18 Kensington Church Street"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1375: placeholder="e.g. Kensington, London W8 4EP"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1404: placeholder="sophie@example.co.uk"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:1717: <PoundSterling className="w-4 h-4" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminReportsPage.jsx:7: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminReportsPage.jsx:761: <PoundSterling className="w-3.5 h-3.5" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSurveyorsPage.jsx:142: phone: formData.phone.trim() || '+44 7700 900999',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSurveyorsPage.jsx:659: placeholder="+44 7700 900000"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:348: signerEmail: t.clientEmail || t.job?.clientEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminTermsPage.jsx:349: property: t.job?.propertyAddress || '14 Mayfair Gate, London',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:109: email === 'admin@demo.com' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:110: email === 'surveyor@demo.com' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:111: email === 'customer@demo.com' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:112: email === 'customer2@demo.com' ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:114: email.includes('alexander.sterling') ||
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:115: u.name === 'Alexander Sterling'
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:1132: placeholder="+44 7700 900000"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:1310: placeholder="e.g. 14 Mayfair Gate, Mayfair, London"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:1324: placeholder="e.g. W1K 2PB"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:1633: placeholder="e.g. +44 7700 900382 or 07123 456789"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:31: defaultEmail: 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:51: defaultEmail: 'surveyor@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:71: defaultEmail: 'admin@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:539: placeholder="+44 7700 900123"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:556: placeholder="e.g. john.smith@example.com"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\LoginPage.jsx:585: placeholder="e.g. SW1A 1AA"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:264: placeholder="e.g. name@example.com"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:368: placeholder="e.g. eleanor@example.co.uk"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:411: placeholder="+44 7700 900..."
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:432: placeholder="e.g. SW1A 1AA"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:62: if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:63: return jEmail === 'customer@demo.com' || jName.includes('emma');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:66: if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:67: return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:336: customerEmail: userEmail || user?.email || 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:423: customerEmail: userEmail || user?.email || 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:97: if (uEmail === 'customer@demo.com' || uName.includes('emma')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:98: return jEmail === 'customer@demo.com' || jName.includes('emma');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:101: if (uEmail.includes('harrison') || uEmail === 'customer2@demo.com' || uName.includes('harrison')) {
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:102: return jEmail.includes('harrison') || jAlt.includes('harrison') || jDemo.includes('customer2') || jName.includes('harrison');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:237: if (uEmail.includes('harrison') && aEmail.includes('harrison')) return true;
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:273: const isEmma = userEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:603: customerEmail: userEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:604: clientEmail: userEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:611: postcode: regUser.postcode || userLead?.postcode || 'SW1A 1AA',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:789: customerEmail: userEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:790: clientEmail: userEmail || 'client@example.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:797: postcode: regUser.postcode || userLead?.postcode || 'SW1A 1AA',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1320: placeholder="e.g. Harrison Croft"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1533: <div>• Official VAT receipt dispatched to {user?.email || 'customer@demo.com'}</div>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1964: const isDemo = userEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2255: clientEmail: userEmail || user?.email || 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2257: customerEmail: userEmail || user?.email || 'customer@demo.com',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3489: property: level === 2 ? '14 Mayfair Gate, London W1K' : '24 Kensington Palace Gardens, London W8',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3703: const isDemo = userEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3853: const isEmma = userEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4720: sender: m.senderName || (m.role === 'admin' ? 'Alexander Sterling' : 'Client'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4818: sender: user?.name || (isCustomer ? 'Customer' : isSurveyor ? 'Surveyor' : 'Alexander Sterling'),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5596: const isEmma = uEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5600: name: user?.name || regUser.name || (isEmma ? 'Emma Watson' : ''),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5601: email: user?.email || regUser.email || (isEmma ? 'customer@demo.com' : ''),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5602: phone: user?.phone || regUser.phone || (isEmma ? '+44 7700 900147' : ''),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5622: const isEmma = uEmail === 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5626: name: user.name || regUser.name || (isEmma ? 'Emma Watson' : ''),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5628: phone: user.phone || regUser.phone || (isEmma ? '+44 7700 900147' : ''),
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:15: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:529: text: `⭐ Automated Trustpilot review invitation triggered for ${job.customerEmail || 'customer@demo.com'} (Stage 6/6 Final Report Release).`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:584: ? `Final report released & Trustpilot review invitation dispatched to ${job.customerEmail || 'customer@demo.com'}.`
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:585: : `Dispatched automated notification to ${job.customerEmail || 'customer@demo.com'} for ${stepName}.`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:737: const clientEmail = job.customerEmail || 'customer@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:929: Target: {job.customerEmail || 'customer@demo.com'}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:981: <PoundSterling className="w-4 h-4 shrink-0" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1348: : `Automated Trustpilot review request linked to ${job.customerEmail || 'customer@demo.com'}. Verified review link: trustpilot.com/review/njspropertygroup.com`}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1368: text: `⭐ Trustpilot review reminder email re-sent to ${job.customerEmail || 'customer@demo.com'}.`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1376: message: `Review invitation re-sent to ${job.customerEmail || 'customer@demo.com'}.`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1577: <PoundSterling className="w-4 h-4 text-emerald-600" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1938: Real-time transactional audit log of emails triggered for <strong>{job.customer}</strong> ({job.customerEmail || 'customer@demo.com'}).
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:1956: message: `Sent copy of ${STATUS_TIMELINE_STEPS[currentStepIndex]} notification to ${job.customerEmail || 'customer@demo.com'}.`,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:2412: clientEmail={job.customerEmail || 'customer@demo.com'}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:11: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:46: const [lookupPostcode, setLookupPostcode] = useState('W1K 2PB');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:48: PROPERTY_INTELLIGENCE_DATA['W1K 2PB']
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:56: const [newPostcode, setNewPostcode] = useState('W1K 2PB');
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:96: PROPERTY_INTELLIGENCE_DATA[clean] || PROPERTY_INTELLIGENCE_DATA['W1K 2PB'];
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:124: buyerPhone: newBuyerPhone.trim() || '07700 900000',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:125: buyerEmail: newBuyerEmail.trim() || 'client@example.co.uk',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:255: <PoundSterling className="w-3.5 h-3.5 text-emerald-600" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:326: <PoundSterling className="w-3.5 h-3.5" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:532: placeholder="e.g. W1K 2PB"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:545: {['W1K 2PB', 'SW1X 0JH', 'SW1A 1AA'].map((pc) => (
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:634: <PoundSterling className="w-4 h-4 text-emerald-600" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:711: placeholder="e.g. David & Caroline Sterling"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:723: placeholder="e.g. 07700 900812"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:733: placeholder="e.g. buyer@example.co.uk"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:753: placeholder="e.g. 14 Mayfair Gate, South Audley Street"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:765: placeholder="e.g. W1K 2PB"
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\partner\PartnerPortalPage.jsx:814: <PoundSterling className="w-5 h-5 text-emerald-600 shrink-0" />
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\staff\StaffDashboardPage.jsx:11: PoundSterling,
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\staff\StaffDashboardPage.jsx:21: { label: 'Today\'s Payments', value: '£8,450', subtext: '12 client transactions', icon: PoundSterling, color: 'text-emerald-600 bg-emerald-50' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\staff\StaffDashboardPage.jsx:25: { time: '09:30', title: 'Confirm access keys with Knight Frank Mayfair for 14 Mayfair Gate (Emma Watson)', status: 'Urgent', statusColor: 'bg-rose-100 text-rose-800' },
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:746: Client Contact: {primaryJob.customer} ({primaryJob.customerPhone || '+44 7700 900147'})
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:68: const isAdminView = user?.role === 'super_admin' || user?.role === 'admin' || user?.email === 'admin@demo.com';
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1332: <div className="text-slate-500">Phone: {primaryJob.customerPhone || '+44 7700 900147'}</div>
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:266: const clientEmail = (quoteOrJob.clientEmail || quoteOrJob.customerEmail || 'customer@demo.com').toLowerCase().trim();
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:486: 'customer@demo.com'
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:761: 'customer@demo.com'
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:924: 'customer@demo.com'
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1095: 'customer@demo.com'
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:93: clientName = 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:94: property = '14 Mayfair Gate, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:100: signatureValue = 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:438: clientName = 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:439: property = '14 Mayfair Gate, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:739: clientName = 'Emma Watson',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\pdfGenerator.js:740: property = '14 Mayfair Gate, London W1K 2PB',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\validation.js:41: errors.propertyPostcode = "Please enter a valid UK postcode (e.g. SW1A 1AA or OX1 2JD).";
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\validation.js:64: errors.customerEmail = "Please enter a valid email address (e.g. name@example.co.uk).";

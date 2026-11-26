@@ -35,6 +35,7 @@ const LoginPage = lazyNamed(() => import('./pages/auth/LoginPage'), 'LoginPage')
 const ForgotPasswordPage = lazyNamed(() => import('./pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
 const ResetPasswordPage = lazyNamed(() => import('./pages/auth/ResetPasswordPage'), 'ResetPasswordPage');
 const RegisterPage = lazyNamed(() => import('./pages/auth/RegisterPage'), 'RegisterPage');
+const ActivatePage = lazyNamed(() => import('./pages/auth/ActivatePage'), 'ActivatePage');
 
 // Error Pages (Lazy loaded)
 const Forbidden403Page = lazyNamed(() => import('./pages/error/Forbidden403Page'), 'Forbidden403Page');
@@ -148,7 +149,9 @@ function AppRoutes() {
       ].forEach((key) => {
         try {
           localStorage.removeItem(key);
-        } catch {}
+        } catch (err) {
+          console.warn('Failed to remove legacy storage key:', key, err);
+        }
       });
       try {
         for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -177,7 +180,9 @@ function AppRoutes() {
             localStorage.removeItem(k);
           }
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to sweep legacy storage keys:', err);
+      }
       try {
         localStorage.setItem(WIPE_KEY, 'true');
         setTimeout(() => {
@@ -186,7 +191,9 @@ function AppRoutes() {
           window.dispatchEvent(new Event('propertygroup_users_updated'));
           window.dispatchEvent(new Event('propertygroup_agreements_updated'));
         }, 0);
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to finalize legacy storage wipe:', err);
+      }
     }
   }, []);
 
@@ -286,6 +293,7 @@ function AppRoutes() {
         <Route path="/staff-login" element={<Navigate to="/login/admin" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/activate" element={<ActivatePage />} />
         <Route
           path="/register"
           element={<LoginPage roleProp="customer" initialTab="register" />}

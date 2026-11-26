@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSettings, updateSettings, purgeTestData } from '../controllers/settingsController.js';
+import { getSettings, updateSettings, purgeTestData, getEmailStatus } from '../controllers/settingsController.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/authMiddleware.js';
 
 const router = Router();
@@ -10,6 +10,7 @@ router.use(authorizeRoles('ADMIN'));
 // Menu 11: Settings Endpoints
 router.get('/', getSettings);
 router.patch('/', updateSettings);
+router.get('/email-status', getEmailStatus);
 router.post('/purge-test-data', purgeTestData);
 
 export default router;

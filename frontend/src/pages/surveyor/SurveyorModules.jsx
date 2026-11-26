@@ -62,23 +62,23 @@ export const SurveyorCalendarPage = () => {
 
   // Fetch surveyor calendar API
   useEffect(() => {
-    surveyorCalendarApi.getCalendar().catch(() => {});
+    surveyorCalendarApi.getCalendar().catch((err) => { console.warn('Surveyor API fetch note:', err); });
   }, []);
 
   const isAdminView = user?.role === 'super_admin' || user?.role === 'admin' || user?.email === 'admin@demo.com';
   const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
 
   const isAptInspected = (apt) => {
-    const jobRef = apt?.jobNo || apt?.id;
     return (
       apt?.status === 'Inspected' ||
       apt?.status === 'Drafting' ||
       apt?.status === 'QA_Review' ||
-      apt?.status === 'Preparing report' ||
       apt?.status === 'Completed' ||
-      apt?.timelineStep >= 7 ||
-      localStorage.getItem('propertygroup_inspection_completed') === 'true' ||
-      (jobRef && localStorage.getItem(`propertygroup_inspection_completed_${jobRef}`) === 'true')
+      apt?.stage === 'INSPECTED' ||
+      apt?.stage === 'DRAFTING' ||
+      apt?.stage === 'QA_REVIEW' ||
+      apt?.stage === 'COMPLETE' ||
+      apt?.timelineStep >= 7
     );
   };
 
@@ -87,20 +87,14 @@ export const SurveyorCalendarPage = () => {
     const targetEmail = (apt?.customerEmail || '').toLowerCase().trim();
     const customerName = apt?.customer || 'Valued Client';
     const propertyAddr = apt?.property || 'Subject Property, UK';
-    const currentSurveyor = user?.name || apt?.surveyor || 'test surveyor';
+    const currentSurveyor = user?.name || apt?.surveyor || 'Chartered Surveyor';
     const jobRef = apt?.jobNo || apt?.id || aptId;
-
-    localStorage.setItem('propertygroup_inspection_completed', 'true');
-    localStorage.setItem(`propertygroup_inspection_completed_${jobRef}`, 'true');
-    if (targetEmail) {
-      localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
-    }
 
     if (updateJob) {
       updateJob(aptId, {
         status: 'Inspected',
         timelineStep: 7,
-        stage: 'PREPARING_REPORT',
+        stage: 'INSPECTED',
         customerEmail: targetEmail,
         activityLog: [
           {
@@ -124,7 +118,7 @@ export const SurveyorCalendarPage = () => {
       desc: `Surveyor ${currentSurveyor} completed the physical site inspection for ${propertyAddr}. Your technical survey report is now being drafted.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -133,7 +127,7 @@ export const SurveyorCalendarPage = () => {
       desc: `Surveyor ${currentSurveyor} completed on-site inspection for ${propertyAddr}. Job moved to drafting & QA stage.`,
       type: 'booking',
       link: `/admin/jobs/${apt?.id || aptId}`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -143,7 +137,7 @@ export const SurveyorCalendarPage = () => {
       desc: `Inspection completed for ${propertyAddr}. Job moved to report drafting.`,
       type: 'booking',
       link: '/surveyor/my-calendar',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Automated Customer Email
     dispatchPostInspectionUpdate({
@@ -153,13 +147,13 @@ export const SurveyorCalendarPage = () => {
       customer: customerName,
       property: propertyAddr,
       jobNo: jobRef,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 4. Sync backend stage
     api.patch(`/survey-jobs/${apt?.dbId || apt?.id || aptId}/stage`, {
-      newStage: 'PREPARING_REPORT',
+      newStage: 'INSPECTED',
       reason: `Surveyor ${currentSurveyor} completed site visit.`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -750,7 +744,7 @@ export const SurveyorJobsPage = () => {
 
   // Fetch surveyor jobs API
   useEffect(() => {
-    surveyorJobsApi.getJobs().catch(() => {});
+    surveyorJobsApi.getJobs().catch((err) => { console.warn('Surveyor API fetch note:', err); });
   }, []);
   const [filter, setFilter] = useState('active'); // 'active' | 'completed'
 
@@ -1083,7 +1077,7 @@ export const SurveyorSiteVisitsPage = () => {
 
   // Fetch surveyor site visits API
   useEffect(() => {
-    surveyorSiteVisitsApi.getVisits().catch(() => {});
+    surveyorSiteVisitsApi.getVisits().catch((err) => { console.warn('Surveyor API fetch note:', err); });
   }, []);
 
   const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
@@ -1097,8 +1091,8 @@ export const SurveyorSiteVisitsPage = () => {
     primaryJob?.status === 'Drafting' ||
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
-    (primaryJob?.timelineStep || 0) >= 7 ||
-    localStorage.getItem(`propertygroup_inspection_completed_${primaryJob?.id}`) === 'true';
+    ['INSPECTED', 'DRAFTING', 'QA_REVIEW', 'COMPLETE'].includes((primaryJob?.stage || '').toUpperCase()) ||
+    (primaryJob?.timelineStep || 0) >= 7;
 
   const [hasArrived, setHasArrived] = useState(true);
   const [hasFinished, setHasFinished] = useState(isInspectedPersisted);
@@ -1140,7 +1134,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Surveyor ${surveyorName} has arrived at ${propertyAddr} and commenced physical survey inspection.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 2. Admin Notification
     emitNotification({
@@ -1149,7 +1143,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Surveyor ${surveyorName} logged GPS arrival at ${propertyAddr}. Inspection in progress.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Surveyor Notification
     emitNotification({
@@ -1159,7 +1153,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `On-site arrival logged at ${propertyAddr}. Inspection protocol active.`,
       type: 'booking',
       link: '/surveyor/site-visits',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -1174,21 +1168,15 @@ export const SurveyorSiteVisitsPage = () => {
   const handleFinished = () => {
     if (!primaryJob) return;
     setHasFinished(true);
-    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const surveyorName = user?.name || primaryJob?.surveyor || 'Chartered Surveyor';
     const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
     const propertyAddr = primaryJob?.property || 'Subject Property';
-
-    localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
-    localStorage.setItem('propertygroup_inspection_completed', 'true');
-    if (targetEmail) {
-      localStorage.setItem(`propertygroup_inspection_completed_${targetEmail}`, 'true');
-    }
 
     if (primaryJob?.id && updateJob) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
-        stage: 'PREPARING_REPORT',
+        stage: 'INSPECTED',
         customerEmail: targetEmail,
         activityLog: [
           {
@@ -1210,7 +1198,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -1219,7 +1207,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Surveyor ${surveyorName} finished on-site inspection for ${propertyAddr}. Stage moved to Drafting & QA Review.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -1229,7 +1217,7 @@ export const SurveyorSiteVisitsPage = () => {
       desc: `Inspection completed for ${propertyAddr}. Ready for report compilation.`,
       type: 'booking',
       link: '/surveyor/field-dashboard',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Automated Customer Email
     dispatchPostInspectionUpdate({
@@ -1239,7 +1227,7 @@ export const SurveyorSiteVisitsPage = () => {
       customer: primaryJob?.customer || 'Valued Client',
       property: propertyAddr,
       jobNo: jobRef,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -1368,7 +1356,7 @@ export const SurveyorUploadReportsPage = () => {
 
   // Fetch pending reports upload API
   useEffect(() => {
-    surveyorUploadReportsApi.getPendingReports().catch(() => {});
+    surveyorUploadReportsApi.getPendingReports().catch((err) => { console.warn('Surveyor API fetch note:', err); });
   }, []);
 
   const myJobs = jobs.filter((j) => isJobForSurveyor(j, user));
@@ -1387,22 +1375,16 @@ export const SurveyorUploadReportsPage = () => {
     myJobs[0] ||
     null;
 
-  const jobRefStr = currentJobObj?.jobNo || currentJobObj?.id || selectedJob;
   const isDraftingActive =
     currentJobObj?.status === 'Drafting' ||
-    currentJobObj?.timelineStep === 8 ||
-    localStorage.getItem('propertygroup_drafting') === 'true' ||
-    (jobRefStr && localStorage.getItem(`propertygroup_drafting_${jobRefStr}`) === 'true') ||
-    (currentJobObj?.customerEmail && localStorage.getItem(`propertygroup_drafting_${currentJobObj.customerEmail.toLowerCase().trim()}`) === 'true');
+    (currentJobObj?.stage || '').toUpperCase() === 'DRAFTING' ||
+    currentJobObj?.timelineStep === 8;
 
   const isQaReviewSubmitted =
     currentJobObj?.status === 'QA_Review' ||
-    currentJobObj?.status === 'Preparing report' ||
     currentJobObj?.status === 'Completed' ||
-    currentJobObj?.timelineStep >= 9 ||
-    localStorage.getItem('propertygroup_qareview') === 'true' ||
-    (jobRefStr && localStorage.getItem(`propertygroup_qareview_${jobRefStr}`) === 'true') ||
-    (currentJobObj?.customerEmail && localStorage.getItem(`propertygroup_qareview_${currentJobObj.customerEmail.toLowerCase().trim()}`) === 'true');
+    ['QA_REVIEW', 'COMPLETE'].includes((currentJobObj?.stage || '').toUpperCase()) ||
+    currentJobObj?.timelineStep >= 9;
 
   useEffect(() => {
     if (queryJobId) {
@@ -1468,19 +1450,10 @@ export const SurveyorUploadReportsPage = () => {
           message: `${f.name} successfully stored on server storage (/uploads/reports).`,
         });
       } catch (err) {
-        // Fallback for UI
-        const newItem = {
-          name: f.name,
-          size: `${(f.size / (1024 * 1024)).toFixed(1)} MB`,
-          date: 'Just now',
-          jobId: selectedJob,
-          status: 'Under Admin QA Review',
-        };
-        setUploadedFiles((prev) => [newItem, ...prev]);
         addToast({
-          type: 'info',
-          title: 'Report Queued',
-          message: `${f.name} queued for Quality Review.`,
+          type: 'error',
+          title: 'Upload Failed',
+          message: err.response?.data?.message || err.message || `Could not upload ${f.name} to server.`,
         });
       }
     }
@@ -1491,20 +1464,14 @@ export const SurveyorUploadReportsPage = () => {
     const targetEmail = (activeJobObj?.customerEmail || '').toLowerCase().trim();
     const customerName = activeJobObj?.customer || 'Valued Client';
     const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
-    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
+    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'Chartered Surveyor';
     const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
-
-    localStorage.setItem('propertygroup_drafting', 'true');
-    localStorage.setItem(`propertygroup_drafting_${jobRef}`, 'true');
-    if (targetEmail) {
-      localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
-    }
 
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'Drafting',
         timelineStep: 8,
-        stage: 'PREPARING_REPORT',
+        stage: 'DRAFTING',
         customerEmail: targetEmail,
         activityLog: [
           {
@@ -1528,7 +1495,7 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} is now drafting your official RICS survey report for ${propertyAddr}.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -1537,7 +1504,7 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} commenced technical report compilation for ${propertyAddr}.`,
       type: 'booking',
       link: `/admin/jobs/${activeJobObj?.id || selectedJob}`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -1547,25 +1514,13 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Drafting in progress for ${propertyAddr}. Stage 8/10.`,
       type: 'booking',
       link: '/surveyor/upload-reports',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
-    // 3. Dispatch automated post-inspection/drafting email to customer
-    if (activeJobObj) {
-      dispatchPostInspectionUpdate({
-        ...activeJobObj,
-        surveyor: currentSurveyor,
-        customerEmail: targetEmail,
-        customer: customerName,
-        property: propertyAddr,
-        jobNo: jobRef,
-      }).catch(() => {});
-    }
-
-    // 4. Sync backend stage
+    // 3. Sync backend stage (backend dispatches post-inspection email)
     api.patch(`/survey-jobs/${activeJobObj?.dbId || activeJobObj?.id || selectedJob}/stage`, {
-      newStage: 'PREPARING_REPORT',
+      newStage: 'DRAFTING',
       reason: `Surveyor ${currentSurveyor} started report drafting.`,
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -1580,31 +1535,17 @@ export const SurveyorUploadReportsPage = () => {
   const handleSubmitAllQA = async () => {
     const activeJobObj = jobs.find((j) => (j.jobNo || j.id) === selectedJob || String(j.id) === String(selectedJob)) || currentJobObj;
     const rawEmail = activeJobObj?.customerEmail || activeJobObj?.clientEmail || activeJobObj?.email || activeJobObj?.client?.email || '';
-    const targetEmail = (rawEmail || (activeJobObj?.customer === 'test k' || activeJobObj?.client === 'test k' ? 'aashisaket7@gmail.com' : '')).toLowerCase().trim();
+    const targetEmail = rawEmail.toLowerCase().trim();
     const customerName = activeJobObj?.customer || activeJobObj?.client || 'Valued Client';
     const propertyAddr = activeJobObj?.property || 'Subject Property, UK';
-    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'test surveyor';
+    const currentSurveyor = user?.name || activeJobObj?.surveyor || 'Chartered Surveyor';
     const jobRef = activeJobObj?.jobNo || activeJobObj?.id || selectedJob;
-    const digitsRef = String(jobRef).replace(/[^0-9]/g, '');
-
-    localStorage.setItem('propertygroup_drafting', 'true');
-    localStorage.setItem('propertygroup_qareview', 'true');
-    localStorage.setItem(`propertygroup_drafting_${jobRef}`, 'true');
-    localStorage.setItem(`propertygroup_qareview_${jobRef}`, 'true');
-    if (digitsRef) {
-      localStorage.setItem(`propertygroup_qareview_JOB-2026-${digitsRef}`, 'true');
-      localStorage.setItem(`propertygroup_drafting_JOB-2026-${digitsRef}`, 'true');
-    }
-    if (targetEmail) {
-      localStorage.setItem(`propertygroup_drafting_${targetEmail}`, 'true');
-      localStorage.setItem(`propertygroup_qareview_${targetEmail}`, 'true');
-    }
 
     if (selectedJob && updateJob) {
       updateJob(selectedJob, {
         status: 'QA_Review',
         timelineStep: 9,
-        stage: 'PREPARING_REPORT',
+        stage: 'QA_REVIEW',
         customerEmail: targetEmail,
         activityLog: [
           {
@@ -1628,7 +1569,7 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
       type: 'report',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -1637,7 +1578,7 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Surveyor ${currentSurveyor} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
       type: 'report',
       link: '/admin/reports-and-analytics',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -1647,7 +1588,7 @@ export const SurveyorUploadReportsPage = () => {
       desc: `Draft report for ${propertyAddr} submitted to Central Admin QA Review Desk.`,
       type: 'booking',
       link: '/surveyor/upload-reports',
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Surveyor action sync note:', err); });
 
     // 3. Log sent email record for QA Desk review notification
     try {
@@ -1667,7 +1608,7 @@ export const SurveyorUploadReportsPage = () => {
       const existing = JSON.parse(localStorage.getItem('property_group_sent_emails_v1') || '[]');
       localStorage.setItem('property_group_sent_emails_v1', JSON.stringify([emailRecord, ...existing.slice(0, 49)]));
       window.dispatchEvent(new Event('property_group_sent_emails_updated'));
-    } catch {}
+    } catch (err) { console.warn('Surveyor local state note:', err); }
 
     // 4. Persist draft report URL + QA submission to backend MySQL (sets reportPdfUrl & reportGeneratedAt + Stage 9)
     const targetBackendId = activeJobObj?.dbId || activeJobObj?.id || selectedJob;
@@ -1681,9 +1622,9 @@ export const SurveyorUploadReportsPage = () => {
       });
     } catch {
       await api.patch(`/survey-jobs/${targetBackendId}/stage`, {
-        newStage: 'PREPARING_REPORT',
+        newStage: 'QA_REVIEW',
         reason: `Surveyor ${currentSurveyor} submitted draft report for QA audit.`,
-      }).catch(() => {});
+      }).catch((err) => { console.warn('Surveyor action sync note:', err); });
     }
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
@@ -2016,7 +1957,7 @@ export const SurveyorAvailabilityPage = () => {
           setPostcodes(res.data.postcodesCovered);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Surveyor API fetch note:', err); });
   }, []);
 
   const [workingDays, setWorkingDays] = useState({

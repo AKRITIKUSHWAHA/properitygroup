@@ -66,7 +66,9 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSur
           setInternalSurveyors(raw);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load surveyors in RescheduleModal:', err);
+      });
   }, [isOpen]);
 
   const activeList = passedSurveyors && passedSurveyors.length > 0 ? passedSurveyors : internalSurveyors;
@@ -181,7 +183,9 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSur
     // 4. Dispatch global event to notify calendar and dashboard listeners
     try {
       window.dispatchEvent(new CustomEvent('propertygroup_jobs_updated', { detail: { id: job.id, updates } }));
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Failed to dispatch jobs updated event:', e);
+    }
 
     // 5. Emit live in-app notification to the customer
     emitNotification({
@@ -191,7 +195,9 @@ export const RescheduleModal = ({ isOpen, onClose, job, onRescheduled, activeSur
       desc: `Physical inspection of ${job.property || job.location} scheduled for ${formattedDate} (${selectedSlot}).`,
       type: 'booking',
       link: '/customer/appointment-details',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Failed to emit customer reschedule notification:', err);
+    });
 
     addToast({
       type: 'success',

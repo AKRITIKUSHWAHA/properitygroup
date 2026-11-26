@@ -11,7 +11,6 @@ import {
   SlidersHorizontal,
   MapPin,
   Eye,
-  FileText,
   TrendingUp,
   MoreVertical,
   PhoneCall,
@@ -31,37 +30,10 @@ import { downloadInvoicePDF } from '../../utils/pdfGenerator';
 
 // Resolvers to guarantee real customer info is always displayed instead of placeholder text
 export const resolveQuoteClientName = (rawName, email) => {
-  let name = (rawName || '').trim();
+  const name = (rawName || '').trim();
   if (name && name !== 'Customer') return name;
 
   const cleanEmail = (email || '').toLowerCase().trim();
-  if (!cleanEmail || cleanEmail === 'customer@demo.com') return 'Emma Watson';
-  if (cleanEmail === 'customer2@demo.com') return 'David Harrison';
-  if (cleanEmail.includes('niamh')) return 'Niamh Richmond';
-  if (cleanEmail.includes('jaide')) return 'Jaide Cullen';
-
-  try {
-    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-    if (reg[cleanEmail]?.name) return reg[cleanEmail].name;
-  } catch {}
-
-  try {
-    const leads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-    const match = leads.find((l) => (l.email || l.clientEmail || '').toLowerCase() === cleanEmail);
-    if (match?.name || match?.clientName) return match.name || match.clientName;
-  } catch {}
-
-  try {
-    const profiles = JSON.parse(localStorage.getItem('property_group_client_profiles_v1') || '{}');
-    if (profiles[cleanEmail]?.name) return profiles[cleanEmail].name;
-  } catch {}
-
-  try {
-    const jobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
-    const matchJob = jobs.find((j) => (j.clientEmail || '').toLowerCase() === cleanEmail);
-    if (matchJob?.clientName) return matchJob.clientName;
-  } catch {}
-
   if (cleanEmail.includes('@')) {
     const prefix = cleanEmail.split('@')[0].replace(/[._-]/g, ' ').trim();
     if (prefix && prefix !== 'customer') {
@@ -69,34 +41,19 @@ export const resolveQuoteClientName = (rawName, email) => {
     }
   }
 
-  return 'Emma Watson';
+  return 'Client';
 };
 
-export const resolveQuoteClientPhone = (rawPhone, email) => {
-  let phone = (rawPhone || '').trim();
+export const resolveQuoteClientPhone = (rawPhone) => {
+  const phone = (rawPhone || '').trim();
   if (phone && phone !== '+44 7911 123456') return phone;
-
-  const cleanEmail = (email || '').toLowerCase().trim();
-  if (cleanEmail === 'customer@demo.com') return '+44 7700 900147';
-  if (cleanEmail.includes('jaide')) return '07864058635';
-  if (cleanEmail.includes('niamh')) return '07882109667';
-
-  try {
-    const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
-    if (reg[cleanEmail]?.phone) return reg[cleanEmail].phone;
-  } catch {}
-
-  return phone || '+44 7700 900147';
+  return '';
 };
 
-export const resolveQuotePropertyAddress = (rawAddress, email) => {
-  let address = (rawAddress || '').trim();
+export const resolveQuotePropertyAddress = (rawAddress) => {
+  const address = (rawAddress || '').trim();
   if (address && address !== 'London, UK') return address;
-
-  const cleanEmail = (email || '').toLowerCase().trim();
-  if (cleanEmail === 'customer@demo.com') return '14 Mayfair Gate, Mayfair, London W1K 2PB';
-
-  return address || 'Subject Property';
+  return 'Subject Property';
 };
 
 // 3-Dot Clean Action Dropdown Menu for each Quotation using React Portal (guarantees zero z-index/clipping issues)
@@ -359,7 +316,9 @@ export const AdminQuotesPage = () => {
           ? invoicesRes.value?.invoices || invoicesRes.value?.data?.invoices || []
           : [];
 
-      adminQuotationsAndPaymentsApi.getMetrics().catch(() => {});
+      adminQuotationsAndPaymentsApi.getMetrics().catch((err) => {
+        console.warn('Failed to load quotation metrics:', err);
+      });
 
       if (Array.isArray(rawQuotes)) {
         setApiLoaded(true);
@@ -600,7 +559,9 @@ export const AdminQuotesPage = () => {
       });
 
       // Silently re-fetch backend to guarantee 100% database sync
-      fetchBackendData().catch(() => {});
+      fetchBackendData().catch((err) => {
+        console.warn('Failed to refresh quotations after update:', err);
+      });
 
       addToast({
         type: 'success',

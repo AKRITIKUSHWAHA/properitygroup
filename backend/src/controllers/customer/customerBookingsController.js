@@ -12,7 +12,7 @@ export const getCustomerBookings = async (req, res, next) => {
     const bookings = await prisma.job.findMany({
       where: {
         OR: [{ clientId: userId }, { clientEmail: userEmail }],
-        stage: { in: ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'] },
+        stage: { in: ['BOOKED', 'INSPECTED', 'DRAFTING', 'QA_REVIEW', 'COMPLETE'] },
       },
       include: {
         surveyor: {

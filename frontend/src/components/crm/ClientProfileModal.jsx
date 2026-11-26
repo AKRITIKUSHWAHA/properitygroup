@@ -13,27 +13,27 @@ import {
   PhoneOutgoing,
   ShieldAlert,
   User,
-  Calendar,
   Building,
   Check,
-  FileText,
-  BadgeAlert,
-  Send,
-  MessageSquare,
   Copy,
   Receipt,
   Briefcase,
-  ChevronRight,
   ShieldCheck,
   Tag,
-  Filter,
 } from 'lucide-react';
 import { useClientProfiles } from '../../mock/clientProfiles';
 import { useToast } from '../ToastContext';
+import { useAuth } from '../../auth/AuthContext';
 
 export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initialTab = 'calls' }) => {
   const { addToast } = useToast();
+  const { user } = useAuth();
   const { profiles, addCallLog, addComplaint, updateComplaint } = useClientProfiles();
+
+  const currentAdminName =
+    user?.name ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    '';
 
   const [activeTab, setActiveTab] = useState(initialTab); // 'calls', 'complaints', 'overview'
   const [isAddingCall, setIsAddingCall] = useState(false);
@@ -52,7 +52,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
   // Form states for new Call Note
   const [callForm, setCallForm] = useState({
     direction: 'Inbound',
-    staff: 'Alexander Sterling',
+    staff: currentAdminName,
     duration: '5 mins',
     subject: '',
     notes: '',
@@ -64,7 +64,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
     severity: 'Medium',
     subject: '',
     description: '',
-    assignedTo: 'Alexander Sterling',
+    assignedTo: currentAdminName,
   });
 
   if (!isOpen) return null;
@@ -74,10 +74,10 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
 
   const client = existingProfile || {
     id: lead?.ref || lead?.id ? `CLT-${String(lead.id).replace(/[^0-9]/g, '').slice(-4) || '1001'}` : 'CLT-1001',
-    name: lead?.customerName || lead?.name || 'Test Customer',
-    email: clientEmail || lead?.customerEmail || 'test@example.com',
-    phone: lead?.customerPhone || lead?.phone || '+44 7700 900147',
-    address: lead?.property ? `${lead.property}${lead.location ? ', ' + lead.location : ''}` : '24 Victoria Road, Richmond pune, TW9 1AB',
+    name: lead?.customerName || lead?.name || '',
+    email: clientEmail || lead?.customerEmail || '',
+    phone: lead?.customerPhone || lead?.phone || '',
+    address: lead?.property ? `${lead.property}${lead.location ? ', ' + lead.location : ''}` : (lead?.address || ''),
     clientType: 'First-Time Residential Buyer',
     status: 'Active Client',
     totalSpent: lead?.estimatedValue && !lead.estimatedValue.toLowerCase().includes('pending') ? lead.estimatedValue : '£0.00',
@@ -85,6 +85,8 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
     calls: [],
     complaints: [],
   };
+
+  const profileKey = client.email || (lead?.id ? String(lead.id) : 'unassigned');
 
   const calls = client.calls || [];
   const complaints = client.complaints || [];
@@ -106,7 +108,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
     e.preventDefault();
     if (!callForm.notes.trim()) return;
 
-    addCallLog(client.email, {
+    addCallLog(profileKey, {
       clientName: client.name,
       clientPhone: client.phone,
       clientAddress: client.address,
@@ -120,7 +122,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
 
     setCallForm({
       direction: 'Inbound',
-      staff: 'Alexander Sterling',
+      staff: currentAdminName,
       duration: '5 mins',
       subject: '',
       notes: '',
@@ -130,7 +132,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
     addToast({
       type: 'success',
       title: 'Call Note Recorded',
-      message: `Call log with ${client.name} has been saved with timestamp.`,
+      message: `Call log with ${client.name || 'client'} has been saved with timestamp.`,
     });
   };
 
@@ -138,7 +140,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
     e.preventDefault();
     if (!complaintForm.description.trim()) return;
 
-    addComplaint(client.email, {
+    addComplaint(profileKey, {
       clientName: client.name,
       clientPhone: client.phone,
       clientAddress: client.address,
@@ -155,21 +157,21 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
       severity: 'Medium',
       subject: '',
       description: '',
-      assignedTo: 'Alexander Sterling',
+      assignedTo: currentAdminName,
     });
     setIsAddingComplaint(false);
 
     addToast({
       type: 'warning',
       title: 'Complaint Formally Logged',
-      message: `Complaint ticket registered for ${client.name}. Assigned to ${complaintForm.assignedTo}.`,
+      message: `Complaint ticket registered for ${client.name || 'client'}. Assigned to ${complaintForm.assignedTo || 'Admin'}.`,
     });
   };
 
   const handleResolveComplaint = (complaintId) => {
     if (!resolutionText.trim()) return;
 
-    updateComplaint(client.email, complaintId, {
+    updateComplaint(profileKey, complaintId, {
       status: 'Resolved',
       resolutionNotes: resolutionText.trim(),
     });
@@ -225,7 +227,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-xl font-bold tracking-tight text-white leading-tight">
-                    {client.name}
+                    {client.name || 'Unnamed Client'}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/15 text-slate-100 border border-white/10">
                     {client.clientType || 'Residential Client'}
@@ -238,27 +240,31 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
 
                 {/* Contact Pill Row */}
                 <div className="flex items-center gap-2.5 pt-1.5 text-xs text-slate-200 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(client.email, 'Email')}
-                    title="Click to copy email"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer text-[11px]"
-                  >
-                    <Mail className="w-3.5 h-3.5 text-blue-300" />
-                    <span className="font-mono">{client.email}</span>
-                    <Copy className="w-2.5 h-2.5 text-slate-400 opacity-70" />
-                  </button>
+                  {client.email && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(client.email, 'Email')}
+                      title="Click to copy email"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer text-[11px]"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-blue-300" />
+                      <span className="font-mono">{client.email}</span>
+                      <Copy className="w-2.5 h-2.5 text-slate-400 opacity-70" />
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(client.phone, 'Phone number')}
-                    title="Click to copy phone"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer text-[11px]"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-300" />
-                    <span>{client.phone}</span>
-                    <Copy className="w-2.5 h-2.5 text-slate-400 opacity-70" />
-                  </button>
+                  {client.phone && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(client.phone, 'Phone number')}
+                      title="Click to copy phone"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer text-[11px]"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{client.phone}</span>
+                      <Copy className="w-2.5 h-2.5 text-slate-400 opacity-70" />
+                    </button>
+                  )}
 
                   {client.address && (
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] max-w-xs truncate">
@@ -432,7 +438,11 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
                         onChange={(e) => setCallForm({ ...callForm, staff: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                       >
-                        <option value="Alexander Sterling">Alexander Sterling (Admin)</option>
+                        {currentAdminName ? (
+                          <option value={currentAdminName}>{currentAdminName} (Admin)</option>
+                        ) : (
+                          <option value="">Select staff member</option>
+                        )}
                         <option value="David Thorne MRICS">David Thorne MRICS (Surveyor)</option>
                         <option value="Claire Bennet AssocRICS">Claire Bennet AssocRICS (Surveyor)</option>
                         <option value="Oliver Hughes MRICS">Oliver Hughes MRICS (Surveyor)</option>
@@ -666,7 +676,11 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
                         onChange={(e) => setComplaintForm({ ...complaintForm, assignedTo: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/30"
                       >
-                        <option value="Alexander Sterling">Alexander Sterling (Admin Lead)</option>
+                        {currentAdminName ? (
+                          <option value={currentAdminName}>{currentAdminName} (Admin Lead)</option>
+                        ) : (
+                          <option value="">Select handler</option>
+                        )}
                         <option value="David Thorne MRICS">David Thorne MRICS (Head Surveyor)</option>
                         <option value="Claire Bennet AssocRICS">Claire Bennet AssocRICS (Surveyor)</option>
                       </select>
@@ -909,7 +923,7 @@ export const ClientProfileModal = ({ isOpen, onClose, clientEmail, lead, initial
                 </div>
                 <div className="text-sm font-bold text-[#0B1F4D] flex items-center gap-2 pt-1">
                   <Building className="w-4 h-4 text-blue-600" />
-                  {client.address}
+                  {client.address || 'No property address recorded'}
                 </div>
                 <p className="text-xs text-slate-500">
                   Estate Agent has confirmed key access. Surveyor allocated for inspection window.

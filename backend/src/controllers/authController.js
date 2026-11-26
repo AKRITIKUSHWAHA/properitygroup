@@ -124,70 +124,78 @@ export const login = async (req, res, next) => {
 
     let user = await prisma.user.findUnique({
       where: { email: cleanEmail },
+      include: { surveyorProfile: true },
     });
 
-    // 1. Auto-provision Admin account if not existing
-    if (!user && (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com')) {
-      try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('admin123', salt);
-        user = await prisma.user.create({
-          data: {
-            name: cleanEmail === 'njsadmin@gmail.com' ? 'NJS Operations Admin' : 'Alexander Sterling',
-            email: cleanEmail,
-            password: hashedPassword,
-            role: 'ADMIN',
-            phone: '+44 20 7946 0912',
-            status: 'ACTIVE',
-          },
-        });
-      } catch {
-        user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    // Demo account auto-provisioning is strictly disabled in production
+    if (process.env.NODE_ENV !== 'production') {
+      // 1. Auto-provision Admin account if not existing
+      if (!user && (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com')) {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash('admin123', salt);
+          user = await prisma.user.create({
+            data: {
+              name: cleanEmail === 'njsadmin@gmail.com' ? 'NJS Operations Admin' : 'Alexander Sterling',
+              email: cleanEmail,
+              password: hashedPassword,
+              role: 'ADMIN',
+              phone: '+44 20 7946 0912',
+              status: 'ACTIVE',
+            },
+          });
+        } catch {
+          user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        }
       }
-    }
 
-    // 2. Auto-provision Surveyor account if not existing
-    if (!user && (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail === 'surveyor@demo.com')) {
-      try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('surveyor123', salt);
-        user = await prisma.user.create({
-          data: {
-            name: 'NJS Lead Surveyor',
-            email: cleanEmail,
-            password: hashedPassword,
-            role: 'SURVEYOR',
-            phone: '+44 7700 900456',
-            status: 'ACTIVE',
-          },
-        });
-      } catch {
-        user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      // 2. Auto-provision Surveyor account if not existing
+      if (!user && (cleanEmail === 'njssurveyor@gmail.com' || cleanEmail === 'surveyor@demo.com')) {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash('surveyor123', salt);
+          user = await prisma.user.create({
+            data: {
+              name: 'NJS Lead Surveyor',
+              email: cleanEmail,
+              password: hashedPassword,
+              role: 'SURVEYOR',
+              phone: '+44 7700 900456',
+              status: 'ACTIVE',
+            },
+          });
+        } catch {
+          user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        }
       }
-    }
 
-    // 3. Auto-provision Demo Customer account if not existing
-    if (!user && cleanEmail === 'customer@demo.com') {
-      try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('customer123', salt);
-        user = await prisma.user.create({
-          data: {
-            name: 'Eleanor Vance',
-            email: cleanEmail,
-            password: hashedPassword,
-            role: 'CUSTOMER',
-            phone: '+44 7700 900123',
-            status: 'ACTIVE',
-          },
-        });
-      } catch {
-        user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      // 3. Auto-provision Demo Customer account if not existing
+      if (!user && cleanEmail === 'customer@demo.com') {
+        try {
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash('customer123', salt);
+          user = await prisma.user.create({
+            data: {
+              name: 'Eleanor Vance',
+              email: cleanEmail,
+              password: hashedPassword,
+              role: 'CUSTOMER',
+              phone: '+44 7700 900123',
+              status: 'ACTIVE',
+            },
+          });
+        } catch {
+          user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+        }
       }
     }
 
     if (!user) {
       throw ApiError.notFound('No registered account found with this email. Please register your account first.');
+    }
+
+    if (user.status === 'PENDING') {
+      throw ApiError.forbidden('Your client portal account has not been activated yet. Please check your email for the activation link to set your password.');
     }
 
     if (user.status === 'INACTIVE' || user.status === 'BLOCKED') {
@@ -196,8 +204,8 @@ export const login = async (req, res, next) => {
 
     let isMatch = await bcrypt.compare(cleanPassword, user.password);
 
-    // Seamlessly support standard prefill demo passwords
-    if (!isMatch) {
+    // Prefill demo password fallback is strictly disabled in production
+    if (!isMatch && process.env.NODE_ENV !== 'production') {
       if (
         user.role === 'ADMIN' &&
         (cleanEmail === 'njsadmin@gmail.com' || cleanEmail === 'admin@demo.com') &&
@@ -271,6 +279,7 @@ export const login = async (req, res, next) => {
       phone: user.phone,
       avatar: user.avatar,
       status: user.status,
+      surveyorProfile: user.surveyorProfile || null,
     };
 
     // Mark user as actively online
@@ -365,6 +374,88 @@ export const changePassword = async (req, res, next) => {
     });
 
     return ApiResponse.success(res, null, 'Password updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Activate Client Portal account via signed 48h token and set permanent password
+ */
+export const activatePortal = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token) {
+      throw ApiError.badRequest('Activation token is required.');
+    }
+
+    if (!password || password.length < 8) {
+      throw ApiError.badRequest('Password must be at least 8 characters long.');
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, env.JWT_SECRET);
+    } catch (jwtErr) {
+      if (jwtErr.name === 'TokenExpiredError') {
+        throw ApiError.badRequest('Activation link has expired (48-hour limit). Please request a new activation link.');
+      }
+      throw ApiError.badRequest('Invalid or corrupted activation link.');
+    }
+
+    if (payload.purpose !== 'portal_activation') {
+      throw ApiError.badRequest('Invalid token purpose.');
+    }
+
+    const cleanEmail = (payload.email || '').toLowerCase().trim();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(payload.id ? [{ id: payload.id }] : []),
+          ...(cleanEmail ? [{ email: cleanEmail }] : []),
+        ],
+      },
+    });
+
+    if (!user) {
+      throw ApiError.notFound('Customer account not found for this activation token.');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        phone: true,
+        avatar: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    const authToken = jwt.sign(
+      { id: updatedUser.id, email: updatedUser.email, role: updatedUser.role },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN }
+    );
+
+    touchUserPresence(updatedUser.id, updatedUser.email);
+
+    return ApiResponse.success(
+      res,
+      { user: updatedUser, token: authToken },
+      'Your Client Portal account has been activated successfully!'
+    );
   } catch (error) {
     next(error);
   }

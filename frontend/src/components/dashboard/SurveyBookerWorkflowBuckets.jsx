@@ -58,22 +58,25 @@ export const SurveyBookerWorkflowBuckets = ({
   }).length;
   const termsToSend = pendingAgreementsCount;
 
-  // 4. Jobs to book: strictly matches /admin/jobs?filter=Action Required (Terms & Payment Pending)
-  const actionRequiredCount = jobs.filter(
-    (j) => !j.canBook || j.termsStatus !== 'Signed' || j.paymentStatus !== 'Paid'
+  // 4. Jobs to book: strictly matches ready-to-book condition (terms signed + invoice paid + not yet booked)
+  const bJobsToBook = getBackendCount('jobs_to_book');
+  const readyToBookCount = jobs.filter(
+    (j) => j.canBook && j.termsStatus === 'Signed' && j.paymentStatus === 'Paid' && j.status !== 'Scheduled' && j.status !== 'Completed'
   ).length;
-  const jobsToBook = actionRequiredCount;
+  const jobsToBook = bJobsToBook !== null ? bJobsToBook : readyToBookCount;
   const remindersSentCount = jobs.filter((j) => (j.bookingReminderCount || 0) > 0).length;
 
   // 5. Appointments: strictly matches /admin/jobs?filter=Scheduled (Appointments / Booked tab)
-  const appointments = jobs.filter(
-    (j) => j.status.toLowerCase() === 'scheduled' || j.status.toLowerCase() === 'booked'
-  ).length;
+  const appointments = jobs.filter((j) => {
+    const s = String(j?.status || '').toLowerCase();
+    return s === 'scheduled' || s === 'booked';
+  }).length;
 
-  // 6. Reports to upload: strictly matches /admin/jobs?filter=In Progress (Preparing Report tab)
-  const reportsToUpload = jobs.filter(
-    (j) => j.status.toLowerCase() === 'in progress' || j.status.toLowerCase() === 'preparing report'
-  ).length;
+  // 6. Reports to upload: strictly matches /admin/jobs?filter=In Progress (Preparing Report & QA Review)
+  const reportsToUpload = jobs.filter((j) => {
+    const s = String(j?.status || '').toLowerCase();
+    return s === 'in progress' || s === 'preparing report' || s === 'qa review' || s === 'qa_review';
+  }).length;
 
   const buckets = [
     {

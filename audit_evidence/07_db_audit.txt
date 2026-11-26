@@ -1,0 +1,106 @@
+{
+  "counts": {
+    "users": 6,
+    "surveyor_profiles": 0,
+    "companies": 0,
+    "leads": 4,
+    "call_logs": 0,
+    "complaint_logs": 0,
+    "jobs": 1,
+    "quotes": 5,
+    "terms": 1,
+    "invoices": 1,
+    "messages": 0,
+    "audit_logs": 1,
+    "system_settings": 10,
+    "customer_reviews": 0,
+    "support_tickets": 0,
+    "notifications": 22
+  },
+  "multiActiveQuotesPerLead": [],
+  "multiInvoicesPerJob": [],
+  "multiTermsPerJob": [],
+  "orphanQuotes": [
+    {
+      "id": 19,
+      "reference": "QTE-2026-101",
+      "status": "SENT",
+      "totalAmount": 660
+    },
+    {
+      "id": 21,
+      "reference": "QTE-2026-103",
+      "status": "SENT",
+      "totalAmount": 840
+    }
+  ],
+  "jobsNullLeadWithMatchingLead": [],
+  "invoiceQuoteMismatch": [],
+  "acceptedQuotesMissingJobTermInv": [],
+  "jobsNullClientIdWithUser": [
+    {
+      "jobId": 15,
+      "reference": "JOB-TEST-3913",
+      "clientEmail": "t***@example.co.uk",
+      "userId": 48
+    }
+  ],
+  "leadsWithoutCustomerUser": [
+    {
+      "id": 29,
+      "reference": "NJS-2026-5484",
+      "clientEmail": "a***@gmail.com"
+    }
+  ],
+  "orphanNotificationsCount": 3,
+  "orphanNotificationsSample": [
+    {
+      "id": 33,
+      "title": "✓ Quote Accepted: ak test lead",
+      "missingRefs": [
+        "QTE-2026-102"
+      ]
+    },
+    {
+      "id": 36,
+      "title": "📝 Terms Signed: ak test lead",
+      "missingRefs": [
+        "JOB-2026-2026410"
+      ]
+    },
+    {
+      "id": 37,
+      "title": "Invoice Settled - £840",
+      "missingRefs": [
+        "INV-2026-2026410"
+      ]
+    }
+  ],
+  "duplicateNotifications": [
+    {
+      "userId": null,
+      "title": "Email delivery failed to test.client.1795608853912@example.co.uk",
+      "minBucket": "2026-11-25 12:14",
+      "cnt": 7
+    }
+  ],
+  "impossibleStageCombos": [],
+  "hardcodedLookingData": [
+    {
+      "id": 15,
+      "reference": "JOB-TEST-3913",
+      "postcode": "SW1W 9EA",
+      "clientEmail": "t***@example.co.uk"
+    }
+  ],
+  "enums": [
+    {
+      "Field": "stage",
+      "Type": "enum('ENQUIRY','QUOTE_ISSUED','QUOTE_ACCEPTED','TERMS_SIGNED','PAID','BOOKED','INSPECTED','DRAFTING','QA_REVIEW','COMPLETE')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "QUOTE_ISSUED",
+      "Extra": ""
+    }
+  ]
+}

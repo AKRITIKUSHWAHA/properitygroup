@@ -23,12 +23,23 @@ import {
   Eye,
   Star,
   MessageSquare,
+  FileCheck,
 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
-import { useJobs } from '../../mock/jobs';
+import { useJobs, getStoredJobs, saveStoredJobs } from '../../mock/jobs';
+import { getStoredLeads, saveStoredLeads } from '../../mock/leads';
+import { getStoredQuotes } from '../../mock/quotes';
 import { SurveyProgressTracker, computeRICSStage } from '../../components/customer/SurveyProgressTracker';
+import {
+  JOB_STAGES,
+  JOB_STAGE_STEPS,
+  JOB_STAGE_LABELS,
+  normalizeJobStage,
+  getStageStep,
+  getStageLabel,
+} from '../../utils/jobStages';
 import { customerDashboardApi, customerTrackSurveyApi } from '../../api/customerApi';
 import { publicApi } from '../../api/publicApi';
 import { emitNotification } from '../../utils/notificationService';
@@ -68,25 +79,17 @@ const isJobForCustomer = (job, user) => {
 };
 
 // Dynamic completed & delivered checker across customer lifecycle
-const isJobDelivered = (j, uEmail) => {
+const isJobDelivered = (j) => {
   if (!j) return false;
   const s = (j.status || '').toLowerCase().trim();
   const stg = (j.stage || '').toLowerCase().trim();
-  const jId = String(j.id || '').toLowerCase().trim();
-  const jNo = String(j.jobNo || '').toLowerCase().trim();
-  const email = (j.customerEmail || uEmail || '').toLowerCase().trim();
-
-  const isDeliveredFlag =
-    Boolean((jId && localStorage.getItem(`propertygroup_delivered_${jId}`) === 'true') ||
-    (jNo && localStorage.getItem(`propertygroup_delivered_${jNo}`) === 'true'));
 
   return (
     s === 'completed' ||
     s === 'delivered' ||
     stg === 'complete' ||
     stg === 'completed' ||
-    (j.timelineStep || 0) >= 10 ||
-    isDeliveredFlag
+    (j.timelineStep || 0) >= 10
   );
 };
 
@@ -98,9 +101,7 @@ export const CustomerDashboardPage = () => {
 
   const myCustomerJobs = jobs.filter((j) => isJobForCustomer(j, user));
   const userEmail = (user?.email || '').toLowerCase().trim();
-  const [selectedJobId, setSelectedJobId] = useState(() => {
-    return localStorage.getItem(`propertygroup_active_job_${userEmail}`) || myCustomerJobs[0]?.id || null;
-  });
+  const [selectedJobId, setSelectedJobId] = useState(() => myCustomerJobs[0]?.id || null);
 
   const [apiActiveJob, setApiActiveJob] = useState(null);
   const [apiTracking, setApiTracking] = useState(null);
@@ -120,36 +121,34 @@ export const CustomerDashboardPage = () => {
 
       if (dashPayload?.activeJob) {
         setApiActiveJob(dashPayload.activeJob);
-        // Synchronize with local storage jobs list so all tabs/pages stay in sync
+        // Synchronize with in-memory jobs list so all tabs/pages stay in sync
         try {
-          const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
+          const storedJobs = [...getStoredJobs()];
           const jobRef = dashPayload.activeJob.reference || dashPayload.activeJob.id;
           const idx = storedJobs.findIndex(
             (j) => j.id === jobRef || (userEmail && (j.customerEmail || '').toLowerCase() === userEmail)
           );
-          const isDelivered = dashPayload.activeJob.stage === 'COMPLETE' || (trackPayload?.currentStep || 0) >= 10;
-          const isQA =
-            dashPayload.activeJob.status === 'QA_Review' ||
-            dashPayload.activeJob.stage === 'QA_REVIEW' ||
-            (trackPayload?.currentStage || '').toUpperCase() === 'QA_REVIEW' ||
-            (trackPayload?.currentStep || 0) >= 9 ||
-            (dashPayload.activeJob.timelineStep || 0) >= 9;
-          const isDrafting = dashPayload.activeJob.status === 'Drafting' || (trackPayload?.currentStep || 0) === 8;
-          const isInspected = dashPayload.activeJob.stage === 'INSPECTED' || (trackPayload?.currentStep || 0) >= 7;
-          const isBooked = dashPayload.activeJob.stage === 'BOOKED' || (trackPayload?.currentStep || 0) >= 6;
-          const hasPaid = dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID' || dashPayload.activeJob.paymentStatus === 'Paid';
+          const rawStage = dashPayload.activeJob.stage || trackPayload?.currentStage;
+          const normStage = normalizeJobStage(rawStage);
+          const isDelivered = normStage === 'COMPLETE' || (trackPayload?.currentStep || 0) >= 10;
+          const isQA = normStage === 'QA_REVIEW' || (trackPayload?.currentStep || 0) >= 9 || (dashPayload.activeJob.timelineStep || 0) >= 9;
+          const isDrafting = normStage === 'DRAFTING' || (trackPayload?.currentStep || 0) === 8;
+          const isInspected = normStage === 'INSPECTED' || (trackPayload?.currentStep || 0) >= 7;
+          const isBooked = normStage === 'BOOKED' || (trackPayload?.currentStep || 0) >= 6;
+          const hasPaid = normStage === 'PAID' || dashPayload.activeJob.invoices?.some((i) => i.status === 'PAID') || dashPayload.activeJob.paymentStatus === 'PAID' || dashPayload.activeJob.paymentStatus === 'Paid';
           const isPaymentClaimed = (dashPayload.activeJob.paymentStatus || '').toLowerCase().includes('claimed');
-          const isTermsSigned = (dashPayload.activeJob.termsStatus || '').toLowerCase() === 'signed' || dashPayload.activeJob.terms?.some((t) => t.signed);
-          const isAccepted = dashPayload.activeJob.stage === 'ACCEPTED' || dashPayload.activeJob.status === 'Accepted' || (dashPayload.activeJob.quoteStatus || '').toLowerCase() === 'accepted';
-          const isQuoted = dashPayload.activeJob.stage === 'QUOTE' || dashPayload.activeJob.stage === 'QUOTED' || dashPayload.activeJob.status === 'Quoted';
+          const isTermsSigned = normStage === 'TERMS_SIGNED' || (dashPayload.activeJob.termsStatus || '').toLowerCase() === 'signed' || dashPayload.activeJob.terms?.some((t) => t.signed);
+          const isAccepted = normStage === 'QUOTE_ACCEPTED' || dashPayload.activeJob.status === 'Accepted' || (dashPayload.activeJob.quoteStatus || '').toLowerCase() === 'accepted';
+          const isQuoted = normStage === 'QUOTE_ISSUED' || dashPayload.activeJob.status === 'Quoted';
 
+          const fallbackStep = isDelivered ? 10 : isQA ? 9 : isDrafting ? 8 : isInspected ? 7 : isBooked ? 6 : (hasPaid || isPaymentClaimed) ? 5 : isTermsSigned ? 4 : isAccepted ? 3 : isQuoted ? 2 : 1;
           const calculatedStep = Math.max(
             Number(trackPayload?.currentStep) || 0,
             Number(dashPayload.activeJob.timelineStep) || 0,
-            isDelivered ? 10 : (isQA ? 9 : (isDrafting ? 8 : (isInspected ? 7 : (isBooked ? 6 : (hasPaid ? 5 : (isPaymentClaimed ? 5 : (isTermsSigned ? 4 : (isAccepted ? 3 : (isQuoted ? 2 : 1)))))))))
+            getStageStep(normStage) || fallbackStep
           );
 
-          const syncedStatus = isDelivered
+          const syncedStatus = getStageLabel(normStage) || (isDelivered
             ? 'Completed'
             : isQA
             ? 'QA_Review'
@@ -169,7 +168,7 @@ export const CustomerDashboardPage = () => {
             ? 'Accepted'
             : isQuoted
             ? 'Quoted'
-            : 'Enquiry';
+            : 'Enquiry');
 
           const parsedTotalFee = parseFloat(String(dashPayload.activeJob.totalFee || dashPayload.stats?.totalFee || '').replace(/[^0-9.]/g, ''));
           const resolvedApiTotal = dashPayload.activeJob.invoices?.[0]?.total || (!isNaN(parsedTotalFee) && parsedTotalFee > 0 ? parsedTotalFee : null);
@@ -183,7 +182,9 @@ export const CustomerDashboardPage = () => {
               localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
               localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
               localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
-            } catch {}
+            } catch (err) {
+              console.warn('Failed to clear customer workflow cache:', err);
+            }
           }
 
           const syncedData = {
@@ -222,33 +223,36 @@ export const CustomerDashboardPage = () => {
           } else {
             storedJobs.unshift(syncedData);
           }
-          localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
-          setTimeout(() => {
-            window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-          }, 0);
-        } catch {}
+          saveStoredJobs(storedJobs);
+        } catch (err) {
+          console.warn('Failed to update stored jobs cache:', err);
+        }
       }
     });
   }, [userEmail]);
 
   const baseJob = myCustomerJobs.find((j) => j.id === selectedJobId) || myCustomerJobs[0] || null;
-  const isApiJobDelivered = apiActiveJob?.stage === 'COMPLETE' || (apiTracking?.currentStage || '').toUpperCase() === 'COMPLETE' || (apiTracking?.currentStep || 0) >= 10;
-  const isApiJobQA = apiActiveJob?.stage === 'QA_REVIEW' || (apiTracking?.currentStage || '').toUpperCase() === 'QA_REVIEW' || (apiTracking?.currentStep || 0) === 9;
-  const isApiJobDrafting = apiActiveJob?.stage === 'PREPARING_REPORT' || apiActiveJob?.stage === 'DRAFTING' || (apiTracking?.currentStep || 0) === 8;
-  const isApiJobInspected = apiActiveJob?.stage === 'INSPECTED' || (apiTracking?.currentStep || 0) === 7;
-  const isApiJobBooked = apiActiveJob?.stage === 'BOOKED' || (apiTracking?.currentStep || 0) >= 6;
-  const isApiJobPaid = apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
-  const isApiJobClaimed = (apiActiveJob?.paymentStatus || '').toLowerCase().includes('claimed');
-  const isApiJobSigned = (apiActiveJob?.termsStatus || '').toLowerCase() === 'signed' || apiActiveJob?.terms?.some((t) => t.signed);
-  const isApiJobAccepted = apiActiveJob?.stage === 'ACCEPTED' || apiActiveJob?.status === 'Accepted';
-  const isApiJobQuoted = apiActiveJob?.stage === 'QUOTE' || apiActiveJob?.stage === 'QUOTED' || apiActiveJob?.status === 'Quoted';
+  const rawApiStage = apiActiveJob?.stage || apiTracking?.currentStage || baseJob?.stage;
+  const normApiStage = normalizeJobStage(rawApiStage);
+  const isApiJobDelivered = normApiStage === 'COMPLETE' || (apiTracking?.currentStep || 0) >= 10;
+  const isApiJobQA = normApiStage === 'QA_REVIEW' || (apiTracking?.currentStep || 0) === 9;
+  const isApiJobDrafting = normApiStage === 'DRAFTING' || (apiTracking?.currentStep || 0) === 8;
+  const isApiJobInspected = normApiStage === 'INSPECTED' || (apiTracking?.currentStep || 0) === 7;
+  const isApiJobBooked = normApiStage === 'BOOKED' || (apiTracking?.currentStep || 0) >= 6;
+  const isApiJobPaid = normApiStage === 'PAID' || apiActiveJob?.invoices?.some((i) => i.status === 'PAID') || apiActiveJob?.paymentStatus === 'PAID' || apiActiveJob?.paymentStatus === 'Paid';
+  const isApiJobClaimed =
+    (apiActiveJob?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    (apiTracking?.paymentStatus || '').toLowerCase().includes('claimed') ||
+    Boolean(apiActiveJob?.invoices?.some((i) => i.paymentMethod === 'BACS_TRANSFER_CLAIMED' && i.status !== 'PAID'));
+  const isApiJobSigned = normApiStage === 'TERMS_SIGNED' || (apiActiveJob?.termsStatus || '').toLowerCase() === 'signed' || apiActiveJob?.terms?.some((t) => t.signed);
+  const isApiJobAccepted = normApiStage === 'QUOTE_ACCEPTED' || apiActiveJob?.status === 'Accepted';
+  const isApiJobQuoted = normApiStage === 'QUOTE_ISSUED' || apiActiveJob?.status === 'Quoted';
 
+  const apiFallbackStep = isApiJobDelivered ? 10 : isApiJobQA ? 9 : isApiJobDrafting ? 8 : isApiJobInspected ? 7 : isApiJobBooked ? 6 : (isApiJobPaid || isApiJobClaimed) ? 5 : isApiJobSigned ? 4 : isApiJobAccepted ? 3 : isApiJobQuoted ? 2 : 1;
   const apiStepNumber = Math.max(
     Number(apiTracking?.currentStep) || 0,
-    apiTracking?.currentStage === 'COMPLETE' ? 10 : 0,
-    apiActiveJob?.stage === 'COMPLETE' ? 10 : 0,
     Number(apiActiveJob?.timelineStep) || 0,
-    isApiJobDelivered ? 10 : (isApiJobQA ? 9 : (isApiJobDrafting ? 8 : (isApiJobInspected ? 7 : (isApiJobBooked ? 6 : (isApiJobPaid ? 5 : (isApiJobClaimed ? 5 : (isApiJobSigned ? 4 : (isApiJobAccepted ? 3 : (isApiJobQuoted ? 2 : 1)))))))))
+    getStageStep(normApiStage) || apiFallbackStep
   );
 
   const activeJob = (baseJob || apiActiveJob) ? {
@@ -286,9 +290,13 @@ export const CustomerDashboardPage = () => {
       apiStepNumber,
       1
     ),
-    status: (isApiJobDelivered ? 'Completed' : (isApiJobQA ? 'QA_Review' : (isApiJobDrafting ? 'Drafting' : (isApiJobInspected ? 'Inspected' : (isApiJobBooked ? 'Booked' : (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry'))))))),
-    stage: apiActiveJob?.stage || baseJob?.stage || (isApiJobDelivered ? 'COMPLETE' : (isApiJobBooked ? 'BOOKED' : 'ENQUIRY')),
-    paymentStatus: (isApiJobPaid || baseJob?.paymentStatus === 'Paid') ? 'Paid' : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending'),
+    status: getStageLabel(normApiStage) || (isApiJobPaid ? 'Paid' : (baseJob?.status || apiActiveJob?.status || 'Enquiry')),
+    stage: normApiStage || 'ENQUIRY',
+    paymentStatus: (isApiJobPaid || baseJob?.paymentStatus === 'Paid')
+      ? 'Paid'
+      : isApiJobClaimed
+      ? 'Claimed (Verification Pending)'
+      : (baseJob?.paymentStatus || apiActiveJob?.paymentStatus || 'Pending'),
     termsStatus: (baseJob?.termsStatus === 'Signed' || isApiJobSigned || apiActiveJob?.terms?.[0]?.signed || isApiJobDelivered || (apiTracking?.currentStep || 0) >= 4) ? 'Signed' : 'Pending',
   } : null;
 
@@ -355,16 +363,11 @@ export const CustomerDashboardPage = () => {
       addJob(newJob);
     }
 
-    try {
-      const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
-      localStorage.setItem('propertygroup_jobs', JSON.stringify([newJob, ...storedJobs]));
-      localStorage.setItem(`propertygroup_active_job_${userEmail}`, newJobId);
-      window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-    } catch {}
+    setSelectedJobId(newJobId);
 
-    // Pull enquiry directly into Admin CRM leads & un-blacklist user
+    // Pull enquiry into in-memory CRM leads list
     try {
-      const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const storedLeads = getStoredLeads();
       const newLeadEntry = {
         id: newJobId,
         reference: newJobId,
@@ -387,15 +390,10 @@ export const CustomerDashboardPage = () => {
         estimatedValue: null, // Point 3: Turned off auto-fee!
         createdAt: new Date().toISOString(),
       };
-      localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify([newLeadEntry, ...storedLeads.filter((l) => l.id !== newJobId)]));
-      try {
-        const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
-        const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== userEmail);
-        localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
-      } catch {}
-      window.dispatchEvent(new Event('propertygroup_leads_updated'));
-      window.dispatchEvent(new Event('propertygroup_users_updated'));
-    } catch {}
+      saveStoredLeads([newLeadEntry, ...storedLeads.filter((l) => l.id !== newJobId)]);
+    } catch (err) {
+      console.warn('Failed to save lead entry to local cache:', err);
+    }
 
     // In-App Instant Notification to Admin
     try {
@@ -406,7 +404,9 @@ export const CustomerDashboardPage = () => {
         type: 'CRM_LEAD',
         link: '/admin/crm-leads',
       });
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to emit admin quote notification:', err);
+    }
 
     // Pull enquiry through to Backend DB & trigger email notifications to Admin (Bug 4)
     try {
@@ -420,8 +420,12 @@ export const CustomerDashboardPage = () => {
         serviceId: bookForm.surveyType,
         enquiryCategory: 'SURVEY_QUOTE',
         sourcePage: '/customer/dashboard',
-      }).catch(() => {});
-    } catch {}
+      }).catch((err) => {
+        console.warn('Public quote enquiry sync error:', err);
+      });
+    } catch (err) {
+      console.warn('Public quote enquiry dispatch skipped:', err);
+    }
 
     setSelectedJobId(newJobId);
 
@@ -469,7 +473,7 @@ export const CustomerDashboardPage = () => {
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
     try {
-      const allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
+      const allQuotes = getStoredQuotes();
       const matchQuote = allQuotes.find((q) => {
         const qEmail = (q.clientEmail || q.customerEmail || '').toLowerCase().trim();
         return (qEmail && userEmail && qEmail === userEmail) || (customerJob?.id && (q.id === customerJob.id || q.jobNo === customerJob.id || q.jobId === customerJob.id));
@@ -478,7 +482,7 @@ export const CustomerDashboardPage = () => {
         const qFee = matchQuote.totalAmount || (matchQuote.baseFee ? matchQuote.baseFee * 1.2 : null) || matchQuote.total;
         if (qFee && !isNaN(Number(qFee)) && Number(qFee) > 0) return Number(qFee);
       }
-      const allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
+      const allLeads = getStoredLeads();
       const matchLead = allLeads.find((l) => {
         const lEmail = (l.customerEmail || l.clientEmail || '').toLowerCase().trim();
         return (lEmail && userEmail && lEmail === userEmail) || (customerJob?.id && (l.id === customerJob.id || l.reference === customerJob.id));
@@ -487,7 +491,9 @@ export const CustomerDashboardPage = () => {
         const num = parseFloat(String(matchLead.estimatedValue).replace(/[^0-9.]/g, ''));
         if (!isNaN(num) && num > 0) return num;
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to parse quote amount:', err);
+    }
     return null;
   })();
 
@@ -729,7 +735,6 @@ export const CustomerDashboardPage = () => {
               value={customerJob?.id || ''}
               onChange={(e) => {
                 setSelectedJobId(e.target.value);
-                localStorage.setItem(`propertygroup_active_job_${userEmail}`, e.target.value);
               }}
               className="w-full sm:w-80 lg:w-96 max-w-full text-xs font-bold bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer truncate shadow-2xs"
             >
@@ -778,7 +783,41 @@ export const CustomerDashboardPage = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Authoritative Next Step Card derived directly from DB state */}
+          {apiTracking?.nextStep && (
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0B1F4D] via-[#1E3A8A] to-[#1E40AF] text-white shadow-md border border-blue-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="p-3 rounded-2xl bg-white/10 text-white shrink-0 border border-white/15">
+                  <Sparkles className="w-6 h-6 text-amber-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                      Next Step Action Required
+                    </span>
+                    <span className="text-xs font-semibold text-blue-200">
+                      Step {apiTracking.currentStep || computeRICSStage(resolvedCustomerJob, apiTracking, userEmail)} of 10
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                    {apiTracking.nextStep.title}
+                  </h3>
+                  <p className="text-xs text-blue-100/90 mt-1 max-w-xl">
+                    {apiTracking.nextStep.description}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(apiTracking.nextStep.actionLink)}
+                className="px-5 py-2.5 rounded-xl bg-white text-[#0B1F4D] hover:bg-blue-50 text-xs font-extrabold transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>{apiTracking.nextStep.actionText}</span>
+                <ArrowRight className="w-4 h-4 text-[#2563EB]" />
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               RICS Inspection Progression

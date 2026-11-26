@@ -2,21 +2,21 @@ import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { sendQuoteAcceptedEmail } from '../../services/emailService.js';
+import { generateJobReference, generateTermReference, generateInvoiceNumber } from '../../utils/references.js';
 
 /**
  * Customer Menu 2: My Quotations (/customer/quotations)
  */
 export const getCustomerQuotations = async (req, res, next) => {
   try {
-    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
     const userId = req.user?.id;
-    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
-    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
+    const userName = req.user?.name || 'Valued Client';
 
     // 1. Fetch live quotes from prisma.quote (strictly scoped by clientId or exact clientEmail)
     const quotes = await prisma.quote.findMany({
       where: {
+        status: { in: ['SENT', 'ACCEPTED'] },
         OR: [
           ...(userId ? [{ job: { clientId: userId } }] : []),
           ...(userEmail ? [{ job: { clientEmail: userEmail } }] : []),
@@ -37,7 +37,10 @@ export const getCustomerQuotations = async (req, res, next) => {
         if (q.inclusions) {
           inclusionsObj = typeof q.inclusions === 'string' ? JSON.parse(q.inclusions) : q.inclusions;
         }
-      } catch {}
+      } catch {
+        // Harmless JSON parse fallback: inclusions may be plain text, invalid JSON or null
+        inclusionsObj = {};
+      }
 
       const property =
         q.job?.propertyAddress ||
@@ -95,75 +98,6 @@ export const getCustomerQuotations = async (req, res, next) => {
       };
     });
 
-    // 2. Fetch any quoted/pending leads from prisma.lead belonging to this customer
-    try {
-      if (userEmail) {
-        const leads = await prisma.lead.findMany({
-          where: {
-            clientEmail: userEmail,
-          },
-          include: {
-            quotes: true,
-            jobs: true,
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        for (const lead of leads) {
-          const alreadyMapped = mappedQuotes.some(
-            (mq) =>
-              mq.numericId === lead.quotes?.[0]?.id ||
-              mq.reference === lead.quotes?.[0]?.reference ||
-              mq.jobId === lead.reference ||
-              mq.id === lead.reference ||
-              (lead.reference && mq.id && mq.id.includes(lead.reference))
-          );
-          if (alreadyMapped) continue;
-
-          const isQuoted =
-            lead.status === 'QUOTE_SENT' ||
-            lead.status === 'QUOTED' ||
-            lead.status === 'CONVERTED' ||
-            (lead.estimatedValue && Number(lead.estimatedValue) > 0);
-
-          if (isQuoted) {
-          const rawVal = lead.estimatedValue ? Number(lead.estimatedValue) : null;
-          const hasFee = rawVal !== null && rawVal > 0;
-          const total = hasFee ? rawVal : null;
-          const baseFee = hasFee ? Math.round((total / 1.2) * 100) / 100 : null;
-          const vatAmount = hasFee ? Math.round((total - baseFee) * 100) / 100 : null;
-          const isAccepted = lead.status === 'CONVERTED';
-
-          mappedQuotes.push({
-            id: lead.reference || `QUO-2026-${lead.id}`,
-            numericId: lead.id,
-            leadId: lead.id,
-            reference: lead.reference,
-            jobId: lead.reference,
-            property: lead.propertyAddress || 'Subject Property',
-            surveyType: lead.serviceType || 'Homebuyer Survey – Level 2',
-            client: lead.clientName || userName || 'Valued Client',
-            clientEmail: lead.clientEmail || userEmail,
-            hasFee,
-            baseFee,
-            vatAmount,
-            totalAmount: total,
-            net: hasFee ? `£${baseFee.toFixed(2)}` : 'Pending Estimation',
-            vat: hasFee ? `£${vatAmount.toFixed(2)}` : '—',
-            total: hasFee ? `£${total.toFixed(2)}` : 'Pending Quotation',
-            status: isAccepted ? 'Quotation Accepted' : hasFee ? 'Open Proposal' : 'Under Review by NJS Practice',
-            isAccepted,
-            date: lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
-            validUntil: hasFee ? '14 Days Remaining' : 'Pending Fee Review',
-            rawLead: lead,
-          });
-          }
-        }
-      }
-    } catch (lErr) {
-      console.warn('[getCustomerQuotations] lead sync warning:', lErr.message);
-    }
-
     return ApiResponse.success(res, { quotes: mappedQuotes, total: mappedQuotes.length });
   } catch (error) {
     next(error);
@@ -173,117 +107,95 @@ export const getCustomerQuotations = async (req, res, next) => {
 export const acceptCustomerQuotation = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const quoteId = parseInt(id);
-    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
+    const quoteId = parseInt(id, 10);
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
     const userId = req.user?.id;
-    const headerName = req.headers['x-user-name'] || '';
-    const userName = headerName || req.user?.name || '';
+    const userName = req.user?.name || 'Valued Client';
 
+    // 1. Strict lookup by ID or exact reference
     let quote = null;
-    let lead = null;
-
-    try {
-      if (!isNaN(quoteId) && quoteId > 0) {
-        quote = await prisma.quote.findFirst({
-          where: {
-            OR: [
-              { id: quoteId },
-              { reference: String(id) },
-              { reference: `QUO-${id}` },
-              { reference: `QTE-${id}` },
-              { leadId: quoteId },
-            ],
-          },
-          include: { job: true, lead: true },
-        });
-      }
-      if (!quote) {
-        quote = await prisma.quote.findFirst({
-          where: {
-            OR: [
-              { reference: String(id) },
-              ...(userEmail ? [{ job: { clientEmail: userEmail } }, { lead: { clientEmail: userEmail } }] : []),
-            ],
-          },
-          include: { job: true, lead: true },
-          orderBy: { createdAt: 'desc' },
-        });
-      }
-    } catch (err) {
-      console.warn('[acceptCustomerQuotation] quote query error:', err.message);
+    if (!isNaN(quoteId) && quoteId > 0) {
+      quote = await prisma.quote.findUnique({
+        where: { id: quoteId },
+        include: { job: true, lead: true },
+      });
+    }
+    if (!quote && id) {
+      quote = await prisma.quote.findUnique({
+        where: { reference: String(id) },
+        include: { job: true, lead: true },
+      });
     }
 
-    // If not found in prisma.quote, check prisma.lead
-    try {
-      if (!quote) {
-        const leadOr = [
-          { reference: String(id) },
-          ...(id && !isNaN(quoteId) ? [{ id: quoteId }] : []),
-          ...(userEmail ? [{ clientEmail: userEmail }] : []),
-        ];
-        lead = await prisma.lead.findFirst({
-          where: { OR: leadOr },
-          include: { jobs: true, quotes: true },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (lead && lead.quotes?.length > 0) {
-          quote = lead.quotes[0];
-        }
-      } else if (quote.lead) {
-        lead = quote.lead;
-      }
-    } catch (lErr) {
-      console.warn('[acceptCustomerQuotation] lead query error:', lErr.message);
+    if (!quote) {
+      throw ApiError.notFound('Quotation not found.');
     }
 
-    if (quote) {
-      try {
-        await prisma.quote.update({
-          where: { id: quote.id },
-          data: {
-            status: 'ACCEPTED',
-            acceptedAt: new Date(),
-          },
-        });
-      } catch (upErr) {
-        console.warn('[acceptCustomerQuotation] quote update error:', upErr.message);
-      }
+    // 2. Ownership check
+    const isOwner =
+      (userId && (quote.job?.clientId === userId || quote.lead?.clientId === userId)) ||
+      (userEmail && (
+        quote.job?.clientEmail?.toLowerCase() === userEmail ||
+        quote.lead?.clientEmail?.toLowerCase() === userEmail
+      )) ||
+      req.user?.role === 'ADMIN';
+
+    if (!isOwner) {
+      throw ApiError.forbidden('You are not authorized to accept this quotation.');
     }
 
-    const leadTargetId = quote?.leadId || lead?.id;
-    if (leadTargetId) {
-      try {
-        await prisma.lead.update({
+    // 3. Status validity
+    if (quote.status === 'SUPERSEDED' || quote.status === 'EXPIRED') {
+      throw ApiError.badRequest(`This quotation is no longer valid (status: ${quote.status}).`);
+    }
+
+    const leadTargetId = quote.leadId || quote.job?.leadId;
+    const clientName = req.user?.name || quote.job?.clientName || quote.lead?.clientName || userName || 'Valued Client';
+    const recipientEmail = userEmail || req.user?.email || quote.job?.clientEmail || quote.lead?.clientEmail;
+    const clientPhone = quote.job?.clientPhone || quote.lead?.clientPhone || null;
+    const propertyAddress = quote.job?.propertyAddress || quote.lead?.propertyAddress;
+    const postcode = quote.job?.postcode || quote.lead?.postcode;
+    const serviceType = quote.job?.serviceType || quote.lead?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
+    const totalFee = Number(quote.totalAmount || 0);
+
+    if (!propertyAddress || !postcode) {
+      throw ApiError.badRequest('Property address and postcode are required to accept this quotation.');
+    }
+
+    if (!totalFee || totalFee <= 0) {
+      throw ApiError.badRequest('Quote fee not found for this job. Cannot accept quotation without valid fee.');
+    }
+
+    const baseFee = Number(quote.baseFee || Math.round((totalFee / 1.2) * 100) / 100);
+    const vatFee = Number(quote.vatAmount || Math.round((totalFee - baseFee) * 100) / 100);
+
+    // 4. Atomic transaction across Quote, Lead, Job, Term, and Invoice
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      // Advance quote status
+      const updatedQuote = await tx.quote.update({
+        where: { id: quote.id },
+        data: {
+          status: 'ACCEPTED',
+          acceptedAt: new Date(),
+        },
+      });
+
+      // Advance lead status to CONVERTED
+      if (leadTargetId) {
+        await tx.lead.update({
           where: { id: leadTargetId },
           data: { status: 'CONVERTED' },
         });
-      } catch (lUpErr) {
-        console.warn('[acceptCustomerQuotation] lead update error:', lUpErr.message);
       }
-    }
 
-    // Ensure Job record exists in prisma.job so it appears in Admin "All records" (/admin/jobs)
-    let jobId = quote?.jobId || quote?.job?.id || lead?.jobs?.[0]?.id || null;
-    let jobRecord = quote?.job || lead?.jobs?.[0] || null;
+      // Ensure Job record exists and is set to ACCEPTED
+      let activeJobId = quote.jobId || quote.job?.id;
+      if (!activeJobId) {
+        const jobRef = quote.lead?.reference
+          ? (quote.lead.reference.startsWith('NJS-') ? quote.lead.reference.replace('NJS-', 'JOB-') : `JOB-${quote.lead.reference}`)
+          : await generateJobReference(tx);
 
-    const clientName = req.user?.name || quote?.job?.clientName || quote?.lead?.clientName || lead?.clientName || 'Valued Client';
-    const recipientEmail = userEmail || req.user?.email || quote?.job?.clientEmail || quote?.lead?.clientEmail || lead?.clientEmail;
-    const clientPhone = quote?.job?.clientPhone || quote?.lead?.clientPhone || lead?.clientPhone || '';
-    const propertyAddress = quote?.job?.propertyAddress || quote?.lead?.propertyAddress || lead?.propertyAddress || 'Subject Property';
-    const postcode = quote?.job?.postcode || quote?.lead?.postcode || lead?.postcode || 'GU12AA';
-    const serviceType = quote?.job?.serviceType || quote?.lead?.serviceType || lead?.serviceType || 'RICS Level 2 Home Survey (Homebuyer)';
-    const totalFee = Number(quote?.totalAmount || lead?.estimatedValue || 0);
-    const baseFee = totalFee > 0 ? Number(quote?.baseFee || Math.round((totalFee / 1.2) * 100) / 100) : 0;
-    const vatFee = totalFee > 0 ? Number(quote?.vatAmount || Math.round((totalFee - baseFee) * 100) / 100) : 0;
-
-    if (!jobId) {
-      try {
-        const jobRef = lead?.reference
-          ? (lead.reference.startsWith('NJS-') ? lead.reference.replace('NJS-', 'JOB-') : `JOB-${lead.reference}`)
-          : `JOB-2026-${Math.floor(100 + Math.random() * 900)}`;
-
-        jobRecord = await prisma.job.create({
+        const newJob = await tx.job.create({
           data: {
             reference: jobRef,
             clientName,
@@ -293,92 +205,98 @@ export const acceptCustomerQuotation = async (req, res, next) => {
             propertyAddress,
             postcode,
             serviceType,
-            stage: 'ACCEPTED',
+            stage: 'QUOTE_ACCEPTED',
             leadId: leadTargetId || null,
           },
         });
-        jobId = jobRecord.id;
+        activeJobId = newJob.id;
 
-        if (quote && !quote.jobId) {
-          await prisma.quote.update({
-            where: { id: quote.id },
-            data: { jobId },
-          }).catch(() => {});
-        }
-      } catch (jCreateErr) {
-        console.warn('[acceptCustomerQuotation] job create error:', jCreateErr.message);
-      }
-    } else {
-      // Advance existing job stage to ACCEPTED
-      try {
-        await prisma.job.update({
-          where: { id: jobId },
-          data: { stage: 'ACCEPTED' },
+        await tx.quote.update({
+          where: { id: quote.id },
+          data: { jobId: activeJobId },
         });
-      } catch (jUpErr) {}
-    }
-
-    // Ensure Term record exists for digital signing step (/customer/terms-to-sign)
-    if (jobId) {
-      try {
-        const existingTerm = await prisma.term.findFirst({ where: { jobId } });
-        if (!existingTerm) {
-          await prisma.term.create({
-            data: {
-              reference: `TRM-2026-${jobId}`,
-              jobId,
-              clientName,
-              clientEmail: recipientEmail || 'client@example.com',
-              documentTitle: `${serviceType} Terms of Engagement`,
-              content: 'RICS Standard Terms of Engagement',
-              signed: false,
-            },
-          });
-        }
-      } catch (tErr) {
-        console.warn('[acceptCustomerQuotation] term create error:', tErr.message);
+      } else {
+        await tx.job.update({
+          where: { id: activeJobId },
+          data: { stage: 'QUOTE_ACCEPTED' },
+        });
       }
 
-      // Ensure Invoice record exists for payment step (/customer/invoices)
-      try {
-        const existingInvoice = await prisma.invoice.findFirst({ where: { jobId } });
-        if (!existingInvoice) {
-          await prisma.invoice.create({
-            data: {
-              invoiceNumber: `INV-2026-${String(jobId).padStart(3, '0')}`,
-              jobId,
-              clientName,
-              clientEmail: recipientEmail || 'client@example.com',
-              subtotal: baseFee,
-              vatAmount: vatFee,
-              total: totalFee,
-              status: 'PENDING',
-            },
-          });
-        }
-      } catch (invErr) {
-        console.warn('[acceptCustomerQuotation] invoice create error:', invErr.message);
+      // Ensure Term record exists for digital signing step
+      const existingTerm = await tx.term.findFirst({ where: { jobId: activeJobId } });
+      if (!existingTerm) {
+        await tx.term.create({
+          data: {
+            reference: `TRM-2026-${activeJobId}`,
+            jobId: activeJobId,
+            clientName,
+            clientEmail: recipientEmail,
+            documentTitle: `${serviceType} Terms of Engagement`,
+            content: 'RICS Standard Terms of Engagement',
+            signed: false,
+          },
+        });
       }
-    }
 
-    // Dispatch Quotation Acceptance Email to Customer & CC Admin
-    const quoteRef = quote?.reference || (String(id).startsWith('QUO') ? String(id) : `QUO-${id}`);
-    const totalAmount = totalFee > 0 ? totalFee.toString() : 'Pending Estimation';
+      // Ensure Invoice record exists and reflects the accepted quote amount
+      const existingInvoice = await tx.invoice.findFirst({ where: { jobId: activeJobId } });
+      if (!existingInvoice) {
+        await tx.invoice.create({
+          data: {
+            invoiceNumber: await generateInvoiceNumber(tx),
+            jobId: activeJobId,
+            clientName,
+            clientEmail: recipientEmail,
+            subtotal: baseFee,
+            vatAmount: vatFee,
+            total: totalFee,
+            status: 'PENDING',
+          },
+        });
+      } else if (existingInvoice.status === 'PENDING') {
+        await tx.invoice.update({
+          where: { id: existingInvoice.id },
+          data: {
+            clientEmail: recipientEmail,
+            subtotal: baseFee,
+            vatAmount: vatFee,
+            total: totalFee,
+          },
+        });
+      }
 
+      return { jobId: activeJobId, quote: updatedQuote };
+    });
+
+    const activeJobId = transactionResult.jobId;
+
+    // 5. Dispatch Quotation Acceptance Email to Customer & CC Admin
+    const quoteRef = quote.reference;
+    const totalAmountStr = totalFee.toFixed(2);
+
+    let emailSent = false;
+    let emailError = null;
     if (recipientEmail && recipientEmail.includes('@')) {
-      sendQuoteAcceptedEmail({
-        to: recipientEmail,
-        clientName,
-        quoteRef,
-        surveyType: serviceType,
-        propertyAddress,
-        totalAmount,
-      }).catch((e) => console.warn('[sendQuoteAcceptedEmail] background error:', e.message));
+      try {
+        const emailRes = await sendQuoteAcceptedEmail({
+          to: recipientEmail,
+          clientName,
+          quoteRef,
+          surveyType: serviceType,
+          propertyAddress,
+          totalAmount: totalAmountStr,
+        });
+        emailSent = Boolean(emailRes?.success);
+        emailError = emailRes?.error || null;
+      } catch (e) {
+        console.error('[sendQuoteAcceptedEmail] error:', e.message);
+        emailError = e.message;
+      }
     }
 
-    // In-App Notifications for Customer & Admin
+    // 6. In-App Notifications for Customer & Admin
     if (userId) {
-      prisma.notification.create({
+      await prisma.notification.create({
         data: {
           userId,
           role: 'CUSTOMER',
@@ -387,23 +305,27 @@ export const acceptCustomerQuotation = async (req, res, next) => {
           type: 'terms',
           link: '/customer/terms-to-sign',
         },
-      }).catch(() => {});
+      }).catch(async (err) => {
+        console.error('[Customer Quote Accepted Notification error]:', err.message);
+      });
     }
 
-    prisma.notification.create({
+    await prisma.notification.create({
       data: {
         role: 'ADMIN',
         title: `✓ Quote Accepted: ${clientName}`,
-        desc: `Client accepted quotation ${quoteRef} for ${propertyAddress}.`,
+        desc: `Client accepted quotation ${quoteRef} for ${propertyAddress}. Next: send Terms of Engagement.`,
         type: 'terms',
-        amount: `£${totalAmount}`,
+        amount: `£${totalAmountStr}`,
         link: '/admin/quotes',
       },
-    }).catch(() => {});
+    }).catch(async (err) => {
+      console.error('[Admin Quote Accepted Notification error]:', err.message);
+    });
 
     return ApiResponse.success(
       res,
-      { quoteId: quote?.id || quoteId || id, jobId, status: 'ACCEPTED' },
+      { quoteId: quote.id, jobId: activeJobId, status: 'ACCEPTED', emailSent, emailError },
       'Quotation accepted successfully. Please proceed to payment or terms.'
     );
   } catch (error) {

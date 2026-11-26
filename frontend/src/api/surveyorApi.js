@@ -26,6 +26,7 @@ export const surveyorSiteVisitsApi = {
   getVisits: () => api.get('/surveyor/site-visits'),
   checkIn: (id) => api.post(`/surveyor/site-visits/${id}/check-in`),
   completeVisit: (id) => api.post(`/surveyor/site-visits/${id}/complete`),
+  addSiteEvidence: (id, data) => api.post(`/surveyor/site-visits/${id}/evidence`, data),
 };
 
 // Menu 5: Upload Reports

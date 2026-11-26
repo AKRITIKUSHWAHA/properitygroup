@@ -15,6 +15,9 @@ const uploadsDir = path.join(__dirname, '../uploads');
 
 const app = express();
 
+// Trust reverse proxy (Railway / Netlify / Nginx) so rate limiting uses real client IP
+app.set('trust proxy', 1);
+
 // Security HTTP headers with cross-origin resource policy enabled for static assets
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
@@ -25,21 +28,37 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Always allow local development origins, live domains, and non-browser clients
-      if (
-        !origin ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1') ||
-        origin.includes('njspropertygroup.com') ||
-        origin.includes('railway.app') ||
-        env.CLIENT_URL.some((u) => origin.startsWith(u) || u.includes(origin)) ||
-        process.env.NODE_ENV === 'development'
-      ) {
-        callback(null, true);
-      } else {
-        // Fallback allow so frontend is never abruptly blocked by strict origin mismatch
-        callback(null, true);
+      // Allow non-browser requests (webhooks, curl, supertest, mobile/native)
+      if (!origin) {
+        return callback(null, true);
       }
+
+      // Allow configured CLIENT_URL origins (exact origin match)
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      const allowedFromEnv = env.CLIENT_URL.some((u) => u && normalizedOrigin === u.replace(/\/+$/, ''));
+      if (allowedFromEnv) {
+        return callback(null, true);
+      }
+
+      // Allow official NJS Property Group domains via strict hostname check
+      try {
+        const { hostname } = new URL(origin);
+        if (
+          hostname === 'njspropertygroup.com' ||
+          hostname.endsWith('.njspropertygroup.com') ||
+          (env.NODE_ENV !== 'production' && (hostname === 'localhost' || hostname === '127.0.0.1'))
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // Malformed origin URL falls through to rejection
+      }
+
+      if (env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

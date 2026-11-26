@@ -1,7 +1,7 @@
 import { prisma } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
-import { sendReportReadyEmail } from '../../services/emailService.js';
+import { isValidTransition, ALLOWED_TRANSITIONS } from '../../utils/jobStages.js';
 
 /**
  * Surveyor Menu 5: Upload Reports (/surveyor/upload-reports)
@@ -14,7 +14,7 @@ export const getPendingReportJobs = async (req, res, next) => {
     const jobs = await prisma.job.findMany({
       where: {
         surveyorId,
-        stage: 'PREPARING_REPORT',
+        stage: { in: ['INSPECTED', 'DRAFTING'] },
       },
       select: {
         id: true,
@@ -45,8 +45,17 @@ export const submitDraftReport = async (req, res, next) => {
     const surveyorId = req.user.id;
     const surveyorEmail = (req.user?.email || '').toLowerCase().trim();
 
-    // If file was uploaded via multipart/form-data
+    // If file was uploaded via multipart/form-data, validate file type & size
     if (req.file) {
+      const isPdfMime = req.file.mimetype === 'application/pdf';
+      const isPdfExt = String(req.file.originalname || '').toLowerCase().endsWith('.pdf');
+      if (!isPdfMime && !isPdfExt) {
+        throw ApiError.badRequest('Only PDF report documents (.pdf) are allowed');
+      }
+      const maxBytes = 50 * 1024 * 1024; // 50MB
+      if (req.file.size > maxBytes) {
+        throw ApiError.badRequest('Report PDF file size must not exceed 50MB');
+      }
       reportPdfUrl = `/uploads/reports/${req.file.filename}`;
     }
 
@@ -76,12 +85,24 @@ export const submitDraftReport = async (req, res, next) => {
       throw ApiError.notFound('Job record not found or not assigned to you');
     }
 
+    // Allow INSPECTED -> (DRAFTING) -> QA_REVIEW or DRAFTING -> QA_REVIEW or idempotent QA_REVIEW
+    const canSubmitQa =
+      isValidTransition(job.stage, 'QA_REVIEW') ||
+      (job.stage === 'INSPECTED' && isValidTransition('DRAFTING', 'QA_REVIEW'));
+
+    if (!canSubmitQa) {
+      const allowed = ALLOWED_TRANSITIONS[job.stage] || [];
+      throw ApiError.badRequest(
+        `Cannot submit draft report from stage "${job.stage}". Inspection must be completed first. Allowed: ${allowed.join(', ') || 'None'}`
+      );
+    }
+
     const updated = await prisma.job.update({
       where: { id: job.id },
       data: {
         reportPdfUrl,
         reportGeneratedAt: new Date(),
-        stage: 'PREPARING_REPORT',
+        stage: 'QA_REVIEW',
       },
     });
 
@@ -89,8 +110,8 @@ export const submitDraftReport = async (req, res, next) => {
       data: {
         jobId: job.id,
         userId: surveyorId,
-        action: 'DRAFT_REPORT_SUBMITTED_FOR_QA',
-        details: `Draft report (${req.file ? req.file.originalname : 'PDF file'}) uploaded and submitted by surveyor ${req.user.name}.`,
+        action: `STAGE_CHANGED_${job.stage}_TO_QA_REVIEW`,
+        details: `Draft report (${req.file ? req.file.originalname : 'PDF file'}) uploaded by surveyor ${req.user.name}. Job transitioned to QA_REVIEW.`,
       },
     });
 

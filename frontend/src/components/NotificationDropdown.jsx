@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, Loader2, MessageSquare } from 'lucide-react';
+import { Bell, CheckCheck, Clock, FileText, PoundSterling, ShieldAlert, Check, Loader2, MessageSquare, X } from 'lucide-react';
 import { apiRequest } from '../api/apiClient';
 import { useAuth } from '../auth/AuthContext';
+import { useToast } from './ToastContext';
 
 /**
  * Robust notification time formatter converting UTC / database timestamps
@@ -107,12 +108,15 @@ export const getNotificationTimeTooltip = (item) => {
 
 export const NotificationDropdown = () => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const dropdownRef = useRef(null);
+  const knownNotifIdsRef = useRef(new Set());
+  const initializedUserRef = useRef(null);
 
   const isSurveyor = (user?.role || '').toLowerCase() === 'surveyor';
   const isCustomer = (user?.role || '').toLowerCase() === 'customer';
@@ -157,19 +161,26 @@ export const NotificationDropdown = () => {
             notifs.push(ln);
           }
         });
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to parse local notifications:', err);
+      }
 
       // Sort newest first
       notifs.sort((a, b) => new Date(b.createdAt || b.time || 0) - new Date(a.createdAt || a.time || 0));
 
-      // Merge with locally stored read flags
+      // Merge with locally stored read flags and filter out dismissed notifications
       try {
         const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
-        notifs = notifs.map((n) => ({
-          ...n,
-          read: n.read || readSet.has(String(n.id)),
-        }));
-      } catch {}
+        const dismissedSet = new Set(JSON.parse(localStorage.getItem('njs_dismissed_notifs') || '[]'));
+        notifs = notifs
+          .filter((n) => !dismissedSet.has(String(n.id)))
+          .map((n) => ({
+            ...n,
+            read: n.read || readSet.has(String(n.id)),
+          }));
+      } catch (err) {
+        console.warn('Failed to read local notification flags:', err);
+      }
 
       setNotifications(notifs);
     } catch (err) {
@@ -186,7 +197,7 @@ export const NotificationDropdown = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         fetchNotifications(true);
       }
-    }, 45000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [fetchNotifications, user?.id]);
 
@@ -355,7 +366,9 @@ export const NotificationDropdown = () => {
         const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
         visibleNotifications.forEach((n) => readSet.add(String(n.id)));
         localStorage.setItem('njs_read_notifs', JSON.stringify(Array.from(readSet)));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to persist read notifications locally:', err);
+      }
       await apiRequest('/notifications/mark-all-read', { method: 'PATCH' });
     } catch (err) {
       console.error('Error marking all as read:', err);
@@ -371,9 +384,13 @@ export const NotificationDropdown = () => {
         const readSet = new Set(JSON.parse(localStorage.getItem('njs_read_notifs') || '[]'));
         readSet.add(String(id));
         localStorage.setItem('njs_read_notifs', JSON.stringify(Array.from(readSet)));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to persist notification read flag locally:', err);
+      }
       if (typeof id === 'number' || (typeof id === 'string' && (id.startsWith('msg-') || id.startsWith('live-')))) {
-        await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
+        await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' }).catch((err) => {
+          console.error('Failed to mark notification as read on server:', err);
+        });
       }
       if (link) {
         navigate(link);
@@ -385,6 +402,35 @@ export const NotificationDropdown = () => {
         navigate(link);
         setIsOpen(false);
       }
+    }
+  };
+
+  const removeNotification = async (e, id) => {
+    e.stopPropagation();
+    const strId = String(id);
+    setNotifications((prev) => prev.filter((n) => String(n.id) !== strId));
+
+    try {
+      const dismissedSet = new Set(JSON.parse(localStorage.getItem('njs_dismissed_notifs') || '[]'));
+      dismissedSet.add(strId);
+      localStorage.setItem('njs_dismissed_notifs', JSON.stringify(Array.from(dismissedSet).slice(-200)));
+    } catch (err) {
+      console.warn('Failed to persist dismissed notification flag:', err);
+    }
+
+    try {
+      const localRaw = JSON.parse(localStorage.getItem('propertygroup_local_notifications') || '[]');
+      const filteredLocal = localRaw.filter((n) => String(n.id) !== strId);
+      localStorage.setItem('propertygroup_local_notifications', JSON.stringify(filteredLocal));
+    } catch (err) {
+      console.warn('Failed to remove local notification entry:', err);
+    }
+
+    const numericId = typeof id === 'number' ? id : (/^\d+$/.test(strId) ? parseInt(strId, 10) : null);
+    if (numericId) {
+      await apiRequest(`/notifications/${numericId}`, { method: 'DELETE' }).catch((err) => {
+        console.warn('Failed to delete notification on server:', err);
+      });
     }
   };
 
@@ -404,6 +450,37 @@ export const NotificationDropdown = () => {
     if (activeFilter === 'messages') return isMsg;
     return true;
   });
+
+  // Show a live toast popup whenever a genuinely new unread notification arrives for the active user
+  useEffect(() => {
+    const userKey = user?.id ? String(user.id) : null;
+    if (!userKey) {
+      knownNotifIdsRef.current = new Set();
+      initializedUserRef.current = null;
+      return;
+    }
+    if (isLoading) return;
+
+    if (initializedUserRef.current !== userKey) {
+      knownNotifIdsRef.current = new Set(visibleNotifications.map((n) => String(n.id)));
+      initializedUserRef.current = userKey;
+      return;
+    }
+
+    const newUnread = visibleNotifications.filter(
+      (n) => !n.read && !knownNotifIdsRef.current.has(String(n.id))
+    );
+    visibleNotifications.forEach((n) => knownNotifIdsRef.current.add(String(n.id)));
+
+    newUnread.slice(0, 3).forEach((item) => {
+      addToast({
+        type: 'info',
+        title: item.title || 'New Notification',
+        message: item.desc || 'You have a new update.',
+        duration: 5000,
+      });
+    });
+  }, [visibleNotifications, isLoading, user?.id, addToast]);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -554,9 +631,20 @@ export const NotificationDropdown = () => {
                       )}
                     </div>
 
-                    {!item.read && (
-                      <span className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0 mt-1.5" />
-                    )}
+                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                      {!item.read && (
+                        <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => removeNotification(e, item.id)}
+                        title="Remove notification"
+                        aria-label="Remove notification"
+                        className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })

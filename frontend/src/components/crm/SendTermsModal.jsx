@@ -50,7 +50,9 @@ export const SendTermsModal = ({
           setActiveSurveyors(raw);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load surveyors in SendTermsModal:', err);
+      });
   }, [isOpen]);
 
   const surveyorList = useMemo(() => {
@@ -119,14 +121,15 @@ export const SendTermsModal = ({
   useEffect(() => {
     if (currentJob) {
       setSelectedJobId(currentJob.id);
-      setClientName(currentJob.customer || currentJob.clientName || 'Private Client');
-      setSignerEmail(currentJob.customerEmail || currentJob.clientEmail || 'client@example.co.uk');
-      setClientPhone(currentJob.customerPhone || currentJob.clientPhone || '+44 7700 900000');
-      setProperty(currentJob.property || currentJob.propertyAddress || '14 Mayfair Gate, London');
-      setLocation(currentJob.location || 'London, UK');
-      setPostcode(currentJob.postcode || 'W1K 2PB');
-      setBaseFee(Number(currentJob.quote?.baseFee || (currentJob.surveyType?.includes('Level 3') ? 1450 : 700)));
-      setSelectedSurveyor(currentJob.surveyor || SURVEYORS[0].name);
+      setClientName(currentJob.customer || currentJob.clientName || '');
+      setSignerEmail(currentJob.customerEmail || currentJob.clientEmail || '');
+      setClientPhone(currentJob.customerPhone || currentJob.clientPhone || '');
+      setProperty(currentJob.property || currentJob.propertyAddress || '');
+      setLocation(currentJob.location || '');
+      setPostcode(currentJob.postcode || '');
+      const rawFee = currentJob.quote?.baseFee ?? currentJob.baseFee ?? (currentJob.totalAmount ? currentJob.totalAmount / 1.2 : null);
+      setBaseFee(rawFee !== null && !isNaN(Number(rawFee)) ? Number(rawFee) : 0);
+      setSelectedSurveyor(currentJob.surveyor || (SURVEYORS[0]?.name || ''));
 
       const matchedTmpl = getTemplateForService(currentJob.surveyType);
       setSelectedTemplateKey(initialTemplateKey || matchedTmpl.serviceKey);
@@ -151,7 +154,7 @@ export const SendTermsModal = ({
 
   const isEW = selectedTemplate.isExpertWitness;
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (isSubmitting) return;
 
@@ -170,6 +173,26 @@ export const SendTermsModal = ({
         type: 'error',
         title: 'Client Name Required',
         message: 'Please enter the client / purchaser full legal name.',
+      });
+      setActiveTab('particulars');
+      return;
+    }
+
+    if (!property.trim() || !postcode.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Property Address Required',
+        message: 'Valid property address and UK postcode are required for legal Terms of Engagement.',
+      });
+      setActiveTab('particulars');
+      return;
+    }
+
+    if (!baseFee || baseFee <= 0) {
+      addToast({
+        type: 'error',
+        title: 'Quote Fee Required',
+        message: 'Valid fee not found for this instruction. Please accept or configure a quotation first.',
       });
       setActiveTab('particulars');
       return;
@@ -248,29 +271,44 @@ export const SendTermsModal = ({
       });
     }
 
-    // 3. Dispatch simulated backend sync
+    // 3. Dispatch backend terms creation & email notification
+    let emailSent = false;
     const token = localStorage.getItem('property_group_auth_token');
     if (token && currentJob?.id) {
-      fetch(`/api/v1/terms-and-documents/terms`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          jobId: currentJob.dbId || currentJob.id,
-          documentTitle: selectedTemplate.name,
-          clientEmail: signerEmail,
-          clientName,
-        }),
-      }).catch(() => {});
+      try {
+        const response = await fetch(`/api/v1/terms-and-documents/terms`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            jobId: currentJob.dbId || currentJob.id,
+            documentTitle: selectedTemplate.name,
+            clientEmail: signerEmail,
+            clientName,
+          }),
+        });
+        const resData = await response.json();
+        emailSent = Boolean(resData?.data?.emailSent || resData?.emailSent);
+      } catch (err) {
+        console.error('Terms backend sync error:', err.message);
+      }
     }
 
-    addToast({
-      type: 'success',
-      title: 'Terms of Engagement Dispatched',
-      message: `Agreement ${agreement.refNo} (${selectedTemplate.shortName}) sent to ${signerEmail}.`,
-    });
+    if (emailSent) {
+      addToast({
+        type: 'success',
+        title: 'Terms of Engagement Dispatched & Email Delivered',
+        message: `Agreement ${agreement.refNo} (${selectedTemplate.shortName}) sent to ${signerEmail}.`,
+      });
+    } else {
+      addToast({
+        type: 'warning',
+        title: 'Email could not be delivered',
+        message: `Terms ${agreement.refNo} registered in portal, but email could not be delivered to ${signerEmail} (RESEND_API_KEY missing or invalid).`,
+      });
+    }
 
     if (onTermsSent) {
       onTermsSent(agreement);
@@ -880,7 +918,9 @@ export const SendTermsModal = ({
 
                   <div>
                     <span className="text-slate-400 block text-[10px] uppercase">Agreed Professional Fee:</span>
-                    <span className="font-bold text-emerald-700 font-mono">£{totalAmount.toFixed(2)} (inc. 20% VAT)</span>
+                    <span className="font-bold text-emerald-700 font-mono">
+                      {baseFee > 0 ? `£${totalAmount.toFixed(2)} (inc. 20% VAT)` : 'Quote fee not configured'}
+                    </span>
                   </div>
 
                   <div>
@@ -1047,11 +1087,17 @@ export const SendTermsModal = ({
             <button
               type="button"
               onClick={handleSend}
-              disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
+              disabled={isSubmitting || !baseFee || baseFee <= 0 || !property.trim() || !postcode.trim() || !signerEmail.trim()}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
             >
               <Send className="w-3.5 h-3.5 text-white" />
-              <span>{isSubmitting ? 'Dispatching Terms...' : 'Dispatch Agreement Now'}</span>
+              <span>
+                {isSubmitting
+                  ? 'Dispatching Terms...'
+                  : (!baseFee || baseFee <= 0)
+                  ? 'Quote Fee Required'
+                  : 'Dispatch Agreement Now'}
+              </span>
             </button>
           </div>
         </div>

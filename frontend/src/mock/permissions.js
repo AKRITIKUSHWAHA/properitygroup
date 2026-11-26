@@ -136,7 +136,9 @@ export const persistPermissions = (newPermissions, syncBackend = true) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newPermissions));
     window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: newPermissions }));
     if (syncBackend) {
-      adminUsersAndRolesApi.updatePermissions(newPermissions).catch(() => {});
+      adminUsersAndRolesApi.updatePermissions(newPermissions).catch((err) => {
+        console.warn('Failed to sync role permissions to backend:', err);
+      });
     }
   } catch (err) {
     console.error('Failed to persist permissions', err);

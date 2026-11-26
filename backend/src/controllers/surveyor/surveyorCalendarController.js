@@ -1,5 +1,32 @@
+import crypto from 'crypto';
 import { prisma } from '../../config/db.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+
+/**
+ * Retrieve or generate a per-surveyor random secret token stored in SystemSetting
+ */
+const getOrCreateSurveyorFeedToken = async (surveyorId) => {
+  const key = `ical_feed_token_srv_${surveyorId}`;
+  const existing = await prisma.systemSetting.findUnique({ where: { key } });
+  if (existing?.value) {
+    return existing.value;
+  }
+  const token = crypto.randomBytes(24).toString('hex');
+  await prisma.systemSetting.upsert({
+    where: { key },
+    update: { value: token, category: 'SURVEYOR_CALENDAR' },
+    create: { key, value: token, category: 'SURVEYOR_CALENDAR' },
+  });
+  return token;
+};
+
+const safeTokenEqual = (a, b) => {
+  if (!a || !b || typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
 
 /**
  * Format a Date object to RFC 5545 iCalendar UTC string: YYYYMMDDTHHMMSSZ
@@ -140,7 +167,22 @@ export const getSurveyorCalendar = async (req, res, next) => {
       orderBy: { inspectionDate: 'asc' },
     });
 
-    return ApiResponse.success(res, { events, total: events.length });
+    const feedToken = await getOrCreateSurveyorFeedToken(surveyorId);
+
+    return ApiResponse.success(res, { events, total: events.length, feedToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Authenticated endpoint returning the surveyor's personal secret iCal feed token
+ */
+export const getSurveyorFeedToken = async (req, res, next) => {
+  try {
+    const surveyorId = req.user.id;
+    const feedToken = await getOrCreateSurveyorFeedToken(surveyorId);
+    return ApiResponse.success(res, { surveyorId, feedToken });
   } catch (error) {
     next(error);
   }
@@ -149,23 +191,22 @@ export const getSurveyorCalendar = async (req, res, next) => {
 /**
  * RFC 5545 iCalendar (.ics) Live Subscription Feed
  * Compatible with Apple Calendar (iPhone / Mac), Google Calendar, and Microsoft Outlook.
- * Live sync feed URL: /api/v1/surveyor/my-calendar/feed.ics?surveyorId=22&token=njs-cal-srv-22
  */
 export const getSurveyorIcalFeed = async (req, res, next) => {
   try {
     let surveyorId = req.user?.id;
 
-    // Allow token query parameter for external calendar applications
-    if (!surveyorId && req.query.surveyorId) {
+    // Allow per-surveyor DB-stored random token for external calendar applications
+    if (!surveyorId && req.query.surveyorId && req.query.token) {
       const parsedId = parseInt(req.query.surveyorId, 10);
-      const token = req.query.token;
-      if (
-        token &&
-        (token === `njs-cal-srv-${parsedId}` ||
-          token === 'njs-live-sync' ||
-          token === 'demo-token')
-      ) {
-        surveyorId = parsedId;
+      const token = String(req.query.token);
+      if (!isNaN(parsedId) && parsedId > 0) {
+        const expectedSetting = await prisma.systemSetting.findUnique({
+          where: { key: `ical_feed_token_srv_${parsedId}` },
+        });
+        if (expectedSetting?.value && safeTokenEqual(token, expectedSetting.value)) {
+          surveyorId = parsedId;
+        }
       }
     }
 
@@ -232,8 +273,12 @@ export const getSurveyorIcalFeed = async (req, res, next) => {
 export const downloadJobIcs = async (req, res, next) => {
   try {
     const jobId = parseInt(req.params.id || req.params.jobId, 10);
-    const job = await prisma.job.findUnique({
-      where: { id: jobId },
+    const where = { id: jobId };
+    if (req.user?.role === 'SURVEYOR') {
+      where.surveyorId = req.user.id;
+    }
+    const job = await prisma.job.findFirst({
+      where,
       include: {
         company: {
           select: { name: true, branchName: true, contactPhone: true },

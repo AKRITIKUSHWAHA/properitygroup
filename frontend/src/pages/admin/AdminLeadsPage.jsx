@@ -384,26 +384,11 @@ export const AdminLeadsPage = () => {
             const rawId = String(l.id || '').trim();
             const ref = String(l.reference || '').trim();
             const formattedRef = formatLeadReference(l.reference || l.id, l.source);
-            if (
-              deletedSet.has(rawId) ||
-              deletedSet.has(ref) ||
-              deletedSet.has(formattedRef)
-            ) {
-              return false;
-            }
-            const name = (l.clientName || l.customerName || '').toLowerCase().trim();
-            const email = (l.clientEmail || l.customerEmail || '').toLowerCase().trim();
-            const addr = (l.propertyAddress || l.property || '').toLowerCase().trim();
-            const isTestPhantom =
-              name.includes('akku') ||
-              email.includes('akku') ||
-              addr.includes('mp nagar') ||
-              addr.includes('bhopal') ||
-              l.id === 7 ||
-              l.id === 11 ||
-              l.id === 12 ||
-              l.id === 13;
-            return !isTestPhantom;
+            return (
+              !deletedSet.has(rawId) &&
+              !deletedSet.has(ref) &&
+              !deletedSet.has(formattedRef)
+            );
           })
           .map((l) => {
             const dateObj = l.createdAt ? new Date(l.createdAt) : new Date();
@@ -453,7 +438,9 @@ export const AdminLeadsPage = () => {
 
   useEffect(() => {
     refreshLeadsFromBackend();
-    adminCrmAndLeadsApi.getMetrics().catch(() => {});
+    adminCrmAndLeadsApi.getMetrics().catch((err) => {
+      console.warn('Failed to load CRM lead metrics:', err);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const location = useLocation();
@@ -713,10 +700,11 @@ export const AdminLeadsPage = () => {
   };
 
   // Quote sent callback
-  const handleQuoteSent = (leadId, quotedAmount, quoteRef) => {
+  const handleQuoteSent = (leadId, quotedAmount, quoteRef, options = {}) => {
     updateLeadStatus(leadId, 'Quoted', {
       estimatedValue: quotedAmount,
       quoteRef: quoteRef,
+      ...options,
     });
     if (viewingLead && viewingLead.id === leadId) {
       setViewingLead((prev) => ({
@@ -748,16 +736,20 @@ export const AdminLeadsPage = () => {
               if (!ids.includes(idStr)) ids.push(idStr);
             });
           localStorage.setItem('propertygroup_deleted_lead_ids', JSON.stringify(ids));
-        } catch (_) {}
+        } catch (err) {
+          console.warn('Failed to update deleted lead IDs cache:', err);
+        }
 
         // 3. Call backend API to delete from MySQL DB
-        await adminCrmAndLeadsApi.deleteLead(leadId).catch((err) => {
-          console.warn('Backend lead deletion notice:', err?.message || err);
-        });
+        await adminCrmAndLeadsApi.deleteLead(leadId);
 
         // 4. Invalidate caches & metrics
         adminDashboardApi.invalidateCache();
-        adminCrmAndLeadsApi.getMetrics().catch(() => {});
+        try {
+          await adminCrmAndLeadsApi.getMetrics();
+        } catch (mErr) {
+          console.warn('Metrics refresh notice:', mErr?.message);
+        }
 
         addToast({
           type: 'success',

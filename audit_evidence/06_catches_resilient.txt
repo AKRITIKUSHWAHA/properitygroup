@@ -1,0 +1,199 @@
+﻿D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:61: console.log('\n========== [EMAIL SERVICE SIMULATED (NOT SENT)] ==========');
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:78: simulated: true,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:327: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:463: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:591: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:736: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:876: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:985: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1138: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1285: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1375: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1457: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1554: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1644: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1726: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\emailService.js:1808: simulated: false,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\stripeService.js:71: checkoutUrl: `${finalSuccessUrl}&simulated=true`,
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\stripeService.js:72: provider: 'simulated_fallback',
+D:\Kiaan Work\oct nov\propertygroup\backend\src\services\stripeService.js:73: message: 'Stripe API key pending from client. Simulated checkout session generated.',
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\api\apiClient.js:46: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:75: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:408: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\auth\AuthContext.jsx:455: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:51: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:281: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:291: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:300: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\BookingCalendar.jsx:478: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\calendar\NewBookingModal.jsx:50: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:69: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:184: } catch (e) {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\RescheduleModal.jsx:194: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\crm\SendTermsModal.jsx:53: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:149: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:152: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\forms\QuoteRequestForm.jsx:185: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:160: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:172: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:358: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\NotificationDropdown.jsx:374: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:129: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:138: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\components\Sidebar.jsx:174: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:44: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:152: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:159: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:215: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:321: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:348: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\jobs.js:379: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:167: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:190: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:222: } catch (_) {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\leads.js:232: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\messages.js:145: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\permissions.js:139: adminUsersAndRolesApi.updatePermissions(newPermissions).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\mock\quotes.js:68: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:441: adminCrmAndLeadsApi.getMetrics().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminLeadsPage.jsx:737: } catch (_) {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:46: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:52: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:57: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:63: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:87: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:362: adminQuotationsAndPaymentsApi.getMetrics().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminQuotesPage.jsx:603: fetchBackendData().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminSettingsPage.jsx:67: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:307: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:362: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:368: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:378: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:384: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:433: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:498: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:503: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:518: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:555: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:629: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\admin\AdminUsersPage.jsx:703: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\auth\RegisterPage.jsx:79: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:193: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:236: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:371: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:403: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:406: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:417: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:431: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:432: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerDashboardPage.jsx:498: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:125: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:134: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:144: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:190: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:196: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:202: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:261: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:520: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:596: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:642: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:654: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:682: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:825: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:838: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:867: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1652: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1719: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1721: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1733: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1923: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1944: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1961: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1973: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:1981: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2130: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2275: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2415: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2487: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2712: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2721: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2890: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2892: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:2928: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3417: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3738: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3773: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3775: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:3845: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4284: useEffect(() => { customerAppointmentDetailsApi.getAppointment().catch(() => {}); }, []);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4399: .catch(() => {})
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4622: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4633: try { bc?.close(); } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4736: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4866: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:4869: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5292: customerReviewApi.getReviews().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5589: useEffect(() => { customerDetailsApi.getDetails().catch(() => {}); }, []);
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5632: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5746: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5814: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\customer\CustomerModules.jsx:5826: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:169: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:305: await dispatchFinalReportReadyEmail(job).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\jobs\JobDetailsPage.jsx:577: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:98: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:167: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:193: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:202: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:212: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:274: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:283: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:293: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:296: dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:329: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:351: dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:363: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:372: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:382: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:430: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:439: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorDashboardPage.jsx:449: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:65: surveyorCalendarApi.getCalendar().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:121: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:130: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:140: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:150: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:156: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:747: surveyorJobsApi.getJobs().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1080: surveyorSiteVisitsApi.getVisits().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1137: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1146: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1156: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1201: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1210: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1220: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1230: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1359: surveyorUploadReportsApi.getPendingReports().catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1498: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1507: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1517: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1523: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1572: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1581: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1591: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1611: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1627: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\pages\surveyor\SurveyorModules.jsx:1960: .catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:239: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:240: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:439: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:450: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:453: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1248: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1259: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\services\autoQuoteService.js:1261: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:51: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\utils\notificationService.js:70: }).catch(() => {});
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:152: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:181: } catch {}
+D:\Kiaan Work\oct nov\propertygroup\frontend\src\App.jsx:190: } catch {}

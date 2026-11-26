@@ -1,12 +1,91 @@
+import { prisma } from '../config/db.js';
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
 
-const getResend = () => {
+const getFrontendBaseUrl = () => {
+  const raw =
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    env.CLIENT_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://njspropertygroup.com' : 'http://localhost:5175');
+  return String(raw).split(',')[0].trim().replace(/\/+$/, '');
+};
+
+export const getResend = () => {
   const key = (process.env.RESEND_API_KEY || '').trim();
   if (key && key.startsWith('re_') && key.length >= 12) {
     return new Resend(key);
   }
   return null;
+};
+
+/**
+ * Log email failure and persist admin notification and audit log
+ */
+export const recordEmailFailure = async ({ to, subject, error, jobId = null, userId = null }) => {
+  const recipient = Array.isArray(to) ? to.join(', ') : (to || 'Unknown recipient');
+  console.error(`[EMAIL DELIVERY FAILURE] Failed to send email to ${recipient}: ${error} (Subject: "${subject}")`);
+  try {
+    await prisma.notification.create({
+      data: {
+        role: 'ADMIN',
+        title: `Email delivery failed to ${recipient}`,
+        desc: `Subject: "${subject || 'System Notification'}". Reason: ${error || 'RESEND_API_KEY missing or invalid'}`,
+        type: 'alert',
+        read: false,
+      },
+    });
+    if (jobId || userId) {
+      await prisma.auditLog.create({
+        data: {
+          jobId: jobId ? parseInt(jobId, 10) : undefined,
+          userId: userId ? parseInt(userId, 10) : undefined,
+          action: 'EMAIL_DELIVERY_FAILED',
+          details: JSON.stringify({ to: recipient, subject, error: error || 'RESEND_API_KEY missing or invalid' }),
+        },
+      });
+    }
+  } catch (dbErr) {
+    console.error('Failed to record email failure in DB:', dbErr.message);
+  }
+};
+
+/**
+ * Handle unconfigured or failed email dispatch
+ */
+export const handleUnconfiguredOrFailedEmail = async ({
+  to,
+  subject,
+  html,
+  error,
+  isUnconfigured = false,
+  jobId = null,
+  userId = null,
+}) => {
+  const isDev = (process.env.NODE_ENV || 'development') === 'development';
+  const recipient = Array.isArray(to) ? to.join(', ') : (to || 'Unknown');
+  const errMessage = error || (isUnconfigured ? 'RESEND_API_KEY missing or invalid' : 'Email delivery failed');
+
+  if (isDev) {
+    console.log('\n========== [EMAIL SERVICE SIMULATED (NOT SENT)] ==========');
+    console.log(`To: ${recipient}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Reason: ${errMessage}`);
+    const plainText = (html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    console.log(`Preview: ${plainText.slice(0, 300)}...`);
+    console.log('==========================================================\n');
+  }
+
+  await recordEmailFailure({ to, subject, error: errMessage, jobId, userId });
+
+  return {
+    success: false,
+    emailSent: false,
+    messageId: null,
+    provider: isUnconfigured ? 'not_configured' : 'resend_error',
+    error: errMessage,
+    simulated: true,
+  };
 };
 const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
 const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
@@ -223,7 +302,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
                 </p>
 
                 <div style="text-align: center; margin: 24px 0;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/login?email=${encodeURIComponent(customerEmail || '')}" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Open Customer Portal &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/login?email=${encodeURIComponent(customerEmail || '')}" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Open Customer Portal &rarr;</a>
                 </div>
 
                 <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
@@ -242,7 +321,7 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
             html: customerHtml,
           });
         } catch (cErr) {
-          console.warn('Customer acknowledgment email warning:', cErr.message);
+          console.error('Customer acknowledgment email error:', cErr.message);
         }
       }
 
@@ -252,28 +331,27 @@ export const sendWebsiteEnquiryNotificationEmail = async ({
         notifiedEmail: ENQUIRY_INBOX,
         customerNotified: customerEmail,
         messageId: response?.data?.id || response?.id,
+        error: null,
         provider: 'resend_live',
+        simulated: false,
       };
     } catch (err) {
-      console.warn('Resend enquiry notification exception:', err.message);
-      return {
-        success: true,
-        emailSent: false,
-        notifiedEmail: ENQUIRY_INBOX,
-        provider: 'resend_error',
-        message: err.message,
-      };
+      console.error('[sendWebsiteEnquiryNotificationEmail error]:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to: [ENQUIRY_INBOX, customerEmail].filter(Boolean),
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[ENQUIRY EMAIL PENDING PROVIDER CONFIG] Target: ${ENQUIRY_INBOX} | Ref: ${referenceId} | From: ${customerEmail}`);
-  return {
-    success: true,
-    emailSent: false,
-    notifiedEmail: ENQUIRY_INBOX,
-    provider: 'not_configured',
-    message: `Set valid RESEND_API_KEY in backend/.env to dispatch live emails to ${ENQUIRY_INBOX}.`,
-  };
+  return await handleUnconfiguredOrFailedEmail({
+    to: [ENQUIRY_INBOX, customerEmail].filter(Boolean),
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -322,7 +400,7 @@ export const sendQuoteProposalEmail = async ({
         <p>To view full terms, confirm surveyor allocation, and e-sign your engagement agreement, click the secure portal link below:</p>
         
         <div style="text-align: center; margin: 28px 0;">
-          <a href="${quoteLink || `${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/my-quotations?email=${encodeURIComponent(to || '')}`}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review &amp; Track Your Survey &rarr;</a>
+          <a href="${quoteLink || `${getFrontendBaseUrl()}/customer/my-quotations?email=${encodeURIComponent(to || '')}`}" style="background: #2563EB; color: #ffffff; padding: 14px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px;">Review &amp; Track Your Survey &rarr;</a>
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
@@ -367,7 +445,7 @@ export const sendQuoteProposalEmail = async ({
                   <tr><td style="padding: 6px 0; color: #64748b;">Status:</td><td>Awaiting client review &amp; electronic acceptance</td></tr>
                 </table>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/quotes" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Quotes in Admin Portal &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/quotes" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Quotes in Admin Portal &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
@@ -377,22 +455,39 @@ export const sendQuoteProposalEmail = async ({
       }
 
       if (response?.error) {
-        console.warn('Resend quote proposal error:', response.error.message || response.error);
-        return { success: false, error: response.error.message, provider: 'resend_error' };
+        console.error('[Resend Error] Quote proposal dispatch failed:', response.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: response.error.message || String(response.error),
+        });
       }
-      return { success: true, messageId: response?.data?.id || response?.id, provider: 'resend_live' };
+      return {
+        success: true,
+        emailSent: true,
+        messageId: response?.data?.id || response?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend live email error:', err.message);
+      console.error('[Resend Exception] sendQuoteProposalEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  // Graceful Dev Simulation when client API key is pending
-  console.log(`[RESEND SIMULATION] Quote email dispatched to ${to} for £${quoteAmount}`);
-  return {
-    success: true,
-    provider: 'simulated_fallback',
-    message: 'Resend API key pending from client. Email formatted and simulated successfully.',
-  };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 export const sendInvoiceReceiptEmail = async ({
@@ -435,9 +530,9 @@ export const sendInvoiceReceiptEmail = async ({
             </tr>
           </table>
         </div>
-        <p style="font-size: 13px; color: #334155;">Your allocated chartered surveyor will proceed with the site inspection as scheduled. You can download your official PDF VAT receipt directly from your Customer Portal.</p>
+        <p style="font-size: 13px; color: #334155;"><strong>Payment received. Next: choose your inspection date</strong> to allocate your chartered surveyor and schedule on-site attendance. You can also download your official HMRC 20% VAT receipt directly from your Customer Portal.</p>
         <div style="text-align: center; margin: 24px 0;">
-          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/invoices-and-payments" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View VAT Receipt in Portal &rarr;</a>
+          <a href="${getFrontendBaseUrl()}/customer/my-bookings" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Choose Inspection Date &rarr;</a>
         </div>
       </div>
       ${buildEmailFooter()}
@@ -477,7 +572,7 @@ export const sendInvoiceReceiptEmail = async ({
                   <tr><td style="padding: 6px 0; color: #64748b;">Invoice Reference:</td><td style="font-family: monospace;">${escapeHtml(invoiceRef)}</td></tr>
                 </table>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/quotes-and-payments" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Accounts Ledger &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/quotes-and-payments" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Accounts Ledger &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
@@ -486,14 +581,41 @@ export const sendInvoiceReceiptEmail = async ({
         }).catch((err) => console.warn('Admin payment alert error:', err.message));
       }
 
-      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Invoice receipt email failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res?.data?.id || res?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend receipt error:', err.message);
+      console.error('[Resend Exception] sendInvoiceReceiptEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Receipt email dispatched to ${to} for invoice ${invoiceRef}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -550,7 +672,7 @@ export const sendQuoteAcceptedEmail = async ({
         </div>
 
         <div style="text-align: center; margin: 26px 0;">
-          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/terms-to-sign" style="background: #2563EB; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Sign Terms &amp; Proceed &rarr;</a>
+          <a href="${getFrontendBaseUrl()}/customer/terms-to-sign" style="background: #2563EB; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Sign Terms &amp; Proceed &rarr;</a>
         </div>
 
         <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
@@ -595,23 +717,50 @@ export const sendQuoteAcceptedEmail = async ({
                   <tr><td style="padding: 6px 0; color: #64748b;">Next Action:</td><td>Generate RICS Terms of Engagement and allocate chartered surveyor.</td></tr>
                 </table>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Manage Instruction in Admin Portal &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">Manage Instruction in Admin Portal &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
             </div>
           `,
-        }).catch((err) => console.warn('Admin quote accepted notice error:', err.message));
+        }).catch((err) => console.error('Admin quote accepted notice error:', err.message));
       }
 
-      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Quote accepted email failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res?.data?.id || res?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend quote accepted email error:', err.message);
+      console.error('[Resend Exception] sendQuoteAcceptedEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Quote accepted email dispatched to ${to} for ref ${quoteRef}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -667,7 +816,7 @@ export const sendTermsSignedEmail = async ({
         </p>
 
         <div style="text-align: center; margin: 26px 0;">
-          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/track-survey" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Track Survey Status &rarr;</a>
+          <a href="${getFrontendBaseUrl()}/customer/track-survey" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Track Survey Status &rarr;</a>
         </div>
       </div>
       ${buildEmailFooter()}
@@ -708,23 +857,151 @@ export const sendTermsSignedEmail = async ({
                 </table>
                 <p style="font-size: 13px; color: #475569;"><strong>Next Action:</strong> Allocate surveyor in calendar and confirm site key collection protocol.</p>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/terms" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Executed Contract in Admin &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/terms" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Executed Contract in Admin &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
             </div>
           `,
-        }).catch((err) => console.warn('Admin terms signed notice error:', err.message));
+        }).catch((err) => console.error('Admin terms signed notice error:', err.message));
       }
 
-      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Terms signed email failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res?.data?.id || res?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend terms signed email error:', err.message);
+      console.error('[Resend Exception] sendTermsSignedEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Terms signed email dispatched to ${to} for ref ${jobRef}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
+};
+
+/**
+ * Dispatch Terms of Engagement for Digital Signature to Customer & CC Admin
+ */
+export const sendTermsProposalEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  propertyAddress,
+  surveyType,
+  documentTitle,
+  termsLink,
+}) => {
+  const formattedClientName = capitalizeName(clientName);
+  const subject = `RICS Terms of Engagement for Signature: ${propertyAddress || jobRef} — NJS Property Group`;
+  const cleanLink = termsLink || `${getFrontendBaseUrl()}/customer/terms-to-sign?email=${encodeURIComponent(to || '')}`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — TERMS OF ENGAGEMENT', 'Mandatory RICS Statutory Mandate')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Dear ${escapeHtml(formattedClientName)},</h2>
+        <p>Your formal <strong>${escapeHtml(documentTitle || 'RICS Terms of Engagement')}</strong> contract has been prepared and is ready for your digital signature.</p>
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 42%;">Instruction Reference:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0B1F4D; font-family: monospace; text-align: right;">${escapeHtml(jobRef)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Target Property:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(propertyAddress || 'Subject Property')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Survey Standard:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a; text-align: right;">${escapeHtml(surveyType || 'RICS Survey')}</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="font-size: 13px; color: #334155;">
+          Under RICS regulations, we require signed terms prior to conducting the physical inspection. Please click below to review clauses and apply your electronic signature:
+        </p>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <a href="${cleanLink}" style="background: #2563EB; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Review &amp; Sign Terms Online &rarr;</a>
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  const SENDER_EMAIL = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+  const ENQUIRY_INBOX = process.env.ENQUIRY_NOTIFICATION_EMAIL || env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+  if (!resend) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      isUnconfigured: true,
+    });
+  }
+
+  try {
+    const res = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: [to],
+      subject,
+      html,
+    });
+
+    if (res?.error) {
+      console.error('[Resend Error] Terms proposal email error:', res.error);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: res.error.message || String(res.error),
+      });
+    }
+
+    return {
+      success: true,
+      emailSent: true,
+      messageId: res?.data?.id || res?.id,
+      error: null,
+      provider: 'resend_live',
+      simulated: false,
+    };
+  } catch (err) {
+    console.error('[Resend Exception] sendTermsProposalEmail error:', err.message);
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      error: err.message,
+    });
+  }
 };
 
 /**
@@ -801,7 +1078,7 @@ export const sendInspectionBookedEmail = async ({
         </p>
 
         <div style="text-align: center; margin: 26px 0;">
-          <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/my-bookings" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">View Booking &amp; Add Notes &rarr;</a>
+          <a href="${getFrontendBaseUrl()}/customer/my-bookings" style="background: #0B1F4D; color: #ffffff; padding: 13px 28px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">View Booking &amp; Add Notes &rarr;</a>
         </div>
       </div>
       ${buildEmailFooter()}
@@ -842,23 +1119,50 @@ export const sendInspectionBookedEmail = async ({
                   ${inspectionTime ? `<tr><td style="padding: 6px 0; color: #64748b;">Arrival Window:</td><td>${escapeHtml(inspectionTime)}</td></tr>` : ''}
                 </table>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Dispatch Rota &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/jobs" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View in Dispatch Rota &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
             </div>
           `,
-        }).catch((err) => console.warn('Admin inspection notice error:', err.message));
+        }).catch((err) => console.error('Admin inspection notice error:', err.message));
       }
 
-      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Inspection booked email failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res?.data?.id || res?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend booking email error:', err.message);
+      console.error('[Resend Exception] sendInspectionBookedEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Inspection confirmed email dispatched to ${to} for date ${formattedDate}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -875,7 +1179,7 @@ export const sendReportReadyEmail = async ({
   const formattedClientName = capitalizeName(clientName);
   const downloadUrl = reportPdfUrl?.startsWith('http')
     ? reportPdfUrl
-    : `${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/customer/reports`;
+    : `${getFrontendBaseUrl()}/customer/reports`;
   const subject = `Your Official RICS Survey Report is Ready for Download: ${propertyAddress || jobRef} — NJS Property Group`;
   const html = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
@@ -917,6 +1221,14 @@ export const sendReportReadyEmail = async ({
           <strong style="color: #0B1F4D; display: block; margin-bottom: 3px;">Post-Survey Consultation:</strong>
           As part of our standard service, you are entitled to a direct post-inspection debrief with your chartered surveyor to discuss findings, defect recommendations, and next steps.
         </div>
+
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 14px 16px; margin: 20px 0; font-size: 12.5px; color: #065f46; text-align: center;">
+          <strong style="display: block; margin-bottom: 4px;">Share Your Experience on Trustpilot</strong>
+          As an independent RICS practice, we value your feedback. Please take 30 seconds to review your experience:
+          <div style="margin-top: 10px;">
+            <a href="https://www.trustpilot.com/review/njspropertygroup.com" style="background: #00b67a; color: #ffffff; padding: 10px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 12.5px;">Leave a Trustpilot Review &rarr;</a>
+          </div>
+        </div>
       </div>
       ${buildEmailFooter()}
     </div>
@@ -954,23 +1266,50 @@ export const sendReportReadyEmail = async ({
                   <tr><td style="padding: 6px 0; color: #64748b;">Delivered Document:</td><td><a href="${downloadUrl}" style="color: #2563EB; font-weight: 600;">Download Official PDF &rarr;</a></td></tr>
                 </table>
                 <div style="margin-top: 20px;">
-                  <a href="${process.env.FRONTEND_URL || 'https://njspropertygroup.com'}/admin/reports" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Reports Repository &rarr;</a>
+                  <a href="${getFrontendBaseUrl()}/admin/reports" style="background: #0B1F4D; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13px;">View Reports Repository &rarr;</a>
                 </div>
               </div>
               ${buildEmailFooter()}
             </div>
           `,
-        }).catch((err) => console.warn('Admin report delivered alert error:', err.message));
+        }).catch((err) => console.error('Admin report delivered alert error:', err.message));
       }
 
-      return { success: true, messageId: res?.data?.id || res?.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Report ready email failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res?.data?.id || res?.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend report ready email error:', err.message);
+      console.error('[Resend Exception] sendReportReadyEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Report ready email dispatched to ${to} for ref ${jobRef}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -1004,7 +1343,7 @@ export const sendClientMessageToAdminNotificationEmail = async ({
         </div>
 
         <div style="margin-top: 24px; text-align: left;">
-          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/messages?conversationId=${encodeURIComponent(conversationId)}" 
+          <a href="${getFrontendBaseUrl()}/admin/messages?conversationId=${encodeURIComponent(conversationId)}" 
              style="display: inline-block; background: #0B1F4D; color: #ffffff; font-weight: 700; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 13px;">
             Open Admin Inbox &amp; Reply &rarr;
           </a>
@@ -1026,14 +1365,41 @@ export const sendClientMessageToAdminNotificationEmail = async ({
         subject,
         html,
       });
-      return { success: true, messageId: res.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Client message alert failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to: ENQUIRY_INBOX,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend message alert error:', err.message);
+      console.error('[Resend Exception] sendClientMessageToAdminNotificationEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to: ENQUIRY_INBOX,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Client message notification dispatched to ${ENQUIRY_INBOX} from ${clientEmail}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to: ENQUIRY_INBOX,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -1062,7 +1428,7 @@ export const sendAdminReplyToClientNotificationEmail = async ({
         </div>
 
         <div style="margin-top: 24px; text-align: left;">
-          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/customer/messages" 
+          <a href="${getFrontendBaseUrl()}/customer/messages" 
              style="display: inline-block; background: #0B1F4D; color: #ffffff; font-weight: 700; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 13px;">
             Open Client Messages &amp; Reply &rarr;
           </a>
@@ -1081,14 +1447,41 @@ export const sendAdminReplyToClientNotificationEmail = async ({
         subject,
         html,
       });
-      return { success: true, messageId: res.id, provider: 'resend_live' };
+      if (res?.error) {
+        console.error('[Resend Error] Admin reply notification failed:', res.error);
+        return await handleUnconfiguredOrFailedEmail({
+          to,
+          subject,
+          html,
+          error: res.error.message || String(res.error),
+        });
+      }
+
+      return {
+        success: true,
+        emailSent: true,
+        messageId: res.id,
+        error: null,
+        provider: 'resend_live',
+        simulated: false,
+      };
     } catch (err) {
-      console.warn('Resend client reply email error:', err.message);
+      console.error('[Resend Exception] sendAdminReplyToClientNotificationEmail error:', err.message);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: err.message,
+      });
     }
   }
 
-  console.log(`[RESEND SIMULATION] Admin reply notification dispatched to ${to}`);
-  return { success: true, provider: 'simulated_fallback' };
+  return await handleUnconfiguredOrFailedEmail({
+    to,
+    subject,
+    html,
+    isUnconfigured: true,
+  });
 };
 
 /**
@@ -1133,21 +1526,303 @@ export const sendSupportTicketNotificationEmail = async ({
   `;
 
   const resend = getResend();
-  if (resend) {
-    try {
-      const response = await resend.emails.send({
-        from: SENDER_EMAIL,
-        to: [BUSINESS_INBOX],
-        replyTo: customerEmail || undefined,
-        subject: emailSubject,
-        html,
-      });
-      return { wasSent: true, messageId: response?.data?.id || response?.id };
-    } catch (err) {
-      console.warn('Support ticket notification email note:', err?.message || err);
-    }
+  if (!resend) {
+    return await handleUnconfiguredOrFailedEmail({
+      to: BUSINESS_INBOX,
+      subject: emailSubject,
+      html,
+      isUnconfigured: true,
+    });
   }
 
-  console.log(`[RESEND SIMULATION] Support ticket alert #${ticketNo} logged for ${BUSINESS_INBOX}`);
-  return { wasSent: true, simulation: true };
+  try {
+    const response = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: [BUSINESS_INBOX],
+      replyTo: customerEmail || undefined,
+      subject: emailSubject,
+      html,
+    });
+
+    if (response?.error) {
+      console.error('[Resend Error] Support ticket email failed:', response.error);
+      return await handleUnconfiguredOrFailedEmail({
+        to: BUSINESS_INBOX,
+        subject: emailSubject,
+        html,
+        error: response.error.message || String(response.error),
+      });
+    }
+
+    return {
+      success: true,
+      emailSent: true,
+      messageId: response?.data?.id || response?.id,
+      error: null,
+      provider: 'resend_live',
+      simulated: false,
+    };
+  } catch (err) {
+    console.error('[Resend Exception] sendSupportTicketNotificationEmail error:', err?.message || err);
+    return await handleUnconfiguredOrFailedEmail({
+      to: BUSINESS_INBOX,
+      subject: emailSubject,
+      html,
+      error: err?.message || String(err),
+    });
+  }
+};
+
+/**
+ * Dispatch Portal Activation & Password Setup Email to Customer
+ * Never logs or prints the token
+ */
+export const sendPortalActivationEmail = async ({
+  to,
+  clientName,
+  activationToken,
+  propertyAddress,
+}) => {
+  const formattedClientName = capitalizeName(clientName);
+  const subject = `Activate Your NJS Client Portal — NJS Property Group`;
+  const frontendBase = getFrontendBaseUrl();
+  const activationLink = `${frontendBase}/activate?token=${encodeURIComponent(activationToken)}`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.06);">
+      ${buildEmailHeader('NJS PROPERTY GROUP — CLIENT PORTAL', 'Personal Client Portal Activation')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Activate Your Portal &amp; Set Your Password</h2>
+        <p>Dear ${escapeHtml(formattedClientName)},</p>
+        <p>Your secure NJS Property Group Client Portal account has been created${propertyAddress ? ` regarding <strong>${escapeHtml(propertyAddress)}</strong>` : ''}.</p>
+        <p>Your portal allows you to easily:</p>
+        <ul style="padding-left: 20px; color: #334155; font-size: 13px; line-height: 1.8;">
+          <li>Review and accept your formal RICS survey quote</li>
+          <li>Review and digitally sign your Terms of Engagement</li>
+          <li>Settle survey invoices securely with instant VAT receipts</li>
+          <li>Track real-time inspection progress and surveyor diaries</li>
+        </ul>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${activationLink}" style="background: #0B1F4D; color: #ffffff; padding: 14px 30px; border-radius: 12px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 14px; box-shadow: 0 4px 10px rgba(11, 31, 77, 0.2);">Set Password &amp; Activate Portal &rarr;</a>
+        </div>
+        <p style="font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+          <em>Note: This activation link is valid for 48 hours.</em>
+        </p>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  // Ensure token is redacted in console logs/fallbacks
+  const safeLoggedHtml = html.replace(/token=[^"&'\s]+/g, 'token=[REDACTED]');
+
+  const resend = getResend();
+  if (!resend) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html: safeLoggedHtml,
+      isUnconfigured: true,
+    });
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: [to],
+      subject,
+      html,
+    });
+
+    if (response?.error) {
+      console.error('[Resend Error] sendPortalActivationEmail failed:', response.error);
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html: safeLoggedHtml,
+        error: response.error.message || String(response.error),
+      });
+    }
+
+    return {
+      success: true,
+      emailSent: true,
+      messageId: response?.data?.id || response?.id,
+      error: null,
+      provider: 'resend_live',
+      simulated: false,
+    };
+  } catch (err) {
+    console.error('[Resend Exception] sendPortalActivationEmail error:', err?.message || err);
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html: safeLoggedHtml,
+      error: err?.message || String(err),
+    });
+  }
+};
+
+/**
+ * Dispatch Post-Inspection Update Email when Surveyor marks Site Inspection Complete / Drafting
+ */
+export const sendPostInspectionUpdateEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  propertyAddress,
+  surveyType,
+  surveyorName,
+  jobId = null,
+}) => {
+  const formattedClientName = capitalizeName(clientName);
+  const subject = `Site Inspection Attended Today: ${propertyAddress || jobRef} — NJS Property Group`;
+  const frontendBase = getFrontendBaseUrl();
+  const trackUrl = `${frontendBase}/customer/track-my-survey`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+      ${buildEmailHeader('NJS PROPERTY GROUP — SITE INSPECTION UPDATE', 'Surveyor Inspection Completed')}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Site Inspection Completed</h2>
+        <p>Dear ${escapeHtml(formattedClientName)},</p>
+        <p>Site inspection attended today by your surveyor <strong>${escapeHtml(surveyorName || 'Assigned Chartered Surveyor')}</strong> for <strong>${escapeHtml(propertyAddress || 'your property')}</strong> (${escapeHtml(jobRef || '')}).</p>
+        <p>Findings and photographs are currently being compiled into your formal ${escapeHtml(surveyType || 'RICS Survey Report')}.</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${trackUrl}" style="background: #0B1F4D; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">Track Live Survey Progress &rarr;</a>
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  if (!resend || !to || !to.includes('@')) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      isUnconfigured: !resend,
+      error: !to || !to.includes('@') ? 'Invalid recipient email' : undefined,
+      jobId,
+    });
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: [to],
+      subject,
+      html,
+    });
+
+    if (response?.error) {
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: response.error.message || String(response.error),
+        jobId,
+      });
+    }
+
+    return {
+      success: true,
+      emailSent: true,
+      messageId: response?.data?.id || response?.id,
+      error: null,
+      provider: 'resend_live',
+      simulated: false,
+    };
+  } catch (err) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      error: err?.message || String(err),
+      jobId,
+    });
+  }
+};
+
+/**
+ * Dispatch Unbooked Survey Booking Reminder Email (max 2 reminders)
+ */
+export const sendBookingReminderEmail = async ({
+  to,
+  clientName,
+  jobRef,
+  propertyAddress,
+  surveyType,
+  reminderNumber = 1,
+  jobId = null,
+}) => {
+  const formattedClientName = capitalizeName(clientName);
+  const subject = `Gentle Reminder (${reminderNumber}/2): Secure your surveyor inspection slot for ${propertyAddress || jobRef}`;
+  const frontendBase = getFrontendBaseUrl();
+  const bookingUrl = `${frontendBase}/customer/my-bookings`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+      ${buildEmailHeader('NJS PROPERTY GROUP — BOOKING REMINDER', `Reminder ${reminderNumber} of 2`)}
+      <div style="padding: 28px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+        <h2 style="color: #0B1F4D; font-size: 18px; margin-top: 0;">Your Survey Slot Is Ready to Schedule</h2>
+        <p>Dear ${escapeHtml(formattedClientName)},</p>
+        <p>Thank you for completing your Terms of Engagement and payment for <strong>${escapeHtml(propertyAddress || 'your property')}</strong> (${escapeHtml(surveyType || 'RICS Survey')}, Ref: <strong>${escapeHtml(jobRef || '')}</strong>).</p>
+        <p>Your inspection date has not yet been confirmed on our surveyor diary. Please view your portal or contact our Operations Desk on <strong>0333 305 2777</strong> so we can allocate your preferred inspection window.</p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${bookingUrl}" style="background: #2563EB; color: #ffffff; padding: 12px 26px; border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-block; font-size: 13.5px;">View My Booking Status &rarr;</a>
+        </div>
+      </div>
+      ${buildEmailFooter()}
+    </div>
+  `;
+
+  const resend = getResend();
+  if (!resend || !to || !to.includes('@')) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      isUnconfigured: !resend,
+      error: !to || !to.includes('@') ? 'Invalid recipient email' : undefined,
+      jobId,
+    });
+  }
+
+  try {
+    const response = await resend.emails.send({
+      from: SENDER_EMAIL,
+      to: [to],
+      subject,
+      html,
+    });
+
+    if (response?.error) {
+      return await handleUnconfiguredOrFailedEmail({
+        to,
+        subject,
+        html,
+        error: response.error.message || String(response.error),
+        jobId,
+      });
+    }
+
+    return {
+      success: true,
+      emailSent: true,
+      messageId: response?.data?.id || response?.id,
+      error: null,
+      provider: 'resend_live',
+      simulated: false,
+    };
+  } catch (err) {
+    return await handleUnconfiguredOrFailedEmail({
+      to,
+      subject,
+      html,
+      error: err?.message || String(err),
+      jobId,
+    });
+  }
 };

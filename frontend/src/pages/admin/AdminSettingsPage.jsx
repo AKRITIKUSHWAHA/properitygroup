@@ -64,7 +64,9 @@ export const AdminSettingsPage = () => {
           }));
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load email settings from API:', err);
+      });
   }, []);
 
   // Handle Input Changes
@@ -164,13 +166,21 @@ export const AdminSettingsPage = () => {
           smtp_status: 'Active',
           smtp_last_verified: verifiedTimestamp,
         })
-        .catch(() => {});
-
-      addToast({
-        type: 'success',
-        title: 'Resend Test Email Dispatched',
-        message: `Verified delivery to ${testEmailAddress} via Resend Transactional API.`,
-      });
+        .then(() => {
+          addToast({
+            type: 'success',
+            title: 'Resend Test Email Dispatched',
+            message: `Verified delivery to ${testEmailAddress} via Resend Transactional API.`,
+          });
+        })
+        .catch((err) => {
+          console.error('Failed to update email status in settings:', err);
+          addToast({
+            type: 'error',
+            title: 'Settings Sync Failed',
+            message: 'Email test succeeded but failed to persist status in database.',
+          });
+        });
     }, 900);
   };
 
@@ -377,12 +387,21 @@ export const AdminSettingsPage = () => {
                   email_status: DEFAULT_EMAIL_CONFIG.status,
                   email_last_verified: DEFAULT_EMAIL_CONFIG.lastVerified,
                 })
-                .catch(() => {});
-              addToast({
-                type: 'info',
-                title: 'Default Configuration Restored',
-                message: 'Restored default Resend email delivery parameters.',
-              });
+                .then(() => {
+                  addToast({
+                    type: 'info',
+                    title: 'Default Configuration Restored',
+                    message: 'Restored default Resend email delivery parameters.',
+                  });
+                })
+                .catch((err) => {
+                  console.error('Failed to restore default settings:', err);
+                  addToast({
+                    type: 'error',
+                    title: 'Reset Failed',
+                    message: 'Could not restore default settings on server.',
+                  });
+                });
             }}
             className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >

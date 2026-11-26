@@ -67,8 +67,10 @@ export const createSupportTicket = async (req, res, next) => {
     }
 
     // 2. Email alert dispatched to business inbox (info@njspropertygroup.com)
+    let emailSent = false;
+    let emailError = null;
     try {
-      await sendSupportTicketNotificationEmail({
+      const emailRes = await sendSupportTicketNotificationEmail({
         ticketNo,
         customerName: req.user?.name || 'Client',
         customerEmail: req.user?.email || 'Not specified',
@@ -77,13 +79,16 @@ export const createSupportTicket = async (req, res, next) => {
         priority,
         message: message.trim(),
       });
+      emailSent = Boolean(emailRes?.success || emailRes?.emailSent);
+      emailError = emailRes?.error || null;
     } catch (emailErr) {
-      console.warn('Admin ticket email notification note:', emailErr?.message || emailErr);
+      console.error('Admin ticket email notification error:', emailErr?.message || emailErr);
+      emailError = emailErr?.message || String(emailErr);
     }
 
     return ApiResponse.created(
       res,
-      { ticket },
+      { ticket, emailSent, emailError },
       `Support ticket #${ticketNo} created. Our operations desk will get back to you shortly.`
     );
   } catch (error) {

@@ -14,7 +14,6 @@ const getFallbackPublicRoute = () => '/login';
 const STORAGE_KEY = 'property_group_user_session';
 const AUTH_TOKEN_KEY = 'property_group_auth_token';
 const REMEMBERED_EMAIL_KEY = 'property_group_remembered_email';
-const REGISTERED_CUSTOMERS_KEY = 'property_group_registered_customers';
 
 export const AuthProvider = ({ children }) => {
   // Initialize user strictly from localStorage; default to null if not authenticated
@@ -46,18 +45,37 @@ export const AuthProvider = ({ children }) => {
   const { addToast } = useToast();
 
   // Fast role switcher for development/testing if needed
-  const switchRole = useCallback((newRole) => {
+  const switchRole = useCallback(async (newRole) => {
     if (newRole === 'customer' && !isClientPortalEnabled()) {
       return null;
     }
     const roleEmailMap = {
-      admin: 'admin@demo.com',
-      super_admin: 'admin@demo.com',
-      surveyor: 'surveyor@demo.com',
-      customer: 'customer@demo.com',
+      admin: { email: 'admin@demo.com', pw: 'admin123' },
+      super_admin: { email: 'admin@demo.com', pw: 'admin123' },
+      surveyor: { email: 'surveyor@demo.com', pw: 'surveyor123' },
+      customer: { email: 'customer@demo.com', pw: 'customer123' },
     };
-    const targetEmail = roleEmailMap[newRole] || 'admin@demo.com';
-    const targetUser = DEMO_USERS[targetEmail];
+    const target = roleEmailMap[newRole] || roleEmailMap.admin;
+    try {
+      const res = await authApi.login(target.email, target.pw);
+      if (res?.token && res?.user) {
+        localStorage.setItem(AUTH_TOKEN_KEY, res.token);
+        const mappedRole = res.user.role === 'ADMIN' ? 'super_admin' : res.user.role.toLowerCase();
+        const userObj = {
+          id: `usr_${res.user.id}`,
+          email: res.user.email,
+          name: res.user.name,
+          role: mappedRole,
+          token: res.token,
+        };
+        setUser(userObj);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(userObj));
+        return userObj;
+      }
+    } catch (err) {
+      console.warn('Role switch API call failed, falling back if demo:', err?.message || err);
+    }
+    const targetUser = DEMO_USERS[target.email];
     if (targetUser) {
       setUser(targetUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(targetUser));
@@ -89,20 +107,7 @@ export const AuthProvider = ({ children }) => {
     const trimmedEmail = (email || '').trim().toLowerCase();
     const cleanPassword = typeof password === 'string' ? password.trim() : '';
 
-    // 1. Check if account was deleted
-    try {
-      const deletedKeys = JSON.parse(localStorage.getItem('propertygroup_deleted_user_keys') || '[]');
-      if (deletedKeys.includes(trimmedEmail)) {
-        setIsLoading(false);
-        const err = new Error('No registered account found with this email. Please create an account first.');
-        err.isNotRegistered = true;
-        throw err;
-      }
-    } catch (e) {
-      if (e.isNotRegistered) throw e;
-    }
-
-    // 2. Check if account is in local blocked list
+    // 1. Check if account is in local blocked list
     try {
       const blockedList = JSON.parse(localStorage.getItem('property_group_blocked_users') || '[]');
       if (blockedList.includes(trimmedEmail)) {
@@ -111,20 +116,6 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (e) {
       if (e.message?.includes('blocked') || e.message?.includes('deactivated')) throw e;
-    }
-
-    // 3. Strict local credential check: If password was registered, enforce exact match
-    let registeredCust = null;
-    try {
-      const registered = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
-      registeredCust = registered[trimmedEmail] || null;
-    } catch {}
-
-    const localKnownPassword = localStorage.getItem(`njs_user_pw_${trimmedEmail}`);
-    const requiredPassword = registeredCust?.password || localKnownPassword;
-    if (requiredPassword && cleanPassword !== String(requiredPassword).trim()) {
-      setIsLoading(false);
-      throw new Error('Invalid password. Please enter the password you registered with.');
     }
 
     let backendUser = null;
@@ -196,7 +187,13 @@ export const AuthProvider = ({ children }) => {
         email: backendUser.email,
         name: backendUser.name,
         role: mappedRole,
-        roleLabel: mappedRole === 'super_admin' ? 'Admin' : mappedRole === 'surveyor' ? 'Chartered Surveyor' : 'Property Client',
+        roleLabel:
+          mappedRole === 'super_admin'
+            ? 'Admin'
+            : mappedRole === 'surveyor'
+            ? (backendUser.surveyorProfile?.accreditation || 'Chartered Surveyor')
+            : 'Property Client',
+        surveyorProfile: backendUser.surveyorProfile || null,
         company: 'NJS Property Group',
         phone: backendUser.phone || registeredCust?.phone || '',
         avatar: backendUser.avatar || null,
@@ -379,27 +376,11 @@ export const AuthProvider = ({ children }) => {
       phone,
       address: address || '',
       postcode: postcode || '',
-      password: password,
       currency: 'GBP',
       dateJoined: new Date().toLocaleDateString('en-GB'),
       badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
       token: authToken || null,
     };
-
-    try {
-      const existing = JSON.parse(localStorage.getItem(REGISTERED_CUSTOMERS_KEY) || '{}');
-      existing[trimmedEmail] = newCustomer;
-      localStorage.setItem(REGISTERED_CUSTOMERS_KEY, JSON.stringify(existing));
-      // Store exact password for Admin Users & Roles visibility and login verification
-      localStorage.setItem(`njs_user_pw_${trimmedEmail}`, password);
-      // Remove email from deleted keys so it immediately appears in Admin Users & Roles
-      const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
-      const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== trimmedEmail);
-      localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
-      window.dispatchEvent(new Event('propertygroup_users_updated'));
-    } catch {
-      // ignore
-    }
 
     // Clean out any stale progress keys for brand new user session
     try {
@@ -419,7 +400,9 @@ export const AuthProvider = ({ children }) => {
         `propertygroup_terms_signed_${trimmedEmail}`,
         `propertygroup_payment_claimed_${trimmedEmail}`,
       ].forEach((k) => localStorage.removeItem(k));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to clear customer workflow keys on register:', err);
+    }
 
     if (autoLogin) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newCustomer));
@@ -466,7 +449,9 @@ export const AuthProvider = ({ children }) => {
         'propertygroup_quote_accepted',
         'propertygroup_payment_paid',
       ].forEach((k) => localStorage.removeItem(k));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to clear workflow keys on logout:', err);
+    }
     setUser(null);
     addToast({
       type: 'info',

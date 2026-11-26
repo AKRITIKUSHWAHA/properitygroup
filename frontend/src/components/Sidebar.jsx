@@ -126,7 +126,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
           return j.quoteStatus === 'Accepted' || j.status === 'Accepted' || j.stage === 'accepted' || j.termsStatus === 'Signed' || (j.timelineStep && j.timelineStep >= 3);
         });
         if (hasAcceptedJob) return true;
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to parse jobs cache in Sidebar:', err);
+      }
       try {
         const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
         const hasAcceptedQuote = storedQuotes.some((q) => {
@@ -135,7 +137,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
           return q.status === 'Accepted' || q.status === 'ACCEPTED' || q.isAccepted === true || q.termsStatus === 'Signed';
         });
         if (hasAcceptedQuote) return true;
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to parse quotes cache in Sidebar:', err);
+      }
       return false;
     }
 
@@ -171,7 +175,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
             });
             setUnreadMsgCount(count);
           }
-        } catch {}
+        } catch (err) {
+          console.warn('Failed to parse local conversations cache in Sidebar:', err);
+        }
       }
     };
 
@@ -386,7 +392,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 <div className="text-xs font-bold text-[#0B1F4D] truncate max-w-[130px]">
                   {user?.name}
                 </div>
-                <div className="text-[10px] font-medium text-slate-500 truncate">
+                <div className="text-[10px] font-medium text-slate-500 truncate" title={user?.roleLabel}>
                   {user?.roleLabel}
                 </div>
               </div>

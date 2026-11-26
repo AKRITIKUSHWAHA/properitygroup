@@ -3,58 +3,25 @@ import { useState, useEffect } from 'react';
 // Initial messages between Customer (Emma Watson) and NJS Operations Desk
 export const INITIAL_CONVERSATIONS = [];
 
-const STORAGE_KEY = 'propertygroup_conversations_v1';
+let memoryConversations = [];
 
 export const useMessages = () => {
-  const [conversations, setConversations] = useState(() => {
-    try {
-      if (!localStorage.getItem('njs_fresh_messages_clean_v1')) {
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.setItem('njs_fresh_messages_clean_v1', 'true');
-        return [];
-      }
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-      return [];
-    } catch {
-      return [];
-    }
-  });
+  const [conversations, setConversations] = useState(() => memoryConversations);
 
-  // Cross-component and cross-tab reactive synchronization
+  // Cross-component reactive synchronization (in-memory, no localStorage)
   useEffect(() => {
     const handleSync = () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const merged = [...parsed];
-          INITIAL_CONVERSATIONS.forEach((init) => {
-            if (!merged.some((m) => m.id === init.id || m.jobId === init.jobId || m.clientEmail === init.clientEmail)) {
-              merged.push(init);
-            }
-          });
-          setConversations(merged);
-        }
-      } catch (err) {
-        console.warn('Unable to sync conversations', err);
-      }
+      setConversations([...memoryConversations]);
     };
 
     window.addEventListener('propertygroup_conversations_updated', handleSync);
-    window.addEventListener('storage', handleSync);
     return () => {
       window.removeEventListener('propertygroup_conversations_updated', handleSync);
-      window.removeEventListener('storage', handleSync);
     };
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
-    } catch (e) {
-      console.warn('Unable to persist conversations to localStorage', e);
-    }
+    memoryConversations = conversations;
   }, [conversations]);
 
   // Send a message to a specific conversation
@@ -94,18 +61,17 @@ export const useMessages = () => {
         return c;
       });
 
-      // If conversationId did not match any existing conversation, create and add it
+      // If conversationId did not match any existing conversation, create and add it in memory
       if (!matched) {
-        const isHarrison = (senderName || '').toLowerCase().includes('harrison') || conversationId.includes('harrison') || conversationId === 'conv-3';
         const newConv = {
           id: conversationId,
-          jobId: isHarrison ? 'JOB-2026-082' : (conversationId.startsWith('JOB-') ? conversationId : 'JOB-2026-080'),
-          clientEmail: isHarrison ? 'harrison@demo.com' : 'customer@demo.com',
-          clientName: senderName || (isHarrison ? 'Harrison Croft' : 'Customer'),
-          clientPhone: isHarrison ? '+44 7700 900512' : '+44 7700 900147',
-          property: isHarrison ? '12 Pembroke Square, Kensington, London W8 6PA' : '14 Mayfair Gate, Mayfair, London W1K 2PB',
-          surveyType: isHarrison ? 'RICS Level 3 Building Survey' : 'RICS Level 2 Home Survey',
-          surveyor: 'David Thorne MRICS',
+          jobId: conversationId.startsWith('JOB-') ? conversationId : '',
+          clientEmail: '',
+          clientName: senderName || 'Client',
+          clientPhone: '',
+          property: '',
+          surveyType: 'RICS Home Survey',
+          surveyor: 'Assigned Chartered Surveyor',
           unreadAdmin: role === 'client' ? 1 : 0,
           unreadClient: role === 'admin' ? 1 : 0,
           messages: [newMsg],
@@ -119,12 +85,8 @@ export const useMessages = () => {
 
     // Side effects executed ONCE outside the setState updater
     if (updatedList) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
-        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updatedList }));
-      } catch (err) {
-        console.warn(err);
-      }
+      memoryConversations = updatedList;
+      window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updatedList }));
     }
 
     // Sync to backend messages API only if requested and not handled directly by the caller
@@ -142,7 +104,9 @@ export const useMessages = () => {
             content: text,
             senderName: senderName || (role === 'admin' ? 'Alexander Sterling (Admin)' : 'Customer'),
           }),
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn('Failed to sync message to backend:', err);
+        });
       }
     }
 
@@ -169,12 +133,8 @@ export const useMessages = () => {
         return c;
       });
 
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
-      } catch (err) {
-        console.warn(err);
-      }
+      memoryConversations = updated;
+      window.dispatchEvent(new CustomEvent('propertygroup_conversations_updated', { detail: updated }));
 
       return updated;
     });

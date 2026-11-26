@@ -9,9 +9,8 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 export const getUsersAndRoles = async (req, res, next) => {
   try {
     const { role, status, search } = req.query;
-    const DEMO_EMAILS = ['admin@demo.com', 'surveyor@demo.com', 'customer@demo.com', 'customer2@demo.com'];
     const where = {
-      email: { notIn: DEMO_EMAILS, not: { startsWith: 'deleted_' } },
+      email: { not: { startsWith: 'deleted_' } },
     };
 
     if (role) where.role = role.toUpperCase();
@@ -21,15 +20,10 @@ export const getUsersAndRoles = async (req, res, next) => {
       where.status = { not: 'INACTIVE' };
     }
     if (search) {
-      where.AND = [
-        { email: { notIn: DEMO_EMAILS } },
-        {
-          OR: [
-            { name: { contains: search } },
-            { email: { contains: search } },
-            { phone: { contains: search } },
-          ],
-        },
+      where.OR = [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { phone: { contains: search } },
       ];
     }
 
@@ -68,7 +62,7 @@ export const getUsersAndRoles = async (req, res, next) => {
 
       for (const lead of leads) {
         const cleanEmail = (lead.clientEmail || '').toLowerCase().trim();
-        if (!cleanEmail || existingEmails.has(cleanEmail) || DEMO_EMAILS.includes(cleanEmail) || cleanEmail.startsWith('deleted_')) continue;
+        if (!cleanEmail || existingEmails.has(cleanEmail) || cleanEmail.startsWith('deleted_')) continue;
 
         try {
           const newUser = await prisma.user.create({
@@ -141,14 +135,11 @@ export const getUsersAndRoles = async (req, res, next) => {
 
 export const getUsersMetrics = async (req, res, next) => {
   try {
-    const DEMO_EMAILS = ['admin@demo.com', 'surveyor@demo.com', 'customer@demo.com', 'customer2@demo.com'];
-    const notDemo = { email: { notIn: DEMO_EMAILS } };
-
     const [totalUsers, adminCount, surveyorCount, customerCount] = await Promise.all([
-      prisma.user.count({ where: notDemo }),
-      prisma.user.count({ where: { ...notDemo, role: 'ADMIN' } }),
-      prisma.user.count({ where: { ...notDemo, role: 'SURVEYOR' } }),
-      prisma.user.count({ where: { ...notDemo, role: 'CUSTOMER' } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { role: 'ADMIN' } }),
+      prisma.user.count({ where: { role: 'SURVEYOR' } }),
+      prisma.user.count({ where: { role: 'CUSTOMER' } }),
     ]);
 
     return ApiResponse.success(res, {
@@ -166,44 +157,56 @@ export const createUser = async (req, res, next) => {
   try {
     const { name, email, password, role = 'CUSTOMER', phone, accreditation, postcodesCovered } = req.body;
 
-    if (!name || !email || !password) {
+    const cleanName = String(name || '').trim();
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanPassword = String(password || '').trim();
+
+    if (!cleanName || !cleanEmail || !cleanPassword) {
       throw ApiError.badRequest('Name, email and password are required');
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    if (existing) {
-      throw ApiError.badRequest('A user with this email address already exists');
+    if (cleanPassword.length < 6) {
+      throw ApiError.badRequest('Password must be at least 6 characters long');
     }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
 
     const rawRole = String(role).toUpperCase();
     const normalizedRole = ['ADMIN', 'SUPER_ADMIN'].includes(rawRole)
       ? 'ADMIN'
       : (rawRole === 'SURVEYOR' ? 'SURVEYOR' : 'CUSTOMER');
 
+    if (normalizedRole === 'SURVEYOR' && (!String(accreditation || '').trim() || !String(postcodesCovered || '').trim())) {
+      throw ApiError.badRequest('Surveyor qualification and coverage postcode sectors are required');
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+    if (existing) {
+      throw ApiError.badRequest('A user with this email address already exists');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(cleanPassword, salt);
+
     const user = await prisma.user.create({
       data: {
-        name,
-        email: email.toLowerCase(),
+        name: cleanName,
+        email: cleanEmail,
         password: hashedPassword,
         role: normalizedRole,
-        phone,
+        phone: phone ? String(phone).trim() : null,
         status: 'ACTIVE',
         ...(normalizedRole === 'SURVEYOR'
           ? {
-              surveyorProfile: {
-                create: {
-                  accreditation: accreditation || 'MRICS',
-                  postcodesCovered: postcodesCovered || 'W, SW, WC',
-                  activeLoad: 0,
-                  maxLoad: 8,
-                },
+            surveyorProfile: {
+              create: {
+                accreditation: String(accreditation).trim(),
+                postcodesCovered: postcodesCovered || 'W, SW, WC',
+                activeLoad: 0,
+                maxLoad: 8,
               },
-            }
+            },
+          }
           : {}),
       },
       select: {
@@ -308,11 +311,7 @@ export const deleteUser = async (req, res, next) => {
     }
 
     if (!targetUser) {
-      // Also clean up any lead by email if passed
-      if (typeof id === 'string' && id.includes('@')) {
-        await prisma.lead.deleteMany({ where: { clientEmail: id.toLowerCase().trim() } }).catch(() => {});
-      }
-      return ApiResponse.success(res, null, 'User account removed successfully');
+      throw ApiError.notFound(`User account not found for deletion: ${id}`);
     }
 
     // Prevent deleting self or primary admin
@@ -321,14 +320,18 @@ export const deleteUser = async (req, res, next) => {
     }
 
     // Cascade cleanups
-    await prisma.surveyorProfile.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
-    await prisma.notification.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
-    await prisma.customerReview.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
-    await prisma.supportTicket.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
-    await prisma.auditLog.deleteMany({ where: { userId: targetUser.id } }).catch(() => {});
-    await prisma.message.deleteMany({ where: { senderId: targetUser.id } }).catch(() => {});
-    // Unlink any surveyor jobs (never delete surveyor-assigned client jobs when deleting a surveyor)
-    await prisma.job.updateMany({ where: { surveyorId: targetUser.id }, data: { surveyorId: null } }).catch(() => {});
+    try {
+      await prisma.surveyorProfile.deleteMany({ where: { userId: targetUser.id } });
+      await prisma.notification.deleteMany({ where: { userId: targetUser.id } });
+      await prisma.customerReview.deleteMany({ where: { userId: targetUser.id } });
+      await prisma.supportTicket.deleteMany({ where: { userId: targetUser.id } });
+      await prisma.auditLog.deleteMany({ where: { userId: targetUser.id } });
+      await prisma.message.deleteMany({ where: { senderId: targetUser.id } });
+      // Unlink any surveyor jobs (never delete surveyor-assigned client jobs when deleting a surveyor)
+      await prisma.job.updateMany({ where: { surveyorId: targetUser.id }, data: { surveyorId: null } });
+    } catch (cleanErr) {
+      console.error('[usersAndRolesController] Error cleaning user relationships:', cleanErr.message);
+    }
 
     // For CUSTOMER accounts, cascade-delete all their jobs, quotes, terms, invoices, and leads
     // so re-registering the same email NEVER inherits old completed/paid jobs!
@@ -345,26 +348,40 @@ export const deleteUser = async (req, res, next) => {
       }).catch(() => []);
 
       for (const uj of userJobs) {
-        await prisma.supportTicket.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.customerReview.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.message.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.quote.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.term.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.invoice.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.callLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.complaintLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.auditLog.deleteMany({ where: { jobId: uj.id } }).catch(() => {});
-        await prisma.job.delete({ where: { id: uj.id } }).catch(() => {});
+        try {
+          await prisma.$transaction([
+            prisma.supportTicket.deleteMany({ where: { jobId: uj.id } }),
+            prisma.customerReview.deleteMany({ where: { jobId: uj.id } }),
+            prisma.message.deleteMany({ where: { jobId: uj.id } }),
+            prisma.quote.deleteMany({ where: { jobId: uj.id } }),
+            prisma.term.deleteMany({ where: { jobId: uj.id } }),
+            prisma.invoice.deleteMany({ where: { jobId: uj.id } }),
+            prisma.callLog.deleteMany({ where: { jobId: uj.id } }),
+            prisma.complaintLog.deleteMany({ where: { jobId: uj.id } }),
+            prisma.auditLog.deleteMany({ where: { jobId: uj.id } }),
+            prisma.job.delete({ where: { id: uj.id } }),
+          ]);
+        } catch (jobDelErr) {
+          console.error(`[usersAndRolesController] Failed to delete customer job ${uj.id}:`, jobDelErr.message);
+        }
       }
 
       if (cleanTargetEmail) {
-        await prisma.quote.deleteMany({ where: { inclusions: { contains: cleanTargetEmail } } }).catch(() => {});
-        await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } }).catch(() => {});
+        try {
+          await prisma.quote.deleteMany({ where: { inclusions: { contains: cleanTargetEmail } } });
+          await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } });
+        } catch (leadDelErr) {
+          console.error('[usersAndRolesController] Failed to delete customer quotes/leads:', leadDelErr.message);
+        }
       }
     } else {
-      await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } }).catch(() => {});
-      if (cleanTargetEmail) {
-        await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } }).catch(() => {});
+      try {
+        await prisma.job.updateMany({ where: { clientId: targetUser.id }, data: { clientId: null } });
+        if (cleanTargetEmail) {
+          await prisma.lead.deleteMany({ where: { clientEmail: cleanTargetEmail } });
+        }
+      } catch (staffDelErr) {
+        console.error('[usersAndRolesController] Failed to unlink staff jobs/leads:', staffDelErr.message);
       }
     }
 

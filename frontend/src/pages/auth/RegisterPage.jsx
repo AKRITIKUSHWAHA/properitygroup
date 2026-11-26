@@ -76,7 +76,9 @@ export const RegisterPage = () => {
         setLoginEmail(cleanEmail);
         return;
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to autofill registration from lead lookup:', err);
+    }
   };
 
   useEffect(() => {

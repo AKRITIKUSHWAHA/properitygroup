@@ -1,16 +1,24 @@
 import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { sendInspectionBookedEmail, sendReportReadyEmail } from '../services/emailService.js';
-
-const STAGE_ORDER = ['QUOTE', 'PAID', 'ACCEPTED', 'BOOKED', 'PREPARING_REPORT', 'COMPLETE'];
+import { sendInspectionBookedEmail, sendReportReadyEmail, sendPostInspectionUpdateEmail } from '../services/emailService.js';
+import { runBookingReminderScan } from '../services/bookingReminderJob.js';
+import { generateJobReference } from '../utils/references.js';
+import {
+  JOB_STAGES,
+  JOB_STAGE_STEPS,
+  JOB_STAGE_LABELS,
+  normalizeJobStage,
+  isValidTransition,
+  ALLOWED_TRANSITIONS,
+} from '../utils/jobStages.js';
 
 /**
  * Superadmin Menu 6: Survey Jobs (6-Stage Pipeline & Key Logistics)
  */
 export const getSurveyJobs = async (req, res, next) => {
   try {
-    const { stage, surveyorId, search } = req.query;
+    const { stage, surveyorId, search, bucket } = req.query;
     const where = {};
 
     // Automatic role-based scoping (Surveyor gets assigned jobs, Customer gets their surveys)
@@ -28,7 +36,13 @@ export const getSurveyJobs = async (req, res, next) => {
       where.surveyorId = parseInt(surveyorId);
     }
 
-    if (stage) where.stage = stage.toUpperCase();
+    if (stage === 'READY_TO_BOOK' || bucket === 'jobs_to_book' || bucket === 'jobs-to-book') {
+      where.stage = { in: ['PAID', 'QUOTE_ACCEPTED'] };
+      where.terms = { some: { signed: true } };
+      where.invoices = { some: { status: 'PAID' } };
+    } else if (stage) {
+      where.stage = stage.toUpperCase();
+    }
     if (search) {
       where.OR = [
         { reference: { contains: search } },
@@ -131,14 +145,14 @@ export const createSurveyJob = async (req, res, next) => {
     const cleanEmail = clientEmail.toLowerCase().trim();
     const cleanAddress = propertyAddress.trim();
 
-    let targetStage = 'QUOTE';
+    let targetStage = 'ENQUIRY';
     if (stage) {
       const s = String(stage).toUpperCase().trim();
       if (STAGE_ORDER.includes(s)) {
         targetStage = s;
       }
     } else if (req.user?.role === 'CUSTOMER') {
-      targetStage = 'ACCEPTED';
+      targetStage = 'ENQUIRY';
     }
 
     // Check for duplicate pending job instruction within same client and property
@@ -146,7 +160,7 @@ export const createSurveyJob = async (req, res, next) => {
       where: {
         clientEmail: cleanEmail,
         propertyAddress: cleanAddress,
-        stage: { in: ['QUOTE', 'ACCEPTED', 'PAID'] },
+        stage: { in: ['ENQUIRY', 'QUOTE_ISSUED', 'QUOTE_ACCEPTED', 'TERMS_SIGNED', 'PAID'] },
       },
     });
 
@@ -167,12 +181,8 @@ export const createSurveyJob = async (req, res, next) => {
       return ApiResponse.success(res, { job: updatedJob }, 'Existing survey instruction updated without duplication');
     }
 
-    const lastJob = await prisma.job.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });
-    let reference = `JOB-2026-${String((lastJob?.id || 0) + 101).padStart(3, '0')}`;
-    const jobRefExists = await prisma.job.findUnique({ where: { reference }, select: { id: true } });
-    if (jobRefExists) {
-      reference = `JOB-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
+    // remove unused lastJob reference since generateJobReference handles it internally
+    const reference = await generateJobReference();
 
     const job = await prisma.job.create({
       data: {
@@ -218,15 +228,10 @@ export const updateJobStage = async (req, res, next) => {
     const { id } = req.params;
     const { newStage, reason } = req.body;
 
-    let targetStage = (newStage || '').toUpperCase().trim().replace(/\s+/g, '_');
-    if (['INSPECTED', 'DRAFTING', 'QA_REVIEW', 'PREPARING_REPORT'].includes(targetStage)) {
-      targetStage = 'PREPARING_REPORT';
-    } else if (['COMPLETED', 'COMPLETE', 'DELIVERED'].includes(targetStage)) {
-      targetStage = 'COMPLETE';
-    }
+    const targetStage = normalizeJobStage(newStage);
 
-    if (!targetStage || !STAGE_ORDER.includes(targetStage)) {
-      throw ApiError.badRequest(`Invalid target stage "${newStage}". Valid stages: ${STAGE_ORDER.join(', ')}`);
+    if (!targetStage || !JOB_STAGES.includes(targetStage)) {
+      throw ApiError.badRequest(`Invalid target stage "${newStage}". Valid 10 stages: ${JOB_STAGES.join(', ')}`);
     }
 
     const jobId = parseInt(id);
@@ -252,10 +257,16 @@ export const updateJobStage = async (req, res, next) => {
     }
 
     if (!job) {
-      return ApiResponse.success(
-        res,
-        { job: { id, reference: id, stage: targetStage } },
-        `Stage updated to ${targetStage}`
+      throw ApiError.notFound(`Job not found with identifier: ${id}`);
+    }
+
+    // Workflow Transition Matrix Enforcement
+    if (!isValidTransition(job.stage, targetStage)) {
+      const allowed = ALLOWED_TRANSITIONS[job.stage] || [];
+      throw ApiError.badRequest(
+        `Invalid stage transition from "${job.stage}" to "${targetStage}". Allowed transitions from "${job.stage}": ${
+          allowed.length ? allowed.join(', ') : 'None (Terminal stage)'
+        }`
       );
     }
 
@@ -282,70 +293,98 @@ export const updateJobStage = async (req, res, next) => {
         data: {
           jobId: job.id,
           userId: req.user?.id || 1,
-          action: `STAGE_CHANGED_TO_${targetStage}`,
-          details: reason || `Progressed from ${job.stage} to ${targetStage}`,
+          action: `STAGE_CHANGED_${job.stage}_TO_${targetStage}`,
+          details: `Stage updated from ${job.stage} to ${targetStage}. Reason: ${reason || 'Workflow progression'}`,
         },
       });
-    } catch {}
+    } catch (auditErr) {
+      console.error('[surveyJobsController] Failed to record stage audit log:', auditErr.message);
+    }
 
-    // Notify Customer when transitioning through PREPARING_REPORT sub-phases (Inspected / Drafting / QA Review)
-    if (targetStage === 'PREPARING_REPORT') {
+    // In-app Notifications for intermediate inspection & drafting stages
+    if (['INSPECTED', 'DRAFTING', 'QA_REVIEW'].includes(targetStage)) {
       try {
-        const reasonText = String(reason || '').trim();
-        const isFirstEntry = job.stage !== 'PREPARING_REPORT';
-        const isQaReason = /submitted draft report|qa audit|qa review/i.test(reasonText);
-        const isDraftReason = /started report drafting|drafting commenced/i.test(reasonText);
-        const isInspectReason = /completed site visit|inspection completed/i.test(reasonText);
+        let targetCustomerId = job.clientId || null;
+        if (job.clientEmail && job.clientEmail.includes('@')) {
+          const targetUser = await prisma.user.findFirst({
+            where: { email: job.clientEmail.toLowerCase().trim() },
+            select: { id: true },
+          });
+          if (targetUser) targetCustomerId = targetUser.id;
+        }
 
-        if (isFirstEntry || isQaReason || isDraftReason || isInspectReason) {
-          let targetCustomerId = job.clientId || null;
-          if (job.clientEmail && job.clientEmail.includes('@')) {
-            const targetUser = await prisma.user.findFirst({
-              where: { email: job.clientEmail.toLowerCase().trim() },
-              select: { id: true },
-            });
-            if (targetUser) targetCustomerId = targetUser.id;
+        if (targetCustomerId) {
+          let notifTitle = '🔍 Site Inspection Completed';
+          let notifDesc = `Physical site inspection for ${job.propertyAddress || 'your property'} is complete. Report preparation has begun.`;
+          let notifType = 'booking';
+
+          if (targetStage === 'QA_REVIEW') {
+            notifTitle = '🛡️ Quality Assurance Review Underway';
+            notifDesc = `Draft RICS survey report for ${job.propertyAddress || 'your property'} has been submitted for Admin QA Audit.`;
+            notifType = 'report';
+          } else if (targetStage === 'DRAFTING') {
+            notifTitle = '📝 Survey Report Drafting Started';
+            notifDesc = `Your Chartered Surveyor is now compiling your official RICS survey report for ${job.propertyAddress || 'your property'}.`;
+            notifType = 'report';
           }
 
-          if (targetCustomerId) {
-            let notifTitle = '🔍 Site Inspection Completed';
-            let notifDesc = `Physical inspection for ${job.propertyAddress || 'your property'} is complete and report preparation has begun.`;
-            let notifType = 'booking';
+          const recentCutoff = new Date(Date.now() - 60 * 1000);
+          const alreadyExists = await prisma.notification.findFirst({
+            where: {
+              userId: targetCustomerId,
+              role: 'CUSTOMER',
+              title: notifTitle,
+              createdAt: { gte: recentCutoff },
+            },
+          });
 
-            if (isQaReason) {
-              notifTitle = '🛡️ Quality Assurance Review Underway';
-              notifDesc = `Your draft RICS survey report for ${job.propertyAddress || 'your property'} has been submitted for Admin Quality Assurance.`;
-              notifType = 'report';
-            } else if (isDraftReason) {
-              notifTitle = '📝 Survey Report Drafting Started';
-              notifDesc = `Your Chartered Surveyor is now drafting your official RICS survey report for ${job.propertyAddress || 'your property'}.`;
-            }
-
-            const recentCutoff = new Date(Date.now() - 60 * 1000);
-            const alreadyExists = await prisma.notification.findFirst({
-              where: {
+          if (!alreadyExists) {
+            await prisma.notification.create({
+              data: {
                 userId: targetCustomerId,
                 role: 'CUSTOMER',
                 title: notifTitle,
-                createdAt: { gte: recentCutoff },
+                desc: notifDesc,
+                type: notifType,
+                link: '/customer/track-my-survey',
               },
             });
-
-            if (!alreadyExists) {
-              await prisma.notification.create({
-                data: {
-                  userId: targetCustomerId,
-                  role: 'CUSTOMER',
-                  title: notifTitle,
-                  desc: notifDesc,
-                  type: notifType,
-                  link: '/customer/track-my-survey',
-                },
-              });
-            }
           }
         }
-      } catch (notifErr) {}
+      } catch (notifErr) {
+        console.error('[surveyJobsController] Failed to create stage transition notification:', notifErr.message);
+      }
+    }
+
+    // Dispatch Post-Inspection Update email when transitioning to INSPECTED (or DRAFTING if skipping INSPECTED)
+    let stageEmailSent = false;
+    let stageEmailError = null;
+    if (
+      (targetStage === 'INSPECTED' && job.stage !== 'INSPECTED') ||
+      (targetStage === 'DRAFTING' && job.stage !== 'INSPECTED' && job.stage !== 'DRAFTING')
+    ) {
+      try {
+        const clientEmail = job.clientEmail || updated.clientEmail;
+        if (clientEmail && clientEmail.includes('@')) {
+          const surveyorUser = job.surveyorId
+            ? await prisma.user.findUnique({ where: { id: job.surveyorId }, select: { name: true } })
+            : null;
+          const emailRes = await sendPostInspectionUpdateEmail({
+            to: clientEmail,
+            clientName: job.clientName || updated.clientName || 'Valued Client',
+            jobRef: job.reference || updated.reference,
+            propertyAddress: job.propertyAddress || updated.propertyAddress || 'Subject Property',
+            surveyType: job.serviceType || updated.serviceType || 'RICS Level 2 Home Survey',
+            surveyorName: surveyorUser?.name || req.user?.name || 'Assigned Chartered Surveyor',
+            jobId: job.id,
+          });
+          stageEmailSent = Boolean(emailRes?.success);
+          stageEmailError = emailRes?.error || null;
+        }
+      } catch (err) {
+        console.error('[sendPostInspectionUpdateEmail] error:', err.message);
+        stageEmailError = err.message;
+      }
     }
 
     // Dispatch Report Ready email if stage transitioned to COMPLETE
@@ -353,14 +392,16 @@ export const updateJobStage = async (req, res, next) => {
       try {
         const clientEmail = job.clientEmail || updated.clientEmail;
         if (clientEmail && clientEmail.includes('@')) {
-          sendReportReadyEmail({
+          const emailRes = await sendReportReadyEmail({
             to: clientEmail,
             clientName: job.clientName || updated.clientName || 'Valued Client',
             jobRef: job.reference || updated.reference,
             propertyAddress: job.propertyAddress || updated.propertyAddress || 'Subject Property',
             surveyType: job.serviceType || updated.serviceType || 'RICS Level 2 Home Survey',
             reportPdfUrl: job.reportPdfUrl || updated.reportPdfUrl,
-          }).catch((e) => console.warn('[sendReportReadyEmail] background error:', e.message));
+          });
+          stageEmailSent = Boolean(emailRes?.success);
+          stageEmailError = emailRes?.error || null;
 
           const targetUser = await prisma.user.findFirst({ where: { email: clientEmail } });
           if (targetUser || job.clientId) {
@@ -376,10 +417,13 @@ export const updateJobStage = async (req, res, next) => {
             });
           }
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('[sendReportReadyEmail] error:', err.message);
+        stageEmailError = err.message;
+      }
     }
 
-    return ApiResponse.success(res, { job: updated }, `Stage updated to ${targetStage}`);
+    return ApiResponse.success(res, { job: updated, emailSent: stageEmailSent, emailError: stageEmailError }, `Stage updated to ${targetStage}`);
   } catch (error) {
     next(error);
   }
@@ -392,11 +436,23 @@ export const assignSurveyor = async (req, res, next) => {
     const jobId = parseInt(id);
 
     const currentJob = await prisma.job.findUnique({ where: { id: jobId }, include: { invoices: true, terms: true } });
+    if (!currentJob) {
+      throw ApiError.notFound(`Job not found with id: ${jobId}`);
+    }
     const hasPaid = currentJob?.invoices?.some((i) => i.status === 'PAID');
     const hasSigned = currentJob?.terms?.some((t) => t.signed);
-    const nextStage = currentJob && inspectionDate && (currentJob.stage === 'PAID' || (hasPaid && hasSigned))
+
+    if (!hasPaid) {
+      throw ApiError.badRequest('Cannot assign surveyor before invoice is PAID.');
+    }
+    if (!hasSigned) {
+      throw ApiError.badRequest('Cannot assign surveyor before Terms of Engagement are signed.');
+    }
+
+    // Determine new stage: move to BOOKED only if an inspection date is being set
+    const nextStage = inspectionDate && isValidTransition(currentJob.stage, 'BOOKED')
       ? 'BOOKED'
-      : currentJob?.stage;
+      : currentJob.stage;
 
     const job = await prisma.job.update({
       where: { id: jobId },
@@ -422,9 +478,11 @@ export const assignSurveyor = async (req, res, next) => {
     });
 
     // Dispatch Inspection Booked Email to Customer & CC Admin
+    let assignEmailSent = false;
+    let assignEmailError = null;
     try {
       if (job.clientEmail && job.clientEmail.includes('@') && inspectionDate) {
-        sendInspectionBookedEmail({
+        const emailRes = await sendInspectionBookedEmail({
           to: job.clientEmail,
           clientName: job.clientName || 'Valued Client',
           jobRef: job.reference,
@@ -433,7 +491,9 @@ export const assignSurveyor = async (req, res, next) => {
           inspectionDate: job.inspectionDate || inspectionDate,
           inspectionTime: job.inspectionTime || inspectionTime,
           surveyorName: job.surveyor?.name || 'RICS Chartered Surveyor',
-        }).catch((e) => console.warn('[sendInspectionBookedEmail] background error:', e.message));
+        });
+        assignEmailSent = Boolean(emailRes?.success);
+        assignEmailError = emailRes?.error || null;
 
         const formattedDate = new Date(inspectionDate).toLocaleDateString('en-GB', {
           weekday: 'short',
@@ -464,9 +524,12 @@ export const assignSurveyor = async (req, res, next) => {
           },
         });
       }
-    } catch (emailErr) {}
+    } catch (emailErr) {
+      console.error('[sendInspectionBookedEmail assignSurveyor] error:', emailErr.message);
+      assignEmailError = emailErr.message;
+    }
 
-    return ApiResponse.success(res, { job }, 'Surveyor assigned successfully');
+    return ApiResponse.success(res, { job, emailSent: assignEmailSent, emailError: assignEmailError }, 'Surveyor assigned successfully');
   } catch (error) {
     next(error);
   }
@@ -508,27 +571,7 @@ export const rescheduleSurveyJob = async (req, res, next) => {
     }
 
     if (!job) {
-      if (!id || String(id) === 'undefined' || String(id) === 'null') {
-        throw ApiError.badRequest('Valid job reference or ID is required');
-      }
-      let fallbackSurveyorId = null;
-      const anySurveyor = await prisma.user.findFirst({ where: { role: 'SURVEYOR' } });
-      if (anySurveyor) fallbackSurveyorId = anySurveyor.id;
-
-      job = await prisma.job.create({
-        data: {
-          reference: String(id),
-          serviceType: 'RICS Level 2 Home Survey',
-          propertyAddress: req.body.propertyAddress || 'Subject Property',
-          postcode: req.body.postcode || 'SW1A 1AA',
-          clientName: req.body.clientName || 'Private Client',
-          clientEmail: req.body.clientEmail || 'client@example.com',
-          inspectionDate: parsedDate,
-          inspectionTime: inspectionTime || '10:00 AM - 01:00 PM',
-          surveyorId: fallbackSurveyorId,
-          stage: 'BOOKED',
-        },
-      });
+      throw ApiError.notFound(`Survey job "${id}" not found.`);
     }
 
     // Validate surveyor ID against database to avoid foreign key violation
@@ -542,20 +585,15 @@ export const rescheduleSurveyJob = async (req, res, next) => {
         if (surveyorExists) {
           validSurveyorId = surveyorExists.id;
         } else {
-          // If specific ID doesn't exist, check for any surveyor user
-          const anySurveyor = await prisma.user.findFirst({
-            where: { role: 'SURVEYOR' },
-          });
-          if (anySurveyor) {
-            validSurveyorId = anySurveyor.id;
-          }
+            // surveyor ID provided but not found — keep existing assignment
+          console.warn(`[rescheduleSurveyJob] Surveyor ID ${parsedSurveyorId} not found; keeping existing surveyorId ${job.surveyorId}`);
         }
       }
     }
 
     // Reject placeholder "Date: TBD" reschedules from background UI syncs
     if (!parsedDate && (!inspectionTime || String(inspectionTime).toLowerCase().includes('tbd')) && surveyorId === undefined && keyCollectionDetails === undefined) {
-      return ApiResponse.success(res, { job }, 'No valid inspection date or details provided');
+      throw ApiError.badRequest('Please provide a valid inspection date, time slot, or assignment details to reschedule');
     }
 
     const fullJob = await prisma.job.findUnique({
@@ -573,7 +611,7 @@ export const rescheduleSurveyJob = async (req, res, next) => {
         inspectionTime: (inspectionTime && !String(inspectionTime).toLowerCase().includes('tbd')) ? inspectionTime : job.inspectionTime,
         surveyorId: validSurveyorId,
         keyCollectionDetails: keyCollectionDetails !== undefined ? keyCollectionDetails : job.keyCollectionDetails,
-        stage: (canMoveToBooked && ['QUOTE', 'ACCEPTED', 'PAID'].includes(job.stage)) ? 'BOOKED' : job.stage,
+        stage: (canMoveToBooked && ['QUOTE_ACCEPTED', 'TERMS_SIGNED', 'PAID'].includes(job.stage)) ? 'BOOKED' : job.stage,
       },
       include: {
         surveyor: { select: { id: true, name: true, email: true, phone: true } },
@@ -593,7 +631,9 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           },
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[surveyJobsController] Reschedule audit log failed:', e.message);
+    }
 
     // Also record callLog / timeline note if reason provided
     if (reason) {
@@ -607,13 +647,17 @@ export const rescheduleSurveyJob = async (req, res, next) => {
             durationMinutes: 2,
           },
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error('[surveyJobsController] Reschedule callLog failed:', e.message);
+      }
     }
 
     // Dispatch Rescheduled/Updated Inspection Booked Email to Customer & CC Admin
+    let rescheduleEmailSent = false;
+    let rescheduleEmailError = null;
     try {
       if (updated.clientEmail && updated.clientEmail.includes('@') && updated.inspectionDate) {
-        sendInspectionBookedEmail({
+        const emailRes = await sendInspectionBookedEmail({
           to: updated.clientEmail,
           clientName: updated.clientName || 'Valued Client',
           jobRef: updated.reference,
@@ -623,7 +667,9 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           inspectionTime: updated.inspectionTime,
           surveyorName: updated.surveyor?.name || 'RICS Chartered Surveyor',
           surveyorPhone: updated.surveyor?.phone,
-        }).catch((e) => console.warn('[sendInspectionBookedEmail Reschedule] background error:', e.message));
+        });
+        rescheduleEmailSent = Boolean(emailRes?.success);
+        rescheduleEmailError = emailRes?.error || null;
 
         const formattedDate = new Date(updated.inspectionDate).toLocaleDateString('en-GB', {
           weekday: 'short',
@@ -654,11 +700,14 @@ export const rescheduleSurveyJob = async (req, res, next) => {
           },
         });
       }
-    } catch (emailErr) {}
+    } catch (emailErr) {
+      console.error('[sendInspectionBookedEmail Reschedule] error:', emailErr.message);
+      rescheduleEmailError = emailErr.message;
+    }
 
     return ApiResponse.success(
       res,
-      { job: updated },
+      { job: updated, emailSent: rescheduleEmailSent, emailError: rescheduleEmailError },
       `Inspection appointment successfully rescheduled to ${inspectionDate || 'new date'}`
     );
   } catch (error) {
@@ -676,23 +725,42 @@ export const deleteSurveyJob = async (req, res, next) => {
 
     const targetJob = await prisma.job.findFirst({ where });
     if (!targetJob) {
-      return ApiResponse.success(res, null, 'Job deleted successfully');
+      throw ApiError.notFound(`Job not found for deletion: ${id}`);
     }
 
     const jId = targetJob.id;
-    await prisma.supportTicket.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.customerReview.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.message.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.quote.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.term.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.invoice.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.callLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.complaintLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
-    await prisma.auditLog.deleteMany({ where: { jobId: jId } }).catch(() => {});
-
-    await prisma.job.delete({ where: { id: jId } });
+    try {
+      await prisma.$transaction([
+        prisma.supportTicket.deleteMany({ where: { jobId: jId } }),
+        prisma.customerReview.deleteMany({ where: { jobId: jId } }),
+        prisma.message.deleteMany({ where: { jobId: jId } }),
+        prisma.quote.deleteMany({ where: { jobId: jId } }),
+        prisma.term.deleteMany({ where: { jobId: jId } }),
+        prisma.invoice.deleteMany({ where: { jobId: jId } }),
+        prisma.callLog.deleteMany({ where: { jobId: jId } }),
+        prisma.complaintLog.deleteMany({ where: { jobId: jId } }),
+        prisma.auditLog.deleteMany({ where: { jobId: jId } }),
+        prisma.job.delete({ where: { id: jId } }),
+      ]);
+    } catch (delErr) {
+      console.error('[surveyJobsController] Error deleting job and related records:', delErr.message);
+      throw delErr;
+    }
 
     return ApiResponse.success(res, null, 'Job deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const triggerBookingReminders = async (req, res, next) => {
+  try {
+    const minAgeHours = req.body?.minAgeHours !== undefined ? Number(req.body.minAgeHours) : 0;
+    const summary = await runBookingReminderScan({
+      triggeredByUserId: req.user?.id || null,
+      minAgeHours,
+    });
+    return ApiResponse.success(res, summary, `Booking reminder scan completed (${summary.dispatched} dispatched)`);
   } catch (error) {
     next(error);
   }

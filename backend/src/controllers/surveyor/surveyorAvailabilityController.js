@@ -16,7 +16,7 @@ export const getMyAvailability = async (req, res, next) => {
     const activeLoad = await prisma.job.count({
       where: {
         surveyorId,
-        stage: { in: ['BOOKED', 'PREPARING_REPORT'] },
+        stage: { in: ['BOOKED', 'INSPECTED', 'DRAFTING', 'QA_REVIEW'] },
       },
     });
 

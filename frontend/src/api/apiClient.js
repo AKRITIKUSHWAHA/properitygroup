@@ -43,7 +43,9 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
   if (!isAuthEndpoint) {
     try {
       sessionUser = typeof localStorage !== 'undefined' ? JSON.parse(localStorage.getItem('property_group_user_session') || '{}') : null;
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to parse session user from localStorage:', err);
+    }
   }
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
@@ -58,8 +60,6 @@ export async function apiRequest(endpoint, { method = 'GET', body, headers = {},
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       Accept: 'application/json',
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-      ...(sessionUser?.email ? { 'x-user-email': sessionUser.email } : {}),
-      ...(sessionUser?.name ? { 'x-user-name': sessionUser.name } : {}),
       ...(clientTimezone ? { 'x-client-timezone': clientTimezone } : {}),
       ...headers,
     },

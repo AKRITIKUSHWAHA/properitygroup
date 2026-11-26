@@ -59,6 +59,32 @@ export const updateSettings = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin-only: Check Email Service configuration status
+ * Returns whether provider is active and sender address, never exposing the secret key
+ */
+export const getEmailStatus = async (req, res, next) => {
+  try {
+    const key = (process.env.RESEND_API_KEY || '').trim();
+    const isConfigured = Boolean(key && key.startsWith('re_') && key.length >= 12);
+    const emailFrom = process.env.EMAIL_FROM || 'NJS Property Group <info@njspropertygroup.com>';
+    const enquiryInbox = process.env.ENQUIRY_NOTIFICATION_EMAIL || 'info@njspropertygroup.com';
+
+    return ApiResponse.success(
+      res,
+      {
+        isConfigured,
+        provider: isConfigured ? 'resend' : 'not_configured',
+        emailFrom,
+        enquiryInbox,
+      },
+      'Email provider status retrieved successfully'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const purgeTestData = async (req, res, next) => {
   try {
     const preservedEmails = ['njsadmin@gmail.com', 'njssurveyor@gmail.com'];

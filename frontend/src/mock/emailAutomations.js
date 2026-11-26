@@ -275,9 +275,9 @@ export const renderEmailTemplate = (text, data = {}) => {
   if (!text) return '';
   const rawCustomer = data.customer || data.customerName || data.clientName || 'Valued Client';
   const customerName = capitalizeName(rawCustomer);
-  const propertyAddress = data.property || data.propertyAddress || data.location || '14 Mayfair Gate, Mayfair, London W1K 2PB';
-  const surveyType = data.surveyType || data.serviceName || 'RICS Level 2 Home Survey';
-  const quoteTotal = data.quoteTotal || data.totalAmount || data.price || '650.00';
+  const propertyAddress = data.property || data.propertyAddress || data.location || 'Subject Property';
+  const surveyType = data.surveyType || data.serviceName || 'RICS Home Survey';
+  const quoteTotal = data.quoteTotal || data.totalAmount || data.price || (data.totalFee ? String(data.totalFee) : '0.00');
   const jobNo = data.jobNo || data.reference || data.lead_ref || data.jobRef || 'JOB-2026-080';
   const rawSurveyor = data.surveyor || data.surveyorName || 'Assigned Chartered Surveyor';
   const surveyorName = capitalizeName(rawSurveyor);

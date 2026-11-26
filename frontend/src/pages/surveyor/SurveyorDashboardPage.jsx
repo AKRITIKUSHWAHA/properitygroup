@@ -3,33 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import {
   Clock,
   AlertCircle,
-  Phone,
   Key,
-  MapPin,
   UploadCloud,
   CheckCircle2,
   Camera,
   Navigation,
-  FileText,
   ShieldCheck,
-  Sparkles,
   Calendar,
-  ChevronRight,
-  Plus,
-  X,
-  Image as ImageIcon,
   Check,
-  AlertTriangle,
   Smartphone,
   Download,
-  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../../components/PageHeader';
 import { useToast } from '../../components/ToastContext';
 import { Modal } from '../../components/common/Modal';
 import { useAuth } from '../../auth/AuthContext';
 import { useJobs, isJobForSurveyor } from '../../mock/jobs';
-import { surveyorDashboardApi, surveyorJobsApi } from '../../api/surveyorApi';
+import { surveyorJobsApi, surveyorSiteVisitsApi } from '../../api/surveyorApi';
 import { dispatchPostInspectionUpdate } from '../../services/autoQuoteService';
 import { emitNotification } from '../../utils/notificationService';
 import { SurveyorCalendarSyncModal } from '../../components/surveyor/SurveyorCalendarSyncModal';
@@ -57,11 +47,6 @@ export const SurveyorDashboardPage = () => {
   const { user } = useAuth();
   const { jobs, updateJob } = useJobs();
 
-  // Strict surveyor job isolation
-  const surveyorId = user?.surveyorId || (user?.email === 'surveyor@demo.com' ? 'srv-1' : null);
-  const surveyorName = user?.name;
-  const surveyorDbId = user?.id;
-
   // 1. Fetch live jobs strictly assigned to this surveyor from backend API
   const [liveJobs, setLiveJobs] = useState([]);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -78,6 +63,7 @@ export const SurveyorDashboardPage = () => {
         if (Array.isArray(fetched) && fetched.length > 0) {
           const mapped = fetched.map((j) => ({
             id: j.reference || `JOB-${j.id}`,
+            dbId: j.id,
             property: j.propertyAddress,
             location: j.postcode,
             surveyType: j.serviceType,
@@ -85,7 +71,10 @@ export const SurveyorDashboardPage = () => {
             customerPhone: j.clientPhone,
             customerEmail: j.clientEmail,
             timeSlot: j.inspectionTime || '10:00 - 13:00',
-            status: j.stage === 'PREPARING_REPORT' ? 'Inspected' : (j.stage || 'Booked'),
+            status: j.stage === 'INSPECTED' ? 'Inspected' : j.stage === 'DRAFTING' ? 'Drafting' : j.stage === 'QA_REVIEW' ? 'QA Review' : j.stage === 'COMPLETE' ? 'Completed' : (j.stage || 'Booked'),
+            inspectedAt: j.inspectedAt || null,
+            slaDeadline: j.slaDeadline || null,
+            siteEvidence: Array.isArray(j.siteEvidence) ? j.siteEvidence : [],
             countdown: '48h SLA Target',
             propertyDetails: {
               accessDetails: j.keyCollectionDetails || 'Keys with estate agent',
@@ -95,7 +84,9 @@ export const SurveyorDashboardPage = () => {
           setLiveJobs(mapped);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Failed to load surveyor dashboard data:', err);
+      });
 
     return () => { isMounted = false; };
   }, [user]);
@@ -118,14 +109,12 @@ export const SurveyorDashboardPage = () => {
     primaryJob?.status === 'Drafting' ||
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
-    (primaryJob?.timelineStep || 0) >= 7 ||
-    localStorage.getItem(`propertygroup_inspection_completed_${primaryJob?.id}`) === 'true';
+    (primaryJob?.timelineStep || 0) >= 7;
 
   const isJobQASubmitted =
     primaryJob?.status === 'QA_Review' ||
     primaryJob?.status === 'Completed' ||
-    (primaryJob?.timelineStep || 0) >= 9 ||
-    localStorage.getItem(`propertygroup_qareview_${primaryJob?.id}`) === 'true';
+    (primaryJob?.timelineStep || 0) >= 9;
 
   // On-Site Status for Primary Job (Persistent across browser refresh)
   const [jobStage, setJobStage] = useState(
@@ -145,11 +134,35 @@ export const SurveyorDashboardPage = () => {
     }
   }, [isJobCompleted, isJobQASubmitted]);
 
-  // Turnaround Countdown State (48h SLA)
-  const [timeRemaining, setTimeRemaining] = useState({ hours: 34, minutes: 22 });
+  // Turnaround Countdown State (48h SLA calculated from INSPECTED AuditLog.createdAt)
+  const computeTimeRemaining = (inspectedAt) => {
+    if (!inspectedAt) return { hours: 48, minutes: 0 };
+    const deadlineMs = new Date(inspectedAt).getTime() + 48 * 60 * 60 * 1000;
+    const diffMs = Math.max(0, deadlineMs - Date.now());
+    return {
+      hours: Math.floor(diffMs / 3600000),
+      minutes: Math.floor((diffMs % 3600000) / 60000),
+    };
+  };
 
-  // Photo & Note Upload State (Contextual to primaryJob)
+  const [timeRemaining, setTimeRemaining] = useState(() =>
+    computeTimeRemaining(primaryJob?.inspectedAt)
+  );
+
+  useEffect(() => {
+    setTimeRemaining(computeTimeRemaining(primaryJob?.inspectedAt));
+    if (!primaryJob?.inspectedAt) return undefined;
+    const timer = setInterval(() => {
+      setTimeRemaining(computeTimeRemaining(primaryJob.inspectedAt));
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [primaryJob?.inspectedAt]);
+
+  // Photo & Note Upload State (DB-backed via AuditLog, with localStorage fallback)
   const [capturedPhotos, setCapturedPhotos] = useState(() => {
+    if (Array.isArray(primaryJob?.siteEvidence) && primaryJob.siteEvidence.length > 0) {
+      return primaryJob.siteEvidence;
+    }
     if (!primaryJob?.id) return [];
     try {
       const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
@@ -161,13 +174,21 @@ export const SurveyorDashboardPage = () => {
 
   useEffect(() => {
     if (!primaryJob?.id) return;
+    if (Array.isArray(primaryJob.siteEvidence) && primaryJob.siteEvidence.length > 0) {
+      setCapturedPhotos(primaryJob.siteEvidence);
+      return;
+    }
     try {
       const saved = localStorage.getItem(`surveyor_photos_${primaryJob.id}`);
       if (saved) {
         setCapturedPhotos(JSON.parse(saved));
+      } else {
+        setCapturedPhotos([]);
       }
-    } catch {}
-  }, [primaryJob?.id]);
+    } catch (err) {
+      console.warn('Failed to load saved surveyor photos:', err);
+    }
+  }, [primaryJob?.id, primaryJob?.siteEvidence]);
 
   // QA Submission State
   const [isQASubmitted, setIsQASubmitted] = useState(isJobQASubmitted);
@@ -192,7 +213,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Chartered Surveyor ${surveyorName} has arrived at ${propertyAddr} and commenced physical site inspection.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 2. Dispatch Admin In-App Notification (Operations knows surveyor is on-site)
     emitNotification({
@@ -201,7 +224,9 @@ export const SurveyorDashboardPage = () => {
       desc: `${surveyorName} checked in on-site at ${propertyAddr} at ${timeStr}. Physical inspection underway.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 3. Dispatch Surveyor In-App Notification (Surveyor confirmation)
     emitNotification({
@@ -211,7 +236,9 @@ export const SurveyorDashboardPage = () => {
       desc: `You checked in at ${propertyAddr} at ${timeStr}. On-site inspection timer active.`,
       type: 'booking',
       link: '/surveyor/field-dashboard',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // Update job activity log
     if (primaryJob.id) {
@@ -243,21 +270,15 @@ export const SurveyorDashboardPage = () => {
     setJobStage('completed');
     setCompleteTimestamp(`Today at ${timeStr}`);
 
-    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const surveyorName = user?.name || primaryJob?.surveyor || 'Chartered Surveyor';
     const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
     const propertyAddr = primaryJob?.property || 'Subject Property';
-
-    localStorage.setItem(`propertygroup_inspection_completed_${primaryJob.id}`, 'true');
-    localStorage.setItem('propertygroup_inspection_completed', 'true');
-    if (targetCustomerEmail) {
-      localStorage.setItem(`propertygroup_inspection_completed_${targetCustomerEmail}`, 'true');
-    }
 
     if (primaryJob.id) {
       updateJob(primaryJob.id, {
         status: 'Inspected',
         timelineStep: 7,
-        stage: 'PREPARING_REPORT',
+        stage: 'INSPECTED',
         customerEmail: targetCustomerEmail,
         activityLog: [
           {
@@ -279,7 +300,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} completed the physical site inspection for ${propertyAddr}. Your technical report is now being compiled.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -288,7 +311,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} finished on-site inspection for ${propertyAddr}. Stage moved to Drafting & QA Review.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -298,10 +323,14 @@ export const SurveyorDashboardPage = () => {
       desc: `Physical inspection concluded for ${propertyAddr}. 48h report drafting SLA activated.`,
       type: 'booking',
       link: '/surveyor/field-dashboard',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 4. Dispatch Automated Customer Email
-    dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
+    dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch((err) => {
+      console.warn('Post-inspection email dispatch error:', err);
+    });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -313,7 +342,7 @@ export const SurveyorDashboardPage = () => {
     });
   };
 
-  const handleAddPhoto = (e) => {
+  const handleAddPhoto = async (e) => {
     e.preventDefault();
     if (!defectNote.trim() || !primaryJob) return;
 
@@ -322,19 +351,41 @@ export const SurveyorDashboardPage = () => {
     const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
     const propertyAddr = primaryJob?.property || 'Subject Property';
 
-    const newPhoto = {
+    let savedPhoto = {
       id: Date.now(),
       room: selectedRoom,
-      note: defectNote,
+      note: defectNote.trim(),
       url: null,
       time: timeStr,
     };
 
-    const updated = [newPhoto, ...capturedPhotos];
+    try {
+      const targetId = primaryJob.dbId || primaryJob.id;
+      const res = await surveyorSiteVisitsApi.addSiteEvidence(targetId, {
+        room: selectedRoom,
+        note: defectNote.trim(),
+        time: timeStr,
+      });
+      const dbEvidence = res?.data?.evidence || res?.evidence;
+      if (dbEvidence) {
+        savedPhoto = dbEvidence;
+      }
+    } catch (err) {
+      console.warn('Failed to persist site evidence to backend:', err);
+      addToast({
+        type: 'warning',
+        title: 'Saved Locally Only',
+        message: err?.message || 'Could not sync site evidence to server; saved in local session.',
+      });
+    }
+
+    const updated = [savedPhoto, ...capturedPhotos];
     setCapturedPhotos(updated);
     try {
       localStorage.setItem(`surveyor_photos_${primaryJob.id}`, JSON.stringify(updated));
-    } catch {}
+    } catch (err) {
+      console.warn('Failed to persist surveyor photos:', err);
+    }
 
     setIsPhotoModalOpen(false);
     setDefectNote('');
@@ -345,6 +396,7 @@ export const SurveyorDashboardPage = () => {
       updateJob(primaryJob.id, {
         status: 'Drafting',
         timelineStep: 8,
+        stage: 'DRAFTING',
         customerEmail: targetCustomerEmail,
         activityLog: [
           {
@@ -355,7 +407,9 @@ export const SurveyorDashboardPage = () => {
           ...(primaryJob?.activityLog || []),
         ],
       });
-      dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch(() => {});
+      dispatchPostInspectionUpdate({ ...primaryJob, customerEmail: targetCustomerEmail }).catch((err) => {
+        console.warn('Post-inspection email dispatch error:', err);
+      });
     }
 
     // 1. Dispatch Customer In-App Notification
@@ -367,7 +421,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} logged defect observations & site evidence for ${propertyAddr} (${selectedRoom}).`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -376,7 +432,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} uploaded observations for ${propertyAddr} (${selectedRoom}).`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -386,7 +444,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Site photo & observation recorded under ${selectedRoom}.`,
       type: 'booking',
       link: '/surveyor/field-dashboard',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));
@@ -401,19 +461,18 @@ export const SurveyorDashboardPage = () => {
   const handleSubmitQA = () => {
     if (!primaryJob) return;
     const timeStr = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    const surveyorName = user?.name || primaryJob?.surveyor || 'test surveyor';
+    const surveyorName = user?.name || primaryJob?.surveyor || 'Chartered Surveyor';
     const jobRef = primaryJob?.jobNo || primaryJob?.id || 'JOB';
     const propertyAddr = primaryJob?.property || 'Subject Property';
 
     setIsQASubmitted(true);
     setJobStage('qa_submitted');
 
-    localStorage.setItem(`propertygroup_qareview_${primaryJob.id}`, 'true');
-
     if (primaryJob.id) {
       updateJob(primaryJob.id, {
         status: 'QA_Review',
         timelineStep: 9,
+        stage: 'QA_REVIEW',
         customerEmail: targetCustomerEmail,
         activityLog: [
           {
@@ -435,7 +494,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} has completed the draft report for ${propertyAddr} and submitted it to our RICS QA Desk for peer-review audit.`,
       type: 'booking',
       link: '/customer/track-my-survey',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 2. Dispatch Admin In-App Notification
     emitNotification({
@@ -444,7 +505,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Surveyor ${surveyorName} uploaded draft report & evidence for ${propertyAddr}. Ready for QA sign-off & customer release.`,
       type: 'booking',
       link: `/admin/jobs/${primaryJob?.id}`,
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     // 3. Dispatch Surveyor In-App Notification
     emitNotification({
@@ -454,7 +517,9 @@ export const SurveyorDashboardPage = () => {
       desc: `Draft report for ${propertyAddr} dispatched to Central Admin QA Review Desk.`,
       type: 'booking',
       link: '/surveyor/field-dashboard',
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn('Surveyor dashboard notification sync note:', err);
+    });
 
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('storage'));

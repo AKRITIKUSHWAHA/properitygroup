@@ -162,7 +162,13 @@ export const getMessageContacts = async (req, res, next) => {
       if (!uniqueUsersMap.has(key)) {
         uniqueUsersMap.set(key, u);
       } else {
-        if (u.email.includes('demo.com') || u.email.includes('njspropertygroup.com')) {
+        const existing = uniqueUsersMap.get(key);
+        const existingIsDemo = (existing.email || '').toLowerCase().includes('demo.com');
+        const currentEmail = (u.email || '').toLowerCase();
+        const currentIsDemo = currentEmail.includes('demo.com');
+        if (existingIsDemo && !currentIsDemo) {
+          uniqueUsersMap.set(key, u);
+        } else if (!currentIsDemo && currentEmail.includes('njspropertygroup.com')) {
           uniqueUsersMap.set(key, u);
         }
       }
@@ -450,7 +456,9 @@ export const sendCustomerMessage = async (req, res, next) => {
               select: { id: true, name: true, email: true, role: true },
             });
           }
-        } catch {}
+        } catch (findErr) {
+          console.error('[customerMessagesController] Error looking up conversation recipient:', findErr.message);
+        }
       }
 
       if (recipientUser) {

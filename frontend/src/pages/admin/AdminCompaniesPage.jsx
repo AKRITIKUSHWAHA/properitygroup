@@ -308,15 +308,21 @@ export const AdminCompaniesPage = () => {
   const handleDeleteCompany = async (e, id, name, dbId) => {
     e.stopPropagation();
     if (window.confirm(`Are you sure you want to remove ${name} from partner panels?`)) {
-      setCompanies((prev) => prev.filter((c) => c.id !== id));
       const targetId = dbId || (typeof id === 'number' ? id : parseInt(String(id).replace('CMP-', ''), 10));
       if (targetId) {
         try {
           await adminCompaniesApi.deleteCompany(targetId);
         } catch (err) {
-          console.warn('Backend delete error:', err?.message || err);
+          console.error('Backend delete error:', err?.message || err);
+          addToast({
+            type: 'error',
+            title: 'Delete Failed',
+            message: err?.message || `Could not remove ${name} from database.`,
+          });
+          return;
         }
       }
+      setCompanies((prev) => prev.filter((c) => c.id !== id));
       addToast({
         type: 'info',
         title: 'Partner Removed',

@@ -2,6 +2,9 @@ import { prisma } from '../config/db.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { sendWebsiteEnquiryNotificationEmail, sendQuoteProposalEmail } from '../services/emailService.js';
+import { ensureCustomerUser } from '../services/customerUserService.js';
+import { normalizeLeadStatus } from '../utils/jobStages.js';
+import { generateLeadReference, generateInvoiceNumber, generateTermReference } from '../utils/references.js';
 
 /**
  * Superadmin Menu 5: CRM & Leads (Leads, Call Notes, Complaints Log)
@@ -11,7 +14,7 @@ export const getCrmAndLeads = async (req, res, next) => {
     const { status, source, search } = req.query;
     const where = {};
 
-    if (status) where.status = status.toUpperCase();
+    if (status) where.status = normalizeLeadStatus(status);
     if (source) where.source = source.toUpperCase();
     if (search) {
       where.OR = [
@@ -91,10 +94,9 @@ export const createLead = async (req, res, next) => {
       throw ApiError.badRequest('Client name, email, property address and postcode are required');
     }
 
-    const count = await prisma.lead.count();
     const isLsd = String(source || '').toUpperCase().includes('LSD') || String(source || '').toUpperCase().includes('LOCAL');
     const prefix = isLsd ? 'LSD' : 'NJS';
-    const reference = `${prefix}-2026-${String(count + 101).padStart(4, '0')}`;
+    const reference = await generateLeadReference(prefix);
 
     const lead = await prisma.lead.create({
       data: {
@@ -113,6 +115,13 @@ export const createLead = async (req, res, next) => {
       },
     });
 
+    // Ensure customer account is provisioned in DB users table (Status: PENDING)
+    await ensureCustomerUser({
+      email: clientEmail,
+      name: clientName,
+      phone: clientPhone,
+    }).catch((e) => console.error('[ensureCustomerUser lead error]:', e.message));
+
     return ApiResponse.created(res, { lead }, 'CRM lead captured');
   } catch (error) {
     next(error);
@@ -128,7 +137,7 @@ export const updateLeadStatus = async (req, res, next) => {
     const where = !isNaN(numId) && String(numId) === String(id) ? { id: numId } : { reference: String(id) };
 
     const updateData = {};
-    if (status) updateData.status = status.toUpperCase();
+    if (status) updateData.status = normalizeLeadStatus(status);
     if (estimatedValue !== undefined && !isNaN(Number(estimatedValue))) {
       updateData.estimatedValue = parseFloat(estimatedValue);
     } else if (status && (status.toUpperCase() === 'CONVERTED' || status.toUpperCase() === 'QUOTED' || status.toUpperCase() === 'QUOTE_SENT')) {
@@ -143,95 +152,7 @@ export const updateLeadStatus = async (req, res, next) => {
       data: updateData,
     });
 
-    const upperStatus = (status || '').toUpperCase();
-
-    // 1. If status is QUOTE_SENT or QUOTED, sync/create prisma.quote, dispatch proposal email & in-app notification
-    if (upperStatus === 'QUOTE_SENT' || upperStatus === 'QUOTED') {
-      try {
-        const total = lead.estimatedValue || (estimatedValue ? parseFloat(estimatedValue) : null);
-        if (total && total > 0) {
-          const baseFee = Math.round((total / 1.2) * 100) / 100;
-          const vatAmount = Math.round((total - baseFee) * 100) / 100;
-
-          const existingQuote = await prisma.quote.findFirst({
-            where: { leadId: lead.id },
-          });
-
-        let quoteRef = `QTE-2026-${lead.id}`;
-        if (existingQuote) {
-          quoteRef = existingQuote.reference;
-          await prisma.quote.update({
-            where: { id: existingQuote.id },
-            data: {
-              baseFee,
-              vatAmount,
-              totalAmount: total,
-              status: 'SENT',
-            },
-          });
-        } else {
-          const qCount = await prisma.quote.count().catch(() => 0);
-          quoteRef = `QTE-2026-${String(qCount + 101).padStart(3, '0')}`;
-          await prisma.quote.create({
-            data: {
-              reference: quoteRef,
-              leadId: lead.id,
-              baseFee,
-              vatRate: 20.0,
-              vatAmount,
-              totalAmount: total,
-              status: 'SENT',
-              validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            },
-          });
-        }
-
-        // Dispatch Proposal Email (Resend)
-        if (lead.clientEmail) {
-          const frontendBase = process.env.CLIENT_URL?.split(',')[0] || process.env.FRONTEND_URL || 'http://localhost:5175';
-          const quoteLink = `${frontendBase}/customer/quotations?quoteRef=${encodeURIComponent(quoteRef)}&property=${encodeURIComponent(lead.propertyAddress || '')}&email=${encodeURIComponent(lead.clientEmail)}`;
-          sendQuoteProposalEmail({
-            to: lead.clientEmail,
-            clientName: lead.clientName || 'Valued Client',
-            quoteAmount: total.toFixed(2),
-            surveyType: lead.serviceType || 'RICS Level 2 Home Survey',
-            propertyAddress: lead.propertyAddress || 'Subject Property',
-            quoteLink,
-          }).catch((err) => console.warn('[sendQuoteProposalEmail lead] warning:', err.message));
-        }
-
-        // In-App Notification for Customer & Admin
-        const targetUser = await prisma.user.findFirst({
-          where: { email: lead.clientEmail },
-        });
-
-        await prisma.notification.create({
-          data: {
-            userId: targetUser?.id || null,
-            role: 'CUSTOMER',
-            title: 'Formal Survey Quotation Ready',
-            desc: `A formal RICS quotation of £${total.toFixed(2)} has been prepared for ${lead.propertyAddress || 'your property'}.`,
-            type: 'QUOTE',
-            amount: `£${total.toFixed(2)}`,
-            link: '/customer/quotations',
-          },
-        }).catch((err) => console.warn('Customer quote notification error:', err.message));
-
-        await prisma.notification.create({
-          data: {
-            role: 'ADMIN',
-            title: `Quote Proposal Issued - £${total.toFixed(2)}`,
-            desc: `Quote proposal ${quoteRef} issued for ${lead.clientName} (${lead.clientEmail}).`,
-            type: 'QUOTE',
-            amount: `£${total.toFixed(2)}`,
-            link: '/admin/finance/quotations',
-          },
-        }).catch(() => {});
-        }
-      } catch (qErr) {
-        console.warn('[updateLeadStatus] quote sync warning:', qErr.message);
-      }
-    }
+    const upperStatus = normalizeLeadStatus(status);
 
     // 2. If status is CONVERTED (e.g. Admin clicked "Convert to Won Job"), create prisma.job, term & invoice
     if (upperStatus === 'CONVERTED') {
@@ -255,7 +176,7 @@ export const updateLeadStatus = async (req, res, next) => {
               propertyAddress: lead.propertyAddress,
               postcode: lead.postcode,
               serviceType: lead.serviceType,
-              stage: 'ACCEPTED',
+              stage: 'QUOTE_ACCEPTED',
               leadId: lead.id,
             },
           });
@@ -271,17 +192,21 @@ export const updateLeadStatus = async (req, res, next) => {
         if (jobId) {
           const existingTerm = await prisma.term.findFirst({ where: { jobId } });
           if (!existingTerm) {
-            await prisma.term.create({
-              data: {
-                reference: `TRM-2026-${jobId}`,
-                jobId,
-                clientName: lead.clientName,
-                clientEmail: lead.clientEmail,
-                documentTitle: `${lead.serviceType} Terms of Engagement`,
-                content: 'RICS Standard Terms of Engagement',
-                signed: false,
-              },
-            }).catch(() => {});
+            try {
+              await prisma.term.create({
+                data: {
+                  reference: `TRM-2026-${jobId}`,
+                  jobId,
+                  clientName: lead.clientName,
+                  clientEmail: lead.clientEmail,
+                  documentTitle: `${lead.serviceType} Terms of Engagement`,
+                  content: 'RICS Standard Terms of Engagement',
+                  signed: false,
+                },
+              });
+            } catch (termErr) {
+              console.error('[crmAndLeadsController] Failed to create terms on lead won:', termErr.message);
+            }
           }
 
           // Ensure invoice record exists
@@ -290,18 +215,22 @@ export const updateLeadStatus = async (req, res, next) => {
           if (!existingInvoice && total && total > 0) {
             const subtotal = Math.round((total / 1.2) * 100) / 100;
             const vat = Math.round((total - subtotal) * 100) / 100;
-            await prisma.invoice.create({
-              data: {
-                invoiceNumber: `INV-2026-${String(jobId).padStart(3, '0')}`,
-                jobId,
-                clientName: lead.clientName,
-                clientEmail: lead.clientEmail,
-                subtotal,
-                vatAmount: vat,
-                total,
-                status: 'PENDING',
-              },
-            }).catch(() => {});
+            try {
+              await prisma.invoice.create({
+                data: {
+                  invoiceNumber: await generateInvoiceNumber(),
+                  jobId,
+                  clientName: lead.clientName,
+                  clientEmail: lead.clientEmail,
+                  subtotal,
+                  vatAmount: vat,
+                  total,
+                  status: 'PENDING',
+                },
+              });
+            } catch (invErr) {
+              console.error('[crmAndLeadsController] Failed to create invoice on lead won:', invErr.message);
+            }
           }
         }
       } catch (cErr) {
@@ -396,6 +325,18 @@ export const resolveComplaint = async (req, res, next) => {
  */
 export const ingestLsdLead = async (req, res, next) => {
   try {
+    const configuredSecret = process.env.LSD_WEBHOOK_SECRET;
+    const providedSecret =
+      req.headers['x-lsd-secret'] ||
+      req.headers['x-webhook-secret'] ||
+      (req.headers.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.split(' ')[1]
+        : req.headers.authorization);
+
+    if (!configuredSecret || !providedSecret || providedSecret !== configuredSecret) {
+      throw ApiError.unauthorized('Invalid or missing LSD webhook security secret.');
+    }
+
     const body = req.body || {};
 
     const clientName = String(body.clientName || body.name || body.customerName || body.contactName || '').trim();
@@ -440,16 +381,20 @@ export const ingestLsdLead = async (req, res, next) => {
       }
     }
 
-    // 2. Generate LSD-2026-XXXX reference
-    const count = await prisma.lead.count();
-    const reference = `LSD-2026-${String(count + 101).padStart(4, '0')}`;
+    const normalizedEmail = (clientEmail || '').toLowerCase().trim();
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      throw ApiError.badRequest('Valid clientEmail is required for LSD lead ingestion.');
+    }
+
+    // 2. Generate LSD-YYYY-XXXX reference
+    const reference = await generateLeadReference('LSD');
 
     // 3. Create lead in database
     const lead = await prisma.lead.create({
       data: {
         reference,
         clientName,
-        clientEmail: clientEmail || 'client@demo.com',
+        clientEmail: normalizedEmail,
         clientPhone: clientPhone || null,
         propertyAddress: propertyAddress || postcode || 'UK Property',
         postcode: postcode || 'N/A',
@@ -460,6 +405,13 @@ export const ingestLsdLead = async (req, res, next) => {
         status: 'NEW',
       },
     });
+
+    // Ensure customer account is provisioned in DB users table (Status: PENDING)
+    await ensureCustomerUser({
+      email: clientEmail,
+      name: clientName,
+      phone: clientPhone,
+    }).catch((e) => console.error('[ensureCustomerUser LSD error]:', e.message));
 
     // 4. Attach notes if provided
     if (notes) {
@@ -478,8 +430,10 @@ export const ingestLsdLead = async (req, res, next) => {
     }
 
     // 5. Instant Admin Email Notification & Customer Acknowledgment
+    let emailSent = false;
+    let emailError = null;
     try {
-      await sendWebsiteEnquiryNotificationEmail({
+      const emailRes = await sendWebsiteEnquiryNotificationEmail({
         referenceId: reference,
         enquiryCategory: 'SURVEY_QUOTE',
         customerName: clientName,
@@ -491,8 +445,11 @@ export const ingestLsdLead = async (req, res, next) => {
         additionalNotes: notes,
         sourcePage: 'Local Surveyors Direct (LSD) Lead Ingestion',
       });
+      emailSent = Boolean(emailRes?.success || emailRes?.emailSent);
+      emailError = emailRes?.error || null;
     } catch (emailErr) {
-      console.warn('LSD lead notification email warning:', emailErr.message);
+      console.error('LSD lead notification email error:', emailErr.message);
+      emailError = emailErr.message;
     }
 
     // 6. In-App Notification for Admin
@@ -506,11 +463,13 @@ export const ingestLsdLead = async (req, res, next) => {
           link: '/admin/crm-and-leads',
         },
       });
-    } catch (_) {}
+    } catch (notifErr) {
+      console.error('[crmAndLeadsController] Failed to create admin notification for LSD lead:', notifErr.message);
+    }
 
     return ApiResponse.created(
       res,
-      { lead, reference, source: 'Local Surveyors Direct' },
+      { lead, reference, source: 'Local Surveyors Direct', emailSent, emailError },
       'LSD lead ingested successfully and admin notified'
     );
   } catch (error) {
@@ -524,12 +483,22 @@ export const deleteLead = async (req, res, next) => {
     if (typeof id === 'string' && id.includes('@')) {
       const cleanEmail = id.toLowerCase().trim();
       const emailLeads = await prisma.lead.findMany({ where: { clientEmail: cleanEmail }, select: { id: true } });
+      if (emailLeads.length === 0) {
+        return ApiResponse.success(res, { deleted: 0 }, `No leads found matching email: ${cleanEmail}`);
+      }
       for (const el of emailLeads) {
-        await prisma.callLog.deleteMany({ where: { leadId: el.id } }).catch(() => {});
-        await prisma.complaintLog.deleteMany({ where: { leadId: el.id } }).catch(() => {});
-        await prisma.quote.deleteMany({ where: { leadId: el.id } }).catch(() => {});
-        await prisma.job.updateMany({ where: { leadId: el.id }, data: { leadId: null } }).catch(() => {});
-        await prisma.lead.delete({ where: { id: el.id } }).catch(() => {});
+        try {
+          await prisma.$transaction([
+            prisma.callLog.deleteMany({ where: { leadId: el.id } }),
+            prisma.complaintLog.deleteMany({ where: { leadId: el.id } }),
+            prisma.quote.deleteMany({ where: { leadId: el.id } }),
+            prisma.job.updateMany({ where: { leadId: el.id }, data: { leadId: null } }),
+            prisma.lead.delete({ where: { id: el.id } }),
+          ]);
+        } catch (delErr) {
+          console.error(`[crmAndLeadsController] Failed to delete lead ${el.id}:`, delErr.message);
+          throw delErr;
+        }
       }
       return ApiResponse.success(res, null, 'Leads removed successfully');
     }
@@ -541,14 +510,21 @@ export const deleteLead = async (req, res, next) => {
 
     const targetLead = await prisma.lead.findFirst({ where });
     if (!targetLead) {
-      return ApiResponse.success(res, null, 'Lead deleted successfully');
+      throw ApiError.notFound(`Lead not found for deletion: ${id}`);
     }
 
-    await prisma.callLog.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
-    await prisma.complaintLog.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
-    await prisma.quote.deleteMany({ where: { leadId: targetLead.id } }).catch(() => {});
-    await prisma.job.updateMany({ where: { leadId: targetLead.id }, data: { leadId: null } }).catch(() => {});
-    await prisma.lead.delete({ where: { id: targetLead.id } });
+    try {
+      await prisma.$transaction([
+        prisma.callLog.deleteMany({ where: { leadId: targetLead.id } }),
+        prisma.complaintLog.deleteMany({ where: { leadId: targetLead.id } }),
+        prisma.quote.deleteMany({ where: { leadId: targetLead.id } }),
+        prisma.job.updateMany({ where: { leadId: targetLead.id }, data: { leadId: null } }),
+        prisma.lead.delete({ where: { id: targetLead.id } }),
+      ]);
+    } catch (delErr) {
+      console.error('[crmAndLeadsController] Failed to delete lead and cascade records:', delErr.message);
+      throw delErr;
+    }
 
     return ApiResponse.success(res, null, 'Lead deleted successfully');
   } catch (error) {

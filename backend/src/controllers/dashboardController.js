@@ -40,36 +40,44 @@ export const getDashboardStats = async (req, res, next) => {
 
 export const getActionBuckets = async (req, res, next) => {
   try {
-    const excludedWhere = {
-      NOT: [
-        { id: 7 },
-        { clientName: { contains: 'akku' } },
-        { propertyAddress: { contains: 'MP Nagar' } },
-        { propertyAddress: { contains: 'Bhopal' } },
-        { propertyAddress: { contains: 'Plot No 45' } },
-        { reference: 'JOB-2026-101' },
-      ],
+    // Ready to book definition: invoice PAID + terms signed + not yet booked/completed
+    const readyToBookCondition = {
+      stage: { in: ['PAID', 'QUOTE_ACCEPTED', 'TERMS_SIGNED'] },
+      terms: { some: { signed: true } },
+      invoices: { some: { status: 'PAID' } },
     };
 
-    const [quotesToSubmit, jobsToBook, reportsToUpload, termsToSign, paymentsToCollect, completed] =
+    const [quotesToSubmit, jobsToBookCount, jobsToBookList, reportsToUpload, termsToSign, paymentsToCollect, completed] =
       await Promise.all([
-        prisma.lead.count({ where: { status: { in: ['NEW', 'CONTACTED'] }, ...excludedWhere } }),
-        prisma.job.count({ where: { stage: { in: ['PAID', 'ACCEPTED'] }, ...excludedWhere } }),
-        prisma.job.count({ where: { stage: 'PREPARING_REPORT', ...excludedWhere } }),
+        prisma.lead.count({ where: { status: { in: ['NEW', 'CONTACTED'] } } }),
+        prisma.job.count({ where: readyToBookCondition }),
+        prisma.job.findMany({
+          where: readyToBookCondition,
+          include: {
+            surveyor: { select: { id: true, name: true, email: true, phone: true } },
+            company: { select: { id: true, name: true, branchName: true, keyCollectionProtocol: true } },
+            quotes: true,
+            terms: true,
+            invoices: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.job.count({ where: { stage: { in: ['INSPECTED', 'DRAFTING'] } } }),
         prisma.term.count({ where: { signed: false } }),
         prisma.invoice.count({ where: { status: 'PENDING' } }),
-        prisma.job.count({ where: { stage: 'COMPLETE', ...excludedWhere } }),
+        prisma.job.count({ where: { stage: 'COMPLETE' } }),
       ]);
 
     return ApiResponse.success(res, {
       buckets: [
-        { id: 'quotes_to_submit', label: 'Quotes to Submit', count: quotesToSubmit, stage: 'QUOTE' },
-        { id: 'jobs_to_book', label: 'Jobs to Book', count: jobsToBook, stage: 'PAID/ACCEPTED' },
-        { id: 'reports_to_upload', label: 'Reports to Upload', count: reportsToUpload, stage: 'PREPARING_REPORT' },
+        { id: 'quotes_to_submit', label: 'Quotes to Submit', count: quotesToSubmit, stage: 'QUOTE_ISSUED' },
+        { id: 'jobs_to_book', label: 'Jobs to Book', count: jobsToBookCount, stage: 'READY_TO_BOOK' },
+        { id: 'reports_to_upload', label: 'Reports to Upload', count: reportsToUpload, stage: 'DRAFTING' },
         { id: 'terms_to_sign', label: 'Terms to Sign', count: termsToSign },
         { id: 'payments_to_collect', label: 'Payments to Collect', count: paymentsToCollect },
         { id: 'completed', label: 'Completed Inspections', count: completed, stage: 'COMPLETE' },
       ],
+      jobsToBook: jobsToBookList,
     });
   } catch (error) {
     next(error);

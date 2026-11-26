@@ -3,10 +3,10 @@ import { User, Mail, Phone, MapPin, Building2, PoundSterling, FileText, Send, Sp
 import { Modal } from '../common/Modal';
 import { LEAD_SOURCES, LEAD_STATUSES } from '../../mock/leads';
 import { dispatchAutoQuoteForLead } from '../../services/autoQuoteService';
+import { useAuth } from '../../auth/AuthContext';
 
-const OWNERS = [
+const STAFF_OWNERS = [
   'Sarah Jenkins',
-  'Alexander Sterling',
   'David Thorne MRICS',
   'Jonathan Cross FRICS',
   'Claire Bennet AssocRICS',
@@ -23,6 +23,16 @@ const SURVEY_TYPES = [
 ];
 
 export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
+  const { user } = useAuth();
+  const currentAdminName =
+    user?.name ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    '';
+  const ownerOptions = currentAdminName
+    ? [currentAdminName, ...STAFF_OWNERS.filter((o) => o !== currentAdminName)]
+    : STAFF_OWNERS;
+  const defaultOwner = ownerOptions[0] || '';
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -32,7 +42,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
     location: '',
     source: 'Website',
     status: 'New',
-    owner: 'Sarah Jenkins',
+    owner: defaultOwner,
     estimatedValue: '650.00',
     notes: '',
   });
@@ -76,7 +86,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
       id: `${prefix}-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       customerName: formData.customerName.trim(),
       customerEmail: formData.customerEmail.trim(),
-      customerPhone: formData.customerPhone.trim() || '+44 7700 900000',
+      customerPhone: formData.customerPhone.trim(),
       enquiry: formData.enquiry,
       property: formData.property.trim(),
       location: formData.location.trim(),
@@ -115,7 +125,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
       location: '',
       source: 'Website',
       status: 'New',
-      owner: 'Sarah Jenkins',
+      owner: defaultOwner,
       estimatedValue: '650.00',
       notes: '',
     });
@@ -346,7 +356,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSubmit }) => {
               onChange={handleChange}
               className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2563EB]/40 focus:bg-white"
             >
-              {OWNERS.map((o) => (
+              {ownerOptions.map((o) => (
                 <option key={o} value={o}>
                   {o}
                 </option>

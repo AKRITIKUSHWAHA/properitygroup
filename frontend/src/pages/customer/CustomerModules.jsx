@@ -122,7 +122,7 @@ export const CustomerTermsPage = () => {
         const payload = res?.data?.term || res?.term || (res?.data ? res.data : null);
         if (payload) setApiTerm(payload);
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
 
     customerTrackSurveyApi.getTracking()
       .then((res) => {
@@ -131,7 +131,7 @@ export const CustomerTermsPage = () => {
           setApiTracking(payload);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
 
     customerQuotationsApi.getQuotations()
       .then((res) => {
@@ -141,7 +141,7 @@ export const CustomerTermsPage = () => {
           if (accepted) setApiAcceptedQuote(accepted);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
   }, []);
 
   const navigate = useNavigate();
@@ -183,26 +183,11 @@ export const CustomerTermsPage = () => {
   const { quotes: storedQuotes = [] } = useQuotes();
   const { leads: storedLeads = [] } = useLeads();
 
-  let allLeads = storedLeads;
-  if (!allLeads || allLeads.length === 0) {
-    try {
-      allLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-    } catch {}
-  }
-  let allJobs = jobs;
-  if (!allJobs || allJobs.length === 0) {
-    try {
-      allJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
-    } catch {}
-  }
-  let allQuotes = storedQuotes;
-  if (!allQuotes || allQuotes.length === 0) {
-    try {
-      allQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-    } catch {}
-  }
+  const allLeads = storedLeads || [];
+  const allJobs = jobs || [];
+  const allQuotes = storedQuotes || [];
 
-  const activeJobId = localStorage.getItem(`propertygroup_active_job_${userEmail}`) || null;
+  const activeJobId = null;
 
   // 1. Strict customer job isolation (filter out dummy 'Subject Property' or pending placeholders)
   const myJobs = allJobs
@@ -258,7 +243,7 @@ export const CustomerTermsPage = () => {
   try {
     const registered = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
     regUser = registered[userEmail] || {};
-  } catch {}
+  } catch (err) { console.warn('Customer local state note:', err); }
 
   const leadTotal = userLead?.estimatedValue ? parseFloat(userLead.estimatedValue.replace(/[^0-9.]/g, '')) : null;
   const leadNet = leadTotal ? Math.round((leadTotal / 1.2) * 100) / 100 : null;
@@ -285,7 +270,7 @@ export const CustomerTermsPage = () => {
       : '') ||
     (currentUser?.address && currentUser.address !== 'Subject Property'
       ? currentUser.address
-      : (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : ''));
+      : '');
 
   const surveyType =
     location.state?.surveyType ||
@@ -517,7 +502,7 @@ export const CustomerTermsPage = () => {
     try {
       localStorage.setItem(`propertygroup_user_signature_${userStorageKey}`, capturedSignature);
       localStorage.setItem(`propertygroup_user_sig_type_${userStorageKey}`, signatureType);
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     // Immediately execute terms in state & storage so Step 4 registers immediately
     const nowSignDate = new Date().toLocaleDateString('en-GB');
@@ -579,21 +564,6 @@ export const CustomerTermsPage = () => {
           ...(currentJob.activityLog || []),
         ],
       });
-      try {
-        const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
-        const updatedJobs = storedJobs.map((j) => {
-          if (j.id === currentJob.id) {
-            return {
-              ...j,
-              termsStatus: 'Signed',
-              property: propertyAddress,
-              timelineStep: Math.max(j.timelineStep || 0, 4),
-            };
-          }
-          return j;
-        });
-        localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
-      } catch {}
     } else {
       addJob({
         id: jobNo || `JOB-2026-880`,
@@ -630,29 +600,6 @@ export const CustomerTermsPage = () => {
       });
     }
 
-    try {
-      const storedQuotes = JSON.parse(localStorage.getItem('propertygroup_quotes') || '[]');
-      const updatedQuotes = storedQuotes.map((q) => {
-        if ((q.clientEmail || '').toLowerCase().trim() === userEmail || (q.client || '').toLowerCase().trim() === userName) {
-          return { ...q, termsStatus: 'Signed', timelineStep: Math.max(q.timelineStep || 0, 4) };
-        }
-        return q;
-      });
-      localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
-    } catch {}
-
-    try {
-      const storedLeads = JSON.parse(localStorage.getItem('propertygroup_crm_leads_v1') || '[]');
-      const updatedLeads = storedLeads.map((l) => {
-        if ((l.customerEmail || l.clientEmail || '').toLowerCase().trim() === userEmail || (l.customerName || l.clientName || '').toLowerCase().trim() === userName) {
-          return { ...l, termsStatus: 'Signed', status: 'Converted' };
-        }
-        return l;
-      });
-      localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
-      window.dispatchEvent(new Event('propertygroup_leads_updated'));
-    } catch {}
-
     window.dispatchEvent(new Event('propertygroup_jobs_updated'));
     window.dispatchEvent(new Event('propertygroup_agreements_updated'));
 
@@ -671,7 +618,6 @@ export const CustomerTermsPage = () => {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-user-email': resolvedEmail,
         },
         body: JSON.stringify({
           signatureData: capturedSignature,
@@ -680,7 +626,7 @@ export const CustomerTermsPage = () => {
           surveyType: surveyType,
         }),
       }).catch((e) => console.warn('Backend terms sign notification error:', e));
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     addToast({
       type: 'success',
@@ -823,7 +769,7 @@ export const CustomerTermsPage = () => {
           return q;
         });
         localStorage.setItem('propertygroup_quotes', JSON.stringify(updatedQuotes));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       // 4. Update leads repository to Converted
       try {
@@ -836,7 +782,7 @@ export const CustomerTermsPage = () => {
         });
         localStorage.setItem('propertygroup_crm_leads_v1', JSON.stringify(updatedLeads));
         window.dispatchEvent(new Event('propertygroup_leads_updated'));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       window.dispatchEvent(new Event('propertygroup_jobs_updated'));
       window.dispatchEvent(new Event('propertygroup_agreements_updated'));
@@ -856,7 +802,6 @@ export const CustomerTermsPage = () => {
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'x-user-email': resolvedEmail,
           },
           body: JSON.stringify({
             paymentMethod: 'Direct Bank Transfer (BACS Faster Payments)',
@@ -866,7 +811,7 @@ export const CustomerTermsPage = () => {
             transferReference: bankProofRef || '',
           }),
         }).catch((e) => console.warn('Backend payment record error:', e));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       setIsProcessingPayment(false);
       setStage('confirmed');
@@ -1651,7 +1596,7 @@ export const CustomerBookingsPage = () => {
           timelineStep: b.timelineStep || (b.stage === 'BOOKED' ? 6 : 5),
         })));
       }
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Customer action sync note:', err); });
   }, []);
 
   const localBookings = jobs.filter((j) => isJobForCustomer(j, user));
@@ -1718,9 +1663,9 @@ export const CustomerBookingsPage = () => {
           inspectionTime: selectedSlot,
           keyCollectionDetails: agentNotes || bookingModalJob.agentDetails || '',
           reason: `Client requested inspection slot ${formattedDate} (${selectedSlot})`,
-        }).catch(() => {});
+        }).catch((err) => { console.warn('Customer action sync note:', err); });
       }
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     try {
       const storedJobs = JSON.parse(localStorage.getItem('propertygroup_jobs') || '[]');
@@ -1732,7 +1677,7 @@ export const CustomerBookingsPage = () => {
       });
       localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
       window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     addToast({
       type: 'success',
@@ -1922,7 +1867,7 @@ export const CustomerQuotationsPage = () => {
           localStorage.setItem('propertygroup_quotes', JSON.stringify(cleaned));
         }
       }
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     const handleSync = () => setRefreshKey((k) => k + 1);
     window.addEventListener('propertygroup_quotes_updated', handleSync);
@@ -1943,7 +1888,7 @@ export const CustomerQuotationsPage = () => {
         const list = res?.data?.quotes || res?.quotes || (Array.isArray(res) ? res : []);
         if (Array.isArray(list) && list.length > 0) setApiQuotes(list);
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
   }, [refreshKey]);
 
   let userEmail = (user?.email || '').toLowerCase().trim();
@@ -1960,7 +1905,7 @@ export const CustomerQuotationsPage = () => {
       const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
       const found = Object.values(reg).find((c) => (c.name || '').toLowerCase().trim() === userName);
       if (found?.email) userEmail = found.email.toLowerCase().trim();
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
   }
 
   const isDemo = userEmail === 'customer@demo.com';
@@ -1972,7 +1917,7 @@ export const CustomerQuotationsPage = () => {
     if (Array.isArray(rawQuotes) && rawQuotes.length > 0) {
       effectiveStoredQuotes = rawQuotes;
     }
-  } catch {}
+  } catch (err) { console.warn('Customer local state note:', err); }
 
   let effectiveJobs = jobs;
   try {
@@ -1980,7 +1925,7 @@ export const CustomerQuotationsPage = () => {
     if (Array.isArray(rawJobs) && rawJobs.length > 0) {
       effectiveJobs = rawJobs;
     }
-  } catch {}
+  } catch (err) { console.warn('Customer local state note:', err); }
 
   const myJobs = effectiveJobs
     .filter((j) => isJobForCustomer(j, user))
@@ -2129,7 +2074,7 @@ export const CustomerQuotationsPage = () => {
       if (q.inclusions) {
         inclusions = typeof q.inclusions === 'string' ? JSON.parse(q.inclusions) : q.inclusions;
       }
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     const rawFee = q.baseFee || inclusions.baseFee || (q.totalAmount ? q.totalAmount / 1.2 : null);
     const hasFee = typeof rawFee === 'number' && rawFee > 0;
@@ -2274,7 +2219,7 @@ export const CustomerQuotationsPage = () => {
         localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
         localStorage.setItem('propertygroup_quote_accepted', 'true');
         window.dispatchEvent(new Event('propertygroup_agreements_updated'));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       addToast({
         type: 'success',
@@ -2414,7 +2359,7 @@ export const CustomerQuotationsPage = () => {
                             localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
                             localStorage.setItem('propertygroup_quote_accepted', 'true');
                             window.dispatchEvent(new Event('propertygroup_agreements_updated'));
-                          } catch {}
+                          } catch (err) { console.warn('Customer local state note:', err); }
                           navigate('/customer/terms-to-sign', {
                             state: {
                               quoteId: q.id,
@@ -2486,7 +2431,7 @@ export const CustomerQuotationsPage = () => {
                           localStorage.setItem(`propertygroup_quote_accepted_${userEmail}`, 'true');
                           localStorage.setItem('propertygroup_quote_accepted', 'true');
                           window.dispatchEvent(new Event('propertygroup_agreements_updated'));
-                        } catch {}
+                        } catch (err) { console.warn('Customer local state note:', err); }
                         navigate('/customer/terms-to-sign', {
                           state: {
                             quoteId: q.id,
@@ -2711,7 +2656,7 @@ export const CustomerInvoicesPage = () => {
           setApiInvoices(invs);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
 
     customerTrackSurveyApi.getTracking()
       .then((res) => {
@@ -2720,7 +2665,7 @@ export const CustomerInvoicesPage = () => {
           setApiTracking(payload);
         }
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
   }, []);
 
   const { user } = useAuth();
@@ -2739,8 +2684,8 @@ export const CustomerInvoicesPage = () => {
   const invoices = React.useMemo(() => {
     if (apiInvoices && apiInvoices.length > 0) {
       return apiInvoices.map((inv) => {
-        const net = Number(inv.subtotal) || 880;
-        const vat = Number(inv.vatAmount) || 176;
+        const net = Number(inv.subtotal) || 0;
+        const vat = Number(inv.vatAmount) || (net > 0 ? Math.round(net * 0.2 * 100) / 100 : 0);
         const total = Number(inv.total) || (net + vat);
         const isPaid =
           inv.status === 'PAID' ||
@@ -2760,9 +2705,9 @@ export const CustomerInvoicesPage = () => {
           netAmount: net,
           vatAmount: vat,
           grossTotal: total,
-          net: `£${net.toFixed(2)}`,
-          vat: `£${vat.toFixed(2)}`,
-          total: `£${total.toFixed(2)}`,
+          net: net > 0 ? `£${net.toFixed(2)}` : 'Not available',
+          vat: vat > 0 ? `£${vat.toFixed(2)}` : '£0.00',
+          total: total > 0 ? `£${total.toFixed(2)}` : 'Pending Quote',
           status: isPaid ? 'Paid' : 'Unpaid',
           isPaid,
           isClaimed: false,
@@ -2773,9 +2718,10 @@ export const CustomerInvoicesPage = () => {
     }
 
     return myJobs.map((j) => {
-      const net = j.quote?.baseFee || (j.surveyType?.includes('Level 3') ? 1450.0 : 880.0);
-      const vat = Math.round(net * 0.2);
-      const total = net + vat;
+      const rawNet = j.quote?.baseFee ?? j.baseFee ?? (j.totalAmount ? j.totalAmount / 1.2 : null);
+      const net = rawNet !== null && !isNaN(Number(rawNet)) ? Number(rawNet) : 0;
+      const vat = net > 0 ? Math.round(net * 0.2 * 100) / 100 : 0;
+      const total = net > 0 ? net + vat : 0;
       const uEmail = (user?.email || '').toLowerCase().trim();
       const jRef = (j.id || j.jobNo || j.reference || '').toString().trim();
       const stageNum = Math.max(
@@ -2819,9 +2765,9 @@ export const CustomerInvoicesPage = () => {
         netAmount: net,
         vatAmount: vat,
         grossTotal: total,
-        net: `£${net.toFixed(2)}`,
-        vat: `£${vat.toFixed(2)}`,
-        total: `£${total.toFixed(2)}`,
+        net: net > 0 ? `£${net.toFixed(2)}` : 'Not available',
+        vat: vat > 0 ? `£${vat.toFixed(2)}` : '£0.00',
+        total: total > 0 ? `£${total.toFixed(2)}` : 'Pending Quote',
         status: isPaid ? 'Paid' : isClaimed ? 'Payment Claimed' : 'Unpaid',
         isPaid,
         isClaimed,
@@ -2888,9 +2834,9 @@ export const CustomerInvoicesPage = () => {
             property: settlingInvoice.property,
             clientName: user?.name || 'Valued Client',
             transferReference: transferProofRef || '',
-          }).catch(() => {});
+          }).catch((err) => { console.warn('Customer action sync note:', err); });
         }
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       // 1. Update job in store to Claimed (Verification Pending) per Client Bank Transfer specification (NOT auto-paid!)
       updateJob(settlingInvoice.jobRef, {
@@ -2926,7 +2872,7 @@ export const CustomerInvoicesPage = () => {
         });
         localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
         window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
 
       setIsProcessing(false);
       setSettlingInvoice(null);
@@ -3121,11 +3067,12 @@ export const CustomerInvoicesPage = () => {
                   ) : (
                     <button
                       type="button"
+                      disabled={!inv.grossTotal || inv.grossTotal <= 0}
                       onClick={() => setSettlingInvoice(inv)}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5 cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
                     >
                       <Building className="w-4 h-4" />
-                      <span>Pay via Bank Transfer ({inv.total})</span>
+                      <span>{inv.grossTotal > 0 ? `Pay via Bank Transfer (${inv.total})` : 'Fee Pending Confirmation'}</span>
                     </button>
                   )}
                 </div>
@@ -3414,7 +3361,7 @@ export const CustomerReportsPage = () => {
         const list = res?.data?.reports || res?.reports || (Array.isArray(res) ? res : []);
         if (Array.isArray(list)) setApiReports(list);
       })
-      .catch(() => {});
+      .catch((err) => { console.warn('Customer API sync note:', err); });
   }, []);
   const { user } = useAuth();
   const { addToast } = useToast();
@@ -3735,7 +3682,7 @@ export const CustomerTrackSurveyPage = () => {
               localStorage.removeItem(`propertygroup_payment_claimed_${userEmail}`);
               localStorage.removeItem(`propertygroup_payment_paid_${userEmail}`);
               localStorage.removeItem(`propertygroup_booking_confirmed_${userEmail}`);
-            } catch {}
+            } catch (err) { console.warn('Customer local state note:', err); }
           }
 
           const jobObj = {
@@ -3770,9 +3717,9 @@ export const CustomerTrackSurveyPage = () => {
           }
           localStorage.setItem('propertygroup_jobs', JSON.stringify(storedJobs));
           window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-        } catch {}
+        } catch (err) { console.warn('Customer local state note:', err); }
       }
-    }).catch(() => {});
+    }).catch((err) => { console.warn('Customer action sync note:', err); });
   }, [userEmail]);
 
   useEffect(() => {
@@ -3842,7 +3789,7 @@ export const CustomerTrackSurveyPage = () => {
   try {
     const reg = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
     regUser = reg[userEmail] || {};
-  } catch {}
+  } catch (err) { console.warn('Customer local state note:', err); }
 
   const activeQuoteOrLeadProp =
     (myQuote?.property ? `${myQuote.property}${myQuote.location ? `, ${myQuote.location}` : ''}` : '') ||
@@ -3857,8 +3804,7 @@ export const CustomerTrackSurveyPage = () => {
     (myJob?.property && myJob.property !== 'Subject Property' ? `${myJob.property}${myJob.location ? `, ${myJob.location}` : ''}` : '') ||
     trackProperty ||
     (regUser.address ? `${regUser.address}${regUser.city ? `, ${regUser.city}` : ''}` : '') ||
-    (user?.address && user.address !== 'Subject Property' ? user.address : '') ||
-    (isEmma ? '14 Mayfair Gate, Mayfair, London W1K 2PB' : '');
+    (user?.address && user.address !== 'Subject Property' ? user.address : '');
 
   const refNo =
     apiTracking?.jobReference ||
@@ -4098,6 +4044,40 @@ export const CustomerTrackSurveyPage = () => {
         </div>
       )}
 
+      {/* Authoritative Next Step Action Card from DB State */}
+      {apiTracking?.nextStep && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#0B1F4D] via-[#1E3A8A] to-[#1E40AF] text-white shadow-md border border-blue-400/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-3 rounded-2xl bg-white/10 text-white shrink-0 border border-white/15">
+              <Sparkles className="w-6 h-6 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-200 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                  Next Step Action Required
+                </span>
+                <span className="text-xs font-semibold text-blue-200">
+                  Step {currentStep} of 10
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                {apiTracking.nextStep.title}
+              </h3>
+              <p className="text-xs text-blue-100/90 mt-1 max-w-xl">
+                {apiTracking.nextStep.description}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate(apiTracking.nextStep.actionLink)}
+            className="px-5 py-2.5 rounded-xl bg-white text-[#0B1F4D] hover:bg-blue-50 text-xs font-extrabold transition-all shadow-sm flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <span>{apiTracking.nextStep.actionText}</span>
+            <ArrowRight className="w-4 h-4 text-[#2563EB]" />
+          </button>
+        </div>
+      )}
+
       <SurveyProgressTracker
         currentStep={currentStep}
         job={{
@@ -4248,7 +4228,7 @@ export const CustomerTrackSurveyPage = () => {
 // 7. APPOINTMENT DETAILS PAGE
 // ==========================================
 export const CustomerAppointmentDetailsPage = () => {
-  useEffect(() => { customerAppointmentDetailsApi.getAppointment().catch(() => {}); }, []);
+  useEffect(() => { customerAppointmentDetailsApi.getAppointment().catch((err) => { console.warn('Customer API sync note:', err); }); }, []);
   const { user } = useAuth();
   const { jobs } = useJobs();
 
@@ -4363,7 +4343,7 @@ export const CustomerAssignedSurveyorPage = () => {
         const s = res?.assignedSurveyor || res?.data?.assignedSurveyor || (res?.name ? res : null);
         if (s) setAssignedSurveyor(s);
       })
-      .catch(() => {})
+      .catch((err) => { console.warn('Customer API sync note:', err); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -4586,7 +4566,7 @@ export const CustomerMessagesPage = () => {
           fetchContactsRef.current?.();
         };
       }
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     const handleStorage = (e) => {
       if (e.key === 'njs_last_chat_dispatch') {
@@ -4597,7 +4577,7 @@ export const CustomerMessagesPage = () => {
     window.addEventListener('storage', handleStorage);
 
     return () => {
-      try { bc?.close(); } catch {}
+      try { bc?.close(); } catch (err) { console.warn('Customer local state note:', err); }
       window.removeEventListener('storage', handleStorage);
     };
   }, []);
@@ -4700,7 +4680,7 @@ export const CustomerMessagesPage = () => {
             [targetChannel]: mapped,
           }));
         })
-        .catch(() => {});
+        .catch((err) => { console.warn('Customer API sync note:', err); });
     };
 
     fetchMsgsRef.current = fetchMsgs;
@@ -4830,10 +4810,10 @@ export const CustomerMessagesPage = () => {
             const bc = new BroadcastChannel('njs_chat_sync');
             bc.postMessage({ type: 'CHAT_UPDATED', conversationId: targetId });
             bc.close();
-          } catch {}
+          } catch (err) { console.warn('Customer local state note:', err); }
           try {
             localStorage.setItem('njs_last_chat_dispatch', String(Date.now()));
-          } catch {}
+          } catch (err) { console.warn('Customer local state note:', err); }
         })
         .catch((err) => console.warn('Message API send failed:', err));
 
@@ -5256,7 +5236,7 @@ export const CustomerReviewPage = () => {
 
   // Fetch customer review API
   useEffect(() => {
-    customerReviewApi.getReviews().catch(() => {});
+    customerReviewApi.getReviews().catch((err) => { console.warn('Customer API sync note:', err); });
   }, []);
 
   // Sync state if job updates
@@ -5553,7 +5533,7 @@ export const CustomerPreviousSurveysPage = () => {
 // 12. MY DETAILS PAGE
 // ==========================================
 export const CustomerDetailsPage = () => {
-  useEffect(() => { customerDetailsApi.getDetails().catch(() => {}); }, []);
+  useEffect(() => { customerDetailsApi.getDetails().catch((err) => { console.warn('Customer API sync note:', err); }); }, []);
   const { user, setUser } = useAuth();
   const { addToast } = useToast();
 
@@ -5596,7 +5576,7 @@ export const CustomerDetailsPage = () => {
           address: user.address || regUser.address || (isEmma ? 'Flat 4, 12 Gloucester Road' : ''),
           postcode: user.postcode || regUser.postcode || (isEmma ? 'SW7 4RB' : ''),
         });
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
     }
   }, [user]);
 
@@ -5710,7 +5690,7 @@ export const CustomerSupportPage = () => {
     try {
       const saved = localStorage.getItem(`propertygroup_support_tickets_${userEmail}`);
       if (saved) return JSON.parse(saved);
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
     return INITIAL_SUPPORT_TICKETS;
   });
 
@@ -5778,7 +5758,7 @@ export const CustomerSupportPage = () => {
       const updated = [newTicket, ...prev];
       try {
         localStorage.setItem(`propertygroup_support_tickets_${userEmail}`, JSON.stringify(updated));
-      } catch {}
+      } catch (err) { console.warn('Customer local state note:', err); }
       return updated;
     });
 
@@ -5790,7 +5770,7 @@ export const CustomerSupportPage = () => {
         type: 'support',
         link: '/admin/support',
       });
-    } catch {}
+    } catch (err) { console.warn('Customer local state note:', err); }
 
     setIsSubmitting(false);
     setTicketMessage('');

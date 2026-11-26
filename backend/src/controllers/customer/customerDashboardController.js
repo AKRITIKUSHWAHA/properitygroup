@@ -1,5 +1,11 @@
 import { prisma } from '../../config/db.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import {
+  JOB_STAGES,
+  JOB_STAGE_STEPS,
+  JOB_STAGE_LABELS,
+  normalizeJobStage,
+} from '../../utils/jobStages.js';
 
 /**
  * Customer Menu 1: Dashboard (/customer/my-dashboard)
@@ -7,11 +13,9 @@ import { ApiResponse } from '../../utils/ApiResponse.js';
  */
 export const getCustomerDashboard = async (req, res, next) => {
   try {
-    const userId = req.user?.id;
-    const headerEmail = (req.headers['x-user-email'] || '').toLowerCase().trim();
-    const userEmail = (headerEmail || req.user?.email || '').toLowerCase().trim();
-    const headerName = (req.headers['x-user-name'] || '').toLowerCase().trim();
-    const userName = (headerName || req.user?.name || '').toLowerCase().trim();
+    const userId = req.user.id;
+    const userEmail = (req.user.email || '').toLowerCase().trim();
+    const userName = req.user.name || 'Valued Client';
 
     // Fetch customer's primary active job (strictly scoped by clientId or exact clientEmail)
     let activeJob = await prisma.job.findFirst({
@@ -45,51 +49,22 @@ export const getCustomerDashboard = async (req, res, next) => {
     let activeInvoice = activeJob?.invoices?.[0] || null;
 
     if (activeJob) {
-      const hasPaid = activeJob.invoices?.some((inv) => inv.status === 'PAID') || activeInvoice?.status === 'PAID' || activeJob.stage === 'PAID';
+      const hasPaid = activeJob.invoices?.some((inv) => inv.status === 'PAID') || activeInvoice?.status === 'PAID';
       const hasSigned = activeJob.terms?.some((t) => t.signed) || activeTerm?.signed;
-      const isBooked = ['BOOKED', 'PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
-      const isInspected = ['PREPARING_REPORT', 'COMPLETE'].includes(activeJob.stage);
-      const isCompleted = activeJob.stage === 'COMPLETE' || Boolean(activeJob.qaApprovedAt);
-      const hasDraftUploaded =
-        Boolean(activeJob.reportPdfUrl) ||
-        Boolean(activeJob.reportGeneratedAt) ||
-        activeJob.auditTimeline?.some(
-          (a) =>
-            a.action === 'DRAFT_REPORT_SUBMITTED_FOR_QA' ||
-            (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /submitted draft report|qa audit|qa review/i.test(a.details || ''))
-        );
-      const isQA =
-        activeJob.stage === 'QA_REVIEW' ||
-        activeJob.status === 'QA_Review' ||
-        (activeJob.stage === 'PREPARING_REPORT' && hasDraftUploaded);
-      const isDrafting =
-        activeJob.stage === 'DRAFTING' ||
-        activeJob.status === 'Drafting' ||
-        (activeJob.stage === 'PREPARING_REPORT' &&
-          activeJob.auditTimeline?.some(
-            (a) =>
-              a.action === 'DRAFT_REPORT_STARTED' ||
-              (a.action === 'STAGE_CHANGED_TO_PREPARING_REPORT' && /started report drafting|drafting commenced/i.test(a.details || ''))
-          ));
+      const currentStage = normalizeJobStage(activeJob.stage);
 
-      let calculatedStep = 1;
-      if (isCompleted) calculatedStep = 10;
-      else if (isQA) calculatedStep = 9;
-      else if (isDrafting) calculatedStep = 8;
-      else if (isInspected) calculatedStep = 7;
-      else if (isBooked) calculatedStep = 6;
-      else if (hasPaid) calculatedStep = 5;
-      else if (hasSigned) calculatedStep = 4;
-      else if (activeJob.stage === 'ACCEPTED' || activeQuote?.status === 'ACCEPTED') calculatedStep = 3;
-      else if (activeJob.stage === 'QUOTE') calculatedStep = 2;
-      else calculatedStep = 1;
+      let calculatedStep = JOB_STAGE_STEPS[currentStage] || 1;
+      if (calculatedStep < 3 && activeQuote?.status === 'ACCEPTED') calculatedStep = 3;
+      if (calculatedStep < 4 && hasSigned) calculatedStep = 4;
+      if (calculatedStep < 5 && hasPaid) calculatedStep = 5;
+      if (calculatedStep < 6 && activeJob.inspectionDate) calculatedStep = 6;
 
       activeJob = {
         ...activeJob,
         timelineStep: calculatedStep,
         currentStep: calculatedStep,
-        status: isCompleted ? 'Completed' : (isQA ? 'QA_Review' : (isDrafting ? 'Drafting' : (isInspected ? 'Inspected' : (isBooked ? 'Booked' : (hasPaid ? 'Paid' : (hasSigned ? 'Signed' : activeJob.stage)))))),
-        stage: isCompleted ? 'COMPLETE' : (isQA ? 'QA_REVIEW' : activeJob.stage),
+        status: JOB_STAGE_LABELS[currentStage] || currentStage,
+        stage: currentStage,
         property: activeJob.propertyAddress,
         date: activeJob.inspectionDate ? new Date(activeJob.inspectionDate).toLocaleDateString('en-GB') : 'Date: TBD',
         timeSlot: activeJob.inspectionTime || 'Time: TBD',

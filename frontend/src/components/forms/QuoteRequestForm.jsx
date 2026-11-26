@@ -110,13 +110,10 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
       const cleanEmail = formData.customerEmail.toLowerCase().trim();
       const generatedRef = res?.referenceId || `NJS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      // Check whether customer was already registered with an existing password
-      const storedCustomers = JSON.parse(localStorage.getItem('property_group_registered_customers') || '{}');
+      // Check whether customer was already registered with an active user account
       const alreadyRegistered = Boolean(
         res?.isExistingUser ||
-        res?.data?.isExistingUser ||
-        Boolean(storedCustomers[cleanEmail]?.password) ||
-        Boolean(localStorage.getItem(`njs_user_pw_${cleanEmail}`))
+        res?.data?.isExistingUser
       );
 
       // Save new distinct lead into CRM leads storage
@@ -149,10 +146,14 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
           const rawDel = localStorage.getItem('propertygroup_deleted_user_keys') || '[]';
           const cleaned = JSON.parse(rawDel).filter((k) => String(k).toLowerCase().trim() !== cleanEmail);
           localStorage.setItem('propertygroup_deleted_user_keys', JSON.stringify(cleaned));
-        } catch {}
+        } catch (err) {
+          console.warn('Failed to clean deleted user keys cache:', err);
+        }
         window.dispatchEvent(new Event('propertygroup_leads_updated'));
         window.dispatchEvent(new Event('propertygroup_users_updated'));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to cache quote lead locally:', err);
+      }
 
       // Create new fresh job entry (Step 1 Enquiry) in customer jobs storage
       try {
@@ -185,7 +186,9 @@ export function QuoteRequestForm({ defaultServiceId = '', className = '' }) {
         localStorage.setItem('propertygroup_jobs', JSON.stringify(updatedJobs));
         localStorage.setItem(`propertygroup_active_job_${cleanEmail}`, generatedRef);
         window.dispatchEvent(new Event('propertygroup_jobs_updated'));
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to cache quote job locally:', err);
+      }
 
       const receipt = {
         timestamp: res?.timestamp || new Date().toISOString(),
