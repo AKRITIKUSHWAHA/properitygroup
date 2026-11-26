@@ -75,6 +75,31 @@ export const issueQuote = async ({
     ? new Date(customValidUntil)
     : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
+  // 2.5 Idempotency guard: prevent duplicate quote/email/notification if identical quote was just issued within 30s
+  const recentCutoff = new Date(Date.now() - 30 * 1000);
+  const duplicateRecentQuote = await prisma.quote.findFirst({
+    where: {
+      status: 'SENT',
+      baseFee: parsedBaseFee,
+      totalAmount,
+      createdAt: { gte: recentCutoff },
+      OR: [
+        ...(parsedLeadId ? [{ leadId: parsedLeadId }] : []),
+        ...(parsedJobId ? [{ jobId: parsedJobId }] : []),
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (duplicateRecentQuote) {
+    return {
+      quote: duplicateRecentQuote,
+      emailSent: true,
+      emailError: null,
+      deduplicated: true,
+    };
+  }
+
   // 3. Safe sequential reference generation via centralised references.js
   const cleanReference = await generateQuoteReference();
 

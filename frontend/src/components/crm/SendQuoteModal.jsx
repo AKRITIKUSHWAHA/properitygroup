@@ -92,6 +92,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
   const [baseFee, setBaseFee] = useState(() => String(resolveInitialBaseFee(lead)));
   const [discount, setDiscount] = useState('0');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = React.useRef(false);
 
   // Reset cleanly whenever a new lead is passed
   useEffect(() => {
@@ -127,7 +128,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
 
   const handleSendQuote = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submittingRef.current) return;
+    submittingRef.current = true;
 
     const targetEmail = (lead?.customerEmail || lead?.clientEmail || lead?.email || '').trim();
     const targetName = (lead?.customerName || lead?.clientName || lead?.name || 'Valued Client').trim();
@@ -204,6 +206,7 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
         message: err.message || 'Could not issue quotation. Please try again.',
       });
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -376,7 +379,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                         step="5"
                         min="50"
                         value={baseFee}
-                        onChange={(e) => setBaseFee(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => setBaseFee(e.target.value.replace(/^0+(?=\d)/, ''))}
                         className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 text-xs focus:ring-2 focus:ring-[#0B1F4D]/20 focus:outline-none"
                         required
                       />
@@ -398,7 +402,8 @@ export const SendQuoteModal = ({ isOpen, onClose, lead, onQuoteSent }) => {
                         step="5"
                         min="0"
                         value={discount}
-                        onChange={(e) => setDiscount(e.target.value)}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => setDiscount(e.target.value.replace(/^0+(?=\d)/, ''))}
                         className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-lg font-bold text-slate-900 text-xs focus:ring-2 focus:ring-[#0B1F4D]/20 focus:outline-none"
                         placeholder="0"
                       />

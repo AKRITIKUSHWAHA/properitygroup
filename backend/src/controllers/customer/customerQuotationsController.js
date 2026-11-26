@@ -188,8 +188,23 @@ export const acceptCustomerQuotation = async (req, res, next) => {
         });
       }
 
-      // Ensure Job record exists and is set to ACCEPTED
-      let activeJobId = quote.jobId || quote.job?.id;
+      // Ensure Job record exists and is set to QUOTE_ACCEPTED
+      let activeJobId = quote.jobId || quote.job?.id || null;
+      if (!activeJobId && leadTargetId) {
+        const existingLeadJob = await tx.job.findFirst({
+          where: { leadId: leadTargetId },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true },
+        });
+        if (existingLeadJob) {
+          activeJobId = existingLeadJob.id;
+          await tx.quote.update({
+            where: { id: quote.id },
+            data: { jobId: activeJobId },
+          });
+        }
+      }
+
       if (!activeJobId) {
         const jobRef = quote.lead?.reference
           ? (quote.lead.reference.startsWith('NJS-') ? quote.lead.reference.replace('NJS-', 'JOB-') : `JOB-${quote.lead.reference}`)
@@ -218,11 +233,23 @@ export const acceptCustomerQuotation = async (req, res, next) => {
       } else {
         await tx.job.update({
           where: { id: activeJobId },
-          data: { stage: 'QUOTE_ACCEPTED' },
+          data: {
+            stage: 'QUOTE_ACCEPTED',
+            serviceType,
+            propertyAddress,
+            postcode,
+            clientName,
+            clientEmail: recipientEmail,
+            clientPhone,
+          },
         });
       }
 
-      // Ensure Term record exists for digital signing step
+      // Check existing Invoice status before deciding whether to reset/override Term & Invoice
+      const existingInvoice = await tx.invoice.findFirst({ where: { jobId: activeJobId } });
+      const isAlreadyPaid = existingInvoice?.status === 'PAID';
+
+      // Ensure Term record exists and reflects the newly accepted quote
       const existingTerm = await tx.term.findFirst({ where: { jobId: activeJobId } });
       if (!existingTerm) {
         await tx.term.create({
@@ -236,10 +263,21 @@ export const acceptCustomerQuotation = async (req, res, next) => {
             signed: false,
           },
         });
+      } else if (!isAlreadyPaid) {
+        await tx.term.update({
+          where: { id: existingTerm.id },
+          data: {
+            clientName,
+            clientEmail: recipientEmail,
+            documentTitle: `${serviceType} Terms of Engagement`,
+            signed: false,
+            signedAt: null,
+            signatureData: null,
+          },
+        });
       }
 
-      // Ensure Invoice record exists and reflects the accepted quote amount
-      const existingInvoice = await tx.invoice.findFirst({ where: { jobId: activeJobId } });
+      // Ensure Invoice record exists and reflects the accepted quote amount (override PENDING / BACS_CLAIMED / FAILED)
       if (!existingInvoice) {
         await tx.invoice.create({
           data: {
@@ -253,14 +291,16 @@ export const acceptCustomerQuotation = async (req, res, next) => {
             status: 'PENDING',
           },
         });
-      } else if (existingInvoice.status === 'PENDING') {
+      } else if (!isAlreadyPaid) {
         await tx.invoice.update({
           where: { id: existingInvoice.id },
           data: {
+            clientName,
             clientEmail: recipientEmail,
             subtotal: baseFee,
             vatAmount: vatFee,
             total: totalFee,
+            status: 'PENDING',
           },
         });
       }

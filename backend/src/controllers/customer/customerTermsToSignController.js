@@ -13,28 +13,88 @@ export const getTermsToSign = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const userEmail = req.user.email;
+    const { quoteId, jobId } = req.query || {};
 
-    const term = await prisma.term.findFirst({
-      where: {
-        OR: [
-          { job: { clientId: userId } },
-          { job: { clientEmail: userEmail } },
-          { clientEmail: userEmail },
-        ],
-      },
-      include: {
-        job: {
-          select: {
-            id: true,
-            reference: true,
-            propertyAddress: true,
-            serviceType: true,
-            stage: true,
+    const termInclude = {
+      job: {
+        select: {
+          id: true,
+          reference: true,
+          propertyAddress: true,
+          serviceType: true,
+          stage: true,
+          invoices: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { id: true, invoiceNumber: true, subtotal: true, vatAmount: true, total: true, status: true },
+          },
+          quotes: {
+            where: { status: 'ACCEPTED' },
+            orderBy: { acceptedAt: 'desc' },
+            take: 1,
+            select: { id: true, reference: true, baseFee: true, vatAmount: true, totalAmount: true, serviceType: true, status: true },
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
+
+    const ownerFilter = {
+      OR: [
+        { job: { clientId: userId } },
+        { job: { clientEmail: userEmail } },
+        { clientEmail: userEmail },
+      ],
+    };
+
+    let term = null;
+
+    if (quoteId) {
+      const numericQuoteId = parseInt(quoteId, 10);
+      const matchedQuote = await prisma.quote.findFirst({
+        where: {
+          OR: [
+            ...(!isNaN(numericQuoteId) ? [{ id: numericQuoteId }] : []),
+            { reference: String(quoteId) },
+          ],
+        },
+        select: { jobId: true },
+      });
+      if (matchedQuote?.jobId) {
+        term = await prisma.term.findFirst({
+          where: {
+            jobId: matchedQuote.jobId,
+            ...ownerFilter,
+          },
+          include: termInclude,
+          orderBy: { updatedAt: 'desc' },
+        });
+      }
+    }
+
+    if (!term && jobId) {
+      const numericJobId = parseInt(jobId, 10);
+      term = await prisma.term.findFirst({
+        where: {
+          job: {
+            OR: [
+              ...(!isNaN(numericJobId) ? [{ id: numericJobId }] : []),
+              { reference: String(jobId) },
+            ],
+          },
+          ...ownerFilter,
+        },
+        include: termInclude,
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
+
+    if (!term) {
+      term = await prisma.term.findFirst({
+        where: ownerFilter,
+        include: termInclude,
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      });
+    }
 
     let resultTerm = term;
     if (term) {

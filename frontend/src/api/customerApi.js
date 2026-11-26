@@ -40,7 +40,13 @@ export const customerAssignedSurveyorApi = {
 
 // Menu 7: Terms to Sign
 export const customerTermsToSignApi = {
-  getTerms: () => api.get('/customer/terms-to-sign'),
+  getTerms: (params = {}) => {
+    const qs = new URLSearchParams();
+    if (params?.quoteId) qs.set('quoteId', String(params.quoteId));
+    if (params?.jobId) qs.set('jobId', String(params.jobId));
+    const queryStr = qs.toString();
+    return api.get(`/customer/terms-to-sign${queryStr ? `?${queryStr}` : ''}`);
+  },
   signTerms: (id, signatureData) => api.post(`/customer/terms-to-sign/${id}/sign`, { signatureData }),
 };
 

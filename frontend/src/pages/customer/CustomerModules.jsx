@@ -112,12 +112,17 @@ const isJobForCustomer = (job, user) => {
 };
 
 export const CustomerTermsPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [apiTerm, setApiTerm] = useState(null);
   const [apiTracking, setApiTracking] = useState(null);
   const [apiAcceptedQuote, setApiAcceptedQuote] = useState(null);
 
+  const selectedQuoteId = location.state?.quoteId || new URLSearchParams(location.search).get('quoteId') || null;
+  const selectedJobId = location.state?.jobId || new URLSearchParams(location.search).get('jobId') || null;
+
   useEffect(() => {
-    customerTermsToSignApi.getTerms()
+    customerTermsToSignApi.getTerms({ quoteId: selectedQuoteId, jobId: selectedJobId })
       .then((res) => {
         const payload = res?.data?.term || res?.term || (res?.data ? res.data : null);
         if (payload) setApiTerm(payload);
@@ -137,15 +142,19 @@ export const CustomerTermsPage = () => {
       .then((res) => {
         const quotes = res?.data?.quotes || res?.quotes || (Array.isArray(res) ? res : []);
         if (Array.isArray(quotes)) {
-          const accepted = quotes.find((q) => q.isAccepted || q.status === 'ACCEPTED' || q.status === 'Accepted');
+          const acceptedQuotes = quotes.filter((q) => q.isAccepted || q.status === 'ACCEPTED' || q.status === 'Accepted');
+          const exactMatch = selectedQuoteId
+            ? acceptedQuotes.find((q) => String(q.id) === String(selectedQuoteId) || q.reference === selectedQuoteId)
+            : null;
+          const latestAccepted = [...acceptedQuotes].sort(
+            (a, b) => new Date(b.acceptedAt || b.updatedAt || b.createdAt || 0) - new Date(a.acceptedAt || a.updatedAt || a.createdAt || 0)
+          )[0];
+          const accepted = exactMatch || latestAccepted;
           if (accepted) setApiAcceptedQuote(accepted);
         }
       })
       .catch((err) => { console.warn('Customer API sync note:', err); });
-  }, []);
-
-  const navigate = useNavigate();
-  const location = useLocation();
+  }, [selectedQuoteId, selectedJobId]);
   const { addToast } = useToast();
   const { user } = useAuth();
   const { jobs, updateJob, addJob } = useJobs();
@@ -296,9 +305,11 @@ export const CustomerTermsPage = () => {
     (isEmma ? 'JOB-2026-080' : (currentJob?.id || ''));
 
   const rawStateGross = location.state?.grossTotal ? parseFloat(String(location.state.grossTotal).replace(/[^0-9.]/g, '')) : null;
+  const rawTermInvoiceGross = apiTerm?.job?.invoices?.[0]?.total ? Number(apiTerm.job.invoices[0].total) : null;
+  const rawTermQuoteGross = apiTerm?.job?.quotes?.[0]?.totalAmount ? Number(apiTerm.job.quotes[0].totalAmount) : null;
   const rawApiGross = apiAcceptedQuote?.totalAmount ? Number(apiAcceptedQuote.totalAmount) : null;
   const rawJobGross = currentJob?.quote?.total || (currentJob?.quote?.baseFee ? currentJob.quote.baseFee * 1.2 : null);
-  const grossTotal = rawStateGross || rawApiGross || userQuote?.totalAmount || leadTotal || rawJobGross || (currentJob?.totalAmount ? Number(currentJob.totalAmount) : 0);
+  const grossTotal = rawStateGross || rawTermInvoiceGross || rawTermQuoteGross || rawApiGross || userQuote?.totalAmount || leadTotal || rawJobGross || (currentJob?.totalAmount ? Number(currentJob.totalAmount) : 0);
   const baseFee = Math.round((grossTotal / 1.2) * 100) / 100;
   const vatAmount = Math.round((grossTotal - baseFee) * 100) / 100;
 
